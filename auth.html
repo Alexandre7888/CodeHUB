@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodeHub - Autenticação</title>
+  <style>
+    :root {
+      --primary-color: #4361ee;
+      --secondary-color: #3f37c9;
+      --accent-color: #4895ef;
+      --danger-color: #f72585;
+      --success-color: #4cc9f0;
+      --light-color: #f8f9fa;
+      --dark-color: #212529;
+      --gray-color: #6c757d;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .auth-container {
+      width: 100%;
+      max-width: 420px;
+      background-color: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .auth-header {
+      background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+      color: white;
+      padding: 25px;
+      text-align: center;
+    }
+
+    .auth-header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .auth-header p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .tabs {
+      display: flex;
+      background-color: #f1f3f5;
+    }
+
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 15px;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--gray-color);
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .tab.active {
+      color: var(--primary-color);
+      background-color: white;
+    }
+
+    .tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background-color: var(--primary-color);
+    }
+
+    .tab-content {
+      padding: 30px;
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: var(--dark-color);
+      font-size: 14px;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      font-size: 15px;
+      transition: all 0.3s;
+    }
+
+    .form-control:focus {
+      border-color: var(--accent-color);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--secondary-color);
+      transform: translateY(-2px);
+    }
+
+    .btn-google {
+      background-color: white;
+      color: var(--dark-color);
+      border: 1px solid #dee2e6;
+    }
+
+    .btn-google:hover {
+      background-color: #f8f9fa;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 20px 0;
+      color: var(--gray-color);
+      font-size: 14px;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background-color: #e9ecef;
+      margin: 0 10px;
+    }
+
+    .error-message {
+      color: var(--danger-color);
+      font-size: 13px;
+      margin-top: 5px;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    .footer-text {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 14px;
+      color: var(--gray-color);
+    }
+
+    .footer-text a {
+      color: var(--primary-color);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    /* Ícones */
+    .icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Responsividade */
+    @media (max-width: 480px) {
+      .auth-container {
+        border-radius: 12px;
+      }
+      
+      .auth-header {
+        padding: 20px;
+      }
+      
+      .tab-content {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-header">
+      <h1>Bem-vindo ao CodeHub</h1>
+      <p>Seu editor de código online favorito</p>
+    </div>
+    
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('login')">Entrar</div>
+      <div class="tab" onclick="switchTab('register')">Criar Conta</div>
+    </div>
+    
+    <div id="login-tab" class="tab-content active">
+      <form id="login-form">
+        <div class="form-group">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" class="form-control" placeholder="digite seu email" required>
+          <div id="login-email-error" class="error-message"></div>
+        </div>
+        
+        <div class="form-group">
+          <label for="login-password">Senha</label>
+          <input type="password" id="login-password" class="form-control" placeholder="digite sua senha" required>
+          <div id="login-password-error" class="error-message"></div>
+        </div>
+        
+        <button type="button" class="btn btn-primary" onclick="login()">
+          <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+          </svg>
+          Entrar
+        </button>
+        
+        <div class="divider">ou</div>
+        
+        <button type="button" class="btn btn-google" onclick="loginWithGoogle()">
+          <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          </svg>
+          Continuar com Google
+        </button>
+        
+        <div class="footer-text">
+          Não tem uma conta? <a href="#" onclick="switchTab('register'); return false;">Cadastre-se</a>
+        </div>
+      </form>
+    </div>
+    
+    <div id="register-tab" class="tab-content">
+      <form id="register-form">
+        <div class="form-group">
+          <label for="register-username">Nome de Usuário</label>
+          <input type="text" id="register-username" class="form-control" placeholder="ex: dev123" required>
+          <div id="register-username-error" class="error-message"></div>
+        </div>
+        
+        <div class="form-group">
+          <label for="register-email">Email</label>
+          <input type="email" id="register-email" class="form-control" placeholder="digite seu email" required>
+          <div id="register-email-error" class="error-message"></div>
+        </div>
+        
+        <div class="form-group">
+          <label for="register-password">Senha</label>
+          <input type="password" id="register-password" class="form-control" placeholder="crie uma senha (mín. 6 caracteres)" required>
+          <div id="register-password-error" class="error-message"></div>
+        </div>
+        
+        <div class="form-group">
+          <label for="register-confirm-password">Confirmar Senha</label>
+          <input type="password" id="register-confirm-password" class="form-control" placeholder="confirme sua senha" required>
+          <div id="register-confirm-error" class="error-message"></div>
+        </div>
+        
+        <button type="button" class="btn btn-primary" onclick="register()">
+          <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+          </svg>
+          Criar Conta
+        </button>
+        
+        <div class="footer-text">
+          Já tem uma conta? <a href="#" onclick="switchTab('login'); return false;">Faça login</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    // Configuração do Firebase (use sua configuração)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
+    import { 
+      getAuth, 
+      createUserWithEmailAndPassword, 
+      signInWithEmailAndPassword, 
+      GoogleAuthProvider, 
+      signInWithPopup 
+    } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
+      authDomain: "html-15e80.firebaseapp.com",
+      databaseURL: "https://html-15e80-default-rtdb.firebaseio.com",
+      projectId: "html-15e80",
+      storageBucket: "html-15e80.firebasestorage.app",
+      messagingSenderId: "1068148640439",
+      appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32",
+      measurementId: "G-V57KRZ02HJ"
+    };
+
+    // Inicializar Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const database = getDatabase(app);
+    const provider = new GoogleAuthProvider();
+
+    // Funções globais
+    window.switchTab = (tabId) => {
+      // Alternar abas
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      
+      document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`).classList.add('active');
+      document.getElementById(`${tabId}-tab`).classList.add('active');
+      
+      // Limpar erros
+      document.querySelectorAll('.error-message').forEach(el => el.classList.remove('show'));
+    };
+
+    // Função para exibir erro
+    function showError(fieldId, message) {
+      const errorElement = document.getElementById(`${fieldId}-error`);
+      errorElement.textContent = message;
+      errorElement.classList.add('show');
+    }
+
+    // Função para limpar erros
+    function clearErrors() {
+      document.querySelectorAll('.error-message').forEach(el => {
+        el.textContent = '';
+        el.classList.remove('show');
+      });
+    }
+
+    // Função de registro
+    window.register = async () => {
+      clearErrors();
+      
+      const username = document.getElementById('register-username').value.trim();
+      const email = document.getElementById('register-email').value.trim();
+      const password = document.getElementById('register-password').value;
+      const confirmPassword = document.getElementById('register-confirm-password').value;
+
+      // Validações
+      if (!username) {
+        showError('register-username', 'Por favor, informe um nome de usuário');
+        return;
+      }
+      
+      if (!email) {
+        showError('register-email', 'Por favor, informe um email');
+        return;
+      }
+      
+      if (password.length < 6) {
+        showError('register-password', 'A senha deve ter pelo menos 6 caracteres');
+        return;
+      }
+      
+      if (password !== confirmPassword) {
+        showError('register-confirm', 'As senhas não coincidem');
+        return;
+      }
+
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        
+        // Salvar informações adicionais do usuário
+        await set(ref(database, `users/${user.uid}`), {
+          username: username,
+          email: email,
+          createdAt: new Date().toISOString()
+        });
+
+        // Salvar no localStorage
+        localStorage.setItem('user', JSON.stringify({
+          uid: user.uid,
+          username: username,
+          email: email
+        }));
+
+        // Redirecionar para o painel
+        window.location.href = 'index.html';
+      } catch (error) {
+        handleAuthError(error, 'register');
+      }
+    };
+
+    // Função de login
+    window.login = async () => {
+      clearErrors();
+      
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+
+      if (!email) {
+        showError('login-email', 'Por favor, informe seu email');
+        return;
+      }
+      
+      if (!password) {
+        showError('login-password', 'Por favor, informe sua senha');
+        return;
+      }
+
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        
+        // Buscar informações adicionais do usuário
+        const userSnapshot = await get(ref(database, `users/${user.uid}`));
+        const userData = userSnapshot.val();
+
+        // Salvar no localStorage
+        localStorage.setItem('user', JSON.stringify({
+          uid: user.uid,
+          username: userData.username,
+          email: user.email
+        }));
+
+        // Redirecionar para o painel
+        window.location.href = 'index.html';
+      } catch (error) {
+        handleAuthError(error, 'login');
+      }
+    };
+
+    // Login com Google
+    window.loginWithGoogle = async () => {
+      try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+        
+        // Salvar informações do usuário
+        await set(ref(database, `users/${user.uid}`), {
+          username: user.displayName || user.email.split('@')[0],
+          email: user.email,
+          createdAt: new Date().toISOString(),
+          isGoogleAccount: true
+        });
+
+        localStorage.setItem('user', JSON.stringify({
+          uid: user.uid,
+          username: user.displayName || user.email.split('@')[0],
+          email: user.email
+        }));
+
+        window.location.href = 'index.html';
+      } catch (error) {
+        handleAuthError(error, 'login');
+      }
+    };
+
+    // Tratamento de erros
+    function handleAuthError(error, formType) {
+      let errorMessage = 'Ocorreu um erro. Tente novamente.';
+      
+      switch(error.code) {
+        case 'auth/email-already-in-use':
+          errorMessage = 'Este email já está em uso.';
+          showError(`${formType}-email`, errorMessage);
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Email inválido.';
+          showError(`${formType}-email`, errorMessage);
+          break;
+        case 'auth/weak-password':
+          errorMessage = 'Senha muito fraca (mínimo 6 caracteres).';
+          showError(`${formType}-password`, errorMessage);
+          break;
+        case 'auth/user-not-found':
+          errorMessage = 'Usuário não encontrado.';
+          showError(`${formType}-email`, errorMessage);
+          break;
+        case 'auth/wrong-password':
+          errorMessage = 'Senha incorreta.';
+          showError(`${formType}-password`, errorMessage);
+          break;
+        default:
+          showError(`${formType}-email`, errorMessage);
+      }
+    }
+
+    // Verificar se o usuário já está logado
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        window.location.href = 'index.html';
+      }
+    });
+  </script>
+</body>
+</html>

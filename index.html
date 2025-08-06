@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meus Projetos - CodeHub</title>
+  <style>
+    :root {
+      --primary-color: #4361ee;
+      --secondary-color: #3f37c9;
+      --accent-color: #4895ef;
+      --danger-color: #f72585;
+      --success-color: #4cc9f0;
+      --light-color: #f8f9fa;
+      --dark-color: #212529;
+      --gray-color: #6c757d;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f7fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    header {
+      background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+      color: white;
+      padding: 1rem 2rem;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logout-btn {
+      background-color: var(--danger-color);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .logout-btn:hover {
+      background-color: #d11a5a;
+      transform: translateY(-2px);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    .projects-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .new-project-btn {
+      background-color: var(--success-color);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.3s;
+    }
+
+    .new-project-btn:hover {
+      background-color: #3ab0d9;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .project-card {
+      background-color: white;
+      border-radius: 10px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+      border: 1px solid #eaeaea;
+    }
+
+    .project-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .project-name {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--dark-color);
+    }
+
+    .project-domain {
+      font-size: 0.9rem;
+      color: var(--gray-color);
+      margin-bottom: 1rem;
+    }
+
+    .project-actions {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+    }
+
+    .action-btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .action-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .edit-btn {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .edit-btn:hover {
+      background-color: var(--secondary-color);
+    }
+
+    .share-btn {
+      background-color: var(--gray-color);
+      color: white;
+    }
+
+    .share-btn:hover {
+      background-color: #5a6268;
+    }
+
+    .delete-btn {
+      background-color: var(--danger-color);
+      color: white;
+    }
+
+    .delete-btn:hover {
+      background-color: #d11a5a;
+    }
+
+    /* Modal de Novo Projeto */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(3px);
+    }
+
+    .modal-content {
+      background-color: white;
+      margin: 10% auto;
+      padding: 2rem;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      animation: modalFadeIn 0.3s;
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--dark-color);
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--gray-color);
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: var(--dark-color);
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 1rem;
+      transition: all 0.3s;
+    }
+
+    .form-group input:focus {
+      border-color: var(--accent-color);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(72, 149, 239, 0.2);
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .cancel-btn {
+      background-color: var(--gray-color);
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .confirm-btn {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    /* Modal de Compartilhamento */
+    .share-link-container {
+      margin-top: 1rem;
+    }
+
+    .input-group {
+      display: flex;
+      margin-top: 0.5rem;
+    }
+
+    .input-group input {
+      flex: 1;
+      padding: 0.75rem;
+      border: 1px solid #ddd;
+      border-radius: 6px 0 0 6px;
+      font-size: 0.9rem;
+    }
+
+    .copy-btn {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 0 1.25rem;
+      border-radius: 0 6px 6px 0;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .permission-select {
+      margin: 1.5rem 0;
+    }
+
+    .permission-select select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+
+    .public-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 1rem 0;
+    }
+
+    /* Ícones */
+    .icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+      .projects-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .projects-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+      
+      .modal-content {
+        margin: 20% auto;
+        padding: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Meus Projetos</h1>
+    <div class="user-info">
+      <span id="username"></span>
+      <button class="logout-btn" onclick="logout()">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+        </svg>
+        Sair
+      </button>
+    </div>
+  </header>
+  
+  <div class="container">
+    <div class="projects-header">
+      <h2>Seus Projetos</h2>
+      <button class="new-project-btn" onclick="openNewProjectModal()">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        </svg>
+        Novo Projeto
+      </button>
+    </div>
+    
+    <div id="projects-container" class="projects-grid">
+      <!-- Projetos serão carregados aqui dinamicamente -->
+    </div>
+  </div>
+
+  <!-- Modal de Novo Projeto -->
+  <div id="new-project-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Criar Novo Projeto</h3>
+        <button class="close-btn" onclick="closeNewProjectModal()">&times;</button>
+      </div>
+      <div class="form-group">
+        <label for="project-name">Nome do Projeto</label>
+        <input type="text" id="project-name" placeholder="Ex: Meu Site Pessoal">
+      </div>
+      <div class="form-actions">
+        <button class="cancel-btn" onclick="closeNewProjectModal()">Cancelar</button>
+        <button class="confirm-btn" onclick="createProject()">Criar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Compartilhamento -->
+  <div id="share-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Compartilhar Projeto</h3>
+        <button class="close-btn" onclick="closeShareModal()">&times;</button>
+      </div>
+      <div class="form-group">
+        <label>Link de Acesso:</label>
+        <div class="input-group">
+          <input type="text" id="share-link" readonly>
+          <button class="copy-btn" onclick="copyShareLink()">Copiar</button>
+        </div>
+      </div>
+      <div class="permission-select">
+        <label for="share-permission">Permissão:</label>
+        <select id="share-permission" onchange="updateShareLink()">
+          <option value="view">Somente Visualização</option>
+          <option value="edit">Edição Permitida</option>
+        </select>
+      </div>
+      <div class="public-checkbox">
+        <input type="checkbox" id="share-public" onchange="updateShareLink()">
+        <label for="share-public">Tornar público (qualquer pessoa com o link pode acessar)</label>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
+    import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
+    import { getDatabase, ref, push, set, onValue, remove } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
+      authDomain: "html-15e80.firebaseapp.com",
+      databaseURL: "https://html-15e80-default-rtdb.firebaseio.com",
+      projectId: "html-15e80",
+      storageBucket: "html-15e80.firebasestorage.app",
+      messagingSenderId: "1068148640439",
+      appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32",
+      measurementId: "G-V57KRZ02HJ"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const database = getDatabase(app);
+
+    let currentSharedProject = null;
+    let userData = null;
+
+    // Verificar autenticação
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.href = 'auth.html';
+      } else {
+        userData = JSON.parse(localStorage.getItem('user')) || {
+          username: user.email.split('@')[0],
+          email: user.email,
+          uid: user.uid
+        };
+        
+        document.getElementById('username').textContent = userData.username;
+        loadProjects(user.uid);
+      }
+    });
+
+    // Função para carregar projetos
+    function loadProjects(userId) {
+      const projectsRef = ref(database, `projects/${userId}`);
+      
+      onValue(projectsRef, (snapshot) => {
+        const projectsContainer = document.getElementById('projects-container');
+        projectsContainer.innerHTML = '';
+        
+        const projects = snapshot.val() || {};
+        
+        for (const [projectId, project] of Object.entries(projects)) {
+          const projectCard = document.createElement('div');
+          projectCard.className = 'project-card';
+          projectCard.innerHTML = `
+            <div class="project-name">${project.name}</div>
+            <div class="project-domain">${userData.username}/${project.slug}</div>
+            <div class="project-actions">
+              <button class="action-btn edit-btn" onclick="editProject('${projectId}')">
+                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+                Abrir
+              </button>
+              <button class="action-btn share-btn" onclick="openShareModal('${projectId}')">
+                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+                </svg>
+                Compartilhar
+              </button>
+              <button class="action-btn delete-btn" onclick="deleteProject('${projectId}')">
+                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+                Excluir
+              </button>
+            </div>
+          `;
+          projectsContainer.appendChild(projectCard);
+        }
+      });
+    }
+
+    // Funções do modal de novo projeto
+    window.openNewProjectModal = () => {
+      document.getElementById('new-project-modal').style.display = 'block';
+      document.getElementById('project-name').focus();
+    };
+
+    window.closeNewProjectModal = () => {
+      document.getElementById('new-project-modal').style.display = 'none';
+      document.getElementById('project-name').value = '';
+    };
+
+    window.createProject = async () => {
+      const projectName = document.getElementById('project-name').value.trim();
+      const user = auth.currentUser;
+      
+      if (!projectName) {
+        alert('Por favor, informe um nome para o projeto');
+        return;
+      }
+      
+      // Criar slug (versão amigável para URL do nome do projeto)
+      const slug = projectName.toLowerCase()
+        .replace(/\s+/g, '-')           // Substitui espaços por hífens
+        .replace(/[^\w\-]+/g, '')       // Remove caracteres especiais
+        .replace(/\-\-+/g, '-')         // Substitui múltiplos hífens por um único
+        .replace(/^-+/, '')             // Remove hífens do início
+        .replace(/-+$/, '');            // Remove hífens do final
+      
+      const newProjectRef = push(ref(database, `projects/${user.uid}`));
+      
+      await set(newProjectRef, {
+        name: projectName,
+        slug: slug,
+        createdAt: new Date().toISOString(),
+        files: {
+          'index.html': {
+            content: '<!DOCTYPE html>\n<html>\n<head>\n  <title>Novo Projeto</title>\n  <style>\n    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }\n  </style>\n</head>\n<body>\n  <h1>Meu Novo Projeto</h1>\n  <p>Comece a editar seu código aqui!</p>\n</body>\n</html>',
+            language: 'html'
+          },
+          'style.css': {
+            content: '/* Adicione seus estilos CSS aqui */',
+            language: 'css'
+          },
+          'script.js': {
+            content: '// Adicione seu JavaScript aqui',
+            language: 'javascript'
+          }
+        }
+      });
+      
+      closeNewProjectModal();
+      window.location.href = `editor.html?projectId=${newProjectRef.key}`;
+    };
+
+    // Função para deletar projeto
+    window.deleteProject = (projectId) => {
+      if (confirm('Tem certeza que deseja excluir este projeto? Esta ação não pode ser desfeita.')) {
+        const user = auth.currentUser;
+        remove(ref(database, `projects/${user.uid}/${projectId}`));
+      }
+    };
+
+    // Função para editar projeto
+    window.editProject = (projectId) => {
+      window.location.href = `editor.html?projectId=${projectId}`;
+    };
+
+    // Função de logout
+    window.logout = () => {
+      signOut(auth).then(() => {
+        localStorage.removeItem('user');
+        window.location.href = 'auth.html';
+      });
+    };
+
+    // Funções do modal de compartilhamento
+    window.openShareModal = (projectId) => {
+      currentSharedProject = projectId;
+      updateShareLink();
+      document.getElementById('share-modal').style.display = 'block';
+    };
+    
+    window.closeShareModal = () => {
+      document.getElementById('share-modal').style.display = 'none';
+    };
+    
+    window.updateShareLink = () => {
+      const permission = document.getElementById('share-permission').value;
+      const isPublic = document.getElementById('share-public').checked;
+      
+      let token = '';
+      if (!isPublic) {
+        // Gerar um token único para acesso privado
+        token = btoa(`${currentSharedProject}:${userData.uid}:${permission}:${Date.now()}`).replace(/=/g, '');
+      }
+      
+      const baseUrl = window.location.origin;
+      let shareUrl = `${baseUrl}/editor.html?projectId=${currentSharedProject}`;
+      
+      if (token) {
+        shareUrl += `&token=${token}`;
+      } else if (isPublic) {
+        shareUrl += `&public=true&perm=${permission}`;
+      }
+      
+      document.getElementById('share-link').value = shareUrl;
+    };
+    
+    window.copyShareLink = () => {
+      const shareInput = document.getElementById('share-link');
+      shareInput.select();
+      document.execCommand('copy');
+      alert('Link copiado para a área de transferência!');
+    };
+  </script>
+</body>
+</html>
