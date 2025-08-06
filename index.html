@@ -382,21 +382,28 @@
     </div>
   </div>
 
-  <!-- Modal de Novo Projeto -->
+  <!-- Modal de Novo Projeto - Atualizado -->
   <div id="new-project-modal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
         <h3 class="modal-title">Criar Novo Projeto</h3>
-        <button class="close-btn" onclick="closeNewProjectModal()">&times;</button>
+        <button type="button" class="close-btn" onclick="closeNewProjectModal()">&times;</button>
       </div>
-      <div class="form-group">
-        <label for="project-name">Nome do Projeto</label>
-        <input type="text" id="project-name" placeholder="Ex: Meu Site Pessoal">
-      </div>
-      <div class="form-actions">
-        <button class="cancel-btn" onclick="closeNewProjectModal()">Cancelar</button>
-        <button class="confirm-btn" onclick="createProject()">Criar</button>
-      </div>
+      <form id="project-form" onsubmit="event.preventDefault(); createProject();">
+        <div class="form-group">
+          <label for="project-name">Nome do Projeto</label>
+          <input type="text" id="project-name" placeholder="Ex: Meu Site Pessoal" required>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="cancel-btn" onclick="closeNewProjectModal()">Cancelar</button>
+          <button type="submit" class="confirm-btn">
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            Criar
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -529,38 +536,55 @@
         return;
       }
       
-      // Criar slug (versão amigável para URL do nome do projeto)
-      const slug = projectName.toLowerCase()
-        .replace(/\s+/g, '-')           // Substitui espaços por hífens
-        .replace(/[^\w\-]+/g, '')       // Remove caracteres especiais
-        .replace(/\-\-+/g, '-')         // Substitui múltiplos hífens por um único
-        .replace(/^-+/, '')             // Remove hífens do início
-        .replace(/-+$/, '');            // Remove hífens do final
-      
-      const newProjectRef = push(ref(database, `projects/${user.uid}`));
-      
-      await set(newProjectRef, {
-        name: projectName,
-        slug: slug,
-        createdAt: new Date().toISOString(),
-        files: {
-          'index.html': {
-            content: '<!DOCTYPE html>\n<html>\n<head>\n  <title>Novo Projeto</title>\n  <style>\n    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }\n  </style>\n</head>\n<body>\n  <h1>Meu Novo Projeto</h1>\n  <p>Comece a editar seu código aqui!</p>\n</body>\n</html>',
-            language: 'html'
-          },
-          'style.css': {
-            content: '/* Adicione seus estilos CSS aqui */',
-            language: 'css'
-          },
-          'script.js': {
-            content: '// Adicione seu JavaScript aqui',
-            language: 'javascript'
+      try {
+        // Criar slug (versão amigável para URL do nome do projeto)
+        const slug = projectName.toLowerCase()
+          .replace(/\s+/g, '-')           // Substitui espaços por hífens
+          .replace(/[^\w\-]+/g, '')       // Remove caracteres especiais
+          .replace(/\-\-+/g, '-')         // Substitui múltiplos hífens por um único
+          .replace(/^-+/, '')             // Remove hífens do início
+          .replace(/-+$/, '');            // Remove hífens do final
+        
+        const newProjectRef = push(ref(database, `projects/${user.uid}`));
+        
+        await set(newProjectRef, {
+          name: projectName,
+          slug: slug,
+          createdAt: new Date().toISOString(),
+          files: {
+            'index.html': {
+              content: `<!DOCTYPE html>
+<html>
+<head>
+  <title>${projectName}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+  </style>
+</head>
+<body>
+  <h1>${projectName}</h1>
+  <p>Comece a editar seu código aqui!</p>
+</body>
+</html>`,
+              language: 'html'
+            },
+            'style.css': {
+              content: '/* Adicione seus estilos CSS aqui */',
+              language: 'css'
+            },
+            'script.js': {
+              content: '// Adicione seu JavaScript aqui',
+              language: 'javascript'
+            }
           }
-        }
-      });
-      
-      closeNewProjectModal();
-      window.location.href = `editor.html?projectId=${newProjectRef.key}`;
+        });
+        
+        closeNewProjectModal();
+        window.location.href = `editor.html?projectId=${newProjectRef.key}`;
+      } catch (error) {
+        console.error("Erro ao criar projeto:", error);
+        alert('Ocorreu um erro ao criar o projeto. Por favor, tente novamente.');
+      }
     };
 
     // Função para deletar projeto
