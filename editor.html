@@ -56,7 +56,7 @@
       user-select: none;
       font-size: 14px;
     }
-    #saveFileBtn, #previewBtn, #shareBtn {
+    #saveFileBtn, #previewBtn, #shareBtn, #viewBtn {
       background: #28a745;
       border: none;
       color: white;
@@ -65,10 +65,13 @@
       border-radius: 4px;
       font-weight: bold;
       user-select: none;
-      margin-left: auto;
     }
     #shareBtn {
       background: #6c757d;
+      margin-left: auto;
+    }
+    #viewBtn {
+      background: #17a2b8;
     }
     #container {
       flex: 1;
@@ -94,7 +97,7 @@
       color: white;
       font-weight: bold;
     }
-    
+
     /* Modal de compartilhamento */
     .modal {
       display: none;
@@ -106,7 +109,7 @@
       height: 100%;
       background-color: rgba(0,0,0,0.5);
     }
-    
+
     .modal-content {
       background-color: white;
       margin: 10% auto;
@@ -117,25 +120,25 @@
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       color: #333;
     }
-    
+
     .close-btn {
       float: right;
       font-size: 24px;
       cursor: pointer;
     }
-    
+
     .input-group {
       display: flex;
       margin-top: 8px;
     }
-    
+
     .input-group input {
       flex: 1;
       padding: 8px;
       border: 1px solid #ddd;
       border-radius: 4px 0 0 4px;
     }
-    
+
     .input-group button {
       border-radius: 0 4px 4px 0;
       background-color: #007acc;
@@ -144,22 +147,22 @@
       padding: 0 15px;
       cursor: pointer;
     }
-    
+
     .permission-select {
       margin: 15px 0;
     }
-    
+
     .permission-select select {
       width: 100%;
       padding: 8px;
       border-radius: 4px;
       border: 1px solid #ddd;
     }
-    
+
     .public-checkbox {
       margin: 10px 0;
     }
-    
+
     .read-only-warning {
       background: #fff3cd;
       color: #856404;
@@ -181,7 +184,7 @@
       authDomain: "html-15e80.firebaseapp.com",
       databaseURL: "https://html-15e80-default-rtdb.firebaseio.com",
       projectId: "html-15e80",
-      storageBucket: "html-15e80.firebasestorage.app",
+      storageBucket: "html-15e80.appspot.com",
       messagingSenderId: "1068148640439",
       appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32",
       measurementId: "G-V57KRZ02HJ"
@@ -206,12 +209,12 @@
         currentUserId = user.uid;
         const urlParams = new URLSearchParams(window.location.search);
         currentProjectId = urlParams.get('projectId');
-        
+
         if (!currentProjectId) {
           window.location.href = 'index.html';
           return;
         }
-        
+
         // Verificar permissões
         await verifyProjectAccess(user.uid, currentProjectId);
         loadProject(user.uid, currentProjectId);
@@ -224,7 +227,7 @@
       const token = urlParams.get('token');
       const isPublic = urlParams.get('public') === 'true';
       const permission = urlParams.get('perm');
-      
+
       // Se não houver token nem flag public, verificar se o usuário é o dono
       if (!token && !isPublic) {
         const projectRef = ref(database, `projects/${userId}/${projectId}`);
@@ -235,14 +238,14 @@
         canEdit = true;
         return;
       }
-      
+
       // Se for público
       if (isPublic) {
         canEdit = permission === 'edit';
         document.getElementById('read-only-warning').style.display = canEdit ? 'none' : 'block';
         return;
       }
-      
+
       // Verificar token (implementação básica)
       if (token) {
         try {
@@ -257,24 +260,24 @@
           throw new Error('Token inválido');
         }
       }
-      
+
       throw new Error('Acesso negado');
     }
 
     // Função para carregar projeto
     function loadProject(userId, projectId) {
       const projectRef = ref(database, `projects/${userId}/${projectId}`);
-      
+
       onValue(projectRef, (snapshot) => {
         const project = snapshot.val();
         if (!project) {
           window.location.href = 'index.html';
           return;
         }
-        
+
         // Atualizar título da página
         document.title = `Editando: ${project.name}`;
-        
+
         // Inicializar editor
         initializeEditor(project.files, projectId, userId);
       });
@@ -283,7 +286,7 @@
     // Função para inicializar o editor
     function initializeEditor(projectFiles, projectId, userId) {
       files = projectFiles || {};
-      
+
       require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' }});
       require(['vs/editor/editor.main'], function() {
         const container = document.getElementById('container');
@@ -291,6 +294,7 @@
         const saveBtn = document.getElementById('saveFileBtn');
         const previewBtn = document.getElementById('previewBtn');
         const shareBtn = document.getElementById('shareBtn');
+        const viewBtn = document.getElementById('viewBtn');
         const newFileForm = document.getElementById('newFileForm');
         const newFileNameInput = document.getElementById('newFileName');
 
@@ -396,12 +400,12 @@
 
         function saveToFirebase() {
           if (!canEdit) return;
-          
+
           const updates = {};
           for (const [filename, editor] of Object.entries(editors)) {
             updates[`projects/${userId}/${projectId}/files/${filename}/content`] = editor.getValue();
           }
-          
+
           update(ref(database), updates);
         }
 
@@ -423,7 +427,7 @@
         newFileForm.addEventListener('submit', e => {
           e.preventDefault();
           if (!canEdit) return;
-          
+
           const filename = newFileNameInput.value.trim();
           if (!filename) return alert('Informe o nome do arquivo.');
           if (files[filename]) return alert('Arquivo já existe.');
@@ -445,7 +449,12 @@
           openShareModal();
         });
 
-        // Configurar preview (mantido da versão original)
+        viewBtn.addEventListener('click', () => {
+          const url = `${window.location.origin}/view.html?projectId=${currentProjectId}&public=true&perm=view`;
+          window.open(url, '_blank');
+        });
+
+        // Configurar preview
         previewBtn.addEventListener('click', () => {
           if (!currentFile) return;
           if (editors[currentFile]) {
@@ -473,36 +482,48 @@
     function updateShareLink() {
       const permission = document.getElementById('share-permission').value;
       const isPublic = document.getElementById('share-public').checked;
-      
+
       let token = '';
       if (!isPublic) {
         // Gerar um token único para acesso privado
         token = btoa(`${currentProjectId}:${currentUserId}:${permission}:${Date.now()}`).replace(/=/g, '');
       }
-      
+
       const baseUrl = window.location.origin;
       let shareUrl = `${baseUrl}/editor.html?projectId=${currentProjectId}`;
-      
+      let viewUrl = `${baseUrl}/view.html?projectId=${currentProjectId}`;
+
       if (token) {
         shareUrl += `&token=${token}`;
+        viewUrl += `&token=${token}`;
       } else if (isPublic) {
         shareUrl += `&public=true&perm=${permission}`;
+        viewUrl += `&public=true&perm=view`;
       }
-      
+
       document.getElementById('share-link').value = shareUrl;
+      document.getElementById('view-link').value = viewUrl;
     }
 
     function copyShareLink() {
       const shareInput = document.getElementById('share-link');
       shareInput.select();
       document.execCommand('copy');
-      alert('Link copiado para a área de transferência!');
+      alert('Link de edição copiado para a área de transferência!');
+    }
+
+    function copyViewLink() {
+      const viewInput = document.getElementById('view-link');
+      viewInput.select();
+      document.execCommand('copy');
+      alert('Link de visualização copiado para a área de transferência!');
     }
 
     // Inicializar eventos do modal
     document.addEventListener('DOMContentLoaded', () => {
       document.querySelector('.close-btn').addEventListener('click', closeShareModal);
       document.getElementById('copy-share-btn').addEventListener('click', copyShareLink);
+      document.getElementById('copy-view-btn').addEventListener('click', copyViewLink);
       document.getElementById('share-permission').addEventListener('change', updateShareLink);
       document.getElementById('share-public').addEventListener('change', updateShareLink);
     });
@@ -514,9 +535,9 @@
       <input type="text" id="newFileName" placeholder="Nome do arquivo (ex: script.js)" required />
       <button type="submit">➕ Criar arquivo</button>
     </form>
-    <input type="file" id="fileInput" multiple style="color: white;" />
     <button id="saveFileBtn" disabled>💾 Salvar arquivo</button>
     <button id="previewBtn" disabled>👁️ Visualizar HTML</button>
+    <button id="viewBtn">👀 Link de Visualização</button>
     <button id="shareBtn">🔗 Compartilhar</button>
   </div>
 
@@ -533,13 +554,23 @@
     <div class="modal-content">
       <span class="close-btn">&times;</span>
       <h3>Compartilhar Projeto</h3>
+      
       <div class="form-group">
-        <label>Link de Acesso:</label>
+        <label>Link de Edição:</label>
         <div class="input-group">
           <input type="text" id="share-link" readonly>
           <button id="copy-share-btn">Copiar</button>
         </div>
       </div>
+      
+      <div class="form-group">
+        <label>Link de Visualização:</label>
+        <div class="input-group">
+          <input type="text" id="view-link" readonly>
+          <button id="copy-view-btn">Copiar</button>
+        </div>
+      </div>
+      
       <div class="permission-select">
         <label for="share-permission">Permissão:</label>
         <select id="share-permission" class="form-control">
@@ -547,6 +578,7 @@
           <option value="edit">Edição Permitida</option>
         </select>
       </div>
+      
       <div class="public-checkbox">
         <label>
           <input type="checkbox" id="share-public">
