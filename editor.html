@@ -65,9 +65,7 @@
     }
     #saveFileBtn { background: #388a3f; }
     #previewBtn { background: #68217a; }
-    #viewBtn { background: #007acc; }
-    #shareBtn { background: #4d4d4d; margin-left: auto; }
-    #githubBtn { background: #24292e; }
+    #githubBtn { background: #24292e; margin-left: auto; }
     #container {
       flex: 1;
       overflow: hidden;
@@ -109,28 +107,6 @@
       float: right;
       cursor: pointer;
     }
-    .input-group {
-      display: flex;
-      margin-top: 10px;
-    }
-    .input-group input {
-      flex: 1;
-      padding: 8px;
-      background: #333;
-      border: 1px solid #444;
-      color: white;
-    }
-    .input-group button {
-      border-radius: 0 2px 2px 0;
-    }
-    .read-only-warning {
-      background: #4b3800;
-      color: #ffcc00;
-      padding: 8px;
-      border-radius: 4px;
-      margin: 10px 0;
-      display: none;
-    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
 </head>
@@ -142,28 +118,12 @@
     </form>
     <button id="saveFileBtn">💾 Salvar</button>
     <button id="previewBtn">👁️ Visualizar</button>
-    <button id="viewBtn">🔗 Link Visualização</button>
     <button id="githubBtn">🐙 Publicar no GitHub</button>
-    <button id="shareBtn">👥 Compartilhar</button>
   </div>
 
   <div id="tabs"></div>
 
   <div id="container" style="height: calc(100vh - 90px);"></div>
-
-  <div id="share-modal" class="modal">
-    <div class="modal-content">
-      <span class="close-btn">&times;</span>
-      <h3>Compartilhar Projeto</h3>
-      <div class="form-group">
-        <label>Link de Visualização:</label>
-        <div class="input-group">
-          <input type="text" id="view-link" readonly>
-          <button type="button" id="copy-view-link">Copiar</button>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <div id="github-modal" class="modal">
     <div class="modal-content">
@@ -209,7 +169,7 @@
     const auth = getAuth(app);
     const database = getDatabase(app);
 
-    // Configuração do GitHub
+    // Configuração do GitHub OAuth
     const githubClientId = "Ov23liphSw7QXqfsbj7f";
     const githubRedirectUri = window.location.href.includes('localhost') 
       ? 'http://localhost:5500/editor.html' 
@@ -232,7 +192,6 @@
         minimap: { enabled: false }
       });
       
-      // Atualizar conteúdo quando o editor mudar
       editor.onDidChangeModelContent(() => {
         if (currentFile && !isReadOnly) {
           document.getElementById('saveFileBtn').disabled = false;
@@ -242,41 +201,28 @@
 
     // Quando o DOM estiver carregado
     document.addEventListener('DOMContentLoaded', () => {
-      // Obter ID do projeto da URL
       const urlParams = new URLSearchParams(window.location.search);
       currentProjectId = urlParams.get('projectId');
-      const viewToken = urlParams.get('token');
       
-      if (viewToken) {
-        isReadOnly = true;
-        document.getElementById('read-only-warning').style.display = 'block';
-        document.getElementById('controls').style.display = 'none';
-        loadProjectByToken(viewToken);
-      } else if (currentProjectId) {
-        setupAuth();
-      } else {
+      if (!currentProjectId) {
         window.location.href = 'index.html';
+      } else {
+        setupAuth();
       }
 
       // Configurar eventos
       document.getElementById('newFileForm').addEventListener('submit', createNewFile);
       document.getElementById('saveFileBtn').addEventListener('click', saveCurrentFile);
       document.getElementById('previewBtn').addEventListener('click', previewFile);
-      document.getElementById('viewBtn').addEventListener('click', showViewLink);
-      document.getElementById('shareBtn').addEventListener('click', () => {
-        document.getElementById('share-modal').style.display = 'block';
-      });
       document.getElementById('githubBtn').addEventListener('click', () => {
         document.getElementById('github-modal').style.display = 'block';
       });
       document.getElementById('connect-github').addEventListener('click', connectGitHub);
       document.getElementById('publish-github').addEventListener('click', publishToGitHub);
       
-      // Fechar modais
-      document.querySelectorAll('.close-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          btn.closest('.modal').style.display = 'none';
-        });
+      // Fechar modal
+      document.querySelector('.close-btn').addEventListener('click', () => {
+        document.getElementById('github-modal').style.display = 'none';
       });
     });
 
@@ -301,28 +247,6 @@
         if (projectData) {
           files = projectData.files || {};
           openFirstFile();
-          updateViewLink();
-        }
-      });
-    }
-
-    // Carregar projeto por token
-    function loadProjectByToken(token) {
-      const tokenRef = ref(database, `tokens/${token}`);
-      
-      onValue(tokenRef, (snapshot) => {
-        const tokenData = snapshot.val();
-        if (tokenData) {
-          currentProjectId = tokenData.projectId;
-          const projectRef = ref(database, `projects/${tokenData.ownerId}/${currentProjectId}`);
-          
-          onValue(projectRef, (snapshot) => {
-            const projectData = snapshot.val();
-            if (projectData) {
-              files = projectData.files || {};
-              openFirstFile();
-            }
-          });
         }
       });
     }
@@ -345,7 +269,6 @@
       const fileExt = fileName.split('.').pop().toLowerCase();
       let initialContent = '';
       
-      // Conteúdo inicial baseado no tipo de arquivo
       switch(fileExt) {
         case 'html':
           initialContent = `<!DOCTYPE html>
@@ -374,11 +297,7 @@
         createdAt: new Date().toISOString()
       };
       
-      // Salvar no Firebase
-      if (!isReadOnly) {
-        updateProject();
-      }
-      
+      updateProject();
       openFile(fileName);
       document.getElementById('newFileName').value = '';
     }
@@ -390,7 +309,6 @@
       currentFile = fileName;
       const fileData = files[fileName];
       
-      // Configurar linguagem do editor
       let language;
       switch(fileData.language) {
         case 'html': language = 'html'; break;
@@ -399,7 +317,6 @@
         default: language = 'plaintext';
       }
       
-      // Criar ou reutilizar modelo do editor
       let model = monaco.editor.getModels().find(m => m.uri.path === `/${fileName}`);
       
       if (!model) {
@@ -425,16 +342,14 @@
         tab.textContent = fileName;
         tab.onclick = () => openFile(fileName);
         
-        if (!isReadOnly) {
-          const closeBtn = document.createElement('span');
-          closeBtn.className = 'close-btn';
-          closeBtn.innerHTML = '&times;';
-          closeBtn.onclick = (e) => {
-            e.stopPropagation();
-            closeFile(fileName);
-          };
-          tab.appendChild(closeBtn);
-        }
+        const closeBtn = document.createElement('span');
+        closeBtn.className = 'close-btn';
+        closeBtn.innerHTML = '&times;';
+        closeBtn.onclick = (e) => {
+          e.stopPropagation();
+          closeFile(fileName);
+        };
+        tab.appendChild(closeBtn);
         
         tabsContainer.appendChild(tab);
       });
@@ -450,7 +365,6 @@
       delete files[fileName];
       updateProject();
       
-      // Abrir outro arquivo se estiver fechando o atual
       if (fileName === currentFile) {
         openFile(Object.keys(files)[0]);
       }
@@ -458,7 +372,7 @@
 
     // Salvar arquivo atual
     function saveCurrentFile() {
-      if (!currentFile || isReadOnly) return;
+      if (!currentFile) return;
       
       const model = editor.getModel();
       if (model) {
@@ -470,7 +384,7 @@
 
     // Atualizar projeto no Firebase
     function updateProject() {
-      if (isReadOnly || !userUid) return;
+      if (!userUid) return;
       
       const projectRef = ref(database, `projects/${userUid}/${currentProjectId}`);
       update(projectRef, { 
@@ -492,33 +406,6 @@
       previewWindow.document.close();
     }
 
-    // Gerar token de visualização
-    function generateViewToken() {
-      const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      const tokenRef = ref(database, `tokens/${token}`);
-      
-      set(tokenRef, {
-        projectId: currentProjectId,
-        ownerId: userUid,
-        createdAt: new Date().toISOString()
-      });
-      
-      return token;
-    }
-
-    // Atualizar link de visualização
-    function updateViewLink() {
-      const token = generateViewToken();
-      const viewLink = `${window.location.origin}/viewer.html?token=${token}`;
-      document.getElementById('view-link').value = viewLink;
-    }
-
-    // Mostrar link de visualização
-    function showViewLink() {
-      updateViewLink();
-      document.getElementById('share-modal').style.display = 'block';
-    }
-
     // Conectar com GitHub
     function connectGitHub() {
       const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${githubClientId}&redirect_uri=${encodeURIComponent(githubRedirectUri)}&scope=repo`;
@@ -527,8 +414,25 @@
 
     // Publicar no GitHub
     function publishToGitHub() {
-      alert('Funcionalidade de publicação no GitHub será implementada aqui');
-      // Implementar lógica de publicação no GitHub
+      const repoName = document.getElementById('github-repo').value.trim();
+      const branchName = document.getElementById('github-branch').value.trim() || 'main';
+      
+      if (!repoName) {
+        alert('Por favor, informe o nome do repositório');
+        return;
+      }
+      
+      // Aqui você implementaria a lógica de publicação no GitHub
+      alert(`Publicando no repositório: ${repoName} (branch: ${branchName})`);
+      
+      // Simulação - em uma implementação real você usaria a API do GitHub
+      console.log('Dados para publicação:', {
+        repo: repoName,
+        branch: branchName,
+        files: files
+      });
+      
+      document.getElementById('github-modal').style.display = 'none';
     }
   </script>
 </body>
