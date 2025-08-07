@@ -97,8 +97,6 @@
       color: white;
       font-weight: bold;
     }
-
-    /* Modal de compartilhamento */
     .modal {
       display: none;
       position: fixed;
@@ -109,7 +107,6 @@
       height: 100%;
       background-color: rgba(0,0,0,0.5);
     }
-
     .modal-content {
       background-color: white;
       margin: 10% auto;
@@ -120,25 +117,21 @@
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       color: #333;
     }
-
     .close-btn {
       float: right;
       font-size: 24px;
       cursor: pointer;
     }
-
     .input-group {
       display: flex;
       margin-top: 8px;
     }
-
     .input-group input {
       flex: 1;
       padding: 8px;
       border: 1px solid #ddd;
       border-radius: 4px 0 0 4px;
     }
-
     .input-group button {
       border-radius: 0 4px 4px 0;
       background-color: #007acc;
@@ -147,22 +140,18 @@
       padding: 0 15px;
       cursor: pointer;
     }
-
     .permission-select {
       margin: 15px 0;
     }
-
     .permission-select select {
       width: 100%;
       padding: 8px;
       border-radius: 4px;
       border: 1px solid #ddd;
     }
-
     .public-checkbox {
       margin: 10px 0;
     }
-
     .read-only-warning {
       background: #fff3cd;
       color: #856404;
@@ -172,8 +161,66 @@
       display: none;
     }
   </style>
-  <!-- Firebase SDK e Monaco Editor -->
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+</head>
+<body>
+  <div id="controls">
+    <form id="newFileForm">
+      <input type="text" id="newFileName" placeholder="Nome do arquivo (ex: script.js)" required />
+      <button type="submit">➕ Criar arquivo</button>
+    </form>
+    <button id="saveFileBtn" disabled>💾 Salvar arquivo</button>
+    <button id="previewBtn" disabled>👁️ Visualizar HTML</button>
+    <button id="viewBtn">👀 Link de Visualização</button>
+    <button id="shareBtn">🔗 Compartilhar</button>
+  </div>
+
+  <div id="tabs" title="Arquivos abertos"></div>
+
+  <div id="container" style="height: calc(100vh - 120px);"></div>
+
+  <div id="read-only-warning" class="read-only-warning">
+    ⚠️ Você está visualizando este projeto em modo somente leitura.
+  </div>
+
+  <div id="share-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn">&times;</span>
+      <h3>Compartilhar Projeto</h3>
+      
+      <div class="form-group">
+        <label>Link de Edição:</label>
+        <div class="input-group">
+          <input type="text" id="share-link" readonly>
+          <button id="copy-share-btn">Copiar</button>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>Link de Visualização:</label>
+        <div class="input-group">
+          <input type="text" id="view-link" readonly>
+          <button id="copy-view-btn">Copiar</button>
+        </div>
+      </div>
+      
+      <div class="permission-select">
+        <label for="share-permission">Permissão:</label>
+        <select id="share-permission" class="form-control">
+          <option value="view">Somente Visualização</option>
+          <option value="edit">Edição Permitida</option>
+        </select>
+      </div>
+      
+      <div class="public-checkbox">
+        <label>
+          <input type="checkbox" id="share-public">
+          Tornar público (qualquer pessoa com o link pode acessar)
+        </label>
+      </div>
+    </div>
+  </div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
@@ -201,7 +248,6 @@
     let currentUserId = null;
     let canEdit = true;
 
-    // Verificar autenticação e permissões
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         window.location.href = 'auth.html';
@@ -215,20 +261,17 @@
           return;
         }
 
-        // Verificar permissões
         await verifyProjectAccess(user.uid, currentProjectId);
         loadProject(user.uid, currentProjectId);
       }
     });
 
-    // Verificar permissões de acesso
     async function verifyProjectAccess(userId, projectId) {
       const urlParams = new URLSearchParams(window.location.search);
       const token = urlParams.get('token');
       const isPublic = urlParams.get('public') === 'true';
       const permission = urlParams.get('perm');
 
-      // Se não houver token nem flag public, verificar se o usuário é o dono
       if (!token && !isPublic) {
         const projectRef = ref(database, `projects/${userId}/${projectId}`);
         const snapshot = await get(projectRef);
@@ -239,14 +282,12 @@
         return;
       }
 
-      // Se for público
       if (isPublic) {
         canEdit = permission === 'edit';
         document.getElementById('read-only-warning').style.display = canEdit ? 'none' : 'block';
         return;
       }
 
-      // Verificar token (implementação básica)
       if (token) {
         try {
           const decoded = atob(token).split(':');
@@ -264,7 +305,6 @@
       throw new Error('Acesso negado');
     }
 
-    // Função para carregar projeto
     function loadProject(userId, projectId) {
       const projectRef = ref(database, `projects/${userId}/${projectId}`);
 
@@ -275,15 +315,11 @@
           return;
         }
 
-        // Atualizar título da página
         document.title = `Editando: ${project.name}`;
-
-        // Inicializar editor
         initializeEditor(project.files, projectId, userId);
       });
     }
 
-    // Função para inicializar o editor
     function initializeEditor(projectFiles, projectId, userId) {
       files = projectFiles || {};
 
@@ -298,7 +334,6 @@
         const newFileForm = document.getElementById('newFileForm');
         const newFileNameInput = document.getElementById('newFileName');
 
-        // Desabilitar controles se não tiver permissão de edição
         if (!canEdit) {
           saveBtn.style.display = 'none';
           newFileForm.style.display = 'none';
@@ -409,21 +444,17 @@
           update(ref(database), updates);
         }
 
-        // Inicializar abas para arquivos existentes
         Object.keys(files).forEach(filename => {
           createTab(filename);
         });
 
-        // Selecionar primeiro arquivo se existir
         const firstFile = Object.keys(files)[0];
         if (firstFile) {
           switchFile(firstFile);
         }
 
-        // Configurar auto-salvamento
         setInterval(saveToFirebase, 30000);
 
-        // Event listeners
         newFileForm.addEventListener('submit', e => {
           e.preventDefault();
           if (!canEdit) return;
@@ -454,7 +485,6 @@
           window.open(url, '_blank');
         });
 
-        // Configurar preview
         previewBtn.addEventListener('click', () => {
           if (!currentFile) return;
           if (editors[currentFile]) {
@@ -469,7 +499,6 @@
       });
     }
 
-    // Modal de compartilhamento
     function openShareModal() {
       document.getElementById('share-modal').style.display = 'block';
       updateShareLink();
@@ -485,7 +514,6 @@
 
       let token = '';
       if (!isPublic) {
-        // Gerar um token único para acesso privado
         token = btoa(`${currentProjectId}:${currentUserId}:${permission}:${Date.now()}`).replace(/=/g, '');
       }
 
@@ -519,7 +547,6 @@
       alert('Link de visualização copiado para a área de transferência!');
     }
 
-    // Inicializar eventos do modal
     document.addEventListener('DOMContentLoaded', () => {
       document.querySelector('.close-btn').addEventListener('click', closeShareModal);
       document.getElementById('copy-share-btn').addEventListener('click', copyShareLink);
@@ -528,64 +555,5 @@
       document.getElementById('share-public').addEventListener('change', updateShareLink);
     });
   </script>
-</head>
-<body>
-  <div id="controls">
-    <form id="newFileForm">
-      <input type="text" id="newFileName" placeholder="Nome do arquivo (ex: script.js)" required />
-      <button type="submit">➕ Criar arquivo</button>
-    </form>
-    <button id="saveFileBtn" disabled>💾 Salvar arquivo</button>
-    <button id="previewBtn" disabled>👁️ Visualizar HTML</button>
-    <button id="viewBtn">👀 Link de Visualização</button>
-    <button id="shareBtn">🔗 Compartilhar</button>
-  </div>
-
-  <div id="tabs" title="Arquivos abertos"></div>
-
-  <div id="container" style="height: calc(100vh - 120px);"></div>
-
-  <div id="read-only-warning" class="read-only-warning">
-    ⚠️ Você está visualizando este projeto em modo somente leitura.
-  </div>
-
-  <!-- Modal de compartilhamento -->
-  <div id="share-modal" class="modal">
-    <div class="modal-content">
-      <span class="close-btn">&times;</span>
-      <h3>Compartilhar Projeto</h3>
-      
-      <div class="form-group">
-        <label>Link de Edição:</label>
-        <div class="input-group">
-          <input type="text" id="share-link" readonly>
-          <button id="copy-share-btn">Copiar</button>
-        </div>
-      </div>
-      
-      <div class="form-group">
-        <label>Link de Visualização:</label>
-        <div class="input-group">
-          <input type="text" id="view-link" readonly>
-          <button id="copy-view-btn">Copiar</button>
-        </div>
-      </div>
-      
-      <div class="permission-select">
-        <label for="share-permission">Permissão:</label>
-        <select id="share-permission" class="form-control">
-          <option value="view">Somente Visualização</option>
-          <option value="edit">Edição Permitida</option>
-        </select>
-      </div>
-      
-      <div class="public-checkbox">
-        <label>
-          <input type="checkbox" id="share-public">
-          Tornar público (qualquer pessoa com o link pode acessar)
-        </label>
-      </div>
-    </div>
-  </div>
 </body>
 </html>
