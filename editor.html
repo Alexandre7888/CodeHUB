@@ -2,47 +2,44 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Editor</title>
+  <title>Editor CodeHub</title>
   <style>
     body, html {
       margin: 0; padding: 0; height: 100%;
       display: flex; flex-direction: column;
-      font-family: sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     #controls {
       display: flex;
       gap: 10px;
       padding: 10px;
-      background: #222;
+      background: #1e1e1e;
       color: white;
       align-items: center;
     }
-    #fileInput {
-      color: white;
-    }
     #tabs {
       display: flex;
-      border-bottom: 1px solid #ccc;
-      background: #333;
+      border-bottom: 1px solid #333;
+      background: #252526;
       align-items: center;
       gap: 5px;
       padding-left: 10px;
       overflow-x: auto;
     }
     #tabs button.tab-btn {
-      background: #444;
+      background: #2d2d2d;
       border: none;
-      color: white;
-      padding: 10px 15px;
+      color: #d4d4d4;
+      padding: 8px 15px;
       cursor: pointer;
-      outline: none;
       position: relative;
       user-select: none;
       white-space: nowrap;
+      border-right: 1px solid #1e1e1e;
     }
     #tabs button.tab-btn.active {
-      background: #007acc;
-      font-weight: bold;
+      background: #1e1e1e;
+      color: white;
     }
     #tabs button.close-btn {
       position: absolute;
@@ -51,51 +48,43 @@
       background: transparent;
       border: none;
       color: #bbb;
-      font-weight: bold;
       cursor: pointer;
-      user-select: none;
-      font-size: 14px;
+      font-size: 12px;
     }
-    #saveFileBtn, #previewBtn, #shareBtn, #viewBtn {
-      background: #28a745;
+    button {
+      background: #0e639c;
       border: none;
       color: white;
-      padding: 8px 12px;
+      padding: 6px 12px;
       cursor: pointer;
-      border-radius: 4px;
-      font-weight: bold;
-      user-select: none;
+      border-radius: 2px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
-    #shareBtn {
-      background: #6c757d;
-      margin-left: auto;
-    }
-    #viewBtn {
-      background: #17a2b8;
-    }
+    #saveFileBtn { background: #388a3f; }
+    #previewBtn { background: #68217a; }
+    #viewBtn { background: #007acc; }
+    #shareBtn { background: #4d4d4d; margin-left: auto; }
+    #githubBtn { background: #24292e; }
     #container {
       flex: 1;
+      overflow: hidden;
     }
     #newFileForm {
       display: flex;
       gap: 5px;
       align-items: center;
     }
-    #newFileForm input[type="text"] {
-      padding: 6px;
-      border-radius: 4px;
-      border: none;
-      outline: none;
-      font-size: 14px;
-    }
-    #newFileForm button {
-      padding: 6px 10px;
-      border-radius: 4px;
-      border: none;
-      cursor: pointer;
-      background: #007acc;
+    #newFileForm input {
+      padding: 5px 8px;
+      border-radius: 2px;
+      border: 1px solid #333;
+      background: #252526;
       color: white;
-      font-weight: bold;
+      outline: none;
+      width: 200px;
     }
     .modal {
       display: none;
@@ -105,59 +94,41 @@
       top: 0;
       width: 100%;
       height: 100%;
-      background-color: rgba(0,0,0,0.5);
+      background-color: rgba(0,0,0,0.7);
     }
     .modal-content {
-      background-color: white;
+      background-color: #252526;
       margin: 10% auto;
       padding: 20px;
-      border-radius: 8px;
+      border-radius: 4px;
       width: 90%;
       max-width: 500px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      color: #333;
+      color: white;
     }
     .close-btn {
       float: right;
-      font-size: 24px;
       cursor: pointer;
     }
     .input-group {
       display: flex;
-      margin-top: 8px;
+      margin-top: 10px;
     }
     .input-group input {
       flex: 1;
       padding: 8px;
-      border: 1px solid #ddd;
-      border-radius: 4px 0 0 4px;
+      background: #333;
+      border: 1px solid #444;
+      color: white;
     }
     .input-group button {
-      border-radius: 0 4px 4px 0;
-      background-color: #007acc;
-      color: white;
-      border: none;
-      padding: 0 15px;
-      cursor: pointer;
-    }
-    .permission-select {
-      margin: 15px 0;
-    }
-    .permission-select select {
-      width: 100%;
-      padding: 8px;
-      border-radius: 4px;
-      border: 1px solid #ddd;
-    }
-    .public-checkbox {
-      margin: 10px 0;
+      border-radius: 0 2px 2px 0;
     }
     .read-only-warning {
-      background: #fff3cd;
-      color: #856404;
-      padding: 10px;
+      background: #4b3800;
+      color: #ffcc00;
+      padding: 8px;
       border-radius: 4px;
-      margin-top: 10px;
+      margin: 10px 0;
       display: none;
     }
   </style>
@@ -167,65 +138,57 @@
   <div id="controls">
     <form id="newFileForm">
       <input type="text" id="newFileName" placeholder="Nome do arquivo (ex: script.js)" required />
-      <button type="submit">➕ Criar arquivo</button>
+      <button type="submit">Criar arquivo</button>
     </form>
-    <button id="saveFileBtn" disabled>💾 Salvar arquivo</button>
-    <button id="previewBtn" disabled>👁️ Visualizar HTML</button>
-    <button id="viewBtn">👀 Link de Visualização</button>
-    <button id="shareBtn">🔗 Compartilhar</button>
+    <button id="saveFileBtn">💾 Salvar</button>
+    <button id="previewBtn">👁️ Visualizar</button>
+    <button id="viewBtn">🔗 Link Visualização</button>
+    <button id="githubBtn">🐙 Publicar no GitHub</button>
+    <button id="shareBtn">👥 Compartilhar</button>
   </div>
 
-  <div id="tabs" title="Arquivos abertos"></div>
+  <div id="tabs"></div>
 
-  <div id="container" style="height: calc(100vh - 120px);"></div>
-
-  <div id="read-only-warning" class="read-only-warning">
-    ⚠️ Você está visualizando este projeto em modo somente leitura.
-  </div>
+  <div id="container" style="height: calc(100vh - 90px);"></div>
 
   <div id="share-modal" class="modal">
     <div class="modal-content">
       <span class="close-btn">&times;</span>
       <h3>Compartilhar Projeto</h3>
-      
-      <div class="form-group">
-        <label>Link de Edição:</label>
-        <div class="input-group">
-          <input type="text" id="share-link" readonly>
-          <button id="copy-share-btn">Copiar</button>
-        </div>
-      </div>
-      
       <div class="form-group">
         <label>Link de Visualização:</label>
         <div class="input-group">
           <input type="text" id="view-link" readonly>
-          <button id="copy-view-btn">Copiar</button>
+          <button type="button" id="copy-view-link">Copiar</button>
         </div>
       </div>
-      
-      <div class="permission-select">
-        <label for="share-permission">Permissão:</label>
-        <select id="share-permission" class="form-control">
-          <option value="view">Somente Visualização</option>
-          <option value="edit">Edição Permitida</option>
-        </select>
+    </div>
+  </div>
+
+  <div id="github-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn">&times;</span>
+      <h3>Publicar no GitHub</h3>
+      <div id="github-login">
+        <p>Conecte-se com o GitHub para publicar seu projeto:</p>
+        <button id="connect-github">Conectar com GitHub</button>
       </div>
-      
-      <div class="public-checkbox">
-        <label>
-          <input type="checkbox" id="share-public">
-          Tornar público (qualquer pessoa com o link pode acessar)
-        </label>
+      <div id="github-publish" style="display: none;">
+        <div class="form-group">
+          <label>Repositório:</label>
+          <input type="text" id="github-repo" placeholder="nome-do-repositorio">
+        </div>
+        <div class="form-group">
+          <label>Branch:</label>
+          <input type="text" id="github-branch" value="main" placeholder="main">
+        </div>
+        <button id="publish-github">Publicar</button>
       </div>
     </div>
   </div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
-    import { getDatabase, ref, onValue, update, get } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
-
+    // Configuração do Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
       authDomain: "html-15e80.firebaseapp.com",
@@ -237,323 +200,336 @@
       measurementId: "G-V57KRZ02HJ"
     };
 
+    // Inicializar Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
+    import { getDatabase, ref, onValue, update, push, set, remove } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
+
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const database = getDatabase(app);
 
-    let editors = {};
+    // Configuração do GitHub
+    const githubClientId = "Ov23liphSw7QXqfsbj7f";
+    const githubRedirectUri = window.location.href.includes('localhost') 
+      ? 'http://localhost:5500/editor.html' 
+      : 'https://seu-site.com/editor.html';
+    
+    // Variáveis globais
+    let editor;
+    let currentProjectId;
     let currentFile = null;
     let files = {};
-    let currentProjectId = null;
-    let currentUserId = null;
-    let canEdit = true;
+    let isReadOnly = false;
+    let userUid = null;
 
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        window.location.href = 'auth.html';
-      } else {
-        currentUserId = user.uid;
-        const urlParams = new URLSearchParams(window.location.search);
-        currentProjectId = urlParams.get('projectId');
-
-        if (!currentProjectId) {
-          window.location.href = 'index.html';
-          return;
+    // Inicializar Monaco Editor
+    require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' }});
+    require(['vs/editor/editor.main'], function() {
+      editor = monaco.editor.create(document.getElementById('container'), {
+        theme: 'vs-dark',
+        automaticLayout: true,
+        minimap: { enabled: false }
+      });
+      
+      // Atualizar conteúdo quando o editor mudar
+      editor.onDidChangeModelContent(() => {
+        if (currentFile && !isReadOnly) {
+          document.getElementById('saveFileBtn').disabled = false;
         }
-
-        await verifyProjectAccess(user.uid, currentProjectId);
-        loadProject(user.uid, currentProjectId);
-      }
+      });
     });
 
-    async function verifyProjectAccess(userId, projectId) {
+    // Quando o DOM estiver carregado
+    document.addEventListener('DOMContentLoaded', () => {
+      // Obter ID do projeto da URL
       const urlParams = new URLSearchParams(window.location.search);
-      const token = urlParams.get('token');
-      const isPublic = urlParams.get('public') === 'true';
-      const permission = urlParams.get('perm');
-
-      if (!token && !isPublic) {
-        const projectRef = ref(database, `projects/${userId}/${projectId}`);
-        const snapshot = await get(projectRef);
-        if (!snapshot.exists()) {
-          throw new Error('Projeto não encontrado ou acesso negado');
-        }
-        canEdit = true;
-        return;
+      currentProjectId = urlParams.get('projectId');
+      const viewToken = urlParams.get('token');
+      
+      if (viewToken) {
+        isReadOnly = true;
+        document.getElementById('read-only-warning').style.display = 'block';
+        document.getElementById('controls').style.display = 'none';
+        loadProjectByToken(viewToken);
+      } else if (currentProjectId) {
+        setupAuth();
+      } else {
+        window.location.href = 'index.html';
       }
 
-      if (isPublic) {
-        canEdit = permission === 'edit';
-        document.getElementById('read-only-warning').style.display = canEdit ? 'none' : 'block';
-        return;
-      }
+      // Configurar eventos
+      document.getElementById('newFileForm').addEventListener('submit', createNewFile);
+      document.getElementById('saveFileBtn').addEventListener('click', saveCurrentFile);
+      document.getElementById('previewBtn').addEventListener('click', previewFile);
+      document.getElementById('viewBtn').addEventListener('click', showViewLink);
+      document.getElementById('shareBtn').addEventListener('click', () => {
+        document.getElementById('share-modal').style.display = 'block';
+      });
+      document.getElementById('githubBtn').addEventListener('click', () => {
+        document.getElementById('github-modal').style.display = 'block';
+      });
+      document.getElementById('connect-github').addEventListener('click', connectGitHub);
+      document.getElementById('publish-github').addEventListener('click', publishToGitHub);
+      
+      // Fechar modais
+      document.querySelectorAll('.close-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          btn.closest('.modal').style.display = 'none';
+        });
+      });
+    });
 
-      if (token) {
-        try {
-          const decoded = atob(token).split(':');
-          if (decoded[0] === projectId) {
-            canEdit = decoded[2] === 'edit';
-            document.getElementById('read-only-warning').style.display = canEdit ? 'none' : 'block';
-            return;
-          }
-          canEdit = false;
-        } catch (e) {
-          throw new Error('Token inválido');
+    // Configurar autenticação
+    function setupAuth() {
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          userUid = user.uid;
+          loadProject(user.uid);
+        } else {
+          window.location.href = 'auth.html';
         }
-      }
-
-      throw new Error('Acesso negado');
-    }
-
-    function loadProject(userId, projectId) {
-      const projectRef = ref(database, `projects/${userId}/${projectId}`);
-
-      onValue(projectRef, (snapshot) => {
-        const project = snapshot.val();
-        if (!project) {
-          window.location.href = 'index.html';
-          return;
-        }
-
-        document.title = `Editando: ${project.name}`;
-        initializeEditor(project.files, projectId, userId);
       });
     }
 
-    function initializeEditor(projectFiles, projectId, userId) {
-      files = projectFiles || {};
-
-      require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' }});
-      require(['vs/editor/editor.main'], function() {
-        const container = document.getElementById('container');
-        const tabs = document.getElementById('tabs');
-        const saveBtn = document.getElementById('saveFileBtn');
-        const previewBtn = document.getElementById('previewBtn');
-        const shareBtn = document.getElementById('shareBtn');
-        const viewBtn = document.getElementById('viewBtn');
-        const newFileForm = document.getElementById('newFileForm');
-        const newFileNameInput = document.getElementById('newFileName');
-
-        if (!canEdit) {
-          saveBtn.style.display = 'none';
-          newFileForm.style.display = 'none';
-          document.querySelectorAll('.close-btn').forEach(btn => btn.style.display = 'none');
+    // Carregar projeto
+    function loadProject(userId) {
+      const projectRef = ref(database, `projects/${userId}/${currentProjectId}`);
+      
+      onValue(projectRef, (snapshot) => {
+        const projectData = snapshot.val();
+        if (projectData) {
+          files = projectData.files || {};
+          openFirstFile();
+          updateViewLink();
         }
+      });
+    }
 
-        function createTab(name) {
-          const btn = document.createElement('button');
-          btn.textContent = name;
-          btn.classList.add('tab-btn');
-          btn.title = name;
-
-          const closeBtn = document.createElement('button');
-          closeBtn.textContent = '×';
-          closeBtn.classList.add('close-btn');
-          closeBtn.title = 'Fechar arquivo';
-          closeBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            closeFile(name);
-          });
-
-          btn.appendChild(closeBtn);
-          btn.addEventListener('click', () => {
-            switchFile(name);
-          });
-          tabs.appendChild(btn);
-          return btn;
-        }
-
-        function switchFile(name) {
-          if (currentFile === name) return;
-
-          if (currentFile && editors[currentFile]) {
-            files[currentFile] = editors[currentFile].getValue();
-            editors[currentFile].dispose();
-            delete editors[currentFile];
-          }
-
-          currentFile = name;
-          container.innerHTML = '';
-          editors[name] = monaco.editor.create(container, {
-            value: files[name]?.content || '',
-            language: getLanguageFromFile(name),
-            theme: 'vs-dark',
-            automaticLayout: true,
-            readOnly: !canEdit
-          });
-
-          updateActiveTab();
-          saveBtn.disabled = !canEdit;
-          previewBtn.disabled = !name.toLowerCase().endsWith('.html');
-        }
-
-        function updateActiveTab() {
-          [...tabs.querySelectorAll('.tab-btn')].forEach(btn => {
-            btn.classList.toggle('active', btn.textContent.replace('×','').trim() === currentFile);
-          });
-        }
-
-        function closeFile(name) {
-          if (editors[name]) {
-            editors[name].dispose();
-            delete editors[name];
-          }
-          delete files[name];
-
-          [...tabs.children].forEach(btn => {
-            if (btn.textContent.replace('×','').trim() === name) {
-              tabs.removeChild(btn);
+    // Carregar projeto por token
+    function loadProjectByToken(token) {
+      const tokenRef = ref(database, `tokens/${token}`);
+      
+      onValue(tokenRef, (snapshot) => {
+        const tokenData = snapshot.val();
+        if (tokenData) {
+          currentProjectId = tokenData.projectId;
+          const projectRef = ref(database, `projects/${tokenData.ownerId}/${currentProjectId}`);
+          
+          onValue(projectRef, (snapshot) => {
+            const projectData = snapshot.val();
+            if (projectData) {
+              files = projectData.files || {};
+              openFirstFile();
             }
           });
-
-          if (currentFile === name) {
-            currentFile = null;
-            saveBtn.disabled = true;
-            previewBtn.disabled = true;
-            container.innerHTML = '';
-            const first = Object.keys(files)[0];
-            if (first) switchFile(first);
-          }
         }
-
-        function getLanguageFromFile(filename) {
-          const ext = filename.split('.').pop().toLowerCase();
-          switch(ext) {
-            case 'js': return 'javascript';
-            case 'ts': return 'typescript';
-            case 'html': return 'html';
-            case 'css': return 'css';
-            case 'json': return 'json';
-            case 'py': return 'python';
-            case 'java': return 'java';
-            case 'c': return 'c';
-            case 'cpp': return 'cpp';
-            case 'md': return 'markdown';
-            default: return 'plaintext';
-          }
-        }
-
-        function saveToFirebase() {
-          if (!canEdit) return;
-
-          const updates = {};
-          for (const [filename, editor] of Object.entries(editors)) {
-            updates[`projects/${userId}/${projectId}/files/${filename}/content`] = editor.getValue();
-          }
-
-          update(ref(database), updates);
-        }
-
-        Object.keys(files).forEach(filename => {
-          createTab(filename);
-        });
-
-        const firstFile = Object.keys(files)[0];
-        if (firstFile) {
-          switchFile(firstFile);
-        }
-
-        setInterval(saveToFirebase, 30000);
-
-        newFileForm.addEventListener('submit', e => {
-          e.preventDefault();
-          if (!canEdit) return;
-
-          const filename = newFileNameInput.value.trim();
-          if (!filename) return alert('Informe o nome do arquivo.');
-          if (files[filename]) return alert('Arquivo já existe.');
-
-          files[filename] = { content: '', language: getLanguageFromFile(filename) };
-          createTab(filename);
-          switchFile(filename);
-          newFileNameInput.value = '';
-          saveToFirebase();
-        });
-
-        saveBtn.addEventListener('click', () => {
-          if (!currentFile || !canEdit) return;
-          saveToFirebase();
-          alert('Arquivo salvo com sucesso!');
-        });
-
-        shareBtn.addEventListener('click', () => {
-          openShareModal();
-        });
-
-        viewBtn.addEventListener('click', () => {
-          const url = `${window.location.origin}/view.html?projectId=${currentProjectId}&public=true&perm=view`;
-          window.open(url, '_blank');
-        });
-
-        previewBtn.addEventListener('click', () => {
-          if (!currentFile) return;
-          if (editors[currentFile]) {
-            files[currentFile] = editors[currentFile].getValue();
-          }
-
-          const previewWindow = window.open('', 'previewWindow', 'width=600,height=600,resizable,scrollbars');
-          previewWindow.document.open();
-          previewWindow.document.write(files[currentFile]?.content || '');
-          previewWindow.document.close();
-        });
       });
     }
 
-    function openShareModal() {
+    // Abrir o primeiro arquivo
+    function openFirstFile() {
+      const fileNames = Object.keys(files);
+      if (fileNames.length > 0) {
+        openFile(fileNames[0]);
+      }
+    }
+
+    // Criar novo arquivo
+    function createNewFile(e) {
+      e.preventDefault();
+      const fileName = document.getElementById('newFileName').value.trim();
+      
+      if (!fileName) return;
+      
+      const fileExt = fileName.split('.').pop().toLowerCase();
+      let initialContent = '';
+      
+      // Conteúdo inicial baseado no tipo de arquivo
+      switch(fileExt) {
+        case 'html':
+          initialContent = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Novo Arquivo</title>
+</head>
+<body>
+  <h1>Novo Arquivo HTML</h1>
+</body>
+</html>`;
+          break;
+        case 'css':
+          initialContent = `/* Estilos CSS */\nbody {\n  margin: 0;\n  padding: 0;\n}`;
+          break;
+        case 'js':
+          initialContent = `// Código JavaScript\nfunction init() {\n  console.log('Aplicação iniciada');\n}\n\ninit();`;
+          break;
+        default:
+          initialContent = `// ${fileName}`;
+      }
+      
+      files[fileName] = {
+        content: initialContent,
+        language: fileExt,
+        createdAt: new Date().toISOString()
+      };
+      
+      // Salvar no Firebase
+      if (!isReadOnly) {
+        updateProject();
+      }
+      
+      openFile(fileName);
+      document.getElementById('newFileName').value = '';
+    }
+
+    // Abrir arquivo no editor
+    function openFile(fileName) {
+      if (!files[fileName]) return;
+      
+      currentFile = fileName;
+      const fileData = files[fileName];
+      
+      // Configurar linguagem do editor
+      let language;
+      switch(fileData.language) {
+        case 'html': language = 'html'; break;
+        case 'css': language = 'css'; break;
+        case 'js': language = 'javascript'; break;
+        default: language = 'plaintext';
+      }
+      
+      // Criar ou reutilizar modelo do editor
+      let model = monaco.editor.getModels().find(m => m.uri.path === `/${fileName}`);
+      
+      if (!model) {
+        model = monaco.editor.createModel(
+          fileData.content,
+          language,
+          monaco.Uri.parse(`file:///${fileName}`)
+        );
+      }
+      
+      editor.setModel(model);
+      updateTabs();
+    }
+
+    // Atualizar abas
+    function updateTabs() {
+      const tabsContainer = document.getElementById('tabs');
+      tabsContainer.innerHTML = '';
+      
+      Object.keys(files).forEach(fileName => {
+        const tab = document.createElement('button');
+        tab.className = `tab-btn ${fileName === currentFile ? 'active' : ''}`;
+        tab.textContent = fileName;
+        tab.onclick = () => openFile(fileName);
+        
+        if (!isReadOnly) {
+          const closeBtn = document.createElement('span');
+          closeBtn.className = 'close-btn';
+          closeBtn.innerHTML = '&times;';
+          closeBtn.onclick = (e) => {
+            e.stopPropagation();
+            closeFile(fileName);
+          };
+          tab.appendChild(closeBtn);
+        }
+        
+        tabsContainer.appendChild(tab);
+      });
+    }
+
+    // Fechar arquivo
+    function closeFile(fileName) {
+      if (Object.keys(files).length <= 1) {
+        alert('Você não pode fechar o último arquivo.');
+        return;
+      }
+      
+      delete files[fileName];
+      updateProject();
+      
+      // Abrir outro arquivo se estiver fechando o atual
+      if (fileName === currentFile) {
+        openFile(Object.keys(files)[0]);
+      }
+    }
+
+    // Salvar arquivo atual
+    function saveCurrentFile() {
+      if (!currentFile || isReadOnly) return;
+      
+      const model = editor.getModel();
+      if (model) {
+        files[currentFile].content = model.getValue();
+        updateProject();
+        document.getElementById('saveFileBtn').disabled = true;
+      }
+    }
+
+    // Atualizar projeto no Firebase
+    function updateProject() {
+      if (isReadOnly || !userUid) return;
+      
+      const projectRef = ref(database, `projects/${userUid}/${currentProjectId}`);
+      update(projectRef, { 
+        files: files,
+        updatedAt: new Date().toISOString()
+      });
+    }
+
+    // Visualizar arquivo HTML
+    function previewFile() {
+      if (!currentFile || !currentFile.endsWith('.html')) {
+        alert('Apenas arquivos HTML podem ser visualizados.');
+        return;
+      }
+      
+      const content = files[currentFile].content;
+      const previewWindow = window.open('', '_blank');
+      previewWindow.document.write(content);
+      previewWindow.document.close();
+    }
+
+    // Gerar token de visualização
+    function generateViewToken() {
+      const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      const tokenRef = ref(database, `tokens/${token}`);
+      
+      set(tokenRef, {
+        projectId: currentProjectId,
+        ownerId: userUid,
+        createdAt: new Date().toISOString()
+      });
+      
+      return token;
+    }
+
+    // Atualizar link de visualização
+    function updateViewLink() {
+      const token = generateViewToken();
+      const viewLink = `${window.location.origin}/viewer.html?token=${token}`;
+      document.getElementById('view-link').value = viewLink;
+    }
+
+    // Mostrar link de visualização
+    function showViewLink() {
+      updateViewLink();
       document.getElementById('share-modal').style.display = 'block';
-      updateShareLink();
     }
 
-    function closeShareModal() {
-      document.getElementById('share-modal').style.display = 'none';
+    // Conectar com GitHub
+    function connectGitHub() {
+      const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${githubClientId}&redirect_uri=${encodeURIComponent(githubRedirectUri)}&scope=repo`;
+      window.location.href = githubAuthUrl;
     }
 
-    function updateShareLink() {
-      const permission = document.getElementById('share-permission').value;
-      const isPublic = document.getElementById('share-public').checked;
-
-      let token = '';
-      if (!isPublic) {
-        token = btoa(`${currentProjectId}:${currentUserId}:${permission}:${Date.now()}`).replace(/=/g, '');
-      }
-
-      const baseUrl = window.location.origin;
-      let shareUrl = `${baseUrl}/editor.html?projectId=${currentProjectId}`;
-      let viewUrl = `${baseUrl}/view.html?projectId=${currentProjectId}`;
-
-      if (token) {
-        shareUrl += `&token=${token}`;
-        viewUrl += `&token=${token}`;
-      } else if (isPublic) {
-        shareUrl += `&public=true&perm=${permission}`;
-        viewUrl += `&public=true&perm=view`;
-      }
-
-      document.getElementById('share-link').value = shareUrl;
-      document.getElementById('view-link').value = viewUrl;
+    // Publicar no GitHub
+    function publishToGitHub() {
+      alert('Funcionalidade de publicação no GitHub será implementada aqui');
+      // Implementar lógica de publicação no GitHub
     }
-
-    function copyShareLink() {
-      const shareInput = document.getElementById('share-link');
-      shareInput.select();
-      document.execCommand('copy');
-      alert('Link de edição copiado para a área de transferência!');
-    }
-
-    function copyViewLink() {
-      const viewInput = document.getElementById('view-link');
-      viewInput.select();
-      document.execCommand('copy');
-      alert('Link de visualização copiado para a área de transferência!');
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      document.querySelector('.close-btn').addEventListener('click', closeShareModal);
-      document.getElementById('copy-share-btn').addEventListener('click', copyShareLink);
-      document.getElementById('copy-view-btn').addEventListener('click', copyViewLink);
-      document.getElementById('share-permission').addEventListener('change', updateShareLink);
-      document.getElementById('share-public').addEventListener('change', updateShareLink);
-    });
   </script>
 </body>
 </html>
