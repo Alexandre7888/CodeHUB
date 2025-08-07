@@ -5,11 +5,12 @@
   <title>Visualizador</title>
   <style>
     body, html {
-      margin: 0; padding: 0; height: 100%;
+      margin: 0;
+      padding: 0;
+      height: 100%;
       font-family: sans-serif;
-      background: #f5f5f5;
     }
-    #header {
+    #controls {
       background: #222;
       color: white;
       padding: 10px;
@@ -17,39 +18,47 @@
       justify-content: space-between;
       align-items: center;
     }
-    #project-name {
-      font-weight: bold;
-      font-size: 1.2em;
-    }
-    #back-btn {
-      background: #6c757d;
+    #refreshBtn {
+      background: #17a2b8;
       border: none;
       color: white;
       padding: 8px 12px;
-      border-radius: 4px;
       cursor: pointer;
+      border-radius: 4px;
+      font-weight: bold;
     }
-    #view-container {
+    #frame-container {
       height: calc(100% - 50px);
       width: 100%;
+      position: relative;
+    }
+    #preview-frame {
+      width: 100%;
+      height: 100%;
       border: none;
+      background: white;
     }
     #loading {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100%;
-      font-size: 1.5em;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 18px;
+      color: #333;
     }
-    #error-message {
-      color: #dc3545;
-      padding: 20px;
-      text-align: center;
+    .read-only-warning {
+      background: #fff3cd;
+      color: #856404;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px;
+      display: none;
     }
   </style>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
-    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
+    import { getDatabase, ref, onValue, get } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
@@ -63,102 +72,124 @@
     };
 
     const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
     const database = getDatabase(app);
 
-    document.addEventListener('DOMContentLoaded', () => {
+    let currentProjectId = null;
+    let currentUserId = null;
+    let htmlContent = '';
+
+    onAuthStateChanged(auth, async (user) => {
       const urlParams = new URLSearchParams(window.location.search);
-      const projectId = urlParams.get('projectId');
+      currentProjectId = urlParams.get('projectId');
+      const isPublic = urlParams.get('public') === 'true';
       const token = urlParams.get('token');
-      
-      if (!projectId) {
-        showError('ID do projeto não especificado');
+
+      if (!currentProjectId) {
+        window.location.href = 'index.html';
         return;
       }
 
-      document.getElementById('back-btn').addEventListener('click', () => {
-        window.history.back();
-      });
-
-      // Extrair userId do token (formato: projectId:userId:permission:timestamp)
-      let userId = null;
-      if (token) {
-        try {
-          const decoded = atob(token).split(':');
-          userId = decoded[1];
-        } catch (e) {
-          console.error('Erro ao decodificar token:', e);
-        }
+      if (user) {
+        currentUserId = user.uid;
       }
 
-      if (!userId) {
-        showError('Token inválido ou ausente');
+      // Verificar se é acesso público ou por token
+      if (!isPublic && !token && !user) {
+        window.location.href = 'auth.html';
         return;
       }
 
-      loadProject(userId, projectId);
+      await loadProject(currentProjectId, user ? user.uid : null, isPublic, token);
     });
 
-    async function loadProject(userId, projectId) {
-      try {
-        const projectRef = ref(database, `projects/${userId}/${projectId}`);
-        const snapshot = await get(projectRef);
-        
-        if (!snapshot.exists()) {
-          showError('Projeto não encontrado');
-          return;
-        }
-
-        const project = snapshot.val();
-        document.getElementById('project-name').textContent = project.name || 'Projeto sem nome';
-
-        // Encontrar o primeiro arquivo HTML
-        const htmlFile = Object.entries(project.files || {}).find(
-          ([name, file]) => name.toLowerCase().endsWith('.html') || 
-                          (file.originalName && file.originalName.toLowerCase().endsWith('.html'))
-        );
-
-        if (!htmlFile) {
-          showError('Nenhum arquivo HTML encontrado');
-          return;
-        }
-
-        renderHtml(htmlFile[1].content);
-      } catch (error) {
-        console.error('Erro:', error);
-        showError('Erro ao carregar o projeto');
+    async function loadProject(projectId, userId, isPublic, token) {
+      let projectRef;
+      
+      if (isPublic || token) {
+        // Tentar encontrar o projeto em qualquer usuário (limitação do Firebase)
+        // Esta é uma abordagem simplificada - em produção você precisaria de uma solução melhor
+        projectRef = ref(database, `projects`);
+      } else {
+        projectRef = ref(database, `projects/${userId}/${projectId}`);
       }
+
+      const snapshot = await get(projectRef);
+      
+      if (!snapshot.exists()) {
+        document.getElementById('loading').textContent = 'Projeto não encontrado ou acesso negado';
+        return;
+      }
+
+      let projectData;
+      
+      if (isPublic || token) {
+        // Procurar o projeto em todos os usuários
+        const allProjects = snapshot.val();
+        for (const uid in allProjects) {
+          if (allProjects[uid][projectId]) {
+            projectData = allProjects[uid][projectId];
+            break;
+          }
+        }
+        
+        if (!projectData) {
+          document.getElementById('loading').textContent = 'Projeto não encontrado';
+          return;
+        }
+      } else {
+        projectData = snapshot.val();
+      }
+
+      // Encontrar o arquivo HTML principal
+      let mainHtmlFile = null;
+      for (const filename in projectData.files) {
+        if (filename.endsWith('.html') || filename.endsWith('.htm')) {
+          mainHtmlFile = projectData.files[filename].content;
+          break;
+        }
+      }
+
+      if (!mainHtmlFile) {
+        document.getElementById('loading').textContent = 'Nenhum arquivo HTML encontrado no projeto';
+        return;
+      }
+
+      htmlContent = mainHtmlFile;
+      renderPreview();
     }
 
-    function renderHtml(content) {
-      const iframe = document.getElementById('view-container');
-      const loading = document.getElementById('loading');
+    function renderPreview() {
+      const loadingElement = document.getElementById('loading');
+      const previewFrame = document.getElementById('preview-frame');
       
-      // Criar um novo documento no iframe
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-      iframeDoc.open();
-      iframeDoc.write(content);
-      iframeDoc.close();
+      loadingElement.style.display = 'none';
+      previewFrame.style.display = 'block';
       
-      loading.style.display = 'none';
-      iframe.style.display = 'block';
+      const frameDoc = previewFrame.contentDocument || previewFrame.contentWindow.document;
+      frameDoc.open();
+      frameDoc.write(htmlContent);
+      frameDoc.close();
     }
 
-    function showError(message) {
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('error-message').textContent = message;
-      document.getElementById('error-message').style.display = 'block';
-    }
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      location.reload();
+    });
   </script>
 </head>
 <body>
-  <div id="header">
-    <span id="project-name">Carregando projeto...</span>
-    <button id="back-btn">Voltar</button>
+  <div id="controls">
+    <div id="project-title">Visualizador</div>
+    <button id="refreshBtn">🔄 Atualizar</button>
   </div>
-  
-  <div id="loading">Carregando conteúdo...</div>
-  <div id="error-message" style="display: none;"></div>
-  
-  <iframe id="view-container" style="display: none;"></iframe>
+
+  <div id="read-only-warning" class="read-only-warning">
+    ⚠️ Você está visualizando este projeto em modo somente leitura.
+  </div>
+
+  <div id="frame-container">
+    <div id="loading">Carregando projeto...</div>
+    <iframe id="preview-frame" style="display: none;"></iframe>
+  </div>
 </body>
 </html>
