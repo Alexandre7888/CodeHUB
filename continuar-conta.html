@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Visualizar Conta LocalStorage</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 480px;
+      margin: 40px auto;
+      padding: 1rem;
+      background: #f5f5f5;
+      border-radius: 8px;
+      box-shadow: 0 0 8px #ccc;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 1rem;
+    }
+    pre {
+      background: #222;
+      color: #0f0;
+      padding: 1rem;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+    .no-user {
+      color: #a00;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Conta Salva no localStorage</h1>
+
+  <div id="userDataContainer"></div>
+
+  <script>
+    // Pega o dado salvo em localStorage na chave 'user'
+    const userDataJSON = localStorage.getItem('user');
+
+    const container = document.getElementById('userDataContainer');
+
+    if (userDataJSON) {
+      try {
+        const userData = JSON.parse(userDataJSON);
+        container.innerHTML = `<pre>${JSON.stringify(userData, null, 2)}</pre>`;
+      } catch (e) {
+        container.innerHTML = `<p class="no-user">Erro ao ler os dados salvos.</p>`;
+      }
+    } else {
+      container.innerHTML = `<p class="no-user">Nenhuma conta salva no localStorage.</p>`;
+    }
+  </script>
+
+</body>
+</html>
