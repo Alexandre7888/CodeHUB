@@ -2,30 +2,96 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Editor CodeHub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editor de Projeto</title>
   <style>
     body, html {
       margin: 0; padding: 0; height: 100%;
       display: flex; flex-direction: column;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1e1e1e;
+      color: white;
     }
-    #controls {
+    
+    #top-bar {
       display: flex;
-      gap: 10px;
       padding: 10px;
       background: #1e1e1e;
       color: white;
       align-items: center;
-    }
-    #tabs {
-      display: flex;
       border-bottom: 1px solid #333;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    #project-name {
+      font-size: 1.1em;
+      font-weight: bold;
+      background: transparent;
+      color: white;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      padding: 5px;
+      margin-right: 10px;
+      flex: 1;
+      max-width: 300px;
+    }
+    
+    #project-name:hover { border-color: #555; }
+    #project-name:focus { outline: 1px solid #4895ef; }
+    
+    #newFileForm {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+    
+    #newFileForm input {
+      padding: 5px 8px;
+      border-radius: 4px;
+      border: 1px solid #333;
       background: #252526;
+      color: white;
+      outline: none;
+      width: 150px;
+    }
+    
+    button {
+      background: #4361ee;
+      border: none;
+      color: white;
+      padding: 6px 12px;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 13px;
+      display: flex;
       align-items: center;
       gap: 5px;
-      padding-left: 10px;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    
+    button:hover {
+      filter: brightness(1.2);
+    }
+    
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+      color: #999;
+    }
+    
+    #saveFileBtn { background: #4cc9f0; }
+    #previewBtn { background: #4895ef; }
+    
+    #tabs {
+      display: flex;
+      background: #252526;
+      align-items: center;
+      gap: 1px;
       overflow-x: auto;
     }
+    
     #tabs button.tab-btn {
       background: #2d2d2d;
       border: none;
@@ -36,119 +102,73 @@
       user-select: none;
       white-space: nowrap;
       border-right: 1px solid #1e1e1e;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
+    
     #tabs button.tab-btn.active {
       background: #1e1e1e;
       color: white;
     }
-    #tabs button.close-btn {
-      position: absolute;
-      top: 3px;
-      right: 5px;
+    
+    #tabs button.tab-btn .close-tab-btn {
       background: transparent;
       border: none;
       color: #bbb;
       cursor: pointer;
-      font-size: 12px;
+      font-size: 14px;
+      padding: 0;
+      line-height: 1;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
     }
-    button {
-      background: #0e639c;
-      border: none;
+    
+    #tabs button.tab-btn .close-tab-btn:hover {
+      background: #555;
       color: white;
-      padding: 6px 12px;
-      cursor: pointer;
-      border-radius: 2px;
-      font-size: 13px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
     }
-    #saveFileBtn { background: #388a3f; }
-    #previewBtn { background: #68217a; }
-    #githubBtn { background: #24292e; margin-left: auto; }
+    
     #container {
       flex: 1;
       overflow: hidden;
+      height: calc(100vh - 100px);
     }
-    #newFileForm {
-      display: flex;
-      gap: 5px;
-      align-items: center;
-    }
-    #newFileForm input {
-      padding: 5px 8px;
-      border-radius: 2px;
-      border: 1px solid #333;
-      background: #252526;
+    
+    .back-btn {
+      background: #6c757d;
+      text-decoration: none;
       color: white;
-      outline: none;
-      width: 200px;
-    }
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 1000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0,0,0,0.7);
-    }
-    .modal-content {
-      background-color: #252526;
-      margin: 10% auto;
-      padding: 20px;
+      padding: 6px 12px;
       border-radius: 4px;
-      width: 90%;
-      max-width: 500px;
-      color: white;
-    }
-    .close-btn {
-      float: right;
-      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js" crossOrigin="anonymous"></script>
 </head>
 <body>
-  <div id="controls">
+  <div id="top-bar">
+    <a href="index.html" class="back-btn">← Voltar</a>
+    <input type="text" id="project-name" value="Carregando..."/>
     <form id="newFileForm">
-      <input type="text" id="newFileName" placeholder="Nome do arquivo (ex: script.js)" required />
+      <input type="text" id="newFileName" placeholder="ex: script.js" required/>
       <button type="submit">Criar arquivo</button>
     </form>
-    <button id="saveFileBtn">💾 Salvar</button>
+    <button id="saveFileBtn" disabled>💾 Salvar</button>
     <button id="previewBtn">👁️ Visualizar</button>
-    <button id="githubBtn">🐙 Publicar no GitHub</button>
   </div>
 
   <div id="tabs"></div>
 
-  <div id="container" style="height: calc(100vh - 90px);"></div>
+  <div id="container"></div>
 
-  <div id="github-modal" class="modal">
-    <div class="modal-content">
-      <span class="close-btn">&times;</span>
-      <h3>Publicar no GitHub</h3>
-      <div id="github-login">
-        <p>Conecte-se com o GitHub para publicar seu projeto:</p>
-        <button id="connect-github">Conectar com GitHub</button>
-      </div>
-      <div id="github-publish" style="display: none;">
-        <div class="form-group">
-          <label>Repositório:</label>
-          <input type="text" id="github-repo" placeholder="nome-do-repositorio">
-        </div>
-        <div class="form-group">
-          <label>Branch:</label>
-          <input type="text" id="github-branch" value="main" placeholder="main">
-        </div>
-        <button id="publish-github">Publicar</button>
-      </div>
-    </div>
-  </div>
-
-  <script type="module">
-    // Configuração do Firebase
+  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
       authDomain: "html-15e80.firebaseapp.com",
@@ -156,159 +176,178 @@
       projectId: "html-15e80",
       storageBucket: "html-15e80.appspot.com",
       messagingSenderId: "1068148640439",
-      appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32",
-      measurementId: "G-V57KRZ02HJ"
+      appId: "1:1068148640439:web:1ac651348e624f6be41b32",
+      measurementId: "G-7E1VWN07GM"
     };
 
-    // Inicializar Firebase
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
-    import { getDatabase, ref, onValue, update, push, set, remove } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const auth = firebase.auth();
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const database = getDatabase(app);
-
-    // Configuração do GitHub OAuth
-    const githubClientId = "Ov23liphSw7QXqfsbj7f";
-    const githubRedirectUri = window.location.href.includes('localhost') 
-      ? 'http://localhost:5500/editor.html' 
-      : 'https://seu-site.com/editor.html';
-    
-    // Variáveis globais
     let editor;
     let currentProjectId;
     let currentFile = null;
+    let projectRef = null;
     let files = {};
-    let isReadOnly = false;
-    let userUid = null;
+    let models = {};
 
-    // Inicializar Monaco Editor
+    const newFileNameInput = document.getElementById('newFileName');
+    const newFileForm = document.getElementById('newFileForm');
+    const saveFileBtn = document.getElementById('saveFileBtn');
+    const previewBtn = document.getElementById('previewBtn');
+    const projectNameInput = document.getElementById('project-name');
+    const tabsContainer = document.getElementById('tabs');
+
+    function encodeKey(str) {
+      return btoa(str).replace(/=/g, '');
+    }
+
+    function sanitizeFilename(filename) {
+      return filename.replace(/[.#$/[\]]/g, '_');
+    }
+
     require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' }});
+    window.MonacoEnvironment = { getWorkerUrl: () => `data:text/javascript;charset=utf-8,${encodeURIComponent(`
+        self.MonacoEnvironment = { baseUrl: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/' };
+        importScripts('https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/base/worker/workerMain.js');`
+    )}`};
+    
     require(['vs/editor/editor.main'], function() {
       editor = monaco.editor.create(document.getElementById('container'), {
         theme: 'vs-dark',
         automaticLayout: true,
         minimap: { enabled: false }
       });
-      
+
       editor.onDidChangeModelContent(() => {
-        if (currentFile && !isReadOnly) {
-          document.getElementById('saveFileBtn').disabled = false;
+        if (currentFile) {
+          saveFileBtn.disabled = false;
         }
       });
+      main();
     });
 
-    // Quando o DOM estiver carregado
-    document.addEventListener('DOMContentLoaded', () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      currentProjectId = urlParams.get('projectId');
-      
-      if (!currentProjectId) {
-        window.location.href = 'index.html';
-      } else {
-        setupAuth();
-      }
-
-      // Configurar eventos
-      document.getElementById('newFileForm').addEventListener('submit', createNewFile);
-      document.getElementById('saveFileBtn').addEventListener('click', saveCurrentFile);
-      document.getElementById('previewBtn').addEventListener('click', previewFile);
-      document.getElementById('githubBtn').addEventListener('click', () => {
-        document.getElementById('github-modal').style.display = 'block';
-      });
-      document.getElementById('connect-github').addEventListener('click', connectGitHub);
-      document.getElementById('publish-github').addEventListener('click', publishToGitHub);
-      
-      // Fechar modal
-      document.querySelector('.close-btn').addEventListener('click', () => {
-        document.getElementById('github-modal').style.display = 'none';
-      });
-    });
-
-    // Configurar autenticação
-    function setupAuth() {
-      onAuthStateChanged(auth, (user) => {
-        if (user) {
-          userUid = user.uid;
-          loadProject(user.uid);
-        } else {
+    function main() {
+      auth.onAuthStateChanged(user => {
+        if (!user) {
           window.location.href = 'auth.html';
+          return;
         }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        currentProjectId = urlParams.get('projectId');
+
+        if (!currentProjectId) {
+          alert('ID do projeto não encontrado!');
+          window.location.href = 'index.html';
+          return;
+        }
+        
+        projectRef = db.ref(`projects/${user.uid}/${currentProjectId}`);
+        loadProject();
+
+        newFileForm.addEventListener('submit', createNewFile);
+        saveFileBtn.addEventListener('click', saveCurrentFile);
+        previewBtn.addEventListener('click', () => window.open(`view.html?projectId=${currentProjectId}`, '_blank'));
+        projectNameInput.addEventListener('blur', updateProjectName);
       });
     }
 
-    // Carregar projeto
-    function loadProject(userId) {
-      const projectRef = ref(database, `projects/${userId}/${currentProjectId}`);
-      
-      onValue(projectRef, (snapshot) => {
-        const projectData = snapshot.val();
-        if (projectData) {
-          files = projectData.files || {};
-          openFirstFile();
-        }
-      });
+    function loadProject() {
+        projectRef.on('value', (snapshot) => {
+            const projectData = snapshot.val();
+            if (projectData) {
+                projectNameInput.value = projectData.name || 'Projeto sem nome';
+                files = projectData.files || {};
+                
+                const fileKeys = Object.keys(files);
+                const indexHtmlKey = fileKeys.find(key => {
+                  const file = files[key];
+                  return file.originalName === 'index.html' || file.name === 'index.html';
+                });
+                const firstFileKey = indexHtmlKey || (fileKeys.length > 0 ? fileKeys[0] : null);
+
+                if (firstFileKey) {
+                    if (!currentFile) {
+                        openFile(firstFileKey);
+                    }
+                    updateTabs();
+                }
+            } else {
+                 alert('Projeto não encontrado!');
+                 window.location.href = 'index.html';
+            }
+        }, (error) => {
+            console.error("Firebase read failed:", error);
+            alert("Erro ao carregar o projeto.");
+        });
     }
 
-    // Abrir o primeiro arquivo
-    function openFirstFile() {
-      const fileNames = Object.keys(files);
-      if (fileNames.length > 0) {
-        openFile(fileNames[0]);
-      }
-    }
-
-    // Criar novo arquivo
     function createNewFile(e) {
       e.preventDefault();
-      const fileName = document.getElementById('newFileName').value.trim();
+      const fileName = newFileNameInput.value.trim();
+      if (!fileName) {
+          alert('Nome de arquivo inválido.');
+          return;
+      }
       
-      if (!fileName) return;
+      const sanitizedFileName = sanitizeFilename(fileName);
+      const fileKey = encodeKey(sanitizedFileName);
       
-      const fileExt = fileName.split('.').pop().toLowerCase();
-      let initialContent = '';
+      const existingFile = Object.values(files).find(f => 
+        f.name === fileName || f.originalName === fileName
+      );
       
-      switch(fileExt) {
+      if (existingFile) {
+          alert('Um arquivo com este nome já existe.');
+          return;
+      }
+      
+      let content = '';
+      const extension = fileName.split('.').pop().toLowerCase();
+      const language = extension;
+      
+      switch(extension) {
         case 'html':
-          initialContent = `<!DOCTYPE html>
+          content = `<!DOCTYPE html>
 <html>
 <head>
-  <title>Novo Arquivo</title>
+  <title>${fileName}</title>
+  <style>
+  </style>
 </head>
 <body>
-  <h1>Novo Arquivo HTML</h1>
 </body>
 </html>`;
           break;
         case 'css':
-          initialContent = `/* Estilos CSS */\nbody {\n  margin: 0;\n  padding: 0;\n}`;
+          content = `/* ${fileName} */`;
           break;
         case 'js':
-          initialContent = `// Código JavaScript\nfunction init() {\n  console.log('Aplicação iniciada');\n}\n\ninit();`;
+          content = `// ${fileName}`;
           break;
         default:
-          initialContent = `// ${fileName}`;
+          content = `// ${fileName}`;
       }
       
-      files[fileName] = {
-        content: initialContent,
-        language: fileExt,
+      files[fileKey] = { 
+        name: sanitizedFileName, 
+        originalName: fileName,
+        content: content, 
+        language: language,
         createdAt: new Date().toISOString()
       };
       
-      updateProject();
-      openFile(fileName);
-      document.getElementById('newFileName').value = '';
+      updateFirebaseFiles();
+      openFile(fileKey);
+      newFileNameInput.value = '';
     }
 
-    // Abrir arquivo no editor
-    function openFile(fileName) {
-      if (!files[fileName]) return;
-      
-      currentFile = fileName;
-      const fileData = files[fileName];
-      
+    function openFile(fileKey) {
+      if (!files[fileKey] || !editor) return;
+      currentFile = fileKey;
+      const fileData = files[fileKey];
+
       let language;
       switch(fileData.language) {
         case 'html': language = 'html'; break;
@@ -317,122 +356,104 @@
         default: language = 'plaintext';
       }
       
-      let model = monaco.editor.getModels().find(m => m.uri.path === `/${fileName}`);
-      
+      let model = models[fileKey];
       if (!model) {
         model = monaco.editor.createModel(
           fileData.content,
           language,
-          monaco.Uri.parse(`file:///${fileName}`)
+          monaco.Uri.parse(`file:///${fileData.originalName || fileData.name}`)
         );
+        models[fileKey] = model;
       }
       
       editor.setModel(model);
       updateTabs();
+      saveFileBtn.disabled = true;
+    }
+    
+    function closeFile(e, fileKey) {
+        e.stopPropagation();
+        if (Object.keys(files).length <= 1) {
+            alert('Você não pode fechar o último arquivo do projeto.');
+            return;
+        }
+
+        const model = models[fileKey];
+        if (model) {
+            model.dispose();
+            delete models[fileKey];
+        }
+
+        delete files[fileKey];
+        updateFirebaseFiles();
+
+        if (fileKey === currentFile) {
+            currentFile = null;
+            openFile(Object.keys(files)[0]);
+        }
+        updateTabs();
     }
 
-    // Atualizar abas
     function updateTabs() {
-      const tabsContainer = document.getElementById('tabs');
       tabsContainer.innerHTML = '';
-      
-      Object.keys(files).forEach(fileName => {
+      Object.keys(files).forEach(fileKey => {
+        const fileData = files[fileKey];
         const tab = document.createElement('button');
-        tab.className = `tab-btn ${fileName === currentFile ? 'active' : ''}`;
-        tab.textContent = fileName;
-        tab.onclick = () => openFile(fileName);
+        tab.className = `tab-btn ${fileKey === currentFile ? 'active' : ''}`;
+        tab.onclick = () => openFile(fileKey);
         
-        const closeBtn = document.createElement('span');
-        closeBtn.className = 'close-btn';
+        const label = document.createElement('span');
+        label.textContent = fileData.originalName || fileData.name;
+        tab.appendChild(label);
+
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'close-tab-btn';
         closeBtn.innerHTML = '&times;';
-        closeBtn.onclick = (e) => {
-          e.stopPropagation();
-          closeFile(fileName);
-        };
+        closeBtn.onclick = (e) => closeFile(e, fileKey);
         tab.appendChild(closeBtn);
-        
+
         tabsContainer.appendChild(tab);
       });
     }
 
-    // Fechar arquivo
-    function closeFile(fileName) {
-      if (Object.keys(files).length <= 1) {
-        alert('Você não pode fechar o último arquivo.');
-        return;
-      }
-      
-      delete files[fileName];
-      updateProject();
-      
-      if (fileName === currentFile) {
-        openFile(Object.keys(files)[0]);
-      }
-    }
-
-    // Salvar arquivo atual
     function saveCurrentFile() {
-      if (!currentFile) return;
-      
+      if (!currentFile || !editor) return;
+
       const model = editor.getModel();
       if (model) {
         files[currentFile].content = model.getValue();
-        updateProject();
-        document.getElementById('saveFileBtn').disabled = true;
+        files[currentFile].updatedAt = new Date().toISOString();
+        
+        projectRef.child('updatedAt').set(new Date().toISOString());
+        
+        updateFirebaseFiles(() => {
+            saveFileBtn.disabled = true;
+            saveFileBtn.textContent = 'Salvo!';
+            setTimeout(() => { saveFileBtn.textContent = '💾 Salvar' }, 1500);
+        });
       }
     }
 
-    // Atualizar projeto no Firebase
-    function updateProject() {
-      if (!userUid) return;
-      
-      const projectRef = ref(database, `projects/${userUid}/${currentProjectId}`);
-      update(projectRef, { 
-        files: files,
-        updatedAt: new Date().toISOString()
+    function updateFirebaseFiles(callback) {
+      projectRef.child('files').set(files, (error) => {
+          if (error) {
+              alert('Falha ao salvar o arquivo.');
+              console.error(error);
+          } else if (callback) {
+              callback();
+          }
       });
     }
 
-    // Visualizar arquivo HTML
-    function previewFile() {
-      if (!currentFile || !currentFile.endsWith('.html')) {
-        alert('Apenas arquivos HTML podem ser visualizados.');
-        return;
-      }
-      
-      const content = files[currentFile].content;
-      const previewWindow = window.open('', '_blank');
-      previewWindow.document.write(content);
-      previewWindow.document.close();
-    }
-
-    // Conectar com GitHub
-    function connectGitHub() {
-      const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${githubClientId}&redirect_uri=${encodeURIComponent(githubRedirectUri)}&scope=repo`;
-      window.location.href = githubAuthUrl;
-    }
-
-    // Publicar no GitHub
-    function publishToGitHub() {
-      const repoName = document.getElementById('github-repo').value.trim();
-      const branchName = document.getElementById('github-branch').value.trim() || 'main';
-      
-      if (!repoName) {
-        alert('Por favor, informe o nome do repositório');
-        return;
-      }
-      
-      // Aqui você implementaria a lógica de publicação no GitHub
-      alert(`Publicando no repositório: ${repoName} (branch: ${branchName})`);
-      
-      // Simulação - em uma implementação real você usaria a API do GitHub
-      console.log('Dados para publicação:', {
-        repo: repoName,
-        branch: branchName,
-        files: files
-      });
-      
-      document.getElementById('github-modal').style.display = 'none';
+    function updateProjectName() {
+        const newName = projectNameInput.value.trim();
+        if (!newName) {
+            alert('O nome do projeto não pode ser vazio.');
+            projectRef.child('name').once('value', s => projectNameInput.value = s.val());
+            return;
+        }
+        projectRef.child('name').set(newName);
+        projectRef.child('updatedAt').set(new Date().toISOString());
     }
   </script>
 </body>

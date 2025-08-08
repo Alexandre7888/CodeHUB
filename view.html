@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visualizar Projeto</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    iframe {
+      border: none;
+      width: 100%;
+      height: 100%;
+    }
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: Arial, sans-serif;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">Carregando projeto...</div>
+  <iframe id="preview-frame" style="display: none;"></iframe>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+  <script>
+    // Configuração do Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
+      authDomain: "html-15e80.firebaseapp.com",
+      databaseURL: "https://html-15e80-default-rtdb.firebaseio.com",
+      projectId: "html-15e80",
+      storageBucket: "html-15e80.appspot.com",
+      messagingSenderId: "1068148640439",
+      appId: "1:1068148640439:web:1ac651348e624f6be41b32",
+      measurementId: "G-7E1VWN07GM"
+    };
+
+    // Inicializar Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const auth = firebase.auth();
+
+    // Elementos da página
+    const loadingEl = document.getElementById('loading');
+    const previewFrame = document.getElementById('preview-frame');
+
+    // Função para encontrar o arquivo principal
+    function findMainFile(files) {
+      const fileList = Object.values(files);
+      
+      // 1. Prioridade para index.html
+      const indexHtml = fileList.find(f => 
+        f.name === 'index.html' || f.originalName === 'index.html'
+      );
+      if (indexHtml) return indexHtml;
+      
+      // 2. Qualquer arquivo HTML
+      const anyHtml = fileList.find(f => 
+        (f.name && f.name.endsWith('.html')) || 
+        (f.originalName && f.originalName.endsWith('.html'))
+      );
+      return anyHtml;
+    }
+
+    // Função para renderizar o projeto
+    function renderProject(projectData) {
+      if (!projectData?.files) {
+        loadingEl.textContent = 'Projeto sem arquivos.';
+        return;
+      }
+
+      const mainFile = findMainFile(projectData.files);
+      if (!mainFile) {
+        loadingEl.textContent = 'Nenhum arquivo HTML encontrado.';
+        return;
+      }
+
+      try {
+        // Criar documento HTML
+        const doc = new DOMParser().parseFromString(mainFile.content, 'text/html');
+        
+        // Adicionar CSS e JS
+        Object.values(projectData.files).forEach(file => {
+          if (file.name?.endsWith('.css') || file.originalName?.endsWith('.css')) {
+            const style = doc.createElement('style');
+            style.textContent = file.content;
+            doc.head.appendChild(style);
+          }
+          
+          if (file.name?.endsWith('.js') || file.originalName?.endsWith('.js')) {
+            const script = doc.createElement('script');
+            script.textContent = file.content;
+            doc.body.appendChild(script);
+          }
+        });
+
+        // Exibir no iframe
+        previewFrame.srcdoc = doc.documentElement.outerHTML;
+        previewFrame.style.display = 'block';
+        loadingEl.style.display = 'none';
+        document.title = projectData.name || 'Visualização do Projeto';
+        
+      } catch (error) {
+        loadingEl.textContent = 'Erro ao carregar o projeto.';
+        console.error(error);
+      }
+    }
+
+    // Carregar projeto
+    async function loadProject() {
+      const projectId = new URLSearchParams(location.search).get('projectId');
+      if (!projectId) {
+        loadingEl.textContent = 'ID do projeto não especificado.';
+        return;
+      }
+
+      try {
+        const user = await new Promise((resolve) => {
+          const unsubscribe = auth.onAuthStateChanged(user => {
+            unsubscribe();
+            resolve(user);
+          });
+        });
+
+        if (!user) {
+          loadingEl.textContent = 'Redirecionando para login...';
+          setTimeout(() => location.href = 'auth.html', 2000);
+          return;
+        }
+
+        // Tenta nova estrutura (por usuário)
+        const userProjectRef = db.ref(`projects/${user.uid}/${projectId}`);
+        const snapshot = await userProjectRef.once('value');
+        let projectData = snapshot.val();
+
+        // Se não encontrou, tenta estrutura antiga
+        if (!projectData) {
+          const legacyRef = db.ref(`projects/${projectId}`);
+          const legacySnapshot = await legacyRef.once('value');
+          projectData = legacySnapshot.val();
+        }
+
+        if (projectData) {
+          renderProject(projectData);
+        } else {
+          loadingEl.textContent = 'Projeto não encontrado.';
+        }
+      } catch (error) {
+        loadingEl.textContent = 'Erro ao carregar projeto.';
+        console.error(error);
+      }
+    }
+
+    // Iniciar
+    loadProject();
+  </script>
+</body>
+</html>
