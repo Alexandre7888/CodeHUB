@@ -83,6 +83,7 @@
 
     #saveFileBtn { background: #4cc9f0; }
     #previewBtn { background: #4895ef; }
+    #aiBtn { background: #7209b7; }
 
     #tabs {
       display: flex;
@@ -134,6 +135,7 @@
       flex: 1;
       overflow: hidden;
       height: calc(100vh - 100px);
+      position: relative;
     }
 
     .back-btn {
@@ -158,6 +160,83 @@
       font-size: 0.9em;
       color: #ccc;
     }
+
+    #ai-iframe-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #1e1e1e;
+      z-index: 100;
+      display: none;
+      flex-direction: column;
+    }
+
+    #ai-iframe-header {
+      padding: 10px;
+      background: #252526;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #ai-iframe {
+      flex: 1;
+      border: none;
+      background: white;
+    }
+
+    #close-ai-btn {
+      background: #f72585;
+      padding: 5px 10px;
+      border-radius: 4px;
+    }
+
+    #code-notification {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #252526;
+      border: 1px solid #4361ee;
+      border-radius: 8px;
+      padding: 15px;
+      max-width: 400px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      z-index: 1000;
+      display: none;
+    }
+
+    #code-notification h3 {
+      margin-top: 0;
+      color: #4cc9f0;
+    }
+
+    #code-notification pre {
+      background: #1e1e1e;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      max-height: 200px;
+    }
+
+    #code-notification-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    #code-notification-buttons button {
+      flex: 1;
+    }
+
+    #insert-code-btn {
+      background: #4cc9f0;
+    }
+
+    #discard-code-btn {
+      background: #f72585;
+    }
   </style>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -174,6 +253,7 @@
     </form>
     <button id="saveFileBtn" disabled>💾 Salvar</button>
     <button id="previewBtn">👁️ Visualizar</button>
+    <button id="aiBtn">🤖 IA Assistente</button>
     <div id="user-info">
       <span id="user-name">Carregando...</span>
     </div>
@@ -181,7 +261,28 @@
 
   <div id="tabs"></div>
 
-  <div id="container"></div>
+  <div id="container">
+    <div id="ai-iframe-container">
+      <div id="ai-iframe-header">
+        <h3>Assistente de IA</h3>
+        <button id="close-ai-btn">Fechar</button>
+      </div>
+      <iframe id="ai-iframe" src="about:blank"></iframe>
+    </div>
+  </div>
+
+  <div id="code-notification">
+    <h3>Novo código recebido da IA!</h3>
+    <p>Selecione em qual arquivo deseja inserir:</p>
+    <select id="target-file-select">
+      <!-- Opções serão preenchidas dinamicamente -->
+    </select>
+    <pre id="code-preview"></pre>
+    <div id="code-notification-buttons">
+      <button id="insert-code-btn">Inserir</button>
+      <button id="discard-code-btn">Descartar</button>
+    </div>
+  </div>
 
   <script>
     const firebaseConfig = {
@@ -205,14 +306,26 @@
     let projectRef = null;
     let files = {};
     let models = {};
+    let currentUser = null;
+    let sessionRef = null;
+    let currentCode = null;
 
     const newFileNameInput = document.getElementById('newFileName');
     const newFileForm = document.getElementById('newFileForm');
     const saveFileBtn = document.getElementById('saveFileBtn');
     const previewBtn = document.getElementById('previewBtn');
+    const aiBtn = document.getElementById('aiBtn');
     const projectNameInput = document.getElementById('project-name');
     const tabsContainer = document.getElementById('tabs');
     const userNameElement = document.getElementById('user-name');
+    const aiIframeContainer = document.getElementById('ai-iframe-container');
+    const aiIframe = document.getElementById('ai-iframe');
+    const closeAiBtn = document.getElementById('close-ai-btn');
+    const codeNotification = document.getElementById('code-notification');
+    const codePreview = document.getElementById('code-preview');
+    const targetFileSelect = document.getElementById('target-file-select');
+    const insertCodeBtn = document.getElementById('insert-code-btn');
+    const discardCodeBtn = document.getElementById('discard-code-btn');
 
     function encodeKey(str) {
       return btoa(str).replace(/=/g, '');
@@ -250,6 +363,8 @@
           return;
         }
 
+        currentUser = user;
+        
         // Atualizar informações do usuário na UI
         updateUserInfo(user);
 
@@ -266,13 +381,94 @@
         }
 
         projectRef = db.ref(`projects/${user.uid}/${currentProjectId}`);
+        sessionRef = db.ref(`sessions/${currentProjectId}`);
+        
+        // Monitorar códigos recebidos da IA
+        setupCodeListener();
+        
         loadProject();
 
         newFileForm.addEventListener('submit', createNewFile);
         saveFileBtn.addEventListener('click', saveCurrentFile);
         previewBtn.addEventListener('click', () => window.open(`view.html?projectId=${currentProjectId}`, '_blank'));
         projectNameInput.addEventListener('blur', updateProjectName);
+        
+        // Configurar eventos do botão de IA
+        aiBtn.addEventListener('click', () => {
+          const aiUrl = `https://pergunte-ia--socialkoala6579904.on.websim.com/?projectId=${currentProjectId}`;
+          aiIframe.src = aiUrl;
+          aiIframeContainer.style.display = 'flex';
+        });
+        
+        closeAiBtn.addEventListener('click', () => {
+          aiIframeContainer.style.display = 'none';
+          aiIframe.src = 'about:blank';
+        });
+
+        // Configurar eventos da notificação de código
+        insertCodeBtn.addEventListener('click', insertCode);
+        discardCodeBtn.addEventListener('click', () => {
+          codeNotification.style.display = 'none';
+          currentCode = null;
+        });
       });
+    }
+
+    function setupCodeListener() {
+      if (!sessionRef) return;
+      
+      sessionRef.child('codes').on('child_added', (snapshot) => {
+        const codeData = snapshot.val();
+        if (codeData && codeData.code) {
+          showCodeNotification(codeData);
+        }
+      });
+    }
+
+    function showCodeNotification(codeData) {
+      currentCode = codeData;
+      codePreview.textContent = codeData.code;
+      
+      // Preencher o select com os arquivos disponíveis
+      targetFileSelect.innerHTML = '';
+      Object.keys(files).forEach(fileKey => {
+        const fileData = files[fileKey];
+        const option = document.createElement('option');
+        option.value = fileKey;
+        option.textContent = fileData.originalName || fileData.name;
+        targetFileSelect.appendChild(option);
+      });
+      
+      codeNotification.style.display = 'block';
+    }
+
+    function insertCode() {
+      if (!currentCode) return;
+      
+      const selectedFileKey = targetFileSelect.value;
+      if (!selectedFileKey || !files[selectedFileKey]) return;
+      
+      // Adicionar o código ao arquivo selecionado
+      const fileContent = files[selectedFileKey].content;
+      files[selectedFileKey].content = fileContent + '\n' + currentCode.code;
+      
+      // Atualizar o Firebase
+      updateFirebaseFiles();
+      
+      // Abrir o arquivo se não estiver aberto
+      if (selectedFileKey !== currentFile) {
+        openFile(selectedFileKey);
+      } else {
+        // Recarregar o arquivo se já estiver aberto
+        const model = editor.getModel();
+        if (model) {
+          model.setValue(files[selectedFileKey].content);
+        }
+      }
+      
+      // Fechar a notificação
+      codeNotification.style.display = 'none';
+      currentCode = null;
     }
 
     function updateUserInfo(user) {
@@ -287,7 +483,7 @@
 
     function saveUserInfo(user) {
       const userRef = db.ref(`users/${user.uid}`);
-      
+
       const userData = {
         name: user.displayName || user.email.split('@')[0],
         email: user.email,
@@ -512,7 +708,4 @@
         }
         projectRef.child('name').set(newName);
         projectRef.child('updatedAt').set(new Date().toISOString());
-    }
-  </script>
-</body>
-</html>
+   
