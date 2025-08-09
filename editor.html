@@ -1,202 +1,518 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Editor de Código Estilo VS Code</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editor de Projeto</title>
   <style>
-    body {
-      margin: 0;
-      font-family: sans-serif;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      overflow: hidden;
-    }
-    #top-bar {
+    body, html {
+      margin: 0; padding: 0; height: 100%;
+      display: flex; flex-direction: column;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: #1e1e1e;
       color: white;
-      padding: 10px;
+    }
+
+    #top-bar {
       display: flex;
-      justify-content: space-between;
-    }
-    #editor-container {
-      flex: 1;
-      display: flex;
-      flex-direction: row;
-    }
-    #file-list {
-      width: 150px;
-      background: #2d2d2d;
-      color: white;
-      overflow-y: auto;
       padding: 10px;
-    }
-    #preview {
-      width: 50%;
-      height: 100%;
-      border: none;
-    }
-    #editor {
-      flex: 1;
-    }
-    button, input {
-      margin: 4px;
-    }
-    #extensoes {
-      background: #333;
+      background: #1e1e1e;
       color: white;
+      align-items: center;
+      border-bottom: 1px solid #333;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    #project-name {
+      font-size: 1.1em;
+      font-weight: bold;
+      background: transparent;
+      color: white;
+      border: 1px solid transparent;
+      border-radius: 4px;
       padding: 5px;
-      height: 120px;
-      overflow-y: auto;
+      margin-right: 10px;
+      flex: 1;
+      max-width: 300px;
     }
+
+    #project-name:hover { border-color: #555; }
+    #project-name:focus { outline: 1px solid #4895ef; }
+
+    #newFileForm {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+
+    #newFileForm input {
+      padding: 5px 8px;
+      border-radius: 4px;
+      border: 1px solid #333;
+      background: #252526;
+      color: white;
+      outline: none;
+      width: 150px;
+    }
+
+    button {
+      background: #4361ee;
+      border: none;
+      color: white;
+      padding: 6px 12px;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    button:hover {
+      filter: brightness(1.2);
+    }
+
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+      color: #999;
+    }
+
+    #saveFileBtn { background: #4cc9f0; }
+    #previewBtn { background: #4895ef; }
+
+    #tabs {
+      display: flex;
+      background: #252526;
+      align-items: center;
+      gap: 1px;
+      overflow-x: auto;
+    }
+
+    #tabs button.tab-btn {
+      background: #2d2d2d;
+      border: none;
+      color: #d4d4d4;
+      padding: 8px 15px;
+      cursor: pointer;
+      position: relative;
+      user-select: none;
+      white-space: nowrap;
+      border-right: 1px solid #1e1e1e;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #tabs button.tab-btn.active {
+      background: #1e1e1e;
+      color: white;
+    }
+
+    #tabs button.tab-btn .close-tab-btn {
+      background: transparent;
+      border: none;
+      color: #bbb;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 0;
+      line-height: 1;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+    }
+
+    #tabs button.tab-btn .close-tab-btn:hover {
+      background: #555;
+      color: white;
+    }
+
+    #container {
+      flex: 1;
+      overflow: hidden;
+      height: calc(100vh - 100px);
+    }
+
+    .back-btn {
+      background: #6c757d;
+      text-decoration: none;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    #user-info {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #user-name {
+      font-size: 0.9em;
+      color: #ccc;
+    }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js" crossOrigin="anonymous"></script>
+</head>
+<body>
+  <div id="top-bar">
+    <a href="index.html" class="back-btn">← Voltar</a>
+    <input type="text" id="project-name" value="Carregando..."/>
+    <form id="newFileForm">
+      <input type="text" id="newFileName" placeholder="ex: script.js" required/>
+      <button type="submit">Criar arquivo</button>
+    </form>
+    <button id="saveFileBtn" disabled>💾 Salvar</button>
+    <button id="previewBtn">👁️ Visualizar</button>
+    <div id="user-info">
+      <span id="user-name">Carregando...</span>
+    </div>
+  </div>
+
+  <div id="tabs"></div>
+
+  <div id="container"></div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
+      authDomain: "html-15e80.firebaseapp.com",
+      databaseURL: "https://html-15e80-default-rtdb.firebaseio.com",
+      projectId: "html-15e80",
+      storageBucket: "html-15e80.appspot.com",
+      messagingSenderId: "1068148640439",
+      appId: "1:1068148640439:web:1ac651348e624f6be41b32",
+      measurementId: "G-7E1VWN07GM"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const auth = firebase.auth();
+
+    let editor;
+    let currentProjectId;
+    let currentFile = null;
+    let projectRef = null;
+    let files = {};
+    let models = {};
+
+    const newFileNameInput = document.getElementById('newFileName');
+    const newFileForm = document.getElementById('newFileForm');
+    const saveFileBtn = document.getElementById('saveFileBtn');
+    const previewBtn = document.getElementById('previewBtn');
+    const projectNameInput = document.getElementById('project-name');
+    const tabsContainer = document.getElementById('tabs');
+    const userNameElement = document.getElementById('user-name');
+
+    function encodeKey(str) {
+      return btoa(str).replace(/=/g, '');
+    }
+
+    function sanitizeFilename(filename) {
+      return filename.replace(/[.#$/[\]]/g, '_');
+    }
+
+    require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' }});
+    window.MonacoEnvironment = { getWorkerUrl: () => `data:text/javascript;charset=utf-8,${encodeURIComponent(`
+        self.MonacoEnvironment = { baseUrl: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/' };
+        importScripts('https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/base/worker/workerMain.js');`
+    )}`};
+
+    require(['vs/editor/editor.main'], function() {
+      editor = monaco.editor.create(document.getElementById('container'), {
+        theme: 'vs-dark',
+        automaticLayout: true,
+        minimap: { enabled: false }
+      });
+
+      editor.onDidChangeModelContent(() => {
+        if (currentFile) {
+          saveFileBtn.disabled = false;
+        }
+      });
+      main();
+    });
+
+    function main() {
+      auth.onAuthStateChanged(user => {
+        if (!user) {
+          window.location.href = 'auth.html';
+          return;
+        }
+
+        // Atualizar informações do usuário na UI
+        updateUserInfo(user);
+
+        // Salvar informações do usuário no banco de dados
+        saveUserInfo(user);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        currentProjectId = urlParams.get('projectId');
+
+        if (!currentProjectId) {
+          alert('ID do projeto não encontrado!');
+          window.location.href = 'index.html';
+          return;
+        }
+
+        projectRef = db.ref(`projects/${user.uid}/${currentProjectId}`);
+        loadProject();
+
+        newFileForm.addEventListener('submit', createNewFile);
+        saveFileBtn.addEventListener('click', saveCurrentFile);
+        previewBtn.addEventListener('click', () => window.open(`view.html?projectId=${currentProjectId}`, '_blank'));
+        projectNameInput.addEventListener('blur', updateProjectName);
+      });
+    }
+
+    function updateUserInfo(user) {
+      if (user.displayName) {
+        userNameElement.textContent = user.displayName;
+      } else if (user.email) {
+        userNameElement.textContent = user.email.split('@')[0];
+      } else {
+        userNameElement.textContent = 'Usuário';
+      }
+    }
+
+    function saveUserInfo(user) {
+      const userRef = db.ref(`users/${user.uid}`);
+      
+      const userData = {
+        name: user.displayName || user.email.split('@')[0],
+        email: user.email,
+        lastLogin: new Date().toISOString()
+      };
+
+      userRef.update(userData, (error) => {
+        if (error) {
+          console.error("Erro ao salvar informações do usuário:", error);
+        }
+      });
+
+      // Adicionar o ID do usuário ao projeto
+      if (currentProjectId) {
+        const projectUserRef = db.ref(`projects/${user.uid}/${currentProjectId}/user`);
+        projectUserRef.set({
+          uid: user.uid,
+          name: user.displayName || user.email.split('@')[0],
+          email: user.email
+        });
+      }
+    }
+
+    function loadProject() {
+        projectRef.on('value', (snapshot) => {
+            const projectData = snapshot.val();
+            if (projectData) {
+                projectNameInput.value = projectData.name || 'Projeto sem nome';
+                files = projectData.files || {};
+
+                const fileKeys = Object.keys(files);
+                const indexHtmlKey = fileKeys.find(key => {
+                  const file = files[key];
+                  return file.originalName === 'index.html' || file.name === 'index.html';
+                });
+                const firstFileKey = indexHtmlKey || (fileKeys.length > 0 ? fileKeys[0] : null);
+
+                if (firstFileKey) {
+                    if (!currentFile) {
+                        openFile(firstFileKey);
+                    }
+                    updateTabs();
+                }
+            } else {
+                 alert('Projeto não encontrado!');
+                 window.location.href = 'index.html';
+            }
+        }, (error) => {
+            console.error("Firebase read failed:", error);
+            alert("Erro ao carregar o projeto.");
+        });
+    }
+
+    function createNewFile(e) {
+      e.preventDefault();
+      const fileName = newFileNameInput.value.trim();
+      if (!fileName) {
+          alert('Nome de arquivo inválido.');
+          return;
+      }
+
+      const sanitizedFileName = sanitizeFilename(fileName);
+      const fileKey = encodeKey(sanitizedFileName);
+
+      const existingFile = Object.values(files).find(f => 
+        f.name === fileName || f.originalName === fileName
+      );
+
+      if (existingFile) {
+          alert('Um arquivo com este nome já existe.');
+          return;
+      }
+
+      let content = '';
+      const extension = fileName.split('.').pop().toLowerCase();
+      const language = extension;
+
+      switch(extension) {
+        case 'html':
+          content = `<!DOCTYPE html>
+<html>
+<head>
+  <title>${fileName}</title>
+  <style>
   </style>
 </head>
 <body>
-
-  <div id="top-bar">
-    <div>
-      <button onclick="criarArquivo()">Novo Arquivo</button>
-      <input type="file" onchange="uploadArquivo(event)" />
-      <button onclick="salvarArquivo()">Salvar</button>
-      <button onclick="visualizarHTML()">Visualizar</button>
-    </div>
-    <div>
-      <input type="email" id="email" placeholder="Email">
-      <input type="password" id="senha" placeholder="Senha">
-      <button onclick="login()">Entrar</button>
-      <button onclick="registrar()">Cadastrar</button>
-    </div>
-  </div>
-
-  <div id="editor-container">
-    <div id="file-list"></div>
-    <div id="editor"></div>
-    <iframe id="preview"></iframe>
-  </div>
-
-  <div id="extensoes">
-    <h4>Extensões Disponíveis</h4>
-    <div id="lista-extensoes"></div>
-  </div>
-
-  <!-- Firebase -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-    import { firebaseConfig } from './firebaseConfig.js';
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth();
-    const db = getDatabase(app);
-
-    function login() {
-      const email = document.getElementById('email').value;
-      const senha = document.getElementById('senha').value;
-      signInWithEmailAndPassword(auth, email, senha)
-        .then(() => alert("Logado!"))
-        .catch(() => alert("Erro ao logar"));
-    }
-
-    function registrar() {
-      const email = document.getElementById('email').value;
-      const senha = document.getElementById('senha').value;
-      createUserWithEmailAndPassword(auth, email, senha)
-        .then(() => alert("Conta criada!"))
-        .catch(() => alert("Erro ao criar conta"));
-    }
-
-    // Carrega extensões
-    const extensoesRef = ref(db, 'extensoes/');
-    onValue(extensoesRef, (snapshot) => {
-      const container = document.getElementById('lista-extensoes');
-      container.innerHTML = '';
-      snapshot.forEach(child => {
-        const nome = child.key;
-        const codigo = child.val();
-        const btn = document.createElement('button');
-        btn.textContent = `Instalar: ${nome}`;
-        btn.onclick = () => eval(codigo);
-        container.appendChild(btn);
-      });
-    });
-
-    // Editor
-    let arquivos = {};
-    let arquivoAtual = null;
-
-    import * as monaco from "https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/+esm";
-    const editor = monaco.editor.create(document.getElementById('editor'), {
-      value: '',
-      language: 'html',
-      theme: 'vs-dark',
-      automaticLayout: true
-    });
-
-    function criarArquivo() {
-      const nome = prompt("Nome do arquivo (ex: index.html):");
-      if (nome) {
-        arquivos[nome] = '';
-        arquivoAtual = nome;
-        atualizarLista();
-        editor.setValue('');
+</body>
+</html>`;
+          break;
+        case 'css':
+          content = `/* ${fileName} */`;
+          break;
+        case 'js':
+          content = `// ${fileName}`;
+          break;
+        default:
+          content = `// ${fileName}`;
       }
-    }
 
-    function uploadArquivo(event) {
-      const file = event.target.files[0];
-      if (!file || file.size > 25 * 1024 * 1024) return alert("Limite de 25MB");
-      const reader = new FileReader();
-      reader.onload = () => {
-        arquivos[file.name] = reader.result;
-        arquivoAtual = file.name;
-        atualizarLista();
-        editor.setValue(reader.result);
+      files[fileKey] = { 
+        name: sanitizedFileName, 
+        originalName: fileName,
+        content: content, 
+        language: language,
+        createdAt: new Date().toISOString()
       };
-      reader.readAsText(file);
+
+      updateFirebaseFiles();
+      openFile(fileKey);
+      newFileNameInput.value = '';
     }
 
-    function atualizarLista() {
-      const list = document.getElementById('file-list');
-      list.innerHTML = '';
-      Object.keys(arquivos).forEach(nome => {
-        const btn = document.createElement('div');
-        btn.textContent = nome;
-        btn.onclick = () => {
-          arquivoAtual = nome;
-          editor.setValue(arquivos[nome]);
-        };
-        list.appendChild(btn);
+    function openFile(fileKey) {
+      if (!files[fileKey] || !editor) return;
+      currentFile = fileKey;
+      const fileData = files[fileKey];
+
+      let language;
+      switch(fileData.language) {
+        case 'html': language = 'html'; break;
+        case 'css': language = 'css'; break;
+        case 'js': language = 'javascript'; break;
+        default: language = 'plaintext';
+      }
+
+      let model = models[fileKey];
+      if (!model) {
+        model = monaco.editor.createModel(
+          fileData.content,
+          language,
+          monaco.Uri.parse(`file:///${fileData.originalName || fileData.name}`)
+        );
+        models[fileKey] = model;
+      }
+
+      editor.setModel(model);
+      updateTabs();
+      saveFileBtn.disabled = true;
+    }
+
+    function closeFile(e, fileKey) {
+        e.stopPropagation();
+        if (Object.keys(files).length <= 1) {
+            alert('Você não pode fechar o último arquivo do projeto.');
+            return;
+        }
+
+        const model = models[fileKey];
+        if (model) {
+            model.dispose();
+            delete models[fileKey];
+        }
+
+        delete files[fileKey];
+        updateFirebaseFiles();
+
+        if (fileKey === currentFile) {
+            currentFile = null;
+            openFile(Object.keys(files)[0]);
+        }
+        updateTabs();
+    }
+
+    function updateTabs() {
+      tabsContainer.innerHTML = '';
+      Object.keys(files).forEach(fileKey => {
+        const fileData = files[fileKey];
+        const tab = document.createElement('button');
+        tab.className = `tab-btn ${fileKey === currentFile ? 'active' : ''}`;
+        tab.onclick = () => openFile(fileKey);
+
+        const label = document.createElement('span');
+        label.textContent = fileData.originalName || fileData.name;
+        tab.appendChild(label);
+
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'close-tab-btn';
+        closeBtn.innerHTML = '&times;';
+        closeBtn.onclick = (e) => closeFile(e, fileKey);
+        tab.appendChild(closeBtn);
+
+        tabsContainer.appendChild(tab);
       });
     }
 
-    function salvarArquivo() {
-      if (arquivoAtual) {
-        arquivos[arquivoAtual] = editor.getValue();
-        localStorage.setItem('arquivos', JSON.stringify(arquivos));
-        alert("Arquivo salvo localmente!");
+    function saveCurrentFile() {
+      if (!currentFile || !editor) return;
+
+      const model = editor.getModel();
+      if (model) {
+        files[currentFile].content = model.getValue();
+        files[currentFile].updatedAt = new Date().toISOString();
+
+        projectRef.child('updatedAt').set(new Date().toISOString());
+
+        updateFirebaseFiles(() => {
+            saveFileBtn.disabled = true;
+            saveFileBtn.textContent = 'Salvo!';
+            setTimeout(() => { saveFileBtn.textContent = '💾 Salvar' }, 1500);
+        });
       }
     }
 
-    function visualizarHTML() {
-      if (arquivoAtual && arquivoAtual.endsWith('.html')) {
-        const code = editor.getValue();
-        const iframe = document.getElementById('preview');
-        iframe.srcdoc = code;
-      } else {
-        alert("Abra um arquivo .html para visualizar");
-      }
+    function updateFirebaseFiles(callback) {
+      projectRef.child('files').set(files, (error) => {
+          if (error) {
+              alert('Falha ao salvar o arquivo.');
+              console.error(error);
+          } else if (callback) {
+              callback();
+          }
+      });
     }
 
-    // Restaura arquivos salvos localmente
-    window.onload = () => {
-      const salvos = localStorage.getItem('arquivos');
-      if (salvos) {
-        arquivos = JSON.parse(salvos);
-        atualizarLista();
-      }
-    };
+    function updateProjectName() {
+        const newName = projectNameInput.value.trim();
+        if (!newName) {
+            alert('O nome do projeto não pode ser vazio.');
+            projectRef.child('name').once('value', s => projectNameInput.value = s.val());
+            return;
+        }
+        projectRef.child('name').set(newName);
+        projectRef.child('updatedAt').set(new Date().toISOString());
+    }
   </script>
 </body>
 </html>
