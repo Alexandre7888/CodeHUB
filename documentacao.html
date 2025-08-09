@@ -4,115 +4,116 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Documentação da API OAuth – CodeHUB</title>
+  <title>Guia — Como criar a Documentação da API (CodeHUB)</title>
   <style>
     :root{font-family: Inter,ui-sans-serif,system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; color:#0f172a}
     body{margin:0; padding:32px; background:#f8fafc}
     .container{max-width:900px; margin:0 auto; background:#fff; padding:28px; border-radius:12px; box-shadow:0 6px 24px rgba(15,23,42,0.06)}
-    h1{font-size:28px; margin:0 0 8px}
-    h2{font-size:20px; margin-top:20px}
+    h1{font-size:26px; margin:0 0 6px}
+    h2{font-size:18px; margin-top:18px}
     p{line-height:1.5}
-    pre{background:#0f172a; color:#f8fafc; padding:16px; border-radius:8px; overflow:auto}
+    pre{background:#0f172a; color:#f8fafc; padding:12px; border-radius:8px; overflow:auto}
     code{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace}
-    .section{margin-top:16px}
-    .meta{background:#eef2ff; padding:10px; border-radius:8px; font-size:14px}
+    ul{margin-left:18px}
+    .note{background:#fffbeb; padding:10px; border-radius:8px; border:1px solid #fde68a}
+    .tips{background:#eef2ff; padding:10px; border-radius:8px}
     table{width:100%; border-collapse:collapse; margin-top:8px}
     th, td{padding:8px; text-align:left; border-bottom:1px solid #eef2ff}
-    .kbd{background:#eef2ff; padding:3px 8px; border-radius:6px; font-weight:600}
-    .muted{color:#64748b}
+    footer{color:#94a3b8; font-size:13px; margin-top:20px}
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Documentação da API OAuth – CodeHUB</h1>
-    <p class="muted">Versão: 1.0 · Autor: Alexandre</p><h2>Visão Geral</h2>
-<p>A API OAuth do CodeHUB permite:</p>
+    <h1>Guia prático — Como criar a documentação da API</h1>
+    <p class="note"><strong>Objetivo:</strong> este documento explica, passo a passo, como criar documentação clara e reutilizável para a API OAuth do CodeHUB (ou qualquer API similar).</p><h2>1. Planejamento (o que a doc deve conter)</h2>
+<p>Antes de escrever, defina o escopo da doc. Para a API OAuth sugerimos:</p>
+<ul>
+  <li>Visão geral e objetivo</li>
+  <li>Endpoints (URLs, método, parâmetros, exemplos)</li>
+  <li>Fluxos (criar token, continuar sessão)</li>
+  <li>Exemplos de uso (HTML/JS, cURL)</li>
+  <li>Segurança e boas práticas</li>
+  <li>FAQ / troubleshooting</li>
+</ul>
+
+<h2>2. Pré-requisitos</h2>
+<ul>
+  <li>Conta no GitHub (para hospedar no GitHub Pages) — opcional</li>
+  <li>Editor de texto (VSCode, Notepad++, etc.)</li>
+  <li>Arquivos da API (endpoints e scripts: ex: <code>userKeyAPI.js</code>)</li>
+</ul>
+
+<h2>3. Estrutura recomendada de arquivos</h2>
+<pre>docs/
+
+├─ index.html        ← página principal da documentação (ou README.md) ├─ criar.app         ← endpoint estático (opcional) ├─ continuar-conta   ← endpoint └─ assets/ ├─ css/ └─ js/userKeyAPI.js</pre>
+
+<h2>4. Template de documentação (Markdown)</h2>
+<p>Use este template para gerar páginas Markdown facilmente:</p>
+<pre>---
+
+title: Documentação da API OAuth — CodeHUB version: 1.0
+
+Visão Geral
+
+Descrição curta sobre a API e casos de uso.
+
+Endpoints
+
+1) Criar Token
+
+URL: /criar.app
+Método: GET
+Descrição: Gera token único...
+
+2) Continuar Conta
+
+URL: /continuar-conta?token={TOKEN}
+Parâmetros: token (string, obrigatório)
+
+Exemplo de uso (JS)
+
+<script src="/assets/js/userKeyAPI.js"></script>
+
+</pre><h2>5. Exemplo HTML pronto (para publicar)</h2>
+<p>Copie e cole este HTML em <code>docs/index.html</code> ou use como template para GitHub Pages:</p>
+<pre>&lt;!doctype html&gt;
+
+<html lang="pt-br"> <head> <meta charset="utf-8"/> <title>Documentação — CodeHUB</title> </head> <body> <h1>Documentação da API OAuth — CodeHUB</h1> <h2>Visão Geral</h2> <p>A API permite criar token, continuar sessão e ler dados via JS.</p> <!-- Adicione o conteúdo conforme o template Markdown --> </body> </html></pre>
+
+<h2>6. Como gerar o token (exemplo de fluxo)</h2>
 <ol>
-  <li>Criar um token de autenticação (<span class="kbd">criar.app</span>)</li>
-  <li>Continuar a sessão de um usuário autenticado (<span class="kbd">continuar-conta</span>)</li>
-  <li>Obter informações do usuário via JavaScript (<span class="kbd">userKeyAPI.js</span>)</li>
+  <li>Usuário acessa <code>/criar.app</code>.</li>
+  <li>Servidor autentica e retorna token (ou redireciona para uma URL com <code>?token=XYZ</code>).</li>
+  <li>Frontend chama <code>/continuar-conta?token=XYZ</code> para obter dados do usuário.</li>
 </ol>
 
-<hr />
+<h2>7. Exemplo de snippet para <code>userKeyAPI.js</code></h2>
+<pre>// userKeyAPI.js (exemplo simples)
 
-<div class="section">
-  <h2>1. Criar Token</h2>
-  <p><strong>URL Base:</strong></p>
-  <pre>https://alexandre7888.github.io/CodeHUB/API/criar.app</pre>
+(function(){ function qs(name){ const url = new URL(window.location.href); return url.searchParams.get(name); } const token = qs('token'); if(!token) return console.warn('Token não encontrado na URL'); fetch('https://alexandre7888.github.io/CodeHUB/API/continuar-conta?token='+encodeURIComponent(token)) .then(r=>r.json()) .then(data=>{ if(data && data.user){ const el = document.getElementById('userName'); if(el) el.textContent = 'Bem-vindo, '+(data.user.name||'Usuário'); } }).catch(err=>console.error(err)); })();</pre>
 
-  <p><strong>Método:</strong></p>
-  <div class="meta">GET</div>
+<h2>8. Checklist antes de publicar</h2>
+<ul>
+  <li>[ ] Verificar URLs e métodos (GET/POST)</li>
+  <li>[ ] Testar exemplos (cURL, JS, HTML)</li>
+  <li>[ ] Remover chaves sensíveis do repositório</li>
+  <li>[ ] Incluir instruções de segurança e expiração de tokens</li>
+  <li>[ ] Publicar no GitHub Pages ou servidor estático</li>
+</ul>
 
-  <p><strong>Descrição:</strong></p>
-  <p>Este endpoint gera um token único para o usuário após autenticação. Geralmente redireciona para uma URL de callback ou exibe o token na tela para uso posterior.</p>
-
-  <p><strong>Fluxo:</strong></p>
-  <ol>
-    <li>O usuário acessa o link <code>criar.app</code>.</li>
-    <li>A API autentica e retorna um token.</li>
-    <li>O token pode ser usado no endpoint <code>/continuar-conta</code> para carregar a sessão.</li>
-  </ol>
-</div>
-
-<hr />
-
-<div class="section">
-  <h2>2. Continuar Conta</h2>
-
-  <p><strong>URL Base:</strong></p>
-  <pre>https://alexandre7888.github.io/CodeHUB/API/continuar-conta?token={TOKEN}</pre>
-
-  <p><strong>Parâmetros:</strong></p>
-  <table>
-    <thead>
-      <tr><th>Nome</th><th>Tipo</th><th>Obrigatório</th><th>Descrição</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>token</td><td>string</td><td>Sim</td><td>Token do usuário criado no <code>criar.app</code>.</td></tr>
-    </tbody>
-  </table>
-
-  <p><strong>Exemplo de Requisição:</strong></p>
-  <pre>GET https://alexandre7888.github.io/CodeHUB/API/continuar-conta?token=abc123xyz</pre>
-
-  <p><strong>Resposta:</strong></p>
-  <pre>{
-
-"status": "success", "user": { "id": "12345", "name": "Alexandre Braatz", "email": "alexandre@example.com" } }</pre> </div>
-
-<hr />
-
-<div class="section">
-  <h2>3. Script – userKeyAPI.js</h2>
-
-  <p><strong>URL:</strong></p>
-  <pre>https://alexandre7888.github.io/CodeHUB/API/userKeyAPI.js</pre>
-
-  <p><strong>Função:</strong></p>
+<h2>9. Boas práticas & dicas</h2>
+<div class="tips">
   <ul>
-    <li>Ler o token na URL (<code>?token=...</code>)</li>
-    <li>Fazer requisição ao endpoint <code>/continuar-conta</code></li>
-    <li>Exibir dados do usuário na página</li>
+    <li>Forneça exemplos reais — cURL, JS e HTML — para facilitar a integração.</li>
+    <li>Adicione um botão “Copiar” nos blocos de código para melhorar a UX.</li>
+    <li>Documente o formato de erro da API (500, 401, 400, etc.).</li>
+    <li>Inclua um changelog se a API for atualizada com frequência.</li>
   </ul>
-
-  <p><strong>Exemplo de Uso:</strong></p>
-  <pre>&lt;!DOCTYPE html&gt;
-
-<html lang="pt-br"> <head> <meta charset="UTF-8" /> <title>Conta do Usuário</title> </head> <body> <h1 id="userName">Carregando...</h1> <script src="https://alexandre7888.github.io/CodeHUB/API/userKeyAPI.js"></script> </body> </html></pre> </div>
-
-<hr />
-
-<div class="section">
-  <h2>4. Fluxo Completo</h2>
-  <ol>
-    <li>Usuário cria token → Acessa <code>criar.app</code> → Recebe <strong>TOKEN</strong>.</li>
-    <li>Frontend redireciona para página com <code>?token=TOKEN</code>.</li>
-    <li>Script <code>userKeyAPI.js</code> lê token, chama <code>/continuar-conta</code>, obtém dados do usuário e exibe na tela.</li>
-  </ol>
 </div>
 
-<footer style="margin-top:20px; font-size:13px; color:#94a3b8">
-  Documentação gerada automaticamente — edite conforme necessário.
+<footer>
+  Pronto! Este guia transforma a doc técnica em um conjunto de arquivos que podem ser versionados e publicados. Quer que eu: <strong>1)</strong> atualize o HTML do documento atual com este conteúdo (já feito), <strong>2)</strong> gere o README.md em Markdown, ou <strong>3)</strong> inclua o arquivo <code>userKeyAPI.js</code> completo na pasta assets?
 </footer>
 
   </div>
