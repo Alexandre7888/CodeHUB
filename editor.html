@@ -241,14 +241,14 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js" crossOrigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
 </head>
 <body>
   <div id="top-bar">
     <a href="index.html" class="back-btn">← Voltar</a>
-    <input type="text" id="project-name" value="Carregando..."/>
+    <input type="text" id="project-name" value="Carregando...">
     <form id="newFileForm">
-      <input type="text" id="newFileName" placeholder="ex: script.js" required/>
+      <input type="text" id="newFileName" placeholder="ex: script.js" required>
       <button type="submit">Criar arquivo</button>
     </form>
     <button id="saveFileBtn" disabled>💾 Salvar</button>
@@ -285,6 +285,7 @@
   </div>
 
   <script>
+    // Configuração do Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
       authDomain: "html-15e80.firebaseapp.com",
@@ -296,10 +297,12 @@
       measurementId: "G-7E1VWN07GM"
     };
 
-    firebase.initializeApp(firebaseConfig);
+    // Inicialização do Firebase
+    const app = firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const auth = firebase.auth();
 
+    // Variáveis globais
     let editor;
     let currentProjectId;
     let currentFile = null;
@@ -310,53 +313,73 @@
     let sessionRef = null;
     let currentCode = null;
 
-    const newFileNameInput = document.getElementById('newFileName');
-    const newFileForm = document.getElementById('newFileForm');
-    const saveFileBtn = document.getElementById('saveFileBtn');
-    const previewBtn = document.getElementById('previewBtn');
-    const aiBtn = document.getElementById('aiBtn');
-    const projectNameInput = document.getElementById('project-name');
-    const tabsContainer = document.getElementById('tabs');
-    const userNameElement = document.getElementById('user-name');
-    const aiIframeContainer = document.getElementById('ai-iframe-container');
-    const aiIframe = document.getElementById('ai-iframe');
-    const closeAiBtn = document.getElementById('close-ai-btn');
-    const codeNotification = document.getElementById('code-notification');
-    const codePreview = document.getElementById('code-preview');
-    const targetFileSelect = document.getElementById('target-file-select');
-    const insertCodeBtn = document.getElementById('insert-code-btn');
-    const discardCodeBtn = document.getElementById('discard-code-btn');
+    // Elementos da UI
+    const elements = {
+      newFileNameInput: document.getElementById('newFileName'),
+      newFileForm: document.getElementById('newFileForm'),
+      saveFileBtn: document.getElementById('saveFileBtn'),
+      previewBtn: document.getElementById('previewBtn'),
+      aiBtn: document.getElementById('aiBtn'),
+      projectNameInput: document.getElementById('project-name'),
+      tabsContainer: document.getElementById('tabs'),
+      userNameElement: document.getElementById('user-name'),
+      aiIframeContainer: document.getElementById('ai-iframe-container'),
+      aiIframe: document.getElementById('ai-iframe'),
+      closeAiBtn: document.getElementById('close-ai-btn'),
+      codeNotification: document.getElementById('code-notification'),
+      codePreview: document.getElementById('code-preview'),
+      targetFileSelect: document.getElementById('target-file-select'),
+      insertCodeBtn: document.getElementById('insert-code-btn'),
+      discardCodeBtn: document.getElementById('discard-code-btn')
+    };
 
+    // Funções auxiliares
     function encodeKey(str) {
-      return btoa(str).replace(/=/g, '');
+      return btoa(encodeURIComponent(str)).replace(/=/g, '');
     }
 
     function sanitizeFilename(filename) {
       return filename.replace(/[.#$/[\]]/g, '_');
     }
 
-    require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' }});
-    window.MonacoEnvironment = { getWorkerUrl: () => `data:text/javascript;charset=utf-8,${encodeURIComponent(`
-        self.MonacoEnvironment = { baseUrl: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/' };
-        importScripts('https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/base/worker/workerMain.js');`
-    )}`};
+    // Configuração do Monaco Editor
+    require.config({ 
+      paths: { 
+        'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' 
+      } 
+    });
 
+    window.MonacoEnvironment = { 
+      getWorkerUrl: function(moduleId, label) {
+        return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
+          self.MonacoEnvironment = { 
+            baseUrl: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/' 
+          };
+          importScripts('https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/base/worker/workerMain.js');
+        `)}`;
+      }
+    };
+
+    // Inicialização do editor
     require(['vs/editor/editor.main'], function() {
       editor = monaco.editor.create(document.getElementById('container'), {
         theme: 'vs-dark',
         automaticLayout: true,
-        minimap: { enabled: false }
+        minimap: { enabled: false },
+        language: 'html'
       });
 
       editor.onDidChangeModelContent(() => {
         if (currentFile) {
-          saveFileBtn.disabled = false;
+          elements.saveFileBtn.disabled = false;
         }
       });
-      main();
+      
+      initializeApp();
     });
 
-    function main() {
+    // Função principal de inicialização
+    function initializeApp() {
       auth.onAuthStateChanged(user => {
         if (!user) {
           window.location.href = 'auth.html';
@@ -364,199 +387,195 @@
         }
 
         currentUser = user;
-        
-        // Atualizar informações do usuário na UI
         updateUserInfo(user);
-
-        // Salvar informações do usuário no banco de dados
         saveUserInfo(user);
 
+        // Obter ID do projeto da URL
         const urlParams = new URLSearchParams(window.location.search);
         currentProjectId = urlParams.get('projectId');
 
         if (!currentProjectId) {
-          alert('ID do projeto não encontrado!');
+          alert('ID do projeto não encontrado na URL!');
           window.location.href = 'index.html';
           return;
         }
 
+        // Configurar referências do Firebase
         projectRef = db.ref(`projects/${user.uid}/${currentProjectId}`);
         sessionRef = db.ref(`sessions/${currentProjectId}`);
         
-        // Monitorar códigos recebidos da IA
+        // Configurar listeners
         setupCodeListener();
-        
         loadProject();
-
-        newFileForm.addEventListener('submit', createNewFile);
-        saveFileBtn.addEventListener('click', saveCurrentFile);
-        previewBtn.addEventListener('click', () => window.open(`view.html?projectId=${currentProjectId}`, '_blank'));
-        projectNameInput.addEventListener('blur', updateProjectName);
-        
-        // Configurar eventos do botão de IA
-        aiBtn.addEventListener('click', () => {
-          const aiUrl = `https://pergunte-ia--socialkoala6579904.on.websim.com/?projectId=${currentProjectId}`;
-          aiIframe.src = aiUrl;
-          aiIframeContainer.style.display = 'flex';
-        });
-        
-        closeAiBtn.addEventListener('click', () => {
-          aiIframeContainer.style.display = 'none';
-          aiIframe.src = 'about:blank';
-        });
-
-        // Configurar eventos da notificação de código
-        insertCodeBtn.addEventListener('click', insertCode);
-        discardCodeBtn.addEventListener('click', () => {
-          codeNotification.style.display = 'none';
-          currentCode = null;
-        });
+        setupEventListeners();
       });
     }
 
-    function setupCodeListener() {
-      if (!sessionRef) return;
+    // Configurar listeners de eventos
+    function setupEventListeners() {
+      elements.newFileForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        createNewFile();
+      });
       
-      sessionRef.child('codes').on('child_added', (snapshot) => {
-        const codeData = snapshot.val();
-        if (codeData && codeData.code) {
-          showCodeNotification(codeData);
+      elements.saveFileBtn.addEventListener('click', saveCurrentFile);
+      
+      elements.previewBtn.addEventListener('click', function() {
+        if (!currentProjectId) {
+          alert('Projeto não carregado corretamente!');
+          return;
         }
-      });
-    }
-
-    function showCodeNotification(codeData) {
-      currentCode = codeData;
-      codePreview.textContent = codeData.code;
-      
-      // Preencher o select com os arquivos disponíveis
-      targetFileSelect.innerHTML = '';
-      Object.keys(files).forEach(fileKey => {
-        const fileData = files[fileKey];
-        const option = document.createElement('option');
-        option.value = fileKey;
-        option.textContent = fileData.originalName || fileData.name;
-        targetFileSelect.appendChild(option);
+        window.open(`view.html?projectId=${currentProjectId}`, '_blank');
       });
       
-      codeNotification.style.display = 'block';
-    }
-
-    function insertCode() {
-      if (!currentCode) return;
+      elements.projectNameInput.addEventListener('blur', updateProjectName);
       
-      const selectedFileKey = targetFileSelect.value;
-      if (!selectedFileKey || !files[selectedFileKey]) return;
-      
-      // Adicionar o código ao arquivo selecionado
-      const fileContent = files[selectedFileKey].content;
-      files[selectedFileKey].content = fileContent + '\n' + currentCode.code;
-      
-      // Atualizar o Firebase
-      updateFirebaseFiles();
-      
-      // Abrir o arquivo se não estiver aberto
-      if (selectedFileKey !== currentFile) {
-        openFile(selectedFileKey);
-      } else {
-        // Recarregar o arquivo se já estiver aberto
-        const model = editor.getModel();
-        if (model) {
-          model.setValue(files[selectedFileKey].content);
+      // IA Assistente
+      elements.aiBtn.addEventListener('click', function() {
+        if (!currentProjectId) {
+          alert('Projeto não carregado corretamente!');
+          return;
         }
-      }
+        const aiUrl = `https://pergunte-ia--socialkoala6579904.on.websim.com/?projectId=${currentProjectId}`;
+        elements.aiIframe.src = aiUrl;
+        elements.aiIframeContainer.style.display = 'flex';
+      });
       
-      // Fechar a notificação
-      codeNotification.style.display = 'none';
-      currentCode = null;
+      elements.closeAiBtn.addEventListener('click', function() {
+        elements.aiIframeContainer.style.display = 'none';
+        elements.aiIframe.src = 'about:blank';
+      });
+
+      // Notificação de código
+      elements.insertCodeBtn.addEventListener('click', insertCode);
+      elements.discardCodeBtn.addEventListener('click', function() {
+        elements.codeNotification.style.display = 'none';
+        currentCode = null;
+      });
     }
 
+    // Atualizar informações do usuário na UI
     function updateUserInfo(user) {
+      if (!user) return;
+      
       if (user.displayName) {
-        userNameElement.textContent = user.displayName;
+        elements.userNameElement.textContent = user.displayName;
       } else if (user.email) {
-        userNameElement.textContent = user.email.split('@')[0];
+        elements.userNameElement.textContent = user.email.split('@')[0];
       } else {
-        userNameElement.textContent = 'Usuário';
+        elements.userNameElement.textContent = 'Usuário';
       }
     }
 
+    // Salvar informações do usuário no Firebase
     function saveUserInfo(user) {
+      if (!user || !user.uid) return;
+      
       const userRef = db.ref(`users/${user.uid}`);
-
       const userData = {
         name: user.displayName || user.email.split('@')[0],
         email: user.email,
         lastLogin: new Date().toISOString()
       };
 
-      userRef.update(userData, (error) => {
-        if (error) {
-          console.error("Erro ao salvar informações do usuário:", error);
-        }
+      userRef.update(userData).catch(error => {
+        console.error("Erro ao salvar informações do usuário:", error);
       });
-
-      // Adicionar o ID do usuário ao projeto
-      if (currentProjectId) {
-        const projectUserRef = db.ref(`projects/${user.uid}/${currentProjectId}/user`);
-        projectUserRef.set({
-          uid: user.uid,
-          name: user.displayName || user.email.split('@')[0],
-          email: user.email
-        });
-      }
     }
 
+    // Carregar projeto do Firebase
     function loadProject() {
-        projectRef.on('value', (snapshot) => {
-            const projectData = snapshot.val();
-            if (projectData) {
-                projectNameInput.value = projectData.name || 'Projeto sem nome';
-                files = projectData.files || {};
+      if (!projectRef) {
+        console.error('Referência do projeto não definida');
+        return;
+      }
 
-                const fileKeys = Object.keys(files);
-                const indexHtmlKey = fileKeys.find(key => {
-                  const file = files[key];
-                  return file.originalName === 'index.html' || file.name === 'index.html';
-                });
-                const firstFileKey = indexHtmlKey || (fileKeys.length > 0 ? fileKeys[0] : null);
+      projectRef.on('value', (snapshot) => {
+        const projectData = snapshot.val();
+        if (!projectData) {
+          alert('Projeto não encontrado no banco de dados!');
+          window.location.href = 'index.html';
+          return;
+        }
 
-                if (firstFileKey) {
-                    if (!currentFile) {
-                        openFile(firstFileKey);
-                    }
-                    updateTabs();
-                }
-            } else {
-                 alert('Projeto não encontrado!');
-                 window.location.href = 'index.html';
-            }
-        }, (error) => {
-            console.error("Firebase read failed:", error);
-            alert("Erro ao carregar o projeto.");
+        // Atualizar nome do projeto
+        elements.projectNameInput.value = projectData.name || 'Projeto sem nome';
+        files = projectData.files || {};
+
+        // Encontrar arquivo index.html ou o primeiro arquivo disponível
+        const fileKeys = Object.keys(files);
+        const indexHtmlKey = fileKeys.find(key => {
+          const file = files[key];
+          return file.originalName === 'index.html' || file.name === 'index.html';
         });
+        const firstFileKey = indexHtmlKey || (fileKeys.length > 0 ? fileKeys[0] : null);
+
+        if (firstFileKey) {
+          openFile(firstFileKey);
+        } else {
+          // Criar um arquivo index.html padrão se não houver arquivos
+          createDefaultIndexHtml();
+        }
+
+        updateTabs();
+      }, (error) => {
+        console.error("Erro ao carregar projeto:", error);
+        alert("Erro ao carregar o projeto. Por favor, recarregue a página.");
+      });
     }
 
-    function createNewFile(e) {
-      e.preventDefault();
-      const fileName = newFileNameInput.value.trim();
+    // Criar arquivo index.html padrão
+    function createDefaultIndexHtml() {
+      const fileName = 'index.html';
+      const sanitizedFileName = sanitizeFilename(fileName);
+      const fileKey = encodeKey(sanitizedFileName);
+
+      files[fileKey] = { 
+        name: sanitizedFileName, 
+        originalName: fileName,
+        content: `<!DOCTYPE html>
+<html>
+<head>
+  <title>Novo Projeto</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Novo Projeto</h1>
+  <p>Comece a editar seu código aqui!</p>
+</body>
+</html>`, 
+        language: 'html',
+        createdAt: new Date().toISOString()
+      };
+
+      updateFirebaseFiles();
+      openFile(fileKey);
+    }
+
+    // Criar novo arquivo
+    function createNewFile() {
+      const fileName = elements.newFileNameInput.value.trim();
       if (!fileName) {
-          alert('Nome de arquivo inválido.');
-          return;
+        alert('Por favor, insira um nome de arquivo válido.');
+        return;
       }
 
       const sanitizedFileName = sanitizeFilename(fileName);
       const fileKey = encodeKey(sanitizedFileName);
 
+      // Verificar se arquivo já existe
       const existingFile = Object.values(files).find(f => 
         f.name === fileName || f.originalName === fileName
       );
 
       if (existingFile) {
-          alert('Um arquivo com este nome já existe.');
-          return;
+        alert('Um arquivo com este nome já existe.');
+        return;
       }
 
+      // Determinar conteúdo padrão baseado na extensão
       let content = '';
       const extension = fileName.split('.').pop().toLowerCase();
       const language = extension;
@@ -584,6 +603,7 @@
           content = `// ${fileName}`;
       }
 
+      // Criar novo arquivo
       files[fileKey] = { 
         name: sanitizedFileName, 
         originalName: fileName,
@@ -594,14 +614,20 @@
 
       updateFirebaseFiles();
       openFile(fileKey);
-      newFileNameInput.value = '';
+      elements.newFileNameInput.value = '';
     }
 
+    // Abrir arquivo no editor
     function openFile(fileKey) {
-      if (!files[fileKey] || !editor) return;
+      if (!files[fileKey] || !editor) {
+        console.error('Arquivo ou editor não disponível');
+        return;
+      }
+      
       currentFile = fileKey;
       const fileData = files[fileKey];
 
+      // Determinar linguagem
       let language;
       switch(fileData.language) {
         case 'html': language = 'html'; break;
@@ -610,6 +636,7 @@
         default: language = 'plaintext';
       }
 
+      // Criar ou reutilizar modelo
       let model = models[fileKey];
       if (!model) {
         model = monaco.editor.createModel(
@@ -620,36 +647,16 @@
         models[fileKey] = model;
       }
 
+      // Definir modelo no editor
       editor.setModel(model);
+      monaco.editor.setModelLanguage(model, language);
       updateTabs();
-      saveFileBtn.disabled = true;
+      elements.saveFileBtn.disabled = true;
     }
 
-    function closeFile(e, fileKey) {
-        e.stopPropagation();
-        if (Object.keys(files).length <= 1) {
-            alert('Você não pode fechar o último arquivo do projeto.');
-            return;
-        }
-
-        const model = models[fileKey];
-        if (model) {
-            model.dispose();
-            delete models[fileKey];
-        }
-
-        delete files[fileKey];
-        updateFirebaseFiles();
-
-        if (fileKey === currentFile) {
-            currentFile = null;
-            openFile(Object.keys(files)[0]);
-        }
-        updateTabs();
-    }
-
+    // Atualizar abas de arquivos
     function updateTabs() {
-      tabsContainer.innerHTML = '';
+      elements.tabsContainer.innerHTML = '';
       Object.keys(files).forEach(fileKey => {
         const fileData = files[fileKey];
         const tab = document.createElement('button');
@@ -663,13 +670,40 @@
         const closeBtn = document.createElement('button');
         closeBtn.className = 'close-tab-btn';
         closeBtn.innerHTML = '&times;';
-        closeBtn.onclick = (e) => closeFile(e, fileKey);
+        closeBtn.onclick = (e) => {
+          e.stopPropagation();
+          closeFile(fileKey);
+        };
         tab.appendChild(closeBtn);
 
-        tabsContainer.appendChild(tab);
+        elements.tabsContainer.appendChild(tab);
       });
     }
 
+    // Fechar arquivo
+    function closeFile(fileKey) {
+      if (Object.keys(files).length <= 1) {
+        alert('Você não pode fechar o último arquivo do projeto.');
+        return;
+      }
+
+      const model = models[fileKey];
+      if (model) {
+        model.dispose();
+        delete models[fileKey];
+      }
+
+      delete files[fileKey];
+      updateFirebaseFiles();
+
+      if (fileKey === currentFile) {
+        currentFile = null;
+        openFile(Object.keys(files)[0]);
+      }
+      updateTabs();
+    }
+
+    // Salvar arquivo atual
     function saveCurrentFile() {
       if (!currentFile || !editor) return;
 
@@ -681,31 +715,118 @@
         projectRef.child('updatedAt').set(new Date().toISOString());
 
         updateFirebaseFiles(() => {
-            saveFileBtn.disabled = true;
-            saveFileBtn.textContent = 'Salvo!';
-            setTimeout(() => { saveFileBtn.textContent = '💾 Salvar' }, 1500);
+          elements.saveFileBtn.disabled = true;
+          elements.saveFileBtn.textContent = 'Salvo!';
+          setTimeout(() => { 
+            elements.saveFileBtn.textContent = '💾 Salvar';
+          }, 1500);
         });
       }
     }
 
+      // Atualizar arquivos no Firebase
     function updateFirebaseFiles(callback) {
-      projectRef.child('files').set(files, (error) => {
-          if (error) {
-              alert('Falha ao salvar o arquivo.');
-              console.error(error);
-          } else if (callback) {
-              callback();
-          }
+      if (!projectRef) {
+        console.error('Referência do projeto não definida');
+        return;
+      }
+
+      projectRef.child('files').set(files)
+        .then(() => {
+          if (callback) callback();
+        })
+        .catch(error => {
+          console.error('Erro ao salvar arquivos:', error);
+          alert('Falha ao salvar os arquivos. Por favor, tente novamente.');
+        });
+    }
+
+    // Atualizar nome do projeto
+    function updateProjectName() {
+      const newName = elements.projectNameInput.value.trim();
+      if (!newName) {
+        alert('O nome do projeto não pode ser vazio.');
+        projectRef.child('name').once('value', snapshot => {
+          elements.projectNameInput.value = snapshot.val() || '';
+        });
+        return;
+      }
+      
+      projectRef.child('name').set(newName);
+      projectRef.child('updatedAt').set(new Date().toISOString());
+    }
+
+    // Monitorar códigos recebidos da IA
+    function setupCodeListener() {
+      if (!sessionRef) {
+        console.error('Referência de sessão não definida');
+        return;
+      }
+      
+      sessionRef.child('codes').on('child_added', (snapshot) => {
+        const codeData = snapshot.val();
+        if (codeData && codeData.code) {
+          console.log('Novo código recebido:', codeData);
+          showCodeNotification(codeData);
+        }
+      }, (error) => {
+        console.error('Erro ao monitorar códigos:', error);
       });
     }
 
-    function updateProjectName() {
-        const newName = projectNameInput.value.trim();
-        if (!newName) {
-            alert('O nome do projeto não pode ser vazio.');
-            projectRef.child('name').once('value', s => projectNameInput.value = s.val());
-            return;
+    // Mostrar notificação de novo código
+    function showCodeNotification(codeData) {
+      currentCode = codeData;
+      elements.codePreview.textContent = codeData.code;
+      
+      // Preencher seletor de arquivos
+      elements.targetFileSelect.innerHTML = '';
+      Object.keys(files).forEach(fileKey => {
+        const fileData = files[fileKey];
+        const option = document.createElement('option');
+        option.value = fileKey;
+        option.textContent = fileData.originalName || fileData.name;
+        elements.targetFileSelect.appendChild(option);
+      });
+      
+      elements.codeNotification.style.display = 'block';
+    }
+
+    // Inserir código no arquivo selecionado
+    function insertCode() {
+      if (!currentCode) {
+        console.error('Nenhum código para inserir');
+        return;
+      }
+      
+      const selectedFileKey = elements.targetFileSelect.value;
+      if (!selectedFileKey || !files[selectedFileKey]) {
+        console.error('Arquivo selecionado inválido');
+        return;
+      }
+      
+      // Adicionar código ao arquivo
+      files[selectedFileKey].content = files[selectedFileKey].content + '\n' + currentCode.code;
+      
+      // Atualizar Firebase
+      updateFirebaseFiles(() => {
+        console.log('Código inserido com sucesso no arquivo:', selectedFileKey);
+        
+        // Atualizar editor
+        if (selectedFileKey === currentFile) {
+          const model = editor.getModel();
+          if (model) {
+            model.setValue(files[selectedFileKey].content);
+          }
+        } else {
+          openFile(selectedFileKey);
         }
-        projectRef.child('name').set(newName);
-        projectRef.child('updatedAt').set(new Date().toISOString());
-   
+        
+        // Fechar notificação
+        elements.codeNotification.style.display = 'none';
+        currentCode = null;
+      });
+    }
+  </script>
+</body>
+</html>
