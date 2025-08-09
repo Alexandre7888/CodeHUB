@@ -1,1 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Continuar Login com Usuário</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    padding: 50px;
+    background: #f0f0f0;
+  }
+  #status {
+    margin: 20px 0;
+    font-weight: bold;
+    color: #333;
+  }
+  #username {
+    font-size: 1.2rem;
+    margin-top: 10px;
+    color: #2a2a2a;
+  }
+  #continueBtn {
+    padding: 10px 25px;
+    font-size: 1rem;
+    background-color: #4895ef;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: none;
+  }
+  #continueBtn:hover {
+    background-color: #367cd4;
+  }
+</style>
+</head>
+<body>
 
+<h1>Continuar Login</h1>
+<p id="status">Carregando informações...</p>
+<p id="username"></p>
+<button id="continueBtn">Continuar</button>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+  import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
+    authDomain: "html-15e80.firebaseapp.com",
+    databaseURL: "https://html-15e80-default-rtdb.firebaseio.com",
+    projectId: "html-15e80",
+    storageBucket: "html-15e80.appspot.com",
+    messagingSenderId: "1068148640439",
+    appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32",
+    measurementId: "G-V57KRZ02HJ"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+
+  const statusEl = document.getElementById('status');
+  const usernameEl = document.getElementById('username');
+  const continueBtn = document.getElementById('continueBtn');
+
+  // Pega token da URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const appToken = urlParams.get('token');
+
+  function disableContinue() {
+    continueBtn.disabled = true;
+    continueBtn.style.display = 'none';
+  }
+
+  if (!appToken) {
+    statusEl.textContent = 'Token da aplicação não informado na URL.';
+    disableContinue();
+  } else {
+    const tokenRef = ref(db, `tokens/${appToken}`);
+
+    get(tokenRef).then(snapshot => {
+      if (!snapshot.exists()) {
+        statusEl.textContent = 'Token da aplicação inválido.';
+        disableContinue();
+        return;
+      }
+
+      const tokenData = snapshot.val();
+      const redirectURL = tokenData.redirectURL;
+
+      if (!redirectURL) {
+        statusEl.textContent = 'Link de redirecionamento não encontrado.';
+        disableContinue();
+        return;
+      }
+
+      statusEl.textContent = 'Buscando usuário...';
+
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          const nome = user.email ? user.email.split('@')[0] : `Usuário-${user.uid.substring(0,6)}`;
+          usernameEl.textContent = `Usuário: ${nome}`;
+          continueBtn.style.display = 'inline-block';
+          statusEl.textContent = 'Pronto para continuar';
+
+          continueBtn.onclick = async () => {
+            continueBtn.disabled = true;
+            statusEl.textContent = 'Gerando chave para usuário...';
+
+            try {
+              const userKeyRef = ref(db, `userKeys/${user.uid}/${appToken}`);
+              let userKeySnap = await get(userKeyRef);
+              let userKey;
+
+              if (userKeySnap.exists()) {
+                userKey = userKeySnap.val();
+              } else {
+                userKey = user.uid + '-' + Date.now() + '-' + Math.random().toString(36).slice(2,8);
+                await set(userKeyRef, userKey);
+              }
+
+              const userKeyDataRef = ref(db, `userKeysData/${userKey}`);
+              await set(userKeyDataRef, {
+                nome,
+                uid: user.uid,
+                criadoEm: Date.now()
+              });
+
+              usernameEl.textContent = `Usuário: ${nome} | Chave: ${userKey}`;
+              statusEl.textContent = 'Redirecionando...';
+
+              // Redireciona com userKey E userName na URL
+              const sep = redirectURL.includes('?') ? '&' : '?';
+              const urlFinal = redirectURL + sep + 
+                `userKey=${encodeURIComponent(userKey)}` + 
+                `&userName=${encodeURIComponent(nome)}`;
+              window.location.href = urlFinal;
+
+            } catch (err) {
+              statusEl.textContent = 'Erro ao gerar chave: ' + err.message;
+              continueBtn.disabled = false;
+            }
+          };
+
+        } else {
+          usernameEl.textContent = 'Nenhum usuário logado';
+          continueBtn.style.display = 'inline-block';
+          statusEl.textContent = 'Clique para continuar e fazer login';
+
+          continueBtn.onclick = async () => {
+            continueBtn.disabled = true;
+            statusEl.textContent = 'Fazendo login anônimo...';
+            try {
+              await signInAnonymously(auth);
+              statusEl.textContent = 'Login feito! Atualize a página para continuar.';
+              setTimeout(() => location.reload(), 1500);
+            } catch (err) {
+              statusEl.textContent = 'Erro ao logar: ' + err.message;
+              continueBtn.disabled = false;
+            }
+          };
+        }
+      });
+    }).catch(error => {
+      statusEl.textContent = 'Erro ao buscar token: ' + error.message;
+      disableContinue();
+    });
+  }
+</script>
+
+</body>
+</html>
