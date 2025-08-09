@@ -1,0 +1,120 @@
+<!doctype html>
+
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Documentação da API OAuth – CodeHUB</title>
+  <style>
+    :root{font-family: Inter,ui-sans-serif,system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; color:#0f172a}
+    body{margin:0; padding:32px; background:#f8fafc}
+    .container{max-width:900px; margin:0 auto; background:#fff; padding:28px; border-radius:12px; box-shadow:0 6px 24px rgba(15,23,42,0.06)}
+    h1{font-size:28px; margin:0 0 8px}
+    h2{font-size:20px; margin-top:20px}
+    p{line-height:1.5}
+    pre{background:#0f172a; color:#f8fafc; padding:16px; border-radius:8px; overflow:auto}
+    code{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace}
+    .section{margin-top:16px}
+    .meta{background:#eef2ff; padding:10px; border-radius:8px; font-size:14px}
+    table{width:100%; border-collapse:collapse; margin-top:8px}
+    th, td{padding:8px; text-align:left; border-bottom:1px solid #eef2ff}
+    .kbd{background:#eef2ff; padding:3px 8px; border-radius:6px; font-weight:600}
+    .muted{color:#64748b}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Documentação da API OAuth – CodeHUB</h1>
+    <p class="muted">Versão: 1.0 · Autor: Alexandre</p><h2>Visão Geral</h2>
+<p>A API OAuth do CodeHUB permite:</p>
+<ol>
+  <li>Criar um token de autenticação (<span class="kbd">criar.app</span>)</li>
+  <li>Continuar a sessão de um usuário autenticado (<span class="kbd">continuar-conta</span>)</li>
+  <li>Obter informações do usuário via JavaScript (<span class="kbd">userKeyAPI.js</span>)</li>
+</ol>
+
+<hr />
+
+<div class="section">
+  <h2>1. Criar Token</h2>
+  <p><strong>URL Base:</strong></p>
+  <pre>https://alexandre7888.github.io/CodeHUB/API/criar.app</pre>
+
+  <p><strong>Método:</strong></p>
+  <div class="meta">GET</div>
+
+  <p><strong>Descrição:</strong></p>
+  <p>Este endpoint gera um token único para o usuário após autenticação. Geralmente redireciona para uma URL de callback ou exibe o token na tela para uso posterior.</p>
+
+  <p><strong>Fluxo:</strong></p>
+  <ol>
+    <li>O usuário acessa o link <code>criar.app</code>.</li>
+    <li>A API autentica e retorna um token.</li>
+    <li>O token pode ser usado no endpoint <code>/continuar-conta</code> para carregar a sessão.</li>
+  </ol>
+</div>
+
+<hr />
+
+<div class="section">
+  <h2>2. Continuar Conta</h2>
+
+  <p><strong>URL Base:</strong></p>
+  <pre>https://alexandre7888.github.io/CodeHUB/API/continuar-conta?token={TOKEN}</pre>
+
+  <p><strong>Parâmetros:</strong></p>
+  <table>
+    <thead>
+      <tr><th>Nome</th><th>Tipo</th><th>Obrigatório</th><th>Descrição</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>token</td><td>string</td><td>Sim</td><td>Token do usuário criado no <code>criar.app</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Exemplo de Requisição:</strong></p>
+  <pre>GET https://alexandre7888.github.io/CodeHUB/API/continuar-conta?token=abc123xyz</pre>
+
+  <p><strong>Resposta:</strong></p>
+  <pre>{
+
+"status": "success", "user": { "id": "12345", "name": "Alexandre Braatz", "email": "alexandre@example.com" } }</pre> </div>
+
+<hr />
+
+<div class="section">
+  <h2>3. Script – userKeyAPI.js</h2>
+
+  <p><strong>URL:</strong></p>
+  <pre>https://alexandre7888.github.io/CodeHUB/API/userKeyAPI.js</pre>
+
+  <p><strong>Função:</strong></p>
+  <ul>
+    <li>Ler o token na URL (<code>?token=...</code>)</li>
+    <li>Fazer requisição ao endpoint <code>/continuar-conta</code></li>
+    <li>Exibir dados do usuário na página</li>
+  </ul>
+
+  <p><strong>Exemplo de Uso:</strong></p>
+  <pre>&lt;!DOCTYPE html&gt;
+
+<html lang="pt-br"> <head> <meta charset="UTF-8" /> <title>Conta do Usuário</title> </head> <body> <h1 id="userName">Carregando...</h1> <script src="https://alexandre7888.github.io/CodeHUB/API/userKeyAPI.js"></script> </body> </html></pre> </div>
+
+<hr />
+
+<div class="section">
+  <h2>4. Fluxo Completo</h2>
+  <ol>
+    <li>Usuário cria token → Acessa <code>criar.app</code> → Recebe <strong>TOKEN</strong>.</li>
+    <li>Frontend redireciona para página com <code>?token=TOKEN</code>.</li>
+    <li>Script <code>userKeyAPI.js</code> lê token, chama <code>/continuar-conta</code>, obtém dados do usuário e exibe na tela.</li>
+  </ol>
+</div>
+
+<footer style="margin-top:20px; font-size:13px; color:#94a3b8">
+  Documentação gerada automaticamente — edite conforme necessário.
+</footer>
+
+  </div>
+</body>
+</html>
