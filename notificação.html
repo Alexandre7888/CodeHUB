@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página com OneSignal</title>
+    
+    <!-- OneSignal SDK -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "a97261b5-97ce-4133-a747-51240debff05",
+          safari_web_id: "web.onesignal.auto.456a4abd-b5a3-4365-958f-9af6b49613be",
+          notifyButton: {
+            enable: true,
+          },
+        });
+      });
+    </script>
+    
+    <!-- Seus outros elementos head aqui -->
+</head>
+<body>
+    <!-- Conteúdo da sua página aqui -->
+    <h1>Minha Página com OneSignal</h1>
+    <p>Esta página está integrada com notificações push do OneSignal.</p>
+    
+    <!-- Seus outros scripts aqui -->
+</body>
+</html>
