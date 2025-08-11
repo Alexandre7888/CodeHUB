@@ -137,7 +137,7 @@
     <h1>Continuar Login</h1>
     <p>Complete o processo de autenticação</p>
   </div>
-  
+
   <div class="auth-content">
     <p id="status">Carregando informações...</p>
     <p id="username"></p>
@@ -187,23 +187,28 @@
     errorEl.textContent = 'Não é possível continuar no momento.';
   }
 
-  async function sendConfirmationEmail(userName, userEmail = null) {
+  async function sendConfirmationEmail(userName, userEmail) {
+    if (!userEmail) {
+      console.log('Usuário não tem e-mail cadastrado, não será enviado e-mail de confirmação');
+      return;
+    }
+
     try {
       const templateParams = {
         to_name: userName,
-        to_email: userEmail || 'no-email@example.com', // Email padrão se não tiver
+        to_email: userEmail,
         date: new Date().toLocaleDateString('pt-BR'),
         app_name: 'Sistema de Autenticação'
       };
 
       // Envie o email usando EmailJS
       await emailjs.send(
-        'service_op9fbwk', // Substitua pelo ID do seu serviço
-        'template_sd9wuh9', // Substitua pelo ID do template
+        'service_op9fbwk', // ID do serviço EmailJS
+        'template_sd9wuh9', // ID do template EmailJS
         templateParams
       );
-      
-      console.log('Email de confirmação enviado com sucesso!');
+
+      console.log('Email de confirmação enviado com sucesso para:', userEmail);
     } catch (error) {
       console.error('Erro ao enviar email de confirmação:', error);
     }
@@ -235,7 +240,11 @@
 
       onAuthStateChanged(auth, async (user) => {
         if (user) {
-          const nome = user.email ? user.email.split('@')[0] : `Usuário-${user.uid.substring(0,6)}`;
+          // Verifica se o usuário tem e-mail (não anônimo)
+          const hasEmail = user.email && !user.isAnonymous;
+          const nome = hasEmail ? user.email.split('@')[0] : `Usuário-${user.uid.substring(0,6)}`;
+          const userEmail = hasEmail ? user.email : null;
+          
           usernameEl.textContent = `Olá, ${nome}!`;
           continueBtn.style.display = 'block';
           statusEl.textContent = 'Pronto para continuar';
@@ -261,11 +270,15 @@
               await set(userKeyDataRef, {
                 nome,
                 uid: user.uid,
+                email: userEmail,
                 criadoEm: Date.now()
               });
 
-              // Envia email de confirmação
-              await sendConfirmationEmail(nome, user.email || null);
+              // Envia email de confirmação apenas se o usuário tiver e-mail
+              if (userEmail) {
+                statusEl.textContent = 'Enviando confirmação por e-mail...';
+                await sendConfirmationEmail(nome, userEmail);
+              }
 
               statusEl.textContent = 'Redirecionando...';
               usernameEl.textContent = `Bem-vindo, ${nome}!`;
@@ -314,4 +327,4 @@
 </script>
 
 </body>
-  </html>
+</html>
