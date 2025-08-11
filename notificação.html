@@ -16,17 +16,34 @@
           notifyButton: {
             enable: true,
           },
+          promptOptions: {
+            /* Configurações adicionais do prompt */
+          }
+        });
+        
+        // Adiciona evento de clique personalizado
+        document.getElementById('custom-prompt-btn').addEventListener('click', () => {
+          OneSignal.Notifications.requestPermission();
         });
       });
     </script>
-    
-    <!-- Seus outros elementos head aqui -->
 </head>
 <body>
-    <!-- Conteúdo da sua página aqui -->
     <h1>Minha Página com OneSignal</h1>
     <p>Esta página está integrada com notificações push do OneSignal.</p>
     
-    <!-- Seus outros scripts aqui -->
+    <!-- Botão personalizado para solicitar permissão -->
+    <button id="custom-prompt-btn">Ativar Notificações</button>
+    
+    <script>
+      // Fallback caso o OneSignal não carregue
+      document.getElementById('custom-prompt-btn').addEventListener('click', function() {
+        if (window.OneSignal) {
+          OneSignal.Notifications.requestPermission();
+        } else {
+          alert("O serviço de notificações não está disponível no momento.");
+        }
+      });
+    </script>
 </body>
 </html>
