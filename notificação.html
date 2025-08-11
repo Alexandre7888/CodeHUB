@@ -1,82 +1,58 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notificações Push</title>
-    
-    <!-- OneSignal SDK -->
+    <title>Inscreva-se para Notificações</title>
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
-      OneSignalDeferred.push(function(OneSignal) {
-        OneSignal.init({
-          appId: "a97261b5-97ce-4133-a747-51240debff05",
-          safari_web_id: "web.onesignal.auto.456a4abd-b5a3-4365-958f-9af6b49613be",
-          allowLocalhostAsSecureOrigin: true,  // só para desenvolvimento local
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          
+           appId: "a97261b5-97ce-4133-a747-51240debff05",
+           safari_web_id: "web.onesignal.auto.456a4abd-b5a3-4365-958f-9af6b49613be",
           notifyButton: {
             enable: true,
-            size: 'medium',
-            position: 'bottom-right',
-            theme: 'default',
-            prenotify: true,
-            showCredit: false
           },
-          promptOptions: {
-            actionMessage: "Quer receber nossas notificações?",
-            acceptButtonText: "SIM, quero",
-            cancelButtonText: "Agora não"
-          }
         });
       });
     </script>
     <style>
-      body {
-        font-family: Arial, sans-serif;
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 20px;
-      }
-      #custom-prompt-btn {
-        background-color: #2185d0;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 5px;
-        cursor: pointer;
-        font-size: 16px;
-        margin-top: 20px;
-      }
-      #custom-prompt-btn:hover {
-        background-color: #1678c2;
-      }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+            color: #333;
+            text-align: center;
+        }
+        .container {
+            padding: 2rem 3rem;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            max-width: 90%;
+        }
+        h1 {
+            color: #1877f2;
+            margin-bottom: 1rem;
+        }
+        p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
     </style>
 </head>
 <body>
-    <h1>Minha Página com OneSignal</h1>
-    <p>Esta página está integrada com notificações push do OneSignal.</p>
-    
-    <button id="custom-prompt-btn">Ativar Notificações</button>
-    
-    <script>
-      // Fallback para caso o OneSignal não carregue
-      document.getElementById('custom-prompt-btn').addEventListener('click', function() {
-        if (window.OneSignal) {
-          OneSignal.Slidedown.promptPush().then(function() {
-            OneSignal.Notifications.isPushSupported().then(function(isSupported) {
-              if (isSupported) {
-                OneSignal.Notifications.permission.then(function(permission) {
-                  if (permission === 'granted') {
-                    alert('Obrigado por ativar as notificações!');
-                  }
-                });
-              }
-            });
-          });
-        } else {
-          alert("O serviço de notificações não está disponível no momento. Tente recarregar a página.");
-        }
-      });
-    </script>
+    <div class="container">
+        <h1>Mantenha-se Atualizado!</h1>
+        <p>Para receber as últimas notícias e atualizações, por favor, inscreva-se para receber nossas notificações.</p>
+        <p>Clique no sino vermelho no canto da tela para ativar as notificações.</p>
+    </div>
 </body>
 </html>
+
