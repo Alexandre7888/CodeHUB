@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documento em Iframe</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        #docFrame {
+            width: 100%;
+            height: 90vh;  /* 90% da altura da tela */
+            border: 2px solid #4285f4;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        #toggleButton {
+            padding: 12px 24px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        #toggleButton:hover {
+            background-color: #3367d6;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button id="toggleButton">Abrir Documento</button>
+        <iframe id="docFrame" src="" frameborder="0"></iframe>
+    </div>
+
+    <script>
+        document.getElementById('toggleButton').addEventListener('click', function() {
+            const frame = document.getElementById('docFrame');
+            
+            if (frame.style.display === 'none' || frame.style.display === '') {
+                frame.src = 'https://docs.google.com/document/d/1hm5cBy1XdyKyZicQuYMl-nKY8TcxefouVmnS-YpHvzM/preview';
+                frame.style.display = 'block';
+                this.textContent = 'Fechar Documento';
+            } else {
+                frame.src = '';
+                frame.style.display = 'none';
+                this.textContent = 'Abrir Documento';
+            }
+        });
+    </script>
+</body>
+</html>
