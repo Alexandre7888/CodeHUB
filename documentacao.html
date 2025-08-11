@@ -1,10 +1,9 @@
 <!doctype html>
-
 <html lang="pt-br">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Guia — Como criar a Documentação da API (CodeHUB)</title>
+  <title>Documentação da API CodeHUB</title>
   <style>
     :root{font-family: Inter,ui-sans-serif,system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; color:#0f172a}
     body{margin:0; padding:32px; background:#f8fafc}
@@ -24,98 +23,118 @@
 </head>
 <body>
   <div class="container">
-    <h1>Guia prático — Como criar a documentação da API</h1>
-    <p class="note"><strong>Objetivo:</strong> este documento explica, passo a passo, como criar documentação clara e reutilizável para a API OAuth do CodeHUB (ou qualquer API similar).</p><h2>1. Planejamento (o que a doc deve conter)</h2>
-<p>Antes de escrever, defina o escopo da doc. Para a API OAuth sugerimos:</p>
-<ul>
-  <li>Visão geral e objetivo</li>
-  <li>Endpoints (URLs, método, parâmetros, exemplos)</li>
-  <li>Fluxos (criar token, continuar sessão)</li>
-  <li>Exemplos de uso (HTML/JS, cURL)</li>
-  <li>Segurança e boas práticas</li>
-  <li>FAQ / troubleshooting</li>
-</ul>
+    <h1>Documentação da API CodeHUB</h1>
+    <p class="note"><strong>Versão:</strong> 2.0 (Firebase Integration)</p>
 
-<h2>2. Pré-requisitos</h2>
-<ul>
-  <li>Conta no GitHub (para hospedar no GitHub Pages) — opcional</li>
-  <li>Editor de texto (VSCode, Notepad++, etc.)</li>
-  <li>Arquivos da API (endpoints e scripts: ex: <code>userKeyAPI.js</code>)</li>
-</ul>
+    <h2>Visão Geral</h2>
+    <p>A API CodeHUB permite integrar projetos e arquivos de código armazenados no Firebase com seu aplicativo ou site. Ela fornece métodos para:</p>
+    <ul>
+      <li>Carregar projetos de um usuário específico</li>
+      <li>Visualizar conteúdo de arquivos de código</li>
+      <li>Gerenciar autenticação via Firebase</li>
+    </ul>
 
-<h2>3. Estrutura recomendada de arquivos</h2>
-<pre>docs/
+    <h2>Configuração Inicial</h2>
+    <p>Para usar a API, inclua o seguinte script em sua página:</p>
+    <pre><code>&lt;script src="https://alexandre7888.github.io/CodeHUB/API/api2.js"&gt;&lt;/script&gt;</code></pre>
 
-├─ index.html        ← página principal da documentação (ou README.md) ├─ criar.app         ← endpoint estático (opcional) ├─ continuar-conta   ← endpoint └─ assets/ ├─ css/ └─ js/userKeyAPI.js</pre>
+    <h2>Parâmetros da URL</h2>
+    <p>A API espera os seguintes parâmetros na URL:</p>
+    <table>
+      <tr>
+        <th>Parâmetro</th>
+        <th>Tipo</th>
+        <th>Obrigatório</th>
+        <th>Descrição</th>
+      </tr>
+      <tr>
+        <td>userKey</td>
+        <td>String</td>
+        <td>Sim*</td>
+        <td>Chave única do usuário (formato: ID-TOKEN)</td>
+      </tr>
+      <tr>
+        <td>userName</td>
+        <td>String</td>
+        <td>Sim*</td>
+        <td>Nome do usuário para filtrar projetos</td>
+      </tr>
+    </table>
+    <p class="note">* Pelo menos um dos parâmetros (userKey ou userName) deve ser fornecido.</p>
 
-<h2>4. Template de documentação (Markdown)</h2>
-<p>Use este template para gerar páginas Markdown facilmente:</p>
-<pre>---
+    <h2>Métodos da API</h2>
+    <h3>1. renderProjects(container, userKey, userName)</h3>
+    <p>Renderiza os projetos do usuário no elemento container especificado.</p>
+    <p><strong>Parâmetros:</strong></p>
+    <ul>
+      <li><code>container</code> - Elemento DOM onde os projetos serão renderizados</li>
+      <li><code>userKey</code> - Chave do usuário (opcional)</li>
+      <li><code>userName</code> - Nome do usuário (opcional)</li>
+    </ul>
 
-title: Documentação da API OAuth — CodeHUB version: 1.0
+    <h2>Exemplo de Uso</h2>
+    <pre><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;title&gt;Exemplo de Integração&lt;/title&gt;
+  &lt;script src="https://alexandre7888.github.io/CodeHUB/API/api2.js"&gt;&lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;div id="projects-container"&gt;&lt;/div&gt;
+  
+  &lt;script&gt;
+    // A API é automaticamente inicializada quando o DOM estiver pronto
+    // Certifique-se de incluir userKey ou userName na URL
+    // Exemplo: ?userKey=12345-abcde&amp;userName=Alexandre
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
 
-Visão Geral
+    <h2>Estrutura de Dados</h2>
+    <p>A API retorna projetos no seguinte formato:</p>
+    <pre><code>{
+  "id": "project123",
+  "name": "Meu Projeto",
+  "createdAt": "2023-01-01T00:00:00Z",
+  "files": {
+    "file1": {
+      "originalName": "script.js",
+      "content": "console.log('Hello World');",
+      "language": "javascript"
+    }
+  }
+}</code></pre>
 
-Descrição curta sobre a API e casos de uso.
+    <h2>Tratamento de Erros</h2>
+    <p>A API exibe mensagens de erro diretamente no container especificado em casos de:</p>
+    <ul>
+      <li>Parâmetros ausentes na URL</li>
+      <li>Falha na conexão com o Firebase</li>
+      <li>Projetos não encontrados para o usuário</li>
+    </ul>
 
-Endpoints
+    <h2>Estilos CSS</h2>
+    <p>A API inclui estilos padrão para os seguintes elementos:</p>
+    <ul>
+      <li>Container de projetos (<code>.ch-projects-container</code>)</li>
+      <li>Cartões de projeto (<code>.ch-project-card</code>)</li>
+      <li>Modal de visualização de código (<code>.code-modal</code>)</li>
+      <li>Indicadores de carregamento e erro</li>
+    </ul>
 
-1) Criar Token
+    <h2>Boas Práticas</h2>
+    <div class="tips">
+      <ul>
+        <li>Forneça ambos os parâmetros (userKey e userName) para melhores resultados</li>
+        <li>Certifique-se de que o container tenha espaço suficiente para exibir os projetos</li>
+        <li>Teste a integração em diferentes tamanhos de tela</li>
+        <li>Não modifique os estilos CSS da API diretamente - sobrescreva-os em seu próprio CSS se necessário</li>
+      </ul>
+    </div>
 
-URL: /criar.app
-Método: GET
-Descrição: Gera token único...
-
-2) Continuar Conta
-
-URL: /continuar-conta?token={TOKEN}
-Parâmetros: token (string, obrigatório)
-
-Exemplo de uso (JS)
-
-<script src="/assets/js/userKeyAPI.js"></script>
-
-</pre><h2>5. Exemplo HTML pronto (para publicar)</h2>
-<p>Copie e cole este HTML em <code>docs/index.html</code> ou use como template para GitHub Pages:</p>
-<pre>&lt;!doctype html&gt;
-
-<html lang="pt-br"> <head> <meta charset="utf-8"/> <title>Documentação — CodeHUB</title> </head> <body> <h1>Documentação da API OAuth — CodeHUB</h1> <h2>Visão Geral</h2> <p>A API permite criar token, continuar sessão e ler dados via JS.</p> <!-- Adicione o conteúdo conforme o template Markdown --> </body> </html></pre>
-
-<h2>6. Como gerar o token (exemplo de fluxo)</h2>
-<ol>
-  <li>Usuário acessa <code>/criar.app</code>.</li>
-  <li>Servidor autentica e retorna token (ou redireciona para uma URL com <code>?token=XYZ</code>).</li>
-  <li>Frontend chama <code>/continuar-conta?token=XYZ</code> para obter dados do usuário.</li>
-</ol>
-
-<h2>7. Exemplo de snippet para <code>userKeyAPI.js</code></h2>
-<pre>// userKeyAPI.js (exemplo simples)
-
-(function(){ function qs(name){ const url = new URL(window.location.href); return url.searchParams.get(name); } const token = qs('token'); if(!token) return console.warn('Token não encontrado na URL'); fetch('https://alexandre7888.github.io/CodeHUB/API/continuar-conta?token='+encodeURIComponent(token)) .then(r=>r.json()) .then(data=>{ if(data && data.user){ const el = document.getElementById('userName'); if(el) el.textContent = 'Bem-vindo, '+(data.user.name||'Usuário'); } }).catch(err=>console.error(err)); })();</pre>
-
-<h2>8. Checklist antes de publicar</h2>
-<ul>
-  <li>[ ] Verificar URLs e métodos (GET/POST)</li>
-  <li>[ ] Testar exemplos (cURL, JS, HTML)</li>
-  <li>[ ] Remover chaves sensíveis do repositório</li>
-  <li>[ ] Incluir instruções de segurança e expiração de tokens</li>
-  <li>[ ] Publicar no GitHub Pages ou servidor estático</li>
-</ul>
-
-<h2>9. Boas práticas & dicas</h2>
-<div class="tips">
-  <ul>
-    <li>Forneça exemplos reais — cURL, JS e HTML — para facilitar a integração.</li>
-    <li>Adicione um botão “Copiar” nos blocos de código para melhorar a UX.</li>
-    <li>Documente o formato de erro da API (500, 401, 400, etc.).</li>
-    <li>Inclua um changelog se a API for atualizada com frequência.</li>
-  </ul>
-</div>
-
-<footer>
-  Pronto! Este guia transforma a doc técnica em um conjunto de arquivos que podem ser versionados e publicados. Quer que eu: <strong>1)</strong> atualize o HTML do documento atual com este conteúdo (já feito), <strong>2)</strong> gere o README.md em Markdown, ou <strong>3)</strong> inclua o arquivo <code>userKeyAPI.js</code> completo na pasta assets?
-</footer>
-
+    <footer>
+      Documentação atualizada em: 11/08/2025 | Versão da API: 2.0
+    </footer>
   </div>
 </body>
 </html>
