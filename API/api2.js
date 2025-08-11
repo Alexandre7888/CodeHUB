@@ -43,6 +43,7 @@ class CodeHubAPI {
     try {
       firebase.initializeApp(firebaseConfig);
       this.db = firebase.database();
+      this.selectedProjects = [];
     } catch (error) {
       console.error("Erro no Firebase:", error);
       this.showError(document.body, "Erro na conexão com o servidor");
@@ -71,6 +72,7 @@ class CodeHubAPI {
           for (const projectId in allProjects[projectUserId]) {
             projects.push({
               id: projectId,
+              userId: projectUserId,
               ...allProjects[projectUserId][projectId]
             });
           }
@@ -88,9 +90,9 @@ class CodeHubAPI {
         return;
       }
 
-      // Renderiza os projetos encontrados
-      container.innerHTML = this.generateProjectsHTML(projects);
-      this.addCodeViewListeners();
+      // Renderiza a interface de seleção de projetos
+      container.innerHTML = this.generateProjectSelectionHTML(projects);
+      this.addSelectionListeners(container, projects);
 
     } catch (error) {
       console.error("Erro ao carregar projetos:", error);
@@ -103,10 +105,71 @@ class CodeHubAPI {
     }
   }
 
+  generateProjectSelectionHTML(projects) {
+    let html = `
+      <div class="ch-projects-selection">
+        <h2>Selecione os projetos que deseja visualizar</h2>
+        <div class="projects-list">
+    `;
+
+    projects.forEach((project, index) => {
+      html += `
+        <div class="project-item">
+          <input type="checkbox" id="project-${index}" class="project-checkbox" 
+                 data-project-id="${project.id}" data-user-id="${project.userId}">
+          <label for="project-${index}">
+            <strong>${this.escapeHTML(project.name)}</strong> (Criado em: ${new Date(project.createdAt).toLocaleString()})
+          </label>
+        </div>
+      `;
+    });
+
+    html += `
+        </div>
+        <button id="view-selected-projects" class="view-projects-btn">Visualizar Projetos Selecionados</button>
+      </div>
+    `;
+
+    return html;
+  }
+
+  addSelectionListeners(container, projects) {
+    const viewBtn = container.querySelector('#view-selected-projects');
+    viewBtn.addEventListener('click', () => {
+      const checkboxes = container.querySelectorAll('.project-checkbox:checked');
+      this.selectedProjects = [];
+      
+      checkboxes.forEach(checkbox => {
+        const projectId = checkbox.dataset.projectId;
+        const userId = checkbox.dataset.userId;
+        const project = projects.find(p => p.id === projectId && p.userId === userId);
+        if (project) {
+          this.selectedProjects.push(project);
+        }
+      });
+
+      if (this.selectedProjects.length > 0) {
+        container.innerHTML = this.generateProjectsHTML(this.selectedProjects);
+        this.addCodeViewListeners();
+      } else {
+        container.innerHTML = `
+          <div class="ch-error">
+            <p>Nenhum projeto selecionado</p>
+            <button id="back-to-selection" class="back-btn">Voltar para seleção</button>
+          </div>
+        `;
+        container.querySelector('#back-to-selection').addEventListener('click', () => {
+          this.renderProjects(container, null, null);
+        });
+      }
+    });
+  }
+
   generateProjectsHTML(projects) {
     let html = `
       <div class="ch-projects-container">
-        <h2>Projetos Encontrados</h2>
+        <button id="back-to-selection" class="back-btn">Voltar para seleção</button>
+        <h2>Projetos Selecionados</h2>
         <div class="ch-projects-list">
     `;
 
@@ -139,6 +202,16 @@ class CodeHubAPI {
     });
 
     html += `</div></div>`;
+
+    // Adiciona listener para o botão de voltar
+    html += `
+      <script>
+        document.querySelector('#back-to-selection').addEventListener('click', () => {
+          window.location.reload();
+        });
+      </script>
+    `;
+
     return html;
   }
 
@@ -277,6 +350,31 @@ async function initializeApp() {
       padding: 15px;
       border-radius: 4px;
       overflow-x: auto;
+    }
+    .ch-projects-selection {
+      margin-bottom: 20px;
+    }
+    .project-item {
+      margin: 10px 0;
+      padding: 10px;
+      background: #f9f9f9;
+      border-radius: 4px;
+    }
+    .project-checkbox {
+      margin-right: 10px;
+    }
+    .view-projects-btn, .back-btn {
+      background: #4285f4;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 15px;
+      font-size: 16px;
+    }
+    .view-projects-btn:hover, .back-btn:hover {
+      background: #3367d6;
     }
   `;
   document.head.appendChild(style);
