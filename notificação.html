@@ -3,45 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Página com OneSignal</title>
+    <title>Notificações Push</title>
     
     <!-- OneSignal SDK -->
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
-      OneSignalDeferred.push(async function(OneSignal) {
-        await OneSignal.init({
+      OneSignalDeferred.push(function(OneSignal) {
+        OneSignal.init({
           appId: "a97261b5-97ce-4133-a747-51240debff05",
           safari_web_id: "web.onesignal.auto.456a4abd-b5a3-4365-958f-9af6b49613be",
+          allowLocalhostAsSecureOrigin: true,  // só para desenvolvimento local
           notifyButton: {
             enable: true,
+            size: 'medium',
+            position: 'bottom-right',
+            theme: 'default',
+            prenotify: true,
+            showCredit: false
           },
           promptOptions: {
-            /* Configurações adicionais do prompt */
+            actionMessage: "Quer receber nossas notificações?",
+            acceptButtonText: "SIM, quero",
+            cancelButtonText: "Agora não"
           }
-        });
-        
-        // Adiciona evento de clique personalizado
-        document.getElementById('custom-prompt-btn').addEventListener('click', () => {
-          OneSignal.Notifications.requestPermission();
         });
       });
     </script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      #custom-prompt-btn {
+        background-color: #2185d0;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-top: 20px;
+      }
+      #custom-prompt-btn:hover {
+        background-color: #1678c2;
+      }
+    </style>
 </head>
 <body>
     <h1>Minha Página com OneSignal</h1>
     <p>Esta página está integrada com notificações push do OneSignal.</p>
     
-    <!-- Botão personalizado para solicitar permissão -->
     <button id="custom-prompt-btn">Ativar Notificações</button>
     
     <script>
-      // Fallback caso o OneSignal não carregue
+      // Fallback para caso o OneSignal não carregue
       document.getElementById('custom-prompt-btn').addEventListener('click', function() {
         if (window.OneSignal) {
-          OneSignal.Notifications.requestPermission();
+          OneSignal.Slidedown.promptPush().then(function() {
+            OneSignal.Notifications.isPushSupported().then(function(isSupported) {
+              if (isSupported) {
+                OneSignal.Notifications.permission.then(function(permission) {
+                  if (permission === 'granted') {
+                    alert('Obrigado por ativar as notificações!');
+                  }
+                });
+              }
+            });
+          });
         } else {
-          alert("O serviço de notificações não está disponível no momento.");
+          alert("O serviço de notificações não está disponível no momento. Tente recarregar a página.");
         }
       });
     </script>
