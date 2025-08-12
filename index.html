@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
+
   <!-- SEO -->
   <meta name="description" content="CodeHUB - Editor de código online grátis para HTML, CSS e JavaScript. Desenvolva, teste e compartilhe seus projetos direto do navegador.">
   <meta name="keywords" content="CodeHUB, editor de código online, IDE online, programar no navegador, editor HTML, editor CSS, editor JavaScript, desenvolvimento web, programação online, criar sites, editor de código grátis, IDE para iniciantes, editor responsivo, ferramenta de programação, codar no navegador, editor com terminal, escrever código online, depuração online, editor de código rápido, desenvolvimento colaborativo">
   <meta name="author" content="CodeHUB">
-  
+
   <title>CodeHUB - Editor de Código Online</title>
   <link rel="icon" type="image/png" href="https://alexandre7888.github.io/CodeHUB/InShot_20250807_112151490.jpg">
   <meta charset="UTF-8">
@@ -277,18 +277,76 @@
       font-weight: 600;
     }
 
+    /* Cookie Banner */
+    .cookie-banner {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 999;
+    }
+
+    .cookie-banner p {
+      margin: 0.5rem 0;
+      flex: 1;
+      min-width: 250px;
+    }
+
+    .cookie-banner-buttons {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .cookie-btn {
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .cookie-accept {
+      background-color: var(--success-color);
+      color: white;
+      border: none;
+    }
+
+    .cookie-reject {
+      background-color: transparent;
+      color: white;
+      border: 1px solid white;
+    }
+
     /* Responsividade */
     @media (max-width: 768px) {
       .projects-grid {
         grid-template-columns: 1fr;
       }
-      
+
       .project-actions {
         flex-direction: column;
       }
-      
+
       .modal-content {
         margin: 20% auto;
+      }
+
+      .cookie-banner {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .cookie-banner-buttons {
+        width: 100%;
+        justify-content: center;
+        margin-top: 1rem;
       }
     }
   </style>
@@ -308,7 +366,7 @@
       </div>
     </div>
   </header>
-  
+
   <div class="container">
     <div class="projects-header">
       <h2>Seus Projetos</h2>
@@ -319,7 +377,7 @@
         Novo Projeto
       </button>
     </div>
-    
+
     <div id="projects-container" class="projects-grid">
       <!-- Projetos serão carregados aqui dinamicamente -->
     </div>
@@ -342,6 +400,15 @@
           <button type="submit" class="confirm-btn">Criar</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Cookie Banner -->
+  <div id="cookie-banner" class="cookie-banner" style="display: none;">
+    <p>Nós usamos cookies para melhorar sua experiência. Ao continuar navegando, você concorda com o uso de cookies.</p>
+    <div class="cookie-banner-buttons">
+      <button class="cookie-btn cookie-accept" onclick="acceptCookies()">Aceitar</button>
+      <button class="cookie-btn cookie-reject" onclick="rejectCookies()">Recusar</button>
     </div>
   </div>
 
@@ -383,6 +450,9 @@
 
     // Quando o DOM estiver carregado
     document.addEventListener('DOMContentLoaded', () => {
+      // Verificar cookies
+      checkCookies();
+      
       // Configurar o formulário
       const projectForm = document.getElementById('project-form');
       if (projectForm) {
@@ -402,10 +472,11 @@
           userData = {
             username: user.email?.split('@')[0] || 'usuário',
             email: user.email || '',
-            uid: user.uid
+            uid: user.uid,
+            displayName: user.displayName || user.email?.split('@')[0] || 'usuário'
           };
-          
-          document.getElementById('username').textContent = userData.username;
+
+          document.getElementById('username').textContent = userData.displayName;
           loadProjects(user.uid);
         } catch (error) {
           console.error("Erro ao carregar dados do usuário:", error);
@@ -418,23 +489,23 @@
     function loadProjects(userId) {
       try {
         const projectsRef = ref(database, `projects/${userId}`);
-        
+
         onValue(projectsRef, (snapshot) => {
           try {
             const projectsContainer = document.getElementById('projects-container');
             if (!projectsContainer) return;
-            
+
             projectsContainer.innerHTML = '';
             const projects = snapshot.val() || {};
-            
+
             for (const [projectId, project] of Object.entries(projects)) {
               if (!projectId || !project) continue;
-              
+
               const projectCard = document.createElement('div');
               projectCard.className = 'project-card';
               projectCard.innerHTML = `
                 <div class="project-name">${project.name || 'Projeto sem nome'}</div>
-                <div class="project-domain">${userData?.username || 'usuário'}/${project.slug || 'sem-slug'}</div>
+                <div class="project-domain">${project.owner || userData?.displayName || 'usuário'}/${project.slug || 'sem-slug'}</div>
                 <div class="project-actions">
                   <button class="action-btn edit-btn" onclick="window.location.href='editor.html?projectId=${projectId}'">
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -481,12 +552,12 @@
     async function createProject() {
       const projectName = document.getElementById('project-name').value.trim();
       const user = auth.currentUser;
-      
+
       if (!isValidProjectName(projectName)) {
         alert('Por favor, informe um nome válido para o projeto (1-50 caracteres)');
         return;
       }
-      
+
       try {
         // Criar slug para URL
         const slug = projectName.toLowerCase()
@@ -495,29 +566,31 @@
           .replace(/\-\-+/g, '-')
           .replace(/^-+/, '')
           .replace(/-+$/, '');
-        
+
         if (!slug) {
           throw new Error('Não foi possível criar um slug válido a partir do nome');
         }
-        
+
         const newProjectRef = push(ref(database, `projects/${user.uid}`));
         const projectId = newProjectRef.key;
-        
+
         if (!projectId) {
           throw new Error('Não foi possível gerar um ID para o projeto');
         }
-        
+
         // Sanitiza o nome do arquivo
         const mainFileName = sanitizeFilename('index.html');
-        
-        // Dados do projeto
+
+        // Dados do projeto - agora incluindo o nome do usuário como owner
         const projectData = {
           name: projectName,
           slug: slug,
+          owner: userData.displayName || userData.username, // Adiciona o nome do usuário como dono
+          ownerId: user.uid, // Adiciona o ID do usuário
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           files: {
-            [mainFileName]: {  // Usa o nome sanitizado como chave
+            [mainFileName]: {
               content: `<!DOCTYPE html>
 <html>
 <head>
@@ -533,11 +606,11 @@
 </html>`,
               language: 'html',
               createdAt: new Date().toISOString(),
-              originalName: 'index.html'  // Guarda o nome original
+              originalName: 'index.html'
             }
           }
         };
-        
+
         // Tentativa de salvar com timeout
         await Promise.race([
           set(newProjectRef, projectData),
@@ -545,11 +618,11 @@
             setTimeout(() => reject(new Error('Tempo excedido ao criar projeto')), 5000)
           )
         ]);
-        
+
         // Fecha o modal e redireciona
         closeNewProjectModal();
         window.location.href = `editor.html?projectId=${projectId}`;
-        
+
       } catch (error) {
         console.error("Erro detalhado ao criar projeto:", error);
         alert(`Ocorreu um erro ao criar o projeto. ${error.message}`);
@@ -564,7 +637,7 @@
           if (!user || !user.uid) {
             throw new Error('Usuário não autenticado');
           }
-          
+
           remove(ref(database, `projects/${user.uid}/${projectId}`))
             .catch(error => {
               console.error("Erro ao excluir projeto:", error);
@@ -587,11 +660,38 @@
       });
     }
 
+    // Cookie functions
+    function checkCookies() {
+      if (localStorage.getItem('cookiesAccepted') === null) {
+        document.getElementById('cookie-banner').style.display = 'flex';
+      }
+    }
+
+    function acceptCookies() {
+      localStorage.setItem('cookiesAccepted', 'true');
+      document.getElementById('cookie-banner').style.display = 'none';
+      // Ativar Google Analytics se necessário
+      gtag('consent', 'update', {
+        'analytics_storage': 'granted'
+      });
+    }
+
+    function rejectCookies() {
+      localStorage.setItem('cookiesAccepted', 'false');
+      document.getElementById('cookie-banner').style.display = 'none';
+      // Desativar Google Analytics se necessário
+      gtag('consent', 'update', {
+        'analytics_storage': 'denied'
+      });
+    }
+
     // Expor funções para o escopo global
     window.openNewProjectModal = openNewProjectModal;
     window.closeNewProjectModal = closeNewProjectModal;
     window.deleteProject = deleteProject;
     window.logout = logout;
+    window.acceptCookies = acceptCookies;
+    window.rejectCookies = rejectCookies;
   </script>
 </body>
 </html>
