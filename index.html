@@ -31,6 +31,64 @@
   </script>
   <title>Meus Projetos - CodeHub</title>
   <style>
+    /* Loading Screen Styles */
+    #loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, #1e293b, #0f172a);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      color: white;
+      font-family: Arial, sans-serif;
+      z-index: 9999;
+      transition: opacity 0.5s ease;
+    }
+
+    #loading-screen h1 {
+      margin-top: 20px;
+      font-size: 1.8em;
+      color: #ff9500;
+      text-shadow: 0 0 10px #ff9500, 0 0 20px #ff7300;
+      animation: glowText 2s infinite alternate;
+    }
+
+    .loader {
+      width: 280px;
+      height: 280px;
+      animation: spinScale 4s ease-in-out infinite, glow 2s ease-in-out infinite alternate;
+      border-radius: 50%;
+      box-shadow: 0 0 20px rgba(255,149,0,0.5);
+      transition: all 0.5s ease-in-out;
+    }
+
+    @keyframes glowText {
+      0% { text-shadow: 0 0 5px #ff9500, 0 0 15px #ff7300; }
+      100% { text-shadow: 0 0 15px #ff9500, 0 0 30px #ff7300; }
+    }
+
+    @keyframes spinScale {
+      0%   { transform: rotate(0deg) scale(1); }
+      25%  { transform: rotate(90deg) scale(1.1); }
+      50%  { transform: rotate(180deg) scale(0.9); }
+      75%  { transform: rotate(270deg) scale(1.1); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+
+    @keyframes glow {
+      0% { box-shadow: 0 0 20px rgba(255,149,0,0.5), 0 0 40px rgba(255,149,0,0.3); }
+      100% { box-shadow: 0 0 40px rgba(255,149,0,0.8), 0 0 80px rgba(255,149,0,0.5); }
+    }
+
+    /* Main App Styles (hidden initially) */
+    #app-content {
+      display: none;
+    }
+
     :root {
       --primary-color: #4361ee;
       --secondary-color: #3f37c9;
@@ -352,63 +410,72 @@
   </style>
 </head>
 <body>
-  <header>
-    <div class="header-content">
-      <h1>Meus Projetos</h1>
-      <div class="user-info">
-        <span id="username"></span>
-        <button class="logout-btn" onclick="logout()">
+  <!-- Loading Screen -->
+  <div id="loading-screen">
+    <img id="codefox" src="https://alexandre7888.github.io/CodeHUB/CodeFOX/foto1.jpg" class="loader" alt="CodeFOX girando">
+    <h1>Carregando...</h1>
+  </div>
+
+  <!-- Main App Content (hidden initially) -->
+  <div id="app-content">
+    <header>
+      <div class="header-content">
+        <h1>Meus Projetos</h1>
+        <div class="user-info">
+          <span id="username"></span>
+          <button class="logout-btn" onclick="logout()">
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="18" height="18">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+            </svg>
+            Sair
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="projects-header">
+        <h2>Seus Projetos</h2>
+        <button class="new-project-btn" onclick="openNewProjectModal()">
           <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="18" height="18">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
           </svg>
-          Sair
+          Novo Projeto
         </button>
       </div>
-    </div>
-  </header>
 
-  <div class="container">
-    <div class="projects-header">
-      <h2>Seus Projetos</h2>
-      <button class="new-project-btn" onclick="openNewProjectModal()">
-        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="18" height="18">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-        </svg>
-        Novo Projeto
-      </button>
-    </div>
-
-    <div id="projects-container" class="projects-grid">
-      <!-- Projetos serão carregados aqui dinamicamente -->
-    </div>
-  </div>
-
-  <!-- Modal de Novo Projeto -->
-  <div id="new-project-modal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>Criar Novo Projeto</h3>
-        <button type="button" class="close-btn" onclick="closeNewProjectModal()">&times;</button>
+      <div id="projects-container" class="projects-grid">
+        <!-- Projetos serão carregados aqui dinamicamente -->
       </div>
-      <form id="project-form">
-        <div class="form-group">
-          <label for="project-name">Nome do Projeto</label>
-          <input type="text" id="project-name" placeholder="Ex: Meu Site Pessoal" required maxlength="50">
-        </div>
-        <div class="form-actions">
-          <button type="button" class="cancel-btn" onclick="closeNewProjectModal()">Cancelar</button>
-          <button type="submit" class="confirm-btn">Criar</button>
-        </div>
-      </form>
     </div>
-  </div>
 
-  <!-- Cookie Banner -->
-  <div id="cookie-banner" class="cookie-banner" style="display: none;">
-    <p>Nós usamos cookies para melhorar sua experiência. Ao continuar navegando, você concorda com o uso de cookies.</p>
-    <div class="cookie-banner-buttons">
-      <button class="cookie-btn cookie-accept" onclick="acceptCookies()">Aceitar</button>
-      <button class="cookie-btn cookie-reject" onclick="rejectCookies()">Recusar</button>
+    <!-- Modal de Novo Projeto -->
+    <div id="new-project-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Criar Novo Projeto</h3>
+          <button type="button" class="close-btn" onclick="closeNewProjectModal()">&times;</button>
+        </div>
+        <form id="project-form">
+          <div class="form-group">
+            <label for="project-name">Nome do Projeto</label>
+            <input type="text" id="project-name" placeholder="Ex: Meu Site Pessoal" required maxlength="50">
+          </div>
+          <div class="form-actions">
+            <button type="button" class="cancel-btn" onclick="closeNewProjectModal()">Cancelar</button>
+            <button type="submit" class="confirm-btn">Criar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Cookie Banner -->
+    <div id="cookie-banner" class="cookie-banner" style="display: none;">
+      <p>Nós usamos cookies para melhorar sua experiência. Ao continuar navegando, você concorda com o uso de cookies.</p>
+      <div class="cookie-banner-buttons">
+        <button class="cookie-btn cookie-accept" onclick="acceptCookies()">Aceitar</button>
+        <button class="cookie-btn cookie-reject" onclick="rejectCookies()">Recusar</button>
+      </div>
     </div>
   </div>
 
@@ -437,6 +504,32 @@
 
     // Variáveis globais
     let userData = null;
+    const loadingScreen = document.getElementById('loading-screen');
+    const appContent = document.getElementById('app-content');
+    const codefoxImage = document.getElementById('codefox');
+
+    // Configurar animação do loader
+    const imagens = [
+      "https://alexandre7888.github.io/CodeHUB/CodeFOX/foto1.jpg",
+      "https://alexandre7888.github.io/CodeHUB/CodeFOX/foto2.jpg",
+      "https://alexandre7888.github.io/CodeHUB/CodeFOX/foto3.jpg"
+    ];
+
+    let index = 0;
+    const loaderInterval = setInterval(() => {
+      index = (index + 1) % imagens.length;
+      codefoxImage.src = imagens[index];
+    }, 2000);
+
+    // Função para mostrar o conteúdo principal
+    function showAppContent() {
+      loadingScreen.style.opacity = '0';
+      setTimeout(() => {
+        loadingScreen.style.display = 'none';
+        appContent.style.display = 'block';
+        clearInterval(loaderInterval);
+      }, 500);
+    }
 
     // Função para sanitizar nomes de arquivos
     function sanitizeFilename(filename) {
@@ -523,6 +616,9 @@
               `;
               projectsContainer.appendChild(projectCard);
             }
+            
+            // Mostrar conteúdo principal após carregar projetos
+            showAppContent();
           } catch (error) {
             console.error("Erro ao renderizar projetos:", error);
             alert("Erro ao carregar projetos. Por favor, recarregue a página.");
@@ -559,6 +655,11 @@
       }
 
       try {
+        // Mostrar loading novamente
+        loadingScreen.style.display = 'flex';
+        loadingScreen.style.opacity = '1';
+        appContent.style.display = 'none';
+        
         // Criar slug para URL
         const slug = projectName.toLowerCase()
           .replace(/\s+/g, '-')
@@ -626,6 +727,9 @@
       } catch (error) {
         console.error("Erro detalhado ao criar projeto:", error);
         alert(`Ocorreu um erro ao criar o projeto. ${error.message}`);
+        
+        // Voltar para o app content mesmo com erro
+        showAppContent();
       }
     }
 
