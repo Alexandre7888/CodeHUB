@@ -68,7 +68,7 @@ class CodeHubAPI {
       for (const projectUserId in allProjects) {
         if (projectUserId === userId || 
             Object.values(allProjects[projectUserId]).some(p => p.owner === userName)) {
-          
+
           for (const projectId in allProjects[projectUserId]) {
             projects.push({
               id: projectId,
@@ -138,7 +138,7 @@ class CodeHubAPI {
     viewBtn.addEventListener('click', () => {
       const checkboxes = container.querySelectorAll('.project-checkbox:checked');
       this.selectedProjects = [];
-      
+
       checkboxes.forEach(checkbox => {
         const projectId = checkbox.dataset.projectId;
         const userId = checkbox.dataset.userId;
@@ -238,11 +238,11 @@ class CodeHubAPI {
         <pre><code>${content}</code></pre>
       </div>
     `;
-    
+
     modal.querySelector('.close-modal').addEventListener('click', () => {
       document.body.removeChild(modal);
     });
-    
+
     document.body.appendChild(modal);
   }
 
