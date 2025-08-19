@@ -16,6 +16,7 @@
     ul{margin-left:18px}
     .note{background:#fffbeb; padding:10px; border-radius:8px; border:1px solid #fde68a}
     .tips{background:#eef2ff; padding:10px; border-radius:8px}
+    .partners{background:#f1f5f9; padding:10px; border-radius:8px; margin-top:10px; border-left:4px solid #6366f1}
     table{width:100%; border-collapse:collapse; margin-top:8px}
     th, td{padding:8px; text-align:left; border-bottom:1px solid #eef2ff}
     footer{color:#94a3b8; font-size:13px; margin-top:20px}
@@ -24,23 +25,42 @@
 <body>
   <div class="container">
     <h1>Documentação da API CodeHUB</h1>
-    <p class="note"><strong>Versão:</strong> 2.0 (Firebase Integration)</p>
+    <p class="note"><strong>Versão:</strong> 2.1 (Firebase + CodeFox + Editor Copiloto)</p>
 
     <h2>Visão Geral</h2>
-    <p>A API CodeHUB permite integrar projetos e arquivos de código armazenados no Firebase com seu aplicativo ou site. Ela fornece métodos para:</p>
+    <p>A API CodeHUB integra projetos de código hospedados no Firebase com assistentes inteligentes. Agora conta com dois recursos principais:</p>
+    <div class="partners">
+      <strong>👾 CodeFox:</strong> Nossa mascote e inteligência artificial avançada. Ajuda a gerar, corrigir e melhorar códigos, além de interagir com usuários de forma divertida e eficiente.<br><br>
+      <strong>🛠 Editor Copiloto:</strong> Um assistente que trabalha lado a lado com você no editor, sugerindo melhorias, corrigindo erros e automatizando tarefas repetitivas.<br><br>
+      <em>Ambos são parceiros e podem trabalhar juntos para tornar a experiência de desenvolvimento mais ágil e inteligente.</em>
+    </div>
+
+    <h2>O que você pode fazer com eles?</h2>
     <ul>
-      <li>Carregar projetos de um usuário específico</li>
-      <li>Visualizar conteúdo de arquivos de código</li>
-      <li>Gerenciar autenticação via Firebase</li>
+      <li><strong>CodeFox:</strong> Geração de código, explicações técnicas, integração com API, criação de snippets inteligentes.</li>
+      <li><strong>Editor Copiloto:</strong> Autocompletar inteligente, sugestões de refatoração, integração com seu editor de código online ou local.</li>
     </ul>
 
     <h2>Configuração Inicial</h2>
-    <p>Para usar a API, inclua o seguinte script em sua página:</p>
-    <pre><code>&lt;script src="https://alexandre7888.github.io/CodeHUB/API/api2.js"&gt;&lt;/script&gt;</code></pre>
-    <pre><code>&lt;script src="https://alexandre7888.github.io/CodeHUB/API/userKeyAPI.js"&gt;&lt;/script&gt;</code></pre>
+    <p>Inclua os scripts da API e ative a IA em sua página:</p>
+    <pre><code>&lt;script src="https://alexandre7888.github.io/CodeHUB/API/api2.js"&gt;&lt;/script&gt;
+&lt;script src="https://alexandre7888.github.io/CodeHUB/API/userKeyAPI.js"&gt;&lt;/script&gt;
+&lt;script src="https://assistente-ia--socialkoala6579904.on.websim.com/embed.js"&gt;&lt;/script&gt;</code></pre>
+
+    <h2>Como habilitar a CodeFox no seu site?</h2>
+    <p>Adicione este exemplo simples ao seu HTML:</p>
+    <pre><code>&lt;div id="codefox-assistant"&gt;&lt;/div&gt;
+&lt;script&gt;
+  // Inicialização do assistente CodeFox
+  window.CodeFox.init({
+    container: '#codefox-assistant',
+    theme: 'light',
+    language: 'pt-BR'
+  });
+&lt;/script&gt;</code></pre>
 
     <h2>Parâmetros da URL</h2>
-    <p>A API espera os seguintes parâmetros na URL:</p>
+    <p>A API espera os seguintes parâmetros (quando integrado com Firebase):</p>
     <table>
       <tr>
         <th>Parâmetro</th>
@@ -66,76 +86,42 @@
     <h2>Métodos da API</h2>
     <h3>1. renderProjects(container, userKey, userName)</h3>
     <p>Renderiza os projetos do usuário no elemento container especificado.</p>
-    <p><strong>Parâmetros:</strong></p>
     <ul>
       <li><code>container</code> - Elemento DOM onde os projetos serão renderizados</li>
       <li><code>userKey</code> - Chave do usuário (opcional)</li>
       <li><code>userName</code> - Nome do usuário (opcional)</li>
     </ul>
 
-    <h2>Exemplo de Uso</h2>
+    <h2>Exemplo Completo (IA + API)</h2>
     <pre><code>&lt;!DOCTYPE html&gt;
 &lt;html&gt;
 &lt;head&gt;
-  &lt;title&gt;Exemplo de Integração&lt;/title&gt;
+  &lt;title&gt;Integração com CodeFox&lt;/title&gt;
   &lt;script src="https://alexandre7888.github.io/CodeHUB/API/api2.js"&gt;&lt;/script&gt;
   &lt;script src="https://alexandre7888.github.io/CodeHUB/API/userKeyAPI.js"&gt;&lt;/script&gt;
+  &lt;script src="https://assistente-ia--socialkoala6579904.on.websim.com/embed.js"&gt;&lt;/script&gt;
 &lt;/head&gt;
 &lt;body&gt;
+  &lt;h1&gt;Meu Assistente CodeFox&lt;/h1&gt;
   &lt;div id="projects-container"&gt;&lt;/div&gt;
-  
+  &lt;div id="codefox-assistant"&gt;&lt;/div&gt;
+
   &lt;script&gt;
-    // A API é automaticamente inicializada quando o DOM estiver pronto
-    // Certifique-se de incluir userKey ou userName na URL
-    // Exemplo: ?userKey=12345-abcde&amp;userName=Alexandre
+    // Inicialização da API CodeHUB
+    renderProjects('#projects-container');
+
+    // Inicialização do assistente CodeFox
+    window.CodeFox.init({
+      container: '#codefox-assistant',
+      theme: 'light',
+      language: 'pt-BR'
+    });
   &lt;/script&gt;
 &lt;/body&gt;
 &lt;/html&gt;</code></pre>
 
-    <h2>Estrutura de Dados</h2>
-    <p>A API retorna projetos no seguinte formato:</p>
-    <pre><code>{
-  "id": "project123",
-  "name": "Meu Projeto",
-  "createdAt": "2023-01-01T00:00:00Z",
-  "files": {
-    "file1": {
-      "originalName": "script.js",
-      "content": "console.log('Hello World');",
-      "language": "javascript"
-    }
-  }
-}</code></pre>
-
-    <h2>Tratamento de Erros</h2>
-    <p>A API exibe mensagens de erro diretamente no container especificado em casos de:</p>
-    <ul>
-      <li>Parâmetros ausentes na URL</li>
-      <li>Falha na conexão com o Firebase</li>
-      <li>Projetos não encontrados para o usuário</li>
-    </ul>
-
-    <h2>Estilos CSS</h2>
-    <p>A API inclui estilos padrão para os seguintes elementos:</p>
-    <ul>
-      <li>Container de projetos (<code>.ch-projects-container</code>)</li>
-      <li>Cartões de projeto (<code>.ch-project-card</code>)</li>
-      <li>Modal de visualização de código (<code>.code-modal</code>)</li>
-      <li>Indicadores de carregamento e erro</li>
-    </ul>
-
-    <h2>Boas Práticas</h2>
-    <div class="tips">
-      <ul>
-        <li>Forneça ambos os parâmetros (userKey e userName) para melhores resultados</li>
-        <li>Certifique-se de que o container tenha espaço suficiente para exibir os projetos</li>
-        <li>Teste a integração em diferentes tamanhos de tela</li>
-        <li>Não modifique os estilos CSS da API diretamente - sobrescreva-os em seu próprio CSS se necessário</li>
-      </ul>
-    </div>
-
     <footer>
-      Documentação atualizada em: 11/08/2025 | Versão da API: 2.0
+      Documentação atualizada em: 19/08/2025 | Versão da API: 2.1
     </footer>
   </div>
 </body>
