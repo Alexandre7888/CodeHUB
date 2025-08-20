@@ -3,102 +3,272 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Seu App Incorporado</title>
-    
-    <link rel="manifest" href="/manifest.json">
-
+    <title>CodeHUB - Acesso Rápido</title>
     <style>
-        body, html {
+        * {
             margin: 0;
             padding: 0;
-            height: 100%;
-            overflow: hidden;
-            font-family: Arial, sans-serif;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            min-height: 100vh;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            background-color: #f5f5f5;
+            justify-content: center;
+            padding: 20px;
+            color: #fff;
         }
         
         .container {
+            max-width: 800px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             text-align: center;
-            padding: 20px;
         }
         
-        .btn-entrar {
-            padding: 15px 30px;
-            font-size: 18px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        p {
+            font-size: 1.2rem;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        
+        .btn {
             display: inline-block;
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            color: white;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-decoration: none;
+            border-radius: 50px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            margin: 10px;
         }
         
-        .btn-entrar:hover {
-            background-color: #0056b3;
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(to right, #feb47b, #ff7e5f);
         }
         
-        .loading {
+        .btn:active {
+            transform: translateY(1px);
+        }
+        
+        .status-card {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 25px 0;
+            text-align: left;
+        }
+        
+        .status-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .status-title svg {
+            margin-right: 10px;
+        }
+        
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 5px solid #fff;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
             display: none;
-            font-size: 16px;
-            margin-top: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .logo {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: bold;
+            align-self: center;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .feature {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            text-align: left;
+        }
+        
+        .feature svg {
+            min-width: 30px;
+            margin-right: 15px;
+            color: #ff7e5f;
+        }
+        
+        .instructions {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 30px;
+            text-align: left;
+        }
+        
+        .instructions h3 {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            p {
+                font-size: 1rem;
+            }
+            
+            .btn {
+                padding: 12px 30px;
+                font-size: 1rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container" id="browserView">
-        <h2>Bem-vindo ao App</h2>
-        <p>Clique no botão abaixo para acessar o conteúdo:</p>
-        <a href="https://alexandre7888.github.io/CodeHUB/" class="btn-entrar" id="btnEntrar">Entrar no App</a>
-        <p class="loading" id="loading">Redirecionando...</p>
+    <div class="logo">CH</div>
+    
+    <div class="container">
+        <h1>Bem-vindo ao CodeHUB</h1>
+        <p>Seu hub central para recursos de desenvolvimento e coding</p>
+        
+        <div class="status-card">
+            <div class="status-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2"/>
+                    <path d="M12 16V12M12 8H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                Status do Aplicativo
+            </div>
+            <div id="statusText">Detectando seu ambiente de execução...</div>
+        </div>
+        
+        <div id="browserView" style="display: none;">
+            <p>Você está acessando através de um navegador.</p>
+            <a href="https://alexandre7888.github.io/CodeHUB/" class="btn" id="enterBtn">Acessar CodeHUB</a>
+        </div>
+        
+        <div class="loader" id="loader"></div>
+        
+        <div class="instructions">
+            <h3>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2"/>
+                    <path d="M12 16V12M12 8H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                Como instalar como PWA
+            </h3>
+            <ol>
+                <li>No Chrome: clique no menu (três pontos) e selecione "Instalar aplicativo"</li>
+                <li>No Safari: clique no ícone de compartilhar e depois em "Adicionar à tela inicial"</li>
+                <li>No Edge: clique no menu (três pontos) e selecione "Apps" → "Instalar este site como um aplicativo"</li>
+            </ol>
+        </div>
     </div>
 
     <script>
-        // Função para detectar se está em modo PWA/standalone
-        function isRunningInPWA() {
-            return window.matchMedia('(display-mode: standalone)').matches || 
-                   window.navigator.standalone === true ||
-                   document.referrer.includes('android-app://');
-        }
-
-        // Função para redirecionar
-        function redirectToApp() {
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('btnEntrar').style.display = 'none';
+        document.addEventListener('DOMContentLoaded', function() {
+            const statusText = document.getElementById('statusText');
+            const browserView = document.getElementById('browserView');
+            const loader = document.getElementById('loader');
+            const enterBtn = document.getElementById('enterBtn');
             
-            setTimeout(function() {
-                window.location.href = "https://alexandre7888.github.io/CodeHUB/";
-            }, 1000);
-        }
-
-        // Verifica o modo de execução
-        if (isRunningInPWA()) {
-            // Se estiver em PWA, redireciona automaticamente
-            redirectToApp();
-        } else {
-            // Se estiver no navegador, mostra o botão
-            document.getElementById('browserView').style.display = 'block';
+            // Função para detectar se está em modo PWA
+            function isRunningInPWA() {
+                return window.matchMedia('(display-mode: standalone)').matches || 
+                       window.navigator.standalone === true ||
+                       document.referrer.includes('android-app://');
+            }
             
-            // Adiciona evento de clique no botão
-            document.getElementById('btnEntrar').addEventListener('click', function(e) {
-                e.preventDefault();
-                redirectToApp();
-            });
-        }
-
-        // Service Worker registration
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/service-worker.js').then(function(registration) {
-                    console.log('Service Worker registrado!');
-                }, function(err) {
-                    console.log('Falha no registro:', err);
+            // Verificar o modo de execução
+            if (isRunningInPWA()) {
+                statusText.innerHTML = "Modo PWA detectado! Redirecionando para o CodeHUB...";
+                loader.style.display = 'block';
+                
+                // Redirecionar após um breve delay para feedback visual
+                setTimeout(function() {
+                    window.location.href = "https://alexandre7888.github.io/CodeHUB/";
+                }, 2000);
+            } else {
+                statusText.innerHTML = "Modo navegador detectado. Clique no botão abaixo para acessar.";
+                browserView.style.display = 'block';
+                
+                // Adicionar evento de clique no botão
+                enterBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    loader.style.display = 'block';
+                    statusText.innerHTML = "Redirecionando para o CodeHUB...";
+                    
+                    setTimeout(function() {
+                        window.location.href = "https://alexandre7888.github.io/CodeHUB/";
+                    }, 1000);
                 });
-            });
-        }
+            }
+            
+            // Service Worker registration
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/service-worker.js').then(function(registration) {
+                        console.log('Service Worker registrado com sucesso: ', registration);
+                    }, function(err) {
+                        console.log('Falha no registro do Service Worker: ', err);
+                    });
+                });
+            }
+        });
     </script>
 </body>
 </html>
