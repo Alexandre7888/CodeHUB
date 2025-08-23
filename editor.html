@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Editor de Projeto</title>
   <style>
+    /* Seus estilos CSS permanecem exatamente os mesmos */
     /* Loading Screen Styles */
     #loading-screen {
       position: fixed;
@@ -473,7 +474,7 @@
 
       // Iniciar animação do loader
       startLoaderAnimation();
-      
+
       // Inicializar aplicação
       initializeApp();
     });
@@ -618,7 +619,7 @@
         }
 
         updateTabs();
-        
+
         // Mostrar conteúdo principal após carregar tudo
         showAppContent();
       }, (error) => {
@@ -720,7 +721,7 @@
       elements.newFileNameInput.value = '';
     }
 
-    // Abrir arquivo no editor
+   // Abrir arquivo no editor
     function openFile(fileKey) {
       if (!files[fileKey] || !editor) {
         console.error('Arquivo ou editor não disponível');
