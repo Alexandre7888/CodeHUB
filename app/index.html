@@ -6,6 +6,16 @@
     <title>CodeHUB PWA</title>
     <link rel="icon" href="https://alexandre7888.github.io/CodeHUB/CodeFOX/foto1.jpg" type="image/jpeg">
     <meta name="theme-color" content="#2c3e50">
+    
+    <!-- Meta tags para PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="CodeHUB">
+    <link rel="apple-touch-icon" href="https://alexandre7888.github.io/CodeHUB/CodeFOX/foto1.jpg">
+    
+    <!-- Manifest -->
+    <link rel="manifest" id="app-manifest" href="data:application/json;base64,ewogICJuYW1lIjogIkNvZGVIVUIiLAogICJzaG9ydF9uYW1lIjogIkNvZGVIVUIiLAogICJkZXNjcmlwdGlvbiI6ICJBcGxpY2F0aXZvIHBhcmEgZGVzZW52b2x2ZWRvcmVzIiwKICAic3RhcnRfdXJsIjogIi8iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxYTJhNmMiLAogICJ0aGVtZV9jb2xvciI6ICIjMWEyYTZjIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9hbGV4YW5kcmU3ODg4LmdpdGh1Yi5pby9Db2RlSFVCL0NvZGVGT1gvZm90bzEuanBnIiwKICAgICAgInNpemVzIjogIjE5MngxOTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9qcGVnIgogICAgfSwKICAgIHsKICAgICAgInNyYyI6ICJodHRwczovL2FsZXhhbmRyZTc4ODguZ2l0aHViLmlvL0NvZGVIVUIvQ29kZUZPWC9mb3RvMS5qcGciLAogICAgICAic2l6ZXMiOiAiNTEyeDUxMiIsCiAgICAgICJ0eXBlIjogImltYWdlL2pwZWciCiAgICB9CiAgXQp9">
+    
     <style>
         * {
             margin: 0;
@@ -287,6 +297,35 @@
     </div>
 
     <script>
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                // Registra o Service Worker
+                navigator.serviceWorker.register('data:application/javascript;base64,' + btoa(`
+                    self.addEventListener('install', function(event) {
+                        console.log('Service Worker instalado');
+                        self.skipWaiting();
+                    });
+                    
+                    self.addEventListener('activate', function(event) {
+                        console.log('Service Worker ativado');
+                    });
+                    
+                    self.addEventListener('fetch', function(event) {
+                        // Podemos adicionar lógica de cache aqui se necessário
+                        event.respondWith(fetch(event.request));
+                    });
+                `))
+                .then(function(registration) {
+                    console.log('Service Worker registrado com sucesso: ', registration);
+                })
+                .catch(function(err) {
+                    console.log('Falha no registro do Service Worker: ', err);
+                });
+            });
+        }
+
+        // App Logic
         document.addEventListener('DOMContentLoaded', function() {
             const statusText = document.getElementById('statusText');
             const browserView = document.getElementById('browserView');
@@ -374,17 +413,6 @@
                     window.location.href = appUrl;
                 }, 2000);
             });
-            
-            // Service Worker registration
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                    navigator.serviceWorker.register('/service-worker.js').then(function(registration) {
-                        console.log('Service Worker registrado com sucesso: ', registration);
-                    }, function(err) {
-                        console.log('Falha no registro do Service Worker: ', err);
-                    });
-                });
-            }
         });
     </script>
 </body>
