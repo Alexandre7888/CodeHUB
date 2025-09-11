@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Editor de Projeto</title>
   <style>
-    /* Seus estilos CSS permanecem exatamente os mesmos */
     /* Loading Screen Styles */
     #loading-screen {
       position: fixed;
@@ -816,14 +815,21 @@
         files[currentFile].content = model.getValue();
         files[currentFile].updatedAt = new Date().toISOString();
 
-        projectRef.child('updatedAt').set(new Date().toISOString());
-
-        updateFirebaseFiles(() => {
+        // Atualizar Firebase com os arquivos e a data de atualização
+        projectRef.update({
+          files: files,
+          updatedAt: new Date().toISOString()
+        })
+        .then(() => {
           elements.saveFileBtn.disabled = true;
           elements.saveFileBtn.textContent = 'Salvo!';
           setTimeout(() => { 
             elements.saveFileBtn.textContent = '💾 Salvar';
           }, 1500);
+        })
+        .catch(error => {
+          console.error('Erro ao salvar arquivo:', error);
+          alert('Falha ao salvar o arquivo. Por favor, tente novamente.');
         });
       }
     }
@@ -835,7 +841,10 @@
         return;
       }
 
-      projectRef.child('files').set(files)
+      projectRef.update({
+        files: files,
+        updatedAt: new Date().toISOString()
+      })
         .then(() => {
           if (callback) callback();
         })
@@ -856,8 +865,10 @@
         return;
       }
 
-      projectRef.child('name').set(newName);
-      projectRef.child('updatedAt').set(new Date().toISOString());
+      projectRef.update({
+        name: newName,
+        updatedAt: new Date().toISOString()
+      });
     }
 
     // Monitorar códigos recebidos da IA
