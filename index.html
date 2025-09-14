@@ -16,7 +16,7 @@
   <meta name="google-site-verification" content="d5deNmIStRgPPphEkAypCTSv-E_1gi9ba16et47RSmA" />
   <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XQE93JQ3RB"></script>
-<script>
+<script src="protecao.js"></script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
@@ -545,7 +545,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       // Verificar cookies
       checkCookies();
-      
+
       // Configurar o formulário
       const projectForm = document.getElementById('project-form');
       if (projectForm) {
@@ -616,7 +616,7 @@
               `;
               projectsContainer.appendChild(projectCard);
             }
-            
+
             // Mostrar conteúdo principal após carregar projetos
             showAppContent();
           } catch (error) {
@@ -659,7 +659,7 @@
         loadingScreen.style.display = 'flex';
         loadingScreen.style.opacity = '1';
         appContent.style.display = 'none';
-        
+
         // Criar slug para URL
         const slug = projectName.toLowerCase()
           .replace(/\s+/g, '-')
@@ -727,7 +727,7 @@
       } catch (error) {
         console.error("Erro detalhado ao criar projeto:", error);
         alert(`Ocorreu um erro ao criar o projeto. ${error.message}`);
-        
+
         // Voltar para o app content mesmo com erro
         showAppContent();
       }

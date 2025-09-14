@@ -5,7 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Editor de Projeto</title>
   <style>
-    /* Loading Screen Styles */
+    /* Estilos principais */
+    body, html {
+      margin: 0; padding: 0; height: 100%;
+      display: flex; flex-direction: column;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1e1e1e;
+      color: white;
+    }
+
+    /* Tela de carregamento */
     #loading-screen {
       position: fixed;
       top: 0;
@@ -58,19 +67,11 @@
       100% { box-shadow: 0 0 40px rgba(255,149,0,0.8), 0 0 80px rgba(255,149,0,0.5); }
     }
 
-    /* Main App Styles (hidden initially) */
     #app-content {
       display: none;
     }
 
-    body, html {
-      margin: 0; padding: 0; height: 100%;
-      display: flex; flex-direction: column;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #1e1e1e;
-      color: white;
-    }
-
+    /* Barra superior */
     #top-bar {
       display: flex;
       padding: 10px;
@@ -142,7 +143,10 @@
     #saveFileBtn { background: #4cc9f0; }
     #previewBtn { background: #4895ef; }
     #aiBtn { background: #7209b7; }
+    #uploadBtn { background: #3a0ca3; }
+    #insertFileBtn { background: #f72585; }
 
+    /* Abas */
     #tabs {
       display: flex;
       background: #252526;
@@ -189,6 +193,7 @@
       color: white;
     }
 
+    /* Container principal */
     #container {
       flex: 1;
       overflow: hidden;
@@ -196,6 +201,7 @@
       position: relative;
     }
 
+    /* Botão voltar */
     .back-btn {
       background: #6c757d;
       text-decoration: none;
@@ -207,6 +213,7 @@
       gap: 5px;
     }
 
+    /* Informações do usuário */
     #user-info {
       margin-left: auto;
       display: flex;
@@ -219,7 +226,8 @@
       color: #ccc;
     }
 
-    #ai-iframe-container {
+    /* Iframes */
+    #ai-iframe-container, #upload-iframe-container {
       position: absolute;
       top: 0;
       left: 0;
@@ -231,7 +239,7 @@
       flex-direction: column;
     }
 
-    #ai-iframe-header {
+    #ai-iframe-header, #upload-iframe-header {
       padding: 10px;
       background: #252526;
       display: flex;
@@ -239,18 +247,19 @@
       align-items: center;
     }
 
-    #ai-iframe {
+    #ai-iframe, #upload-iframe {
       flex: 1;
       border: none;
       background: white;
     }
 
-    #close-ai-btn {
+    #close-ai-btn, #close-upload-btn {
       background: #f72585;
       padding: 5px 10px;
       border-radius: 4px;
     }
 
+    /* Notificação de código */
     #code-notification {
       position: fixed;
       bottom: 20px;
@@ -295,20 +304,128 @@
     #discard-code-btn {
       background: #f72585;
     }
+
+    /* Container de arquivo */
+    #file-container {
+      width: 100%;
+      height: 100%;
+      display: none;
+      background: #1e1e1e;
+    }
+
+    #file-iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    /* Status de upload */
+    .upload-status {
+      margin-top: 10px;
+      padding: 8px;
+      border-radius: 4px;
+      background: #252526;
+      color: white;
+      display: none;
+    }
+
+    .upload-success {
+      background: #4caf50;
+    }
+
+    .upload-error {
+      background: #f44336;
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+      display: none;
+    }
+
+    .modal {
+      background: #252526;
+      border-radius: 8px;
+      padding: 20px;
+      width: 500px;
+      max-width: 90%;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal h3 {
+      margin-top: 0;
+      color: #4cc9f0;
+    }
+
+    .modal-select {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      border: 1px solid #333;
+      background: #1e1e1e;
+      color: white;
+      box-sizing: border-box;
+    }
+
+    .modal-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .modal-buttons button {
+      padding: 8px 16px;
+    }
+
+    /* Status de inserção */
+    #insert-status {
+      margin-top: 10px;
+      padding: 8px;
+      border-radius: 4px;
+      display: none;
+    }
+
+    .status-success {
+      background: #4caf50;
+      color: white;
+    }
+
+    .status-error {
+      background: #f44336;
+      color: white;
+    }
+
+    /* Editor Monaco */
+    .monaco-editor {
+      width: 100%;
+      height: 100%;
+    }
   </style>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+<script src="protecao.js"></script>
 </head>
 <body>
-  <!-- Loading Screen -->
+  <!-- Tela de carregamento -->
   <div id="loading-screen">
     <img id="codefox" src="https://alexandre7888.github.io/CodeHUB/CodeFOX/foto1.jpg" class="loader" alt="CodeFOX girando">
     <h1>Carregando...</h1>
   </div>
 
-  <!-- Main App Content (hidden initially) -->
+  <!-- Conteúdo principal (inicialmente oculto) -->
   <div id="app-content">
     <div id="top-bar">
       <a href="index.html" class="back-btn">← Voltar</a>
@@ -317,6 +434,8 @@
         <input type="text" id="newFileName" placeholder="ex: script.js" required>
         <button type="submit">Criar arquivo</button>
       </form>
+      <button id="uploadBtn">📤 Upload</button>
+      <button id="insertFileBtn">📎 Inserir Arquivo</button>
       <button id="saveFileBtn" disabled>💾 Salvar</button>
       <button id="previewBtn">👁️ Visualizar</button>
       <button id="aiBtn">🤖 IA Assistente</button>
@@ -328,6 +447,18 @@
     <div id="tabs"></div>
 
     <div id="container">
+      <div id="file-container">
+        <iframe id="file-iframe" src="about:blank"></iframe>
+      </div>
+      
+      <div id="upload-iframe-container">
+        <div id="upload-iframe-header">
+          <h3>Upload de Arquivos</h3>
+          <button id="close-upload-btn">Fechar</button>
+        </div>
+        <iframe id="upload-iframe" src="about:blank"></iframe>
+      </div>
+      
       <div id="ai-iframe-container">
         <div id="ai-iframe-header">
           <h3>Assistente de IA</h3>
@@ -349,6 +480,23 @@
         <button id="discard-code-btn">Descartar</button>
       </div>
     </div>
+
+    <!-- Modal para inserir arquivo -->
+    <div class="modal-backdrop" id="insertModal">
+      <div class="modal">
+        <h3>Inserir Arquivo</h3>
+        <select id="file-select" class="modal-select">
+          <option value="">Selecione um arquivo</option>
+        </select>
+        <div id="insert-status"></div>
+        <div class="modal-buttons">
+          <button id="cancel-insert-btn">Cancelar</button>
+          <button id="confirm-insert-btn">Inserir Iframe</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="upload-status" id="uploadStatus"></div>
   </div>
 
   <script>
@@ -380,6 +528,7 @@
     let sessionRef = null;
     let currentCode = null;
     let loaderInterval = null;
+    let uploadedFiles = {};
 
     // Elementos da UI
     const elements = {
@@ -388,12 +537,17 @@
       saveFileBtn: document.getElementById('saveFileBtn'),
       previewBtn: document.getElementById('previewBtn'),
       aiBtn: document.getElementById('aiBtn'),
+      uploadBtn: document.getElementById('uploadBtn'),
+      insertFileBtn: document.getElementById('insertFileBtn'),
       projectNameInput: document.getElementById('project-name'),
       tabsContainer: document.getElementById('tabs'),
       userNameElement: document.getElementById('user-name'),
       aiIframeContainer: document.getElementById('ai-iframe-container'),
       aiIframe: document.getElementById('ai-iframe'),
       closeAiBtn: document.getElementById('close-ai-btn'),
+      uploadIframeContainer: document.getElementById('upload-iframe-container'),
+      uploadIframe: document.getElementById('upload-iframe'),
+      closeUploadBtn: document.getElementById('close-upload-btn'),
       codeNotification: document.getElementById('code-notification'),
       codePreview: document.getElementById('code-preview'),
       targetFileSelect: document.getElementById('target-file-select'),
@@ -401,7 +555,15 @@
       discardCodeBtn: document.getElementById('discard-code-btn'),
       loadingScreen: document.getElementById('loading-screen'),
       appContent: document.getElementById('app-content'),
-      codefoxImage: document.getElementById('codefox')
+      codefoxImage: document.getElementById('codefox'),
+      uploadStatus: document.getElementById('uploadStatus'),
+      fileContainer: document.getElementById('file-container'),
+      fileIframe: document.getElementById('file-iframe'),
+      insertModal: document.getElementById('insertModal'),
+      fileSelect: document.getElementById('file-select'),
+      insertStatus: document.getElementById('insert-status'),
+      cancelInsertBtn: document.getElementById('cancel-insert-btn'),
+      confirmInsertBtn: document.getElementById('confirm-insert-btn')
     };
 
     // Configurar animação do loader
@@ -507,6 +669,7 @@
         // Configurar listeners
         setupCodeListener();
         loadProject();
+        loadUploadedFiles();
         setupEventListeners();
       });
     }
@@ -545,6 +708,36 @@
         elements.aiIframeContainer.style.display = 'none';
         elements.aiIframe.src = 'about:blank';
       });
+
+      // Upload de arquivos
+      elements.uploadBtn.addEventListener('click', function() {
+        if (!currentProjectId) {
+          alert('Projeto não carregado corretamente!');
+          return;
+        }
+        const uploadUrl = `https://nuvem-de-arquivos-drive--narrownarwhal3891229.on.websim.com/?projectId=${currentProjectId}`;
+        elements.uploadIframe.src = uploadUrl;
+        elements.uploadIframeContainer.style.display = 'flex';
+      });
+
+      elements.closeUploadBtn.addEventListener('click', function() {
+        elements.uploadIframeContainer.style.display = 'none';
+        elements.uploadIframe.src = 'about:blank';
+        // Recarregar arquivos após fechar o upload
+        loadProject();
+        loadUploadedFiles();
+      });
+
+      // Inserir arquivo - CORREÇÃO PRINCIPAL
+      elements.insertFileBtn.addEventListener('click', function() {
+        showInsertModal();
+      });
+
+      elements.cancelInsertBtn.addEventListener('click', function() {
+        elements.insertModal.style.display = 'none';
+      });
+
+      elements.confirmInsertBtn.addEventListener('click', insertFileReference);
 
       // Notificação de código
       elements.insertCodeBtn.addEventListener('click', insertCode);
@@ -627,6 +820,15 @@
       });
     }
 
+    // Carregar arquivos enviados pelo WebSim
+    function loadUploadedFiles() {
+      const uploadedFilesRef = db.ref('projectFiles');
+      uploadedFilesRef.orderByChild('projectId').equalTo(currentProjectId).on('value', (snapshot) => {
+        uploadedFiles = snapshot.val() || {};
+        console.log('Arquivos carregados:', uploadedFiles);
+      });
+    }
+
     // Criar arquivo index.html padrão
     function createDefaultIndexHtml() {
       const fileName = 'index.html';
@@ -678,14 +880,27 @@
         return;
       }
 
-      // Determinar conteúdo padrão baseado na extensão
-      let content = '';
-      const extension = fileName.split('.').pop().toLowerCase();
-      const language = extension;
+      // Verificar se é um arquivo enviado pelo WebSim
+      const uploadedFile = findUploadedFileByName(fileName);
+      
+      if (uploadedFile) {
+        // Se for um arquivo enviado, criar um arquivo com a URL
+        files[fileKey] = { 
+          name: sanitizedFileName, 
+          originalName: fileName,
+          url: uploadedFile.url,
+          isUploadedFile: true,
+          createdAt: new Date().toISOString()
+        };
+      } else {
+        // Determinar conteúdo padrão baseado na extensão
+        let content = '';
+        const extension = fileName.split('.').pop().toLowerCase();
+        const language = extension;
 
-      switch(extension) {
-        case 'html':
-          content = `<!DOCTYPE html>
+        switch(extension) {
+          case 'html':
+            content = `<!DOCTYPE html>
 <html>
 <head>
   <title>${fileName}</title>
@@ -695,32 +910,43 @@
 <body>
 </body>
 </html>`;
-          break;
-        case 'css':
-          content = `/* ${fileName} */`;
-          break;
-        case 'js':
-          content = `// ${fileName}`;
-          break;
-        default:
-          content = `// ${fileName}`;
-      }
+            break;
+          case 'css':
+            content = `/* ${fileName} */`;
+            break;
+          case 'js':
+            content = `// ${fileName}`;
+            break;
+          default:
+            content = `// ${fileName}`;
+        }
 
-      // Criar novo arquivo
-      files[fileKey] = { 
-        name: sanitizedFileName, 
-        originalName: fileName,
-        content: content, 
-        language: language,
-        createdAt: new Date().toISOString()
-      };
+        // Criar novo arquivo
+        files[fileKey] = { 
+          name: sanitizedFileName, 
+          originalName: fileName,
+          content: content, 
+          language: language,
+          createdAt: new Date().toISOString()
+        };
+      }
 
       updateFirebaseFiles();
       openFile(fileKey);
       elements.newFileNameInput.value = '';
     }
 
-   // Abrir arquivo no editor
+    // Encontrar arquivo enviado pelo nome
+    function findUploadedFileByName(fileName) {
+      for (const key in uploadedFiles) {
+        if (uploadedFiles[key].originalName === fileName) {
+          return uploadedFiles[key];
+        }
+      }
+      return null;
+    }
+
+    // Abrir arquivo no editor
     function openFile(fileKey) {
       if (!files[fileKey] || !editor) {
         console.error('Arquivo ou editor não disponível');
@@ -729,6 +955,16 @@
 
       currentFile = fileKey;
       const fileData = files[fileKey];
+
+      // Se for um arquivo enviado (com URL), mostrar na visualização de arquivo
+      if (fileData.url) {
+        showUploadedFile(fileData);
+        return;
+      }
+
+      // Caso contrário, é um arquivo de texto - abrir no editor
+      elements.fileContainer.style.display = 'none';
+      editor.getDomNode().style.display = 'block';
 
       // Determinar linguagem
       let language;
@@ -753,6 +989,16 @@
       // Definir modelo no editor
       editor.setModel(model);
       monaco.editor.setModelLanguage(model, language);
+      updateTabs();
+      elements.saveFileBtn.disabled = true;
+    }
+
+    // Mostrar arquivo enviado em um iframe
+    function showUploadedFile(fileData) {
+      editor.getDomNode().style.display = 'none';
+      elements.fileContainer.style.display = 'block';
+      elements.fileIframe.src = fileData.url;
+      
       updateTabs();
       elements.saveFileBtn.disabled = true;
     }
@@ -898,10 +1144,13 @@
       elements.targetFileSelect.innerHTML = '';
       Object.keys(files).forEach(fileKey => {
         const fileData = files[fileKey];
-        const option = document.createElement('option');
-        option.value = fileKey;
-        option.textContent = fileData.originalName || fileData.name;
-        elements.targetFileSelect.appendChild(option);
+        // Apenas arquivos de texto podem receber código
+        if (!fileData.url) {
+          const option = document.createElement('option');
+          option.value = fileKey;
+          option.textContent = fileData.originalName || fileData.name;
+          elements.targetFileSelect.appendChild(option);
+        }
       });
 
       elements.codeNotification.style.display = 'block';
@@ -920,7 +1169,12 @@
         return;
       }
 
-      // Adicionar código ao arquivo
+      // Adicionar código ao arquivo (apenas para arquivos de texto)
+      if (files[selectedFileKey].url) {
+        alert('Não é possível inserir código em arquivos de mídia.');
+        return;
+      }
+
       files[selectedFileKey].content = files[selectedFileKey].content + '\n' + currentCode.code;
 
       // Atualizar Firebase
@@ -941,6 +1195,86 @@
         elements.codeNotification.style.display = 'none';
         currentCode = null;
       });
+    }
+
+    // Mostrar modal para inserir arquivo
+    function showInsertModal() {
+      // Limpar seleções anteriores
+      elements.fileSelect.innerHTML = '<option value="">Selecione um arquivo</option>';
+      
+      // Preencher com arquivos disponíveis
+      for (const key in uploadedFiles) {
+        const file = uploadedFiles[key];
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = file.originalName;
+        elements.fileSelect.appendChild(option);
+      }
+      
+      elements.insertModal.style.display = 'flex';
+    }
+
+    // Inserir referência de arquivo no código (apenas iframe) - CORREÇÃO PRINCIPAL
+    function insertFileReference() {
+      const selectedFileKey = elements.fileSelect.value;
+      
+      if (!selectedFileKey) {
+        showInsertStatus('Por favor, selecione um arquivo.', 'error');
+        return;
+      }
+      
+      const file = uploadedFiles[selectedFileKey];
+      if (!file) {
+        showInsertStatus('Arquivo não encontrado.', 'error');
+        return;
+      }
+      
+      // Gerar código iframe
+      const codeToInsert = `<iframe src="${file.url}" frameborder="0" style="width:100%; height:400px;"></iframe>`;
+      
+      // Inserir no editor atual
+      if (editor && currentFile && files[currentFile] && !files[currentFile].url) {
+        const model = editor.getModel();
+        if (model) {
+          // Obter posição atual do cursor
+          const position = editor.getPosition();
+          
+          // Inserir o código na posição atual
+          const range = new monaco.Range(
+            position.lineNumber,
+            position.column,
+            position.lineNumber,
+            position.column
+          );
+          
+          const id = { major: 1, minor: 1 };
+          const op = { 
+            identifier: id, 
+            range: range, 
+            text: codeToInsert, 
+            forceMoveMarkers: true 
+          };
+          
+          model.applyEdits([op]);
+          
+          showInsertStatus('Arquivo inserido com sucesso!', 'success');
+          setTimeout(() => {
+            elements.insertModal.style.display = 'none';
+            elements.insertStatus.style.display = 'none';
+          }, 1500);
+        } else {
+          showInsertStatus('Erro: Editor não está disponível.', 'error');
+        }
+      } else {
+        showInsertStatus('Erro: Não é possível inserir arquivo neste tipo de arquivo.', 'error');
+      }
+    }
+
+    // Mostrar status da operação de inserção
+    function showInsertStatus(message, type) {
+      elements.insertStatus.textContent = message;
+      elements.insertStatus.className = 'status-' + type;
+      elements.insertStatus.style.display = 'block';
     }
   </script>
 </body>
