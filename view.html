@@ -11,12 +11,15 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
+      font-family: Arial, sans-serif;
     }
+    
     iframe {
       border: none;
       width: 100%;
       height: 100%;
     }
+    
     #loading {
       position: fixed;
       top: 0;
@@ -27,13 +30,146 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      font-family: Arial, sans-serif;
       font-size: 18px;
+      flex-direction: column;
+      z-index: 1000;
+    }
+    
+    #file-viewer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: white;
+      display: none;
+      flex-direction: column;
+      z-index: 1001;
+    }
+    
+    #file-header {
+      padding: 10px;
+      background: #f5f5f5;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    #file-content {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    
+    #file-content img,
+    #file-content video {
+      max-width: 100%;
+      max-height: 100%;
+    }
+    
+    #close-file {
+      background: #ff4444;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    .loader {
+      width: 50px;
+      height: 50px;
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .error {
+      color: red;
+      text-align: center;
+      padding: 20px;
+    }
+    
+    /* Estilos para lista de arquivos */
+    #file-list {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: white;
+      padding: 20px;
+      overflow-y: auto;
+      z-index: 1002;
+    }
+    
+    .file-item {
+      padding: 15px;
+      margin: 10px 0;
+      background: #f5f5f5;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 1px solid #ddd;
+      transition: background 0.3s;
+    }
+    
+    .file-item:hover {
+      background: #e9e9e9;
+    }
+    
+    .file-name {
+      font-weight: bold;
+      color: #333;
+    }
+    
+    .file-type {
+      color: #666;
+      font-size: 12px;
+      margin-left: 10px;
+    }
+    
+    .back-button {
+      background: #4361ee;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-bottom: 20px;
     }
   </style>
 </head>
 <body>
-  <div id="loading">Carregando projeto...</div>
+  <div id="loading">
+    <div class="loader"></div>
+    <div>Carregando projeto...</div>
+  </div>
+  
+  <div id="file-list">
+    <button class="back-button" onclick="showProject()">← Voltar ao Projeto</button>
+    <h2>Arquivos do Projeto</h2>
+    <div id="file-list-content"></div>
+  </div>
+  
+  <div id="file-viewer">
+    <div id="file-header">
+      <span id="file-title">Visualizando Arquivo</span>
+      <button id="close-file">Fechar</button>
+    </div>
+    <div id="file-content"></div>
+  </div>
+  
   <iframe id="preview-frame" style="display: none;"></iframe>
 
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -53,82 +189,238 @@
       measurementId: "G-7E1VWN07GM"
     };
 
-    // Inicializar Firebase
-    firebase.initializeApp(firebaseConfig);
+    const app = firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const auth = firebase.auth();
 
-    // Elementos da página
     const loadingEl = document.getElementById('loading');
     const previewFrame = document.getElementById('preview-frame');
+    const fileViewer = document.getElementById('file-viewer');
+    const fileContent = document.getElementById('file-content');
+    const fileTitle = document.getElementById('file-title');
+    const closeFileBtn = document.getElementById('close-file');
+    const fileList = document.getElementById('file-list');
+    const fileListContent = document.getElementById('file-list-content');
 
-    // Função para encontrar o arquivo principal
+    let currentProjectData = null;
+    let currentSubdomain = null;
+
+    function showError(message) {
+      loadingEl.innerHTML = `<div class="error">${message}</div>`;
+    }
+
+    function joinChunks(chunks) {
+      return chunks ? chunks.join('') : '';
+    }
+
+    function findFileByName(files, fileName) {
+      if (!files) return null;
+      
+      for (const fileKey in files) {
+        const file = files[fileKey];
+        if (file.originalName === fileName || 
+            file.name === fileName || 
+            fileKey === fileName) {
+          return file;
+        }
+      }
+      return null;
+    }
+
     function findMainFile(files) {
+      if (!files) return null;
+      
       const fileList = Object.values(files);
       
-      // 1. Prioridade para index.html
-      const indexHtml = fileList.find(f => 
-        f.name === 'index.html' || f.originalName === 'index.html'
+      // 1. Procura por index.html
+      let mainFile = fileList.find(f => 
+        f.originalName === 'index.html' || f.name === 'index.html'
       );
-      if (indexHtml) return indexHtml;
       
-      // 2. Qualquer arquivo HTML
-      const anyHtml = fileList.find(f => 
-        (f.name && f.name.endsWith('.html')) || 
-        (f.originalName && f.originalName.endsWith('.html'))
-      );
-      return anyHtml;
+      // 2. Se não encontrou, procura qualquer arquivo HTML
+      if (!mainFile) {
+        mainFile = fileList.find(f => 
+          (f.originalName && f.originalName.endsWith('.html')) ||
+          (f.name && f.name.endsWith('.html'))
+        );
+      }
+      
+      return mainFile;
     }
 
-    // Função para renderizar o projeto
-    function renderProject(projectData) {
-      if (!projectData?.files) {
-        loadingEl.textContent = 'Projeto sem arquivos.';
-        return;
+    function isUploadedFile(file) {
+      return file && (file.directUrl || file.url);
+    }
+
+    function showMediaFile(file, fileName) {
+      const url = file.directUrl || file.url;
+      const type = file.type || '';
+      
+      fileTitle.textContent = fileName || file.originalName || 'Arquivo';
+      
+      if (type.startsWith('image/')) {
+        fileContent.innerHTML = `<img src="${url}" alt="${fileName}" style="max-width: 100%; max-height: 100%;">`;
+      } else if (type.startsWith('video/')) {
+        fileContent.innerHTML = `
+          <video controls autoplay style="max-width: 100%; max-height: 100%;">
+            <source src="${url}" type="${type}">
+            Seu navegador não suporta vídeo.
+          </video>
+        `;
+      } else if (type.startsWith('audio/')) {
+        fileContent.innerHTML = `
+          <audio controls autoplay>
+            <source src="${url}" type="${type}">
+            Seu navegador não suporta áudio.
+          </audio>
+        `;
+      } else {
+        fileContent.innerHTML = `
+          <div style="text-align: center;">
+            <h3>${fileName}</h3>
+            <p><a href="${url}" target="_blank">Abrir arquivo</a></p>
+          </div>
+        `;
       }
+      
+      fileViewer.style.display = 'flex';
+      loadingEl.style.display = 'none';
+      previewFrame.style.display = 'none';
+      fileList.style.display = 'none';
+    }
 
-      const mainFile = findMainFile(projectData.files);
-      if (!mainFile) {
-        loadingEl.textContent = 'Nenhum arquivo HTML encontrado.';
-        return;
-      }
-
-      try {
-        // Criar documento HTML
-        const doc = new DOMParser().parseFromString(mainFile.content, 'text/html');
-        
-        // Adicionar CSS e JS
-        Object.values(projectData.files).forEach(file => {
-          if (file.name?.endsWith('.css') || file.originalName?.endsWith('.css')) {
-            const style = doc.createElement('style');
-            style.textContent = file.content;
-            doc.head.appendChild(style);
-          }
-          
-          if (file.name?.endsWith('.js') || file.originalName?.endsWith('.js')) {
-            const script = doc.createElement('script');
-            script.textContent = file.content;
-            doc.body.appendChild(script);
-          }
-        });
-
-        // Exibir no iframe
-        previewFrame.srcdoc = doc.documentElement.outerHTML;
+    function showTextFile(content, fileName, type = 'html') {
+      if (type === 'html') {
+        previewFrame.srcdoc = content;
         previewFrame.style.display = 'block';
         loadingEl.style.display = 'none';
-        document.title = projectData.name || 'Visualização do Projeto';
-        
-      } catch (error) {
-        loadingEl.textContent = 'Erro ao carregar o projeto.';
-        console.error(error);
+        fileViewer.style.display = 'none';
+        fileList.style.display = 'none';
+        document.title = fileName;
+      } else {
+        fileTitle.textContent = fileName;
+        fileContent.innerHTML = `
+          <pre style="background: #f5f5f5; padding: 20px; border-radius: 5px; overflow: auto; width: 100%; height: 100%; margin: 0;">
+${content}
+          </pre>
+        `;
+        fileViewer.style.display = 'flex';
+        loadingEl.style.display = 'none';
+        previewFrame.style.display = 'none';
+        fileList.style.display = 'none';
       }
     }
 
-    // Carregar projeto
+    function showFileList() {
+      if (!currentProjectData || !currentProjectData.files) {
+        showError('Nenhum arquivo encontrado no projeto.');
+        return;
+      }
+
+      fileListContent.innerHTML = '';
+      const files = currentProjectData.files;
+      
+      for (const fileKey in files) {
+        const file = files[fileKey];
+        const fileName = file.originalName || file.name || fileKey;
+        const fileType = file.language || (fileName.split('.').pop() || 'arquivo');
+        
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+        fileItem.onclick = () => openSpecificFile(fileName);
+        
+        fileItem.innerHTML = `
+          <div class="file-name">${fileName}</div>
+          <div class="file-type">Tipo: ${fileType}</div>
+        `;
+        
+        fileListContent.appendChild(fileItem);
+      }
+      
+      fileList.style.display = 'block';
+      loadingEl.style.display = 'none';
+      previewFrame.style.display = 'none';
+      fileViewer.style.display = 'none';
+    }
+
+    function showProject() {
+      if (!currentProjectData) return;
+      
+      const mainFile = findMainFile(currentProjectData.files);
+      if (mainFile) {
+        openSpecificFile(mainFile.originalName || mainFile.name);
+      } else {
+        showFileList();
+      }
+    }
+
+    function openSpecificFile(fileName) {
+      if (!currentProjectData || !currentProjectData.files) return;
+      
+      const file = findFileByName(currentProjectData.files, fileName);
+      if (!file) {
+        showError(`Arquivo "${fileName}" não encontrado.`);
+        return;
+      }
+
+      if (isUploadedFile(file)) {
+        showMediaFile(file, fileName);
+      } else {
+        const content = joinChunks(file.chunks) || file.content || '';
+        const fileType = file.language || fileName.split('.').pop() || 'text';
+        showTextFile(content, fileName, fileType);
+      }
+    }
+
+    function renderProject(projectData) {
+      if (!projectData || !projectData.files) {
+        showError('Projeto sem arquivos ou dados inválidos.');
+        return;
+      }
+      
+      currentProjectData = projectData;
+      
+      const mainFile = findMainFile(projectData.files);
+      if (mainFile) {
+        // Se tem index.html ou arquivo HTML principal, abre automaticamente
+        openSpecificFile(mainFile.originalName || mainFile.name);
+      } else {
+        // Se não tem arquivo principal, mostra lista de arquivos
+        showFileList();
+      }
+      
+      // Atualiza título da página
+      document.title = projectData.name || 'Visualização do Projeto';
+    }
+
+    // FUNÇÃO PARA BUSCAR PROJETO POR SUBDOMÍNIO
+    async function getProjectBySubdomain(subdomain) {
+      try {
+        const domainRef = db.ref('domains/' + subdomain);
+        const snapshot = await domainRef.once('value');
+        const domainData = snapshot.val();
+        
+        if (!domainData) {
+          return null;
+        }
+        
+        return domainData.projectId;
+      } catch (error) {
+        console.error('Erro ao buscar subdomínio:', error);
+        return null;
+      }
+    }
+
     async function loadProject() {
-      const projectId = new URLSearchParams(location.search).get('projectId');
-      if (!projectId) {
-        loadingEl.textContent = 'ID do projeto não especificado.';
+      const urlParams = new URLSearchParams(window.location.search);
+      const subdomain = urlParams.get('l');
+      const projectId = urlParams.get('projectId');
+      
+      console.log('Subdomínio:', subdomain);
+      console.log('Project ID:', projectId);
+
+      if (!subdomain && !projectId) {
+        showError('Nenhum projeto especificado na URL.');
         return;
       }
 
@@ -141,36 +433,78 @@
         });
 
         if (!user) {
-          loadingEl.textContent = 'Redirecionando para login...';
-          setTimeout(() => location.href = 'auth.html', 2000);
+          showError('Usuário não autenticado. Redirecionando...');
+          setTimeout(() => window.location.href = 'auth.html', 2000);
           return;
         }
 
-        // Tenta nova estrutura (por usuário)
-        const userProjectRef = db.ref(`projects/${user.uid}/${projectId}`);
-        const snapshot = await userProjectRef.once('value');
+        let finalProjectId = projectId;
+        currentSubdomain = subdomain;
+        
+        // Se tem subdomínio, busca o projectId correspondente
+        if (subdomain) {
+          finalProjectId = await getProjectBySubdomain(subdomain);
+          if (!finalProjectId) {
+            showError('Subdomínio não encontrado.');
+            return;
+          }
+        }
+
+        // Verifica se tem arquivo específico na URL
+        let specificFile = null;
+        let cleanProjectId = finalProjectId;
+        
+        if (finalProjectId && finalProjectId.includes('/')) {
+          const parts = finalProjectId.split('/');
+          cleanProjectId = parts[0];
+          specificFile = parts[1];
+        }
+
+        // Busca projeto
+        let projectRef = db.ref('projects/' + user.uid + '/' + cleanProjectId);
+        let snapshot = await projectRef.once('value');
         let projectData = snapshot.val();
 
-        // Se não encontrou, tenta estrutura antiga
         if (!projectData) {
-          const legacyRef = db.ref(`projects/${projectId}`);
-          const legacySnapshot = await legacyRef.once('value');
-          projectData = legacySnapshot.val();
+          projectRef = db.ref('projects/' + cleanProjectId);
+          snapshot = await projectRef.once('value');
+          projectData = snapshot.val();
         }
 
-        if (projectData) {
-          renderProject(projectData);
-        } else {
-          loadingEl.textContent = 'Projeto não encontrado.';
+        if (!projectData) {
+          showError('Projeto não encontrado.');
+          return;
         }
+
+        currentProjectData = projectData;
+
+        // Se tem arquivo específico na URL
+        if (specificFile) {
+          openSpecificFile(specificFile);
+        } else {
+          // Mostra projeto completo (index.html ou lista)
+          renderProject(projectData);
+        }
+
       } catch (error) {
-        loadingEl.textContent = 'Erro ao carregar projeto.';
-        console.error(error);
+        console.error('Erro ao carregar projeto:', error);
+        showError('Erro ao carregar projeto: ' + error.message);
       }
     }
 
-    // Iniciar
-    loadProject();
+    closeFileBtn.addEventListener('click', function() {
+      fileViewer.style.display = 'none';
+      fileContent.innerHTML = '';
+      showProject(); // Volta para o projeto principal
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+      loadProject();
+    });
+
+    // Funções globais para acesso externo
+    window.showFileList = showFileList;
+    window.showProject = showProject;
   </script>
 </body>
 </html>
