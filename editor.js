@@ -27,6 +27,7 @@ let sessionRef = null;
 let currentCode = null;
 let loaderInterval = null;
 let uploadedFiles = {};
+let currentSubdomain = null;
 
 // Elementos da UI
 const elements = {
@@ -37,6 +38,7 @@ const elements = {
   aiBtn: document.getElementById('aiBtn'),
   uploadBtn: document.getElementById('uploadBtn'),
   insertFileBtn: document.getElementById('insertFileBtn'),
+  domainBtn: document.getElementById('domainBtn'),
   projectNameInput: document.getElementById('project-name'),
   tabsContainer: document.getElementById('tabs'),
   userNameElement: document.getElementById('user-name'),
@@ -79,7 +81,6 @@ function startLoaderAnimation() {
   }, 2000);
 }
 
-// Função para mostrar o conteúdo principal
 function showAppContent() {
   elements.loadingScreen.style.opacity = '0';
   setTimeout(() => {
@@ -98,10 +99,175 @@ function sanitizeFilename(filename) {
   return filename.replace(/[.#$/[\]]/g, '_');
 }
 
-// SISTEMA DE DIVISÃO AUTOMÁTICA DE CÓDIGO GRANDE
+// SISTEMA DE SUBDOMÍNIOS
+function createCustomDomain(projectId, subdomain) {
+    if (!subdomain || !projectId) return null;
+    
+    const cleanSubdomain = subdomain.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    
+    if (cleanSubdomain.length < 3) {
+        alert('Subdomínio deve ter pelo menos 3 caracteres');
+        return null;
+    }
+    
+    const domainRef = db.ref(`domains/${cleanSubdomain}`);
+    domainRef.set({
+        projectId: projectId,
+        owner: currentUser.uid,
+        createdAt: new Date().toISOString(),
+        subdomain: cleanSubdomain
+    });
+    
+    return cleanSubdomain;
+}
+
+async function checkSubdomainAvailable(subdomain) {
+    const cleanSubdomain = subdomain.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    const domainRef = db.ref(`domains/${cleanSubdomain}`);
+    const snapshot = await domainRef.once('value');
+    return !snapshot.exists();
+}
+
+function generateProjectUrl(projectId, subdomain = null) {
+    const baseUrl = window.location.origin + window.location.pathname.replace('editor.html', '');
+    
+    if (subdomain) {
+        return `${baseUrl}view.html?l=${subdomain}`;
+    } else {
+        return `${baseUrl}view.html?projectId=${projectId}`;
+    }
+}
+
+function generateFileUrl(projectId, fileName, subdomain = null) {
+    const baseUrl = window.location.origin + window.location.pathname.replace('editor.html', '');
+    
+    if (subdomain) {
+        return `${baseUrl}view.html?l=${subdomain}/${fileName}`;
+    } else {
+        return `${baseUrl}view.html?projectId=${projectId}/${fileName}`;
+    }
+}
+
+function showDomainModal() {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+    `;
+    
+    modal.innerHTML = `
+        <div style="background: #252526; padding: 20px; border-radius: 10px; width: 400px; max-width: 90%;">
+            <h3 style="color: #4cc9f0; margin-top: 0;">🌐 Configurar Subdomínio</h3>
+            <p style="color: #ccc; font-size: 14px;">Crie um link personalizado para seu projeto</p>
+            
+            <input type="text" id="subdomainInput" placeholder="meusite" 
+                   style="width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #555; background: #1e1e1e; color: white;">
+            
+            <div id="domainPreview" style="background: #1e1e1e; padding: 10px; border-radius: 5px; margin: 10px 0; font-size: 14px; color: #ccc;">
+                Seu link: <span id="previewUrl">...</span>
+            </div>
+            
+            <div id="domainStatus" style="margin: 10px 0;"></div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button id="cancelDomain" style="padding: 8px 16px; background: #666; color: white; border: none; border-radius: 5px; cursor: pointer;">Cancelar</button>
+                <button id="saveDomain" style="padding: 8px 16px; background: #4361ee; color: white; border: none; border-radius: 5px; cursor: pointer;">Salvar Domínio</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    const subdomainInput = modal.querySelector('#subdomainInput');
+    const previewUrl = modal.querySelector('#previewUrl');
+    const domainStatus = modal.querySelector('#domainStatus');
+    const cancelBtn = modal.querySelector('#cancelDomain');
+    const saveBtn = modal.querySelector('#saveDomain');
+    
+    subdomainInput.addEventListener('input', function() {
+        const sub = this.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+        if (sub) {
+            previewUrl.textContent = generateProjectUrl(currentProjectId, sub);
+            previewUrl.style.color = '#4cc9f0';
+        } else {
+            previewUrl.textContent = generateProjectUrl(currentProjectId);
+            previewUrl.style.color = '#ccc';
+        }
+    });
+    
+    subdomainInput.addEventListener('blur', async function() {
+        const sub = this.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+        if (sub.length < 3) {
+            domainStatus.innerHTML = '<span style="color: #ff4444;">Mínimo 3 caracteres</span>';
+            return;
+        }
+        
+        const available = await checkSubdomainAvailable(sub);
+        if (available) {
+            domainStatus.innerHTML = '<span style="color: #4caf50;">✅ Subdomínio disponível</span>';
+        } else {
+            domainStatus.innerHTML = '<span style="color: #ff4444;">❌ Subdomínio já está em uso</span>';
+        }
+    });
+    
+    saveBtn.addEventListener('click', async function() {
+        const sub = subdomainInput.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+        
+        if (sub.length < 3) {
+            alert('Subdomínio deve ter pelo menos 3 caracteres');
+            return;
+        }
+        
+        const available = await checkSubdomainAvailable(sub);
+        if (!available) {
+            alert('Este subdomínio já está em uso. Escolha outro.');
+            return;
+        }
+        
+        createCustomDomain(currentProjectId, sub);
+        currentSubdomain = sub;
+        
+        updateDomainButton();
+        
+        modal.remove();
+        alert(`✅ Domínio configurado! Seu projeto está disponível em: ${generateProjectUrl(currentProjectId, sub)}`);
+    });
+    
+    cancelBtn.addEventListener('click', function() {
+        modal.remove();
+    });
+    
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+    
+    previewUrl.textContent = generateProjectUrl(currentProjectId);
+}
+
+function updateDomainButton() {
+    if (currentSubdomain) {
+        elements.domainBtn.innerHTML = `🌐 ${currentSubdomain}`;
+        elements.domainBtn.style.background = '#4caf50';
+    } else {
+        elements.domainBtn.innerHTML = '🌐 Domínio';
+        elements.domainBtn.style.background = '#4361ee';
+    }
+}
+
+// Sistema de divisão de código
 function splitLargeContent(content, maxChunkSize = 60000) {
     if (content.length <= maxChunkSize) {
-        return null; // Não precisa dividir
+        return null;
     }
     
     const chunks = [];
@@ -115,37 +281,24 @@ function joinChunks(chunks) {
     return chunks.join('');
 }
 
-// Função para salvar arquivo com divisão automática
 function saveFileWithChunks(fileKey, content) {
     const chunks = splitLargeContent(content);
     
     if (!chunks) {
-        // Arquivo pequeno, salvar normalmente
         files[fileKey].content = content;
         files[fileKey].chunks = null;
-        files[fileKey].isLargeFile = false;
     } else {
-        // Arquivo grande, salvar em chunks
         files[fileKey].chunks = chunks;
-        files[fileKey].content = null; // Limpar conteúdo direto para economizar espaço
-        files[fileKey].isLargeFile = true;
-        files[fileKey].chunkCount = chunks.length;
+        files[fileKey].content = null;
     }
     files[fileKey].updatedAt = new Date().toISOString();
 }
 
-// Função para carregar arquivo com chunks
 function loadFileWithChunks(fileData) {
     if (fileData.chunks && Array.isArray(fileData.chunks)) {
-        // Juntar chunks automaticamente
         return joinChunks(fileData.chunks);
     }
     return fileData.content || '';
-}
-
-// Verificar se arquivo é muito grande
-function isFileTooLarge(content) {
-    return content.length > 60000;
 }
 
 // Configuração do Monaco Editor
@@ -166,7 +319,6 @@ window.MonacoEnvironment = {
   }
 };
 
-// Inicialização do editor
 require(['vs/editor/editor.main'], function() {
   editor = monaco.editor.create(document.getElementById('container'), {
     theme: 'vs-dark',
@@ -178,48 +330,13 @@ require(['vs/editor/editor.main'], function() {
   editor.onDidChangeModelContent(() => {
     if (currentFile) {
       elements.saveFileBtn.disabled = false;
-      
-      // Verificar se o arquivo está ficando muito grande
-      const content = editor.getModel().getValue();
-      if (isFileTooLarge(content)) {
-        showLargeFileWarning();
-      }
     }
   });
 
-  // Iniciar animação do loader
   startLoaderAnimation();
-
-  // Inicializar aplicação
   initializeApp();
 });
 
-// Mostrar aviso de arquivo grande
-function showLargeFileWarning() {
-  const warning = document.createElement('div');
-  warning.style.cssText = `
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    background: #ff9800;
-    color: white;
-    padding: 10px;
-    border-radius: 5px;
-    z-index: 1000;
-    max-width: 300px;
-  `;
-  warning.innerHTML = `
-    <strong>Arquivo Grande Detectado</strong>
-    <p>O arquivo será automaticamente dividido para salvar no Firebase.</p>
-  `;
-  document.body.appendChild(warning);
-  
-  setTimeout(() => {
-    warning.remove();
-  }, 5000);
-}
-
-// Função principal de inicialização
 function initializeApp() {
   auth.onAuthStateChanged(user => {
     if (!user) {
@@ -231,7 +348,6 @@ function initializeApp() {
     updateUserInfo(user);
     saveUserInfo(user);
 
-    // Obter ID do projeto da URL
     const urlParams = new URLSearchParams(window.location.search);
     currentProjectId = urlParams.get('projectId');
 
@@ -241,11 +357,10 @@ function initializeApp() {
       return;
     }
 
-    // Configurar referências do Firebase
     projectRef = db.ref(`projects/${user.uid}/${currentProjectId}`);
     sessionRef = db.ref(`sessions/${currentProjectId}`);
 
-    // Configurar listeners
+    loadProjectDomain();
     setupCodeListener();
     loadProject();
     loadUploadedFiles();
@@ -253,7 +368,18 @@ function initializeApp() {
   });
 }
 
-// Configurar listeners de eventos
+function loadProjectDomain() {
+    const domainsRef = db.ref('domains');
+    domainsRef.orderByChild('projectId').equalTo(currentProjectId).on('value', (snapshot) => {
+        const domains = snapshot.val();
+        if (domains) {
+            const domainKey = Object.keys(domains)[0];
+            currentSubdomain = domains[domainKey].subdomain;
+            updateDomainButton();
+        }
+    });
+}
+
 function setupEventListeners() {
   elements.newFileForm.addEventListener('submit', function(e) {
     e.preventDefault();
@@ -263,21 +389,17 @@ function setupEventListeners() {
   elements.saveFileBtn.addEventListener('click', saveCurrentFile);
 
   elements.previewBtn.addEventListener('click', function() {
-    if (!currentProjectId) {
-      alert('Projeto não carregado corretamente!');
-      return;
-    }
-    window.open(`view.html?projectId=${currentProjectId}`, '_blank');
+    if (!currentProjectId) return;
+    const url = generateProjectUrl(currentProjectId, currentSubdomain);
+    window.open(url, '_blank');
   });
+
+  elements.domainBtn.addEventListener('click', showDomainModal);
 
   elements.projectNameInput.addEventListener('blur', updateProjectName);
 
-  // IA Assistente
   elements.aiBtn.addEventListener('click', function() {
-    if (!currentProjectId) {
-      alert('Projeto não carregado corretamente!');
-      return;
-    }
+    if (!currentProjectId) return;
     const aiUrl = `https://pergunte-ia--socialkoala6579904.on.websim.com/?projectId=${currentProjectId}`;
     elements.aiIframe.src = aiUrl;
     elements.aiIframeContainer.style.display = 'flex';
@@ -288,12 +410,8 @@ function setupEventListeners() {
     elements.aiIframe.src = 'about:blank';
   });
 
-  // Upload de arquivos
   elements.uploadBtn.addEventListener('click', function() {
-    if (!currentProjectId) {
-      alert('Projeto não carregado corretamente!');
-      return;
-    }
+    if (!currentProjectId) return;
     const uploadUrl = `https://nuvem-de-arquivos-drive--narrownarwhal3891229.on.websim.com/?projectId=${currentProjectId}`;
     elements.uploadIframe.src = uploadUrl;
     elements.uploadIframeContainer.style.display = 'flex';
@@ -302,12 +420,10 @@ function setupEventListeners() {
   elements.closeUploadBtn.addEventListener('click', function() {
     elements.uploadIframeContainer.style.display = 'none';
     elements.uploadIframe.src = 'about:blank';
-    // Recarregar arquivos após fechar o upload
     loadProject();
     loadUploadedFiles();
   });
 
-  // Inserir arquivo
   elements.insertFileBtn.addEventListener('click', function() {
     showInsertModal();
   });
@@ -318,7 +434,6 @@ function setupEventListeners() {
 
   elements.confirmInsertBtn.addEventListener('click', insertFileReference);
 
-  // Notificação de código
   elements.insertCodeBtn.addEventListener('click', insertCode);
   elements.discardCodeBtn.addEventListener('click', function() {
     elements.codeNotification.style.display = 'none';
@@ -326,7 +441,6 @@ function setupEventListeners() {
   });
 }
 
-// Atualizar informações do usuário na UI
 function updateUserInfo(user) {
   if (!user) return;
 
@@ -339,7 +453,6 @@ function updateUserInfo(user) {
   }
 }
 
-// Salvar informações do usuário no Firebase
 function saveUserInfo(user) {
   if (!user || !user.uid) return;
 
@@ -355,12 +468,8 @@ function saveUserInfo(user) {
   });
 }
 
-// Carregar projeto do Firebase
 function loadProject() {
-  if (!projectRef) {
-    console.error('Referência do projeto não definida');
-    return;
-  }
+  if (!projectRef) return;
 
   projectRef.on('value', (snapshot) => {
     const projectData = snapshot.val();
@@ -370,14 +479,9 @@ function loadProject() {
       return;
     }
 
-    // Atualizar nome do projeto
     elements.projectNameInput.value = projectData.name || 'Projeto sem nome';
     files = projectData.files || {};
 
-    // Processar arquivos com chunks
-    processFilesWithChunks();
-
-    // Encontrar arquivo index.html ou o primeiro arquivo disponível
     const fileKeys = Object.keys(files);
     const indexHtmlKey = fileKeys.find(key => {
       const file = files[key];
@@ -388,13 +492,10 @@ function loadProject() {
     if (firstFileKey) {
       openFile(firstFileKey);
     } else {
-      // Criar um arquivo index.html padrão se não houver arquivos
       createDefaultIndexHtml();
     }
 
     updateTabs();
-
-    // Mostrar conteúdo principal após carregar tudo
     showAppContent();
   }, (error) => {
     console.error("Erro ao carregar projeto:", error);
@@ -402,26 +503,13 @@ function loadProject() {
   });
 }
 
-// Processar arquivos que estão divididos em chunks
-function processFilesWithChunks() {
-  for (const fileKey in files) {
-    const file = files[fileKey];
-    if (file.chunks && Array.isArray(file.chunks)) {
-      console.log(`Arquivo ${file.originalName} carregado com ${file.chunks.length} chunks`);
-    }
-  }
-}
-
-// Carregar arquivos enviados pelo WebSim
 function loadUploadedFiles() {
   const uploadedFilesRef = db.ref('projectFiles');
   uploadedFilesRef.orderByChild('projectId').equalTo(currentProjectId).on('value', (snapshot) => {
     uploadedFiles = snapshot.val() || {};
-    console.log('Arquivos carregados:', uploadedFiles);
   });
 }
 
-// Criar arquivo index.html padrão
 function createDefaultIndexHtml() {
   const fileName = 'index.html';
   const sanitizedFileName = sanitizeFilename(fileName);
@@ -451,7 +539,6 @@ function createDefaultIndexHtml() {
   openFile(fileKey);
 }
 
-// Criar novo arquivo
 function createNewFile() {
   const fileName = elements.newFileNameInput.value.trim();
   if (!fileName) {
@@ -462,7 +549,6 @@ function createNewFile() {
   const sanitizedFileName = sanitizeFilename(fileName);
   const fileKey = encodeKey(sanitizedFileName);
 
-  // Verificar se arquivo já existe
   const existingFile = Object.values(files).find(f => 
     f.name === fileName || f.originalName === fileName
   );
@@ -472,11 +558,9 @@ function createNewFile() {
     return;
   }
 
-  // Verificar se é um arquivo enviado pelo WebSim
   const uploadedFile = findUploadedFileByName(fileName);
 
   if (uploadedFile) {
-    // Se for um arquivo enviado, criar um arquivo com a URL
     files[fileKey] = { 
       name: sanitizedFileName, 
       originalName: fileName,
@@ -485,7 +569,6 @@ function createNewFile() {
       createdAt: new Date().toISOString()
     };
   } else {
-    // Determinar conteúdo padrão baseado na extensão
     let content = '';
     const extension = fileName.split('.').pop().toLowerCase();
     const language = extension;
@@ -513,7 +596,6 @@ function createNewFile() {
         content = `// ${fileName}`;
     }
 
-    // Criar novo arquivo
     files[fileKey] = { 
       name: sanitizedFileName, 
       originalName: fileName,
@@ -528,7 +610,6 @@ function createNewFile() {
   elements.newFileNameInput.value = '';
 }
 
-// Encontrar arquivo enviado pelo nome
 function findUploadedFileByName(fileName) {
   for (const key in uploadedFiles) {
     if (uploadedFiles[key].originalName === fileName) {
@@ -538,30 +619,20 @@ function findUploadedFileByName(fileName) {
   return null;
 }
 
-// Abrir arquivo no editor
 function openFile(fileKey) {
-  if (!files[fileKey] || !editor) {
-    console.error('Arquivo ou editor não disponível');
-    return;
-  }
+  if (!files[fileKey] || !editor) return;
 
   currentFile = fileKey;
   const fileData = files[fileKey];
 
-  // Se for um arquivo enviado (com URL), mostrar na visualização de arquivo
   if (fileData.url) {
     showUploadedFile(fileData);
     return;
   }
 
-  // Caso contrário, é um arquivo de texto - abrir no editor
   elements.fileContainer.style.display = 'none';
   editor.getDomNode().style.display = 'block';
 
-  // Carregar conteúdo (juntando chunks automaticamente se necessário)
-  const content = loadFileWithChunks(fileData);
-
-  // Determinar linguagem
   let language;
   switch(fileData.language) {
     case 'html': language = 'html'; break;
@@ -570,32 +641,22 @@ function openFile(fileKey) {
     default: language = 'plaintext';
   }
 
-  // Criar ou reutilizar modelo
   let model = models[fileKey];
   if (!model) {
     model = monaco.editor.createModel(
-      content,
+      loadFileWithChunks(fileData),
       language,
       monaco.Uri.parse(`file:///${fileData.originalName || fileData.name}`)
     );
     models[fileKey] = model;
-  } else {
-    model.setValue(content);
   }
 
-  // Definir modelo no editor
   editor.setModel(model);
   monaco.editor.setModelLanguage(model, language);
   updateTabs();
   elements.saveFileBtn.disabled = true;
-
-  // Mostrar info se arquivo foi dividido
-  if (fileData.chunks && fileData.chunks.length > 1) {
-    console.log(`Arquivo carregado de ${fileData.chunks.length} partes`);
-  }
 }
 
-// Mostrar arquivo enviado em um iframe
 function showUploadedFile(fileData) {
   editor.getDomNode().style.display = 'none';
   elements.fileContainer.style.display = 'block';
@@ -605,7 +666,6 @@ function showUploadedFile(fileData) {
   elements.saveFileBtn.disabled = true;
 }
 
-// Atualizar abas de arquivos
 function updateTabs() {
   elements.tabsContainer.innerHTML = '';
   Object.keys(files).forEach(fileKey => {
@@ -617,7 +677,6 @@ function updateTabs() {
     const label = document.createElement('span');
     label.textContent = fileData.originalName || fileData.name;
     
-    // Adicionar indicador se arquivo é grande
     if (fileData.chunks && fileData.chunks.length > 1) {
       const sizeIndicator = document.createElement('span');
       sizeIndicator.textContent = ' 📦';
@@ -640,7 +699,6 @@ function updateTabs() {
   });
 }
 
-// Fechar arquivo
 function closeFile(fileKey) {
   if (Object.keys(files).length <= 1) {
     alert('Você não pode fechar o último arquivo do projeto.');
@@ -663,35 +721,24 @@ function closeFile(fileKey) {
   updateTabs();
 }
 
-// Salvar arquivo atual COM SUPORTE A CHUNKS
 function saveCurrentFile() {
   if (!currentFile || !editor) return;
 
   const model = editor.getModel();
   if (model) {
     const content = model.getValue();
-    
-    // Usar sistema de chunks automático
     saveFileWithChunks(currentFile, content);
 
-    // Atualizar Firebase
     projectRef.update({
       files: files,
       updatedAt: new Date().toISOString()
     })
     .then(() => {
       elements.saveFileBtn.disabled = true;
-      
-      // Mostrar mensagem diferente se arquivo foi dividido
-      if (files[currentFile].chunks && files[currentFile].chunks.length > 1) {
-        elements.saveFileBtn.textContent = `Salvo! (${files[currentFile].chunks.length} partes)`;
-      } else {
-        elements.saveFileBtn.textContent = 'Salvo!';
-      }
-      
+      elements.saveFileBtn.textContent = 'Salvo!';
       setTimeout(() => { 
         elements.saveFileBtn.textContent = '💾 Salvar';
-      }, 2000);
+      }, 1500);
     })
     .catch(error => {
       console.error('Erro ao salvar arquivo:', error);
@@ -700,12 +747,8 @@ function saveCurrentFile() {
   }
 }
 
-// Atualizar arquivos no Firebase
 function updateFirebaseFiles(callback) {
-  if (!projectRef) {
-    console.error('Referência do projeto não definida');
-    return;
-  }
+  if (!projectRef) return;
 
   projectRef.update({
     files: files,
@@ -720,7 +763,6 @@ function updateFirebaseFiles(callback) {
     });
 }
 
-// Atualizar nome do projeto
 function updateProjectName() {
   const newName = elements.projectNameInput.value.trim();
   if (!newName) {
@@ -737,42 +779,28 @@ function updateProjectName() {
   });
 }
 
-// Monitorar códigos recebidos da IA
 function setupCodeListener() {
-  if (!sessionRef) {
-    console.error('Referência de sessão não definida');
-    return;
-  }
+  if (!sessionRef) return;
 
   sessionRef.child('codes').on('child_added', (snapshot) => {
     const codeData = snapshot.val();
     if (codeData && codeData.code) {
-      console.log('Novo código recebido:', codeData);
       showCodeNotification(codeData);
     }
-  }, (error) => {
-    console.error('Erro ao monitorar códigos:', error);
   });
 }
 
-// Mostrar notificação de novo código
 function showCodeNotification(codeData) {
   currentCode = codeData;
   elements.codePreview.textContent = codeData.code;
 
-  // Preencher seletor de arquivos
   elements.targetFileSelect.innerHTML = '';
   Object.keys(files).forEach(fileKey => {
     const fileData = files[fileKey];
-    // Apenas arquivos de texto podem receber código
     if (!fileData.url) {
       const option = document.createElement('option');
       option.value = fileKey;
-      let text = fileData.originalName || fileData.name;
-      if (fileData.chunks && fileData.chunks.length > 1) {
-        text += ' 📦';
-      }
-      option.textContent = text;
+      option.textContent = fileData.originalName || fileData.name;
       elements.targetFileSelect.appendChild(option);
     }
   });
@@ -780,37 +808,23 @@ function showCodeNotification(codeData) {
   elements.codeNotification.style.display = 'block';
 }
 
-// Inserir código no arquivo selecionado
 function insertCode() {
-  if (!currentCode) {
-    console.error('Nenhum código para inserir');
-    return;
-  }
+  if (!currentCode) return;
 
   const selectedFileKey = elements.targetFileSelect.value;
-  if (!selectedFileKey || !files[selectedFileKey]) {
-    console.error('Arquivo selecionado inválido');
-    return;
-  }
+  if (!selectedFileKey || !files[selectedFileKey]) return;
 
-  // Adicionar código ao arquivo (apenas para arquivos de texto)
   if (files[selectedFileKey].url) {
     alert('Não é possível inserir código em arquivos de mídia.');
     return;
   }
 
-  // Carregar conteúdo atual (juntando chunks se necessário)
   const currentContent = loadFileWithChunks(files[selectedFileKey]);
   const newContent = currentContent + '\n' + currentCode.code;
 
-  // Salvar com sistema de chunks
   saveFileWithChunks(selectedFileKey, newContent);
 
-  // Atualizar Firebase
   updateFirebaseFiles(() => {
-    console.log('Código inserido com sucesso no arquivo:', selectedFileKey);
-
-    // Atualizar editor se estiver aberto
     if (selectedFileKey === currentFile) {
       const model = editor.getModel();
       if (model) {
@@ -820,18 +834,14 @@ function insertCode() {
       openFile(selectedFileKey);
     }
 
-    // Fechar notificação
     elements.codeNotification.style.display = 'none';
     currentCode = null;
   });
 }
 
-// Mostrar modal para inserir arquivo
 function showInsertModal() {
-  // Limpar seleções anteriores
   elements.fileSelect.innerHTML = '<option value="">Selecione um arquivo</option>';
 
-  // Preencher com arquivos disponíveis
   for (const key in uploadedFiles) {
     const file = uploadedFiles[key];
     const option = document.createElement('option');
@@ -843,7 +853,6 @@ function showInsertModal() {
   elements.insertModal.style.display = 'flex';
 }
 
-// Inserir referência de arquivo no código (apenas iframe)
 function insertFileReference() {
   const selectedFileKey = elements.fileSelect.value;
 
@@ -858,17 +867,13 @@ function insertFileReference() {
     return;
   }
 
-  // Gerar código iframe
   const codeToInsert = `<iframe src="${file.url}" frameborder="0" style="width:100%; height:400px;"></iframe>`;
 
-  // Inserir no editor atual
   if (editor && currentFile && files[currentFile] && !files[currentFile].url) {
     const model = editor.getModel();
     if (model) {
-      // Obter posição atual do cursor
       const position = editor.getPosition();
 
-      // Inserir o código na posição atual
       const range = new monaco.Range(
         position.lineNumber,
         position.column,
@@ -899,7 +904,6 @@ function insertFileReference() {
   }
 }
 
-// Mostrar status da operação de inserção
 function showInsertStatus(message, type) {
   elements.insertStatus.textContent = message;
   elements.insertStatus.className = 'status-' + type;
