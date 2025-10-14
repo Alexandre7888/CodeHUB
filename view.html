@@ -139,6 +139,11 @@
       margin-left: 10px;
     }
     
+    .file-icon {
+      margin-right: 10px;
+      font-size: 16px;
+    }
+    
     .back-button {
       background: #4361ee;
       color: white;
@@ -147,6 +152,15 @@
       border-radius: 5px;
       cursor: pointer;
       margin-bottom: 20px;
+    }
+    
+    .url-badge {
+      background: #4caf50;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 10px;
+      margin-left: 10px;
     }
   </style>
 </head>
@@ -204,6 +218,7 @@
 
     let currentProjectData = null;
     let currentSubdomain = null;
+    let currentProjectId = null;
 
     function showError(message) {
       loadingEl.innerHTML = `<div class="error">${message}</div>`;
@@ -252,41 +267,91 @@
       return file && (file.directUrl || file.url);
     }
 
+    function getFileIcon(fileName, fileType) {
+      const extension = fileName.split('.').pop().toLowerCase();
+      
+      if (extension === 'html' || fileType === 'html') return '🌐';
+      if (extension === 'css' || fileType === 'css') return '🎨';
+      if (extension === 'js' || fileType === 'javascript') return '⚡';
+      if (extension === 'json') return '📋';
+      if (extension === 'txt') return '📄';
+      if (['jpg', 'jpeg', 'png', 'gif', 'svg'].includes(extension)) return '🖼️';
+      if (['mp4', 'avi', 'mov', 'webm'].includes(extension)) return '🎥';
+      if (['mp3', 'wav', 'ogg'].includes(extension)) return '🎵';
+      if (['pdf'].includes(extension)) return '📕';
+      return '📄';
+    }
+
+    function updateUrl(fileName = '') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const subdomain = urlParams.get('l');
+      const projectId = urlParams.get('projectId');
+      
+      let newUrl = window.location.pathname + '?';
+      
+      if (subdomain) {
+        if (fileName) {
+          newUrl += `l=${subdomain}/${fileName}`;
+        } else {
+          newUrl += `l=${subdomain}`;
+        }
+      } else if (projectId) {
+        if (fileName) {
+          newUrl += `projectId=${projectId}/${fileName}`;
+        } else {
+          newUrl += `projectId=${projectId}`;
+        }
+      }
+      
+      // Atualiza URL sem recarregar a página
+      window.history.replaceState({}, '', newUrl);
+    }
+
     function showMediaFile(file, fileName) {
       const url = file.directUrl || file.url;
       const type = file.type || '';
+      const extension = fileName.split('.').pop().toLowerCase();
       
       fileTitle.textContent = fileName || file.originalName || 'Arquivo';
       
-      if (type.startsWith('image/')) {
+      // Se for imagem, mostra diretamente
+      if (type.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'svg'].includes(extension)) {
         fileContent.innerHTML = `<img src="${url}" alt="${fileName}" style="max-width: 100%; max-height: 100%;">`;
-      } else if (type.startsWith('video/')) {
+      } 
+      // Se for vídeo, mostra player
+      else if (type.startsWith('video/') || ['mp4', 'avi', 'mov', 'webm'].includes(extension)) {
         fileContent.innerHTML = `
           <video controls autoplay style="max-width: 100%; max-height: 100%;">
             <source src="${url}" type="${type}">
             Seu navegador não suporta vídeo.
           </video>
         `;
-      } else if (type.startsWith('audio/')) {
+      } 
+      // Se for áudio, mostra player
+      else if (type.startsWith('audio/') || ['mp3', 'wav', 'ogg'].includes(extension)) {
         fileContent.innerHTML = `
           <audio controls autoplay>
             <source src="${url}" type="${type}">
             Seu navegador não suporta áudio.
           </audio>
         `;
-      } else {
-        fileContent.innerHTML = `
-          <div style="text-align: center;">
-            <h3>${fileName}</h3>
-            <p><a href="${url}" target="_blank">Abrir arquivo</a></p>
-          </div>
-        `;
+      }
+      // Se for PDF, mostra em iframe
+      else if (type.includes('pdf') || extension === 'pdf') {
+        fileContent.innerHTML = `<iframe src="${url}" style="width: 100%; height: 100%; border: none;"></iframe>`;
+      }
+      // Para outros tipos (URL externa), mostra em iframe
+      else {
+        fileContent.innerHTML = `<iframe src="${url}" style="width: 100%; height: 100%; border: none;"></iframe>`;
       }
       
       fileViewer.style.display = 'flex';
       loadingEl.style.display = 'none';
       previewFrame.style.display = 'none';
       fileList.style.display = 'none';
+      
+      // Atualiza URL
+      updateUrl(fileName);
     }
 
     function showTextFile(content, fileName, type = 'html') {
@@ -299,16 +364,34 @@
         document.title = fileName;
       } else {
         fileTitle.textContent = fileName;
+        
+        // Formatação de código
+        if (type === 'css' || type === 'javascript' || type === 'json') {
+          content = `<code style="font-family: 'Courier New', monospace; white-space: pre-wrap;">${escapeHtml(content)}</code>`;
+        }
+        
         fileContent.innerHTML = `
-          <pre style="background: #f5f5f5; padding: 20px; border-radius: 5px; overflow: auto; width: 100%; height: 100%; margin: 0;">
-${content}
-          </pre>
+          <div style="width: 100%; height: 100%; overflow: auto; padding: 20px; background: #f5f5f5;">
+            ${content}
+          </div>
         `;
         fileViewer.style.display = 'flex';
         loadingEl.style.display = 'none';
         previewFrame.style.display = 'none';
         fileList.style.display = 'none';
       }
+      
+      // Atualiza URL
+      updateUrl(fileName);
+    }
+
+    function escapeHtml(unsafe) {
+      return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
     }
 
     function showFileList() {
@@ -324,14 +407,20 @@ ${content}
         const file = files[fileKey];
         const fileName = file.originalName || file.name || fileKey;
         const fileType = file.language || (fileName.split('.').pop() || 'arquivo');
+        const fileIcon = getFileIcon(fileName, fileType);
+        const isUrlFile = isUploadedFile(file);
         
         const fileItem = document.createElement('div');
         fileItem.className = 'file-item';
         fileItem.onclick = () => openSpecificFile(fileName);
         
         fileItem.innerHTML = `
-          <div class="file-name">${fileName}</div>
-          <div class="file-type">Tipo: ${fileType}</div>
+          <div>
+            <span class="file-icon">${fileIcon}</span>
+            <span class="file-name">${fileName}</span>
+            ${isUrlFile ? '<span class="url-badge">URL</span>' : ''}
+            <div class="file-type">Tipo: ${fileType}</div>
+          </div>
         `;
         
         fileListContent.appendChild(fileItem);
@@ -341,6 +430,9 @@ ${content}
       loadingEl.style.display = 'none';
       previewFrame.style.display = 'none';
       fileViewer.style.display = 'none';
+      
+      // Atualiza URL para raiz
+      updateUrl('');
     }
 
     function showProject() {
@@ -459,6 +551,8 @@ ${content}
           cleanProjectId = parts[0];
           specificFile = parts[1];
         }
+
+        currentProjectId = cleanProjectId;
 
         // Busca projeto
         let projectRef = db.ref('projects/' + user.uid + '/' + cleanProjectId);
