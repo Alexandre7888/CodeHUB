@@ -98,6 +98,56 @@ function sanitizeFilename(filename) {
   return filename.replace(/[.#$/[\]]/g, '_');
 }
 
+// SISTEMA DE DIVISÃO AUTOMÁTICA DE CÓDIGO GRANDE
+function splitLargeContent(content, maxChunkSize = 60000) {
+    if (content.length <= maxChunkSize) {
+        return null; // Não precisa dividir
+    }
+    
+    const chunks = [];
+    for (let i = 0; i < content.length; i += maxChunkSize) {
+        chunks.push(content.slice(i, i + maxChunkSize));
+    }
+    return chunks;
+}
+
+function joinChunks(chunks) {
+    return chunks.join('');
+}
+
+// Função para salvar arquivo com divisão automática
+function saveFileWithChunks(fileKey, content) {
+    const chunks = splitLargeContent(content);
+    
+    if (!chunks) {
+        // Arquivo pequeno, salvar normalmente
+        files[fileKey].content = content;
+        files[fileKey].chunks = null;
+        files[fileKey].isLargeFile = false;
+    } else {
+        // Arquivo grande, salvar em chunks
+        files[fileKey].chunks = chunks;
+        files[fileKey].content = null; // Limpar conteúdo direto para economizar espaço
+        files[fileKey].isLargeFile = true;
+        files[fileKey].chunkCount = chunks.length;
+    }
+    files[fileKey].updatedAt = new Date().toISOString();
+}
+
+// Função para carregar arquivo com chunks
+function loadFileWithChunks(fileData) {
+    if (fileData.chunks && Array.isArray(fileData.chunks)) {
+        // Juntar chunks automaticamente
+        return joinChunks(fileData.chunks);
+    }
+    return fileData.content || '';
+}
+
+// Verificar se arquivo é muito grande
+function isFileTooLarge(content) {
+    return content.length > 60000;
+}
+
 // Configuração do Monaco Editor
 require.config({ 
   paths: { 
@@ -128,6 +178,12 @@ require(['vs/editor/editor.main'], function() {
   editor.onDidChangeModelContent(() => {
     if (currentFile) {
       elements.saveFileBtn.disabled = false;
+      
+      // Verificar se o arquivo está ficando muito grande
+      const content = editor.getModel().getValue();
+      if (isFileTooLarge(content)) {
+        showLargeFileWarning();
+      }
     }
   });
 
@@ -137,6 +193,31 @@ require(['vs/editor/editor.main'], function() {
   // Inicializar aplicação
   initializeApp();
 });
+
+// Mostrar aviso de arquivo grande
+function showLargeFileWarning() {
+  const warning = document.createElement('div');
+  warning.style.cssText = `
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: #ff9800;
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    z-index: 1000;
+    max-width: 300px;
+  `;
+  warning.innerHTML = `
+    <strong>Arquivo Grande Detectado</strong>
+    <p>O arquivo será automaticamente dividido para salvar no Firebase.</p>
+  `;
+  document.body.appendChild(warning);
+  
+  setTimeout(() => {
+    warning.remove();
+  }, 5000);
+}
 
 // Função principal de inicialização
 function initializeApp() {
@@ -293,6 +374,9 @@ function loadProject() {
     elements.projectNameInput.value = projectData.name || 'Projeto sem nome';
     files = projectData.files || {};
 
+    // Processar arquivos com chunks
+    processFilesWithChunks();
+
     // Encontrar arquivo index.html ou o primeiro arquivo disponível
     const fileKeys = Object.keys(files);
     const indexHtmlKey = fileKeys.find(key => {
@@ -316,6 +400,16 @@ function loadProject() {
     console.error("Erro ao carregar projeto:", error);
     alert("Erro ao carregar o projeto. Por favor, recarregue a página.");
   });
+}
+
+// Processar arquivos que estão divididos em chunks
+function processFilesWithChunks() {
+  for (const fileKey in files) {
+    const file = files[fileKey];
+    if (file.chunks && Array.isArray(file.chunks)) {
+      console.log(`Arquivo ${file.originalName} carregado com ${file.chunks.length} chunks`);
+    }
+  }
 }
 
 // Carregar arquivos enviados pelo WebSim
@@ -464,6 +558,9 @@ function openFile(fileKey) {
   elements.fileContainer.style.display = 'none';
   editor.getDomNode().style.display = 'block';
 
+  // Carregar conteúdo (juntando chunks automaticamente se necessário)
+  const content = loadFileWithChunks(fileData);
+
   // Determinar linguagem
   let language;
   switch(fileData.language) {
@@ -477,11 +574,13 @@ function openFile(fileKey) {
   let model = models[fileKey];
   if (!model) {
     model = monaco.editor.createModel(
-      fileData.content,
+      content,
       language,
       monaco.Uri.parse(`file:///${fileData.originalName || fileData.name}`)
     );
     models[fileKey] = model;
+  } else {
+    model.setValue(content);
   }
 
   // Definir modelo no editor
@@ -489,6 +588,11 @@ function openFile(fileKey) {
   monaco.editor.setModelLanguage(model, language);
   updateTabs();
   elements.saveFileBtn.disabled = true;
+
+  // Mostrar info se arquivo foi dividido
+  if (fileData.chunks && fileData.chunks.length > 1) {
+    console.log(`Arquivo carregado de ${fileData.chunks.length} partes`);
+  }
 }
 
 // Mostrar arquivo enviado em um iframe
@@ -512,6 +616,15 @@ function updateTabs() {
 
     const label = document.createElement('span');
     label.textContent = fileData.originalName || fileData.name;
+    
+    // Adicionar indicador se arquivo é grande
+    if (fileData.chunks && fileData.chunks.length > 1) {
+      const sizeIndicator = document.createElement('span');
+      sizeIndicator.textContent = ' 📦';
+      sizeIndicator.title = 'Arquivo grande (dividido)';
+      label.appendChild(sizeIndicator);
+    }
+    
     tab.appendChild(label);
 
     const closeBtn = document.createElement('button');
@@ -550,26 +663,35 @@ function closeFile(fileKey) {
   updateTabs();
 }
 
-// Salvar arquivo atual
+// Salvar arquivo atual COM SUPORTE A CHUNKS
 function saveCurrentFile() {
   if (!currentFile || !editor) return;
 
   const model = editor.getModel();
   if (model) {
-    files[currentFile].content = model.getValue();
-    files[currentFile].updatedAt = new Date().toISOString();
+    const content = model.getValue();
+    
+    // Usar sistema de chunks automático
+    saveFileWithChunks(currentFile, content);
 
-    // Atualizar Firebase com os arquivos e a data de atualização
+    // Atualizar Firebase
     projectRef.update({
       files: files,
       updatedAt: new Date().toISOString()
     })
     .then(() => {
       elements.saveFileBtn.disabled = true;
-      elements.saveFileBtn.textContent = 'Salvo!';
+      
+      // Mostrar mensagem diferente se arquivo foi dividido
+      if (files[currentFile].chunks && files[currentFile].chunks.length > 1) {
+        elements.saveFileBtn.textContent = `Salvo! (${files[currentFile].chunks.length} partes)`;
+      } else {
+        elements.saveFileBtn.textContent = 'Salvo!';
+      }
+      
       setTimeout(() => { 
         elements.saveFileBtn.textContent = '💾 Salvar';
-      }, 1500);
+      }, 2000);
     })
     .catch(error => {
       console.error('Erro ao salvar arquivo:', error);
@@ -646,7 +768,11 @@ function showCodeNotification(codeData) {
     if (!fileData.url) {
       const option = document.createElement('option');
       option.value = fileKey;
-      option.textContent = fileData.originalName || fileData.name;
+      let text = fileData.originalName || fileData.name;
+      if (fileData.chunks && fileData.chunks.length > 1) {
+        text += ' 📦';
+      }
+      option.textContent = text;
       elements.targetFileSelect.appendChild(option);
     }
   });
@@ -673,17 +799,22 @@ function insertCode() {
     return;
   }
 
-  files[selectedFileKey].content = files[selectedFileKey].content + '\n' + currentCode.code;
+  // Carregar conteúdo atual (juntando chunks se necessário)
+  const currentContent = loadFileWithChunks(files[selectedFileKey]);
+  const newContent = currentContent + '\n' + currentCode.code;
+
+  // Salvar com sistema de chunks
+  saveFileWithChunks(selectedFileKey, newContent);
 
   // Atualizar Firebase
   updateFirebaseFiles(() => {
     console.log('Código inserido com sucesso no arquivo:', selectedFileKey);
 
-    // Atualizar editor
+    // Atualizar editor se estiver aberto
     if (selectedFileKey === currentFile) {
       const model = editor.getModel();
       if (model) {
-        model.setValue(files[selectedFileKey].content);
+        model.setValue(newContent);
       }
     } else {
       openFile(selectedFileKey);
