@@ -219,6 +219,7 @@
     let currentProjectData = null;
     let currentSubdomain = null;
     let currentProjectId = null;
+    let currentFileName = null;
 
     function showError(message) {
       loadingEl.innerHTML = `<div class="error">${message}</div>`;
@@ -231,14 +232,27 @@
     function findFileByName(files, fileName) {
       if (!files) return null;
       
+      // Primeiro procura pelo nome original
       for (const fileKey in files) {
         const file = files[fileKey];
-        if (file.originalName === fileName || 
-            file.name === fileName || 
-            fileKey === fileName) {
+        if (file.originalName === fileName) {
           return file;
         }
       }
+      
+      // Depois procura pelo nome codificado
+      for (const fileKey in files) {
+        const file = files[fileKey];
+        if (file.name === fileName) {
+          return file;
+        }
+      }
+      
+      // Finalmente procura pela chave
+      if (files[fileName]) {
+        return files[fileName];
+      }
+      
       return null;
     }
 
@@ -282,7 +296,7 @@
       return '📄';
     }
 
-    function updateUrl(fileName = '') {
+    function updateUrl(fileName = null) {
       const urlParams = new URLSearchParams(window.location.search);
       const subdomain = urlParams.get('l');
       const projectId = urlParams.get('projectId');
@@ -296,15 +310,18 @@
           newUrl += `l=${subdomain}`;
         }
       } else if (projectId) {
+        // Remove qualquer arquivo atual do projectId
+        const cleanProjectId = projectId.split('/')[0];
         if (fileName) {
-          newUrl += `projectId=${projectId}/${fileName}`;
+          newUrl += `projectId=${cleanProjectId}/${fileName}`;
         } else {
-          newUrl += `projectId=${projectId}`;
+          newUrl += `projectId=${cleanProjectId}`;
         }
       }
       
       // Atualiza URL sem recarregar a página
       window.history.replaceState({}, '', newUrl);
+      currentFileName = fileName;
     }
 
     function showMediaFile(file, fileName) {
@@ -367,14 +384,12 @@
         
         // Formatação de código
         if (type === 'css' || type === 'javascript' || type === 'json') {
-          content = `<code style="font-family: 'Courier New', monospace; white-space: pre-wrap;">${escapeHtml(content)}</code>`;
+          content = `<pre style="font-family: 'Courier New', monospace; background: #f8f8f8; padding: 20px; border-radius: 5px; overflow: auto; margin: 0;">${escapeHtml(content)}</pre>`;
+        } else {
+          content = `<pre style="font-family: Arial, sans-serif; padding: 20px; margin: 0;">${escapeHtml(content)}</pre>`;
         }
         
-        fileContent.innerHTML = `
-          <div style="width: 100%; height: 100%; overflow: auto; padding: 20px; background: #f5f5f5;">
-            ${content}
-          </div>
-        `;
+        fileContent.innerHTML = content;
         fileViewer.style.display = 'flex';
         loadingEl.style.display = 'none';
         previewFrame.style.display = 'none';
@@ -432,7 +447,7 @@
       fileViewer.style.display = 'none';
       
       // Atualiza URL para raiz
-      updateUrl('');
+      updateUrl(null);
     }
 
     function showProject() {
@@ -503,15 +518,45 @@
       }
     }
 
-    async function loadProject() {
+    // FUNÇÃO PARA PROCESSAR PARÂMETROS DA URL
+    function parseUrlParameters() {
       const urlParams = new URLSearchParams(window.location.search);
       const subdomain = urlParams.get('l');
       const projectId = urlParams.get('projectId');
       
-      console.log('Subdomínio:', subdomain);
-      console.log('Project ID:', projectId);
+      let cleanProjectId = null;
+      let fileName = null;
+      
+      if (subdomain) {
+        // Exemplo: ?l=meusite/arquivo.html
+        if (subdomain.includes('/')) {
+          const parts = subdomain.split('/');
+          cleanProjectId = parts[0];
+          fileName = parts.slice(1).join('/'); // Pega todo o resto como nome do arquivo
+        } else {
+          cleanProjectId = subdomain;
+        }
+        return { type: 'subdomain', projectId: cleanProjectId, fileName };
+      } 
+      else if (projectId) {
+        // Exemplo: ?projectId=ABC123/arquivo.html
+        if (projectId.includes('/')) {
+          const parts = projectId.split('/');
+          cleanProjectId = parts[0];
+          fileName = parts.slice(1).join('/');
+        } else {
+          cleanProjectId = projectId;
+        }
+        return { type: 'projectId', projectId: cleanProjectId, fileName };
+      }
+      
+      return null;
+    }
 
-      if (!subdomain && !projectId) {
+    async function loadProject() {
+      const params = parseUrlParameters();
+      
+      if (!params) {
         showError('Nenhum projeto especificado na URL.');
         return;
       }
@@ -530,37 +575,27 @@
           return;
         }
 
-        let finalProjectId = projectId;
-        currentSubdomain = subdomain;
+        let finalProjectId = params.projectId;
         
-        // Se tem subdomínio, busca o projectId correspondente
-        if (subdomain) {
-          finalProjectId = await getProjectBySubdomain(subdomain);
+        // Se for subdomínio, busca o projectId real
+        if (params.type === 'subdomain') {
+          finalProjectId = await getProjectBySubdomain(params.projectId);
           if (!finalProjectId) {
             showError('Subdomínio não encontrado.');
             return;
           }
+          currentSubdomain = params.projectId;
         }
 
-        // Verifica se tem arquivo específico na URL
-        let specificFile = null;
-        let cleanProjectId = finalProjectId;
-        
-        if (finalProjectId && finalProjectId.includes('/')) {
-          const parts = finalProjectId.split('/');
-          cleanProjectId = parts[0];
-          specificFile = parts[1];
-        }
-
-        currentProjectId = cleanProjectId;
+        currentProjectId = finalProjectId;
 
         // Busca projeto
-        let projectRef = db.ref('projects/' + user.uid + '/' + cleanProjectId);
+        let projectRef = db.ref('projects/' + user.uid + '/' + finalProjectId);
         let snapshot = await projectRef.once('value');
         let projectData = snapshot.val();
 
         if (!projectData) {
-          projectRef = db.ref('projects/' + cleanProjectId);
+          projectRef = db.ref('projects/' + finalProjectId);
           snapshot = await projectRef.once('value');
           projectData = snapshot.val();
         }
@@ -573,8 +608,8 @@
         currentProjectData = projectData;
 
         // Se tem arquivo específico na URL
-        if (specificFile) {
-          openSpecificFile(specificFile);
+        if (params.fileName) {
+          openSpecificFile(params.fileName);
         } else {
           // Mostra projeto completo (index.html ou lista)
           renderProject(projectData);
