@@ -145,7 +145,9 @@ function generateUrl() {
 
   const url = `${baseUrl}?${params.toString()}`;
   elements.urlOutput.textContent = url;
-  elements.usageExample.textContent = url;
+  
+  // Gerar iframe em vez de imagem
+  elements.usageExample.innerHTML = `<iframe src="${url}" width="400" height="200" frameborder="0"></iframe>`;
 }
 
 // Copiar URL
