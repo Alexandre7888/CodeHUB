@@ -25,7 +25,7 @@ async function loadButtonsFromFile() {
             {
                 title: "WhatsApp",
                 description: "Fale conosco",
-                url: "https://wa.me/5511999999999",
+                url: "https://wa.me/554799635379",
                 color: "#25d366", 
                 icon: "💬"
             }
