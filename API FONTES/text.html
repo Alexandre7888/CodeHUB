@@ -14,6 +14,7 @@
       min-height: 100vh;
       font-family: Arial, sans-serif;
       overflow: hidden;
+      background: transparent;
     }
     
     .text-container {
@@ -97,6 +98,7 @@
       animation: typewriter 2s steps(40, end) both;
       overflow: hidden;
       white-space: nowrap;
+      display: inline-block;
       border-right: 2px solid;
       padding-right: 5px;
     }
@@ -120,8 +122,11 @@
 
     /* Efeito de brilho */
     .glow {
+      text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor;
+    }
+
+    .glow.pulse {
       animation: pulse 2s infinite;
-      text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
     }
 
     /* Efeito de gradiente animado */
@@ -130,6 +135,7 @@
       background-size: 400% 400%;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      background-clip: text;
       animation: gradientShift 3s ease infinite;
     }
 
@@ -137,6 +143,12 @@
       0% { background-position: 0% 50%; }
       50% { background-position: 100% 50%; }
       100% { background-position: 0% 50%; }
+    }
+
+    /* Garantir que o texto seja visível */
+    #textContent {
+      display: inline-block;
+      max-width: 100%;
     }
   </style>
 </head>
@@ -153,8 +165,8 @@
     const text = urlParams.get('text') || 'Texto Padrão';
     const fontFamily = urlParams.get('font') || 'Arial';
     const fontSize = `${urlParams.get('size') || 48}px`;
-    const color = `#${urlParams.get('color') || '333333'}`;
-    const bgColor = `#${urlParams.get('bg') || 'ffffff'}`;
+    const color = urlParams.get('color') ? `#${urlParams.get('color')}` : '#333333';
+    const bgColor = urlParams.get('bg') ? `#${urlParams.get('bg')}` : '#ffffff';
     const fontWeight = urlParams.get('weight') || 'normal';
     const fontStyle = urlParams.get('style') || 'normal';
     const animation = urlParams.get('animation') || 'fadeIn';
@@ -180,6 +192,10 @@
     // Aplicar efeitos especiais
     if (effect === 'glow') {
       textContent.classList.add('glow');
+      // Se for pulse + glow, adicionar classe pulse também
+      if (animation === 'pulse') {
+        textContent.classList.add('pulse');
+      }
     } else if (effect === 'gradient') {
       textContent.classList.add('gradient-text');
     }
@@ -205,6 +221,7 @@
 
     console.log('Animação aplicada:', animation);
     console.log('Efeito aplicado:', effect);
+    console.log('Texto:', text);
   </script>
 </body>
 </html>
