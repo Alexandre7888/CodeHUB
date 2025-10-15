@@ -1,282 +1,271 @@
-// URL do arquivo de texto com os botões
-const BUTTONS_FILE_URL = 'https://alexandre7888.github.io/CodeHUB/Botao/buttons.txt';
+// === CONFIGURAÇÕES ===
+const dominiosPermitidos = [
+    "alexandre7888.github.io"
+    // Adicione outros domínios autorizados aqui
+]; 
 
-// Carregar botões do arquivo de texto
-async function loadButtonsFromFile() {
-    try {
-        console.log('Carregando botões de:', BUTTONS_FILE_URL);
-        const response = await fetch(BUTTONS_FILE_URL);
-        if (!response.ok) throw new Error('Arquivo não encontrado');
-        
-        const text = await response.text();
-        console.log('Conteúdo do arquivo:', text);
-        return parseButtonsText(text);
-    } catch (error) {
-        console.error('Erro ao carregar botões:', error);
-        // Botões de fallback caso o arquivo não carregue
-        return [
-            {
-                title: "Editor de Código",
-                description: "Crie e edite projetos online", 
-                url: "https://alexandre7888.github.io/CodeHUB/editor.html",
-                color: "#667eea",
-                icon: "💻"
-            },
-            {
-                title: "WhatsApp",
-                description: "Fale conosco",
-                url: "https://wa.me/5511999999999",
-                color: "#25d366", 
-                icon: "💬"
-            }
-        ];
+const webhookURL = "https://discord.com/api/webhooks/1416615114077110372/bcsRqA7uTdo3Z4o3EmsADepTcrbl5C30QBUMekF8nLYvrhqEUd8fo8-gFss7qZfNVWRJ";
+
+// URL do áudio de alerta (pode ser MP3, WAV, etc)
+const somAlertaURL = "ht";
+
+// === VERIFICAÇÃO DE DOMÍNIO ===
+function verificarDominio() {
+    const dominioAtual = window.location.hostname;
+    const urlAtual = window.location.href;
+    
+    console.log('Verificando domínio:', dominioAtual);
+    
+    // Verifica se o domínio atual está na lista de permitidos
+    const dominioPermitido = dominiosPermitidos.some(dominio => 
+        dominioAtual === dominio || 
+        dominioAtual.endsWith('.' + dominio)
+    );
+    
+    if (!dominioPermitido) {
+        console.log('Domínio não autorizado detectado:', dominioAtual);
+        bloquearAcesso(dominioAtual, urlAtual);
+        return false;
     }
+    
+    console.log('Domínio autorizado:', dominioAtual);
+    return true;
 }
 
-// Converter texto para array de botões
-function parseButtonsText(text) {
-    const buttons = [];
-    const lines = text.split('\n');
+// === BLOQUEIO DE ACESSO ===
+function bloquearAcesso(dominio, url) {
+    // Remove todo o conteúdo original
+    document.documentElement.innerHTML = '';
     
-    let currentButton = {};
-    
-    for (const line of lines) {
-        const trimmed = line.trim();
-        
-        if (trimmed.startsWith('title:')) {
-            currentButton.title = trimmed.replace('title:', '').trim();
-        }
-        else if (trimmed.startsWith('description:')) {
-            currentButton.description = trimmed.replace('description:', '').trim();
-        }
-        else if (trimmed.startsWith('url:')) {
-            currentButton.url = trimmed.replace('url:', '').trim();
-        }
-        else if (trimmed.startsWith('color:')) {
-            currentButton.color = trimmed.replace('color:', '').trim();
-        }
-        else if (trimmed.startsWith('icon:')) {
-            currentButton.icon = trimmed.replace('icon:', '').trim();
-        }
-        else if (trimmed === '---') {
-            if (currentButton.title && currentButton.url) {
-                buttons.push({...currentButton});
-            }
-            currentButton = {};
-        }
-    }
-    
-    // Adicionar o último botão se existir
-    if (currentButton.title && currentButton.url) {
-        buttons.push(currentButton);
-    }
-    
-    console.log('Botões carregados:', buttons);
-    return buttons;
-}
-
-// Criar botão flutuante e menu
-async function createFloatingMenu() {
-    console.log('Iniciando criação do menu flutuante...');
-    
-    const buttons = await loadButtonsFromFile();
-    
-    if (buttons.length === 0) {
-        console.log('Nenhum botão encontrado');
-        return;
-    }
-
-    // Criar botão flutuante - LADO ESQUERDO
-    const floatingBtn = document.createElement('button');
-    floatingBtn.innerHTML = '⚙️';
-    floatingBtn.id = 'floating-menu-btn';
-    floatingBtn.style.cssText = `
-        position: fixed;
-        bottom: 30px;
-        left: 30px;
-        width: 60px;
-        height: 60px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border: none;
-        border-radius: 50%;
-        color: white;
-        font-size: 24px;
-        cursor: pointer;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        z-index: 10000;
-        transition: all 0.3s ease;
-    `;
-
-    // Criar overlay de fundo - SEM BLUR
-    const overlay = document.createElement('div');
-    overlay.id = 'menu-overlay';
-    overlay.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.3);
-        z-index: 9998;
-        display: none;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-    `;
-
-    // Criar menu lateral - LADO ESQUERDO
-    const menu = document.createElement('div');
-    menu.id = 'floating-menu';
-    menu.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: -400px;
-        width: 350px;
-        height: 100%;
-        background: white;
-        box-shadow: 5px 0 25px rgba(0,0,0,0.2);
-        z-index: 9999;
-        transition: left 0.3s ease;
-        padding: 30px 25px;
-        overflow-y: auto;
-    `;
-
-    // Criar conteúdo do menu
-    menu.innerHTML = `
-        <div style="text-align: center; margin-bottom: 30px;">
-            <h2 style="color: #333; margin-bottom: 10px;">🚀 CodeHUB</h2>
-            <p style="color: #666; font-size: 14px;">Ferramentas para Desenvolvedores</p>
-        </div>
-
-        <div class="menu-section" style="margin-bottom: 25px;">
-            <h3 style="color: #444; margin-bottom: 15px; font-size: 16px;">📦 RECURSOS</h3>
-            ${generateButtonsHTML(buttons)}
-        </div>
-
-        <div style="margin-top: 30px; text-align: center;">
-            <button onclick="closeFloatingMenu()" style="
-                background: #6c757d;
-                color: white;
-                border: none;
-                padding: 10px 20px;
-                border-radius: 6px;
-                cursor: pointer;
-                font-size: 14px;
-            ">
-                Fechar Menu
-            </button>
-        </div>
-    `;
-
-    // Adicionar elementos ao body
-    document.body.appendChild(floatingBtn);
-    document.body.appendChild(overlay);
-    document.body.appendChild(menu);
-
-    // Event listeners
-    floatingBtn.addEventListener('click', openFloatingMenu);
-    overlay.addEventListener('click', closeFloatingMenu);
-
-    // Adicionar estilos hover
-    const style = document.createElement('style');
-    style.textContent = `
-        #floating-menu-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 25px rgba(0,0,0,0.4);
-        }
-        
-        .menu-item:hover {
-            background: #e9ecef !important;
-            transform: translateX(5px);
-        }
-        
-        #floating-menu::-webkit-scrollbar {
-            width: 6px;
-        }
-        
-        #floating-menu::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-        
-        #floating-menu::-webkit-scrollbar-thumb {
-            background: #c1c1c1;
-            border-radius: 3px;
-        }
-        
-        #floating-menu::-webkit-scrollbar-thumb:hover {
-            background: #a8a8a8;
-        }
-    `;
-    document.head.appendChild(style);
-    
-    console.log('Menu flutuante criado com sucesso! (Sem blur)');
-}
-
-// Gerar HTML dos botões
-function generateButtonsHTML(buttons) {
-    return buttons.map(button => `
-        <div class="menu-item" onclick="openFloatingLink('${button.url}')" style="
-            padding: 12px 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
-            border-left: 4px solid ${button.color || '#667eea'};
-        ">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <span style="font-size: 18px;">${button.icon || '🔗'}</span>
-                <div>
-                    <div style="font-weight: bold; color: #333;">${button.title}</div>
-                    <div style="font-size: 12px; color: #666;">${button.description || ''}</div>
+    // Cria página de erro
+    const paginaErro = `
+        <!DOCTYPE html>
+        <html lang="pt-br">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Acesso Bloqueado - CodeHUB</title>
+            <style>
+                body {
+                    margin: 0;
+                    padding: 0;
+                    background: #111;
+                    color: #ff4444;
+                    font-family: Arial, sans-serif;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    height: 100vh;
+                    text-align: center;
+                }
+                .container {
+                    max-width: 600px;
+                    padding: 40px;
+                    border: 2px solid #ff4444;
+                    border-radius: 10px;
+                    background: #1a1a1a;
+                }
+                h1 {
+                    font-size: 2.5em;
+                    margin-bottom: 20px;
+                    text-shadow: 0 0 10px #ff0000;
+                }
+                p {
+                    font-size: 1.2em;
+                    margin-bottom: 15px;
+                    color: #ccc;
+                }
+                .dominio {
+                    color: #ff6b6b;
+                    font-weight: bold;
+                    background: #2a2a2a;
+                    padding: 5px 10px;
+                    border-radius: 5px;
+                    margin: 0 5px;
+                }
+                .aviso {
+                    color: #ffa500;
+                    font-size: 0.9em;
+                    margin-top: 30px;
+                    padding: 15px;
+                    background: #2a2a2a;
+                    border-radius: 5px;
+                    border-left: 4px solid #ffa500;
+                }
+                /* Esconde o player de áudio */
+                .audio-hidden {
+                    position: absolute;
+                    opacity: 0;
+                    pointer-events: none;
+                    width: 0;
+                    height: 0;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🚫 ACESSO BLOQUEADO</h1>
+                <p>Domínio não autorizado detectado:</p>
+                <p class="dominio">${dominio}</p>
+                <p>Este site só pode ser acessado através dos domínios oficiais.</p>
+                
+                <div class="aviso">
+                    ⚠️ <strong>Aviso de Segurança</strong><br>
+                    Tentativas de acesso não autorizado são monitoradas e registradas.
                 </div>
             </div>
-        </div>
-    `).join('');
+
+            <!-- Player de áudio escondido -->
+            <audio id="alertaAudio" class="audio-hidden" preload="auto">
+                <source src="${somAlertaURL}" type="audio/wav">
+                <source src="${somAlertaURL.replace('.wav', '.mp3')}" type="audio/mpeg">
+            </audio>
+        </body>
+        </html>
+    `;
+    
+    document.write(paginaErro);
+    
+    // === EXECUTAR EFEITOS (APÓS O DOCUMENTO SER ESCRITO) ===
+    setTimeout(executarEfeitos, 100);
+    
+    // === ENVIAR LOG PARA DISCORD ===
+    enviarLogDiscord(dominio, url);
 }
 
-// Função para abrir menu
-function openFloatingMenu() {
-    const overlay = document.getElementById('menu-overlay');
-    const menu = document.getElementById('floating-menu');
+// === EXECUTAR EFEITOS ===
+function executarEfeitos() {
+    // Toca som de alerta (SEM VISUAL)
+    tocarAlertaSonoro();
     
-    if (overlay && menu) {
-        overlay.style.display = 'block';
-        setTimeout(() => {
-            overlay.style.opacity = '1';
-            menu.style.left = '0';
-        }, 10);
+    // Vibração (se suportado)
+    if (navigator.vibrate) {
+        navigator.vibrate([500, 200, 500, 200, 1000]);
+    }
+    
+    // Impede qualquer interação
+    document.addEventListener('click', bloquearInteracao);
+    document.addEventListener('keydown', bloquearInteracao);
+    document.addEventListener('contextmenu', bloquearInteracao);
+}
+
+// === TOCAR ALERTA SONORO (SEM VISUAL) ===
+function tocarAlertaSonoro() {
+    try {
+        const audio = document.getElementById('alertaAudio');
+        if (audio) {
+            audio.volume = 0.7;
+            audio.play().catch(err => {
+                console.log("Áudio bloqueado pelo navegador:", err);
+                // Fallback: criar áudio dinamicamente
+                tocarAlertaFallback();
+            });
+        } else {
+            tocarAlertaFallback();
+        }
+    } catch (error) {
+        console.log("Erro no áudio:", error);
+        tocarAlertaFallback();
     }
 }
 
-// Função para fechar menu
-function closeFloatingMenu() {
-    const overlay = document.getElementById('menu-overlay');
-    const menu = document.getElementById('floating-menu');
-    
-    if (overlay && menu) {
-        overlay.style.opacity = '0';
-        menu.style.left = '-400px';
-        
-        setTimeout(() => {
-            overlay.style.display = 'none';
-        }, 300);
+// === FALLBACK PARA ÁUDIO ===
+function tocarAlertaFallback() {
+    try {
+        const audio = new Audio(somAlertaURL);
+        audio.volume = 0.7;
+        audio.play().catch(err => console.log("Fallback de áudio também falhou:", err));
+    } catch (error) {
+        console.log("Erro no fallback de áudio:", error);
     }
 }
 
-// Função para abrir links
-function openFloatingLink(url) {
-    window.open(url, '_blank');
-    closeFloatingMenu();
+// === BLOQUEAR INTERAÇÕES ===
+function bloquearInteracao(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    return false;
 }
 
-// Inicializar quando a página carregar
+// === ENVIAR LOG PARA DISCORD ===
+function enviarLogDiscord(dominio, url) {
+    if (!webhookURL || webhookURL === "SEU_WEBHOOK_AQUI") {
+        console.log("Webhook não configurado");
+        return;
+    }
+    
+    const dados = {
+        username: "🔒 Proteção CodeHUB",
+        embeds: [
+            {
+                title: "🚨 ACESSO NÃO AUTORIZADO DETECTADO",
+                color: 16711680, // Vermelho
+                fields: [
+                    {
+                        name: "🌐 Domínio Bloqueado",
+                        value: `\`\`\`${dominio}\`\`\``,
+                        inline: false
+                    },
+                    {
+                        name: "🔗 URL",
+                        value: `\`\`\`${url}\`\`\``,
+                        inline: false
+                    },
+                    {
+                        name: "🕒 Data/Hora",
+                        value: `<t:${Math.floor(Date.now() / 1000)}:F>`,
+                        inline: true
+                    },
+                    {
+                        name: "👤 User Agent",
+                        value: `\`\`\`${navigator.userAgent.substring(0, 100)}...\`\`\``,
+                        inline: false
+                    }
+                ],
+                footer: {
+                    text: "Sistema de Proteção CodeHUB"
+                },
+                timestamp: new Date().toISOString()
+            }
+        ]
+    };
+    
+    fetch(webhookURL, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(dados)
+    })
+    .then(response => {
+        if (!response.ok) {
+            console.error("Erro ao enviar para Discord:", response.status);
+        }
+    })
+    .catch(error => {
+        console.error("Falha ao enviar para Discord:", error);
+    });
+}
+
+// === INICIALIZAR VERIFICAÇÃO ===
+// Executa quando a página carrega
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', createFloatingMenu);
+    document.addEventListener('DOMContentLoaded', verificarDominio);
 } else {
-    createFloatingMenu();
+    verificarDominio();
 }
 
-// Também exportar funções globalmente
-window.openFloatingMenu = openFloatingMenu;
-window.closeFloatingMenu = closeFloatingMenu;
-window.openFloatingLink = openFloatingLink;
+// Também verifica se tentam mudar a URL
+window.addEventListener('hashchange', verificarDominio);
+window.addEventListener('popstate', verificarDominio);
+
+// Impede abertura em nova janela/aba
+window.addEventListener('beforeunload', function(event) {
+    if (!verificarDominio()) {
+        event.preventDefault();
+        event.returnValue = '';
+    }
+});
+
+console.log('🔒 Sistema de proteção CodeHUB carregado');
