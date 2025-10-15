@@ -7,7 +7,7 @@ const dominiosPermitidos = [
 const webhookURL = "https://discord.com/api/webhooks/1416615114077110372/bcsRqA7uTdo3Z4o3EmsADepTcrbl5C30QBUMekF8nLYvrhqEUd8fo8-gFss7qZfNVWRJ";
 
 // URL do áudio de alerta (pode ser MP3, WAV, etc)
-const somAlertaURL = "https://www.soundjay.com/button/beep-07.wav";
+const somAlertaURL = "alert.mp3";
 
 // === VERIFICAÇÃO DE DOMÍNIO ===
 function verificarDominio() {
