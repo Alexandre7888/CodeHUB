@@ -107,22 +107,6 @@ async function createFloatingMenu() {
         transition: all 0.3s ease;
     `;
 
-    // Criar overlay de fundo - CORRIGIDO: blur só no fundo, não no menu
-    const overlay = document.createElement('div');
-    overlay.id = 'menu-overlay';
-    overlay.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.5);
-        z-index: 9998;
-        display: none;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-    `;
-
     // Criar menu lateral - LADO ESQUERDO
     const menu = document.createElement('div');
     menu.id = 'floating-menu';
