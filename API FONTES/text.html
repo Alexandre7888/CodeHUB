@@ -13,6 +13,7 @@
       align-items: center;
       min-height: 100vh;
       font-family: Arial, sans-serif;
+      overflow: hidden;
     }
     
     .text-container {
@@ -22,6 +23,120 @@
       box-shadow: 0 4px 6px rgba(0,0,0,0.1);
       max-width: 90%;
       word-wrap: break-word;
+      display: inline-block;
+      min-width: min-content;
+    }
+
+    /* Animações */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-20px); }
+      60% { transform: translateY(-10px); }
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(-100px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes typewriter {
+      from { width: 0; }
+      to { width: 100%; }
+    }
+
+    @keyframes flip {
+      from { transform: rotateY(90deg); opacity: 0; }
+      to { transform: rotateY(0); opacity: 1; }
+    }
+
+    @keyframes zoom {
+      from { transform: scale(0.3); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes rotate {
+      from { transform: rotate(0deg) scale(0.5); opacity: 0; }
+      to { transform: rotate(360deg) scale(1); opacity: 1; }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+      20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+
+    /* Classes de animação */
+    .fadeIn { 
+      animation: fadeIn 1s ease-out both;
+    }
+
+    .bounce { 
+      animation: bounce 1s ease both;
+    }
+
+    .slideIn { 
+      animation: slideIn 0.8s ease-out both;
+    }
+
+    .pulse { 
+      animation: pulse 2s infinite;
+    }
+
+    .typewriter { 
+      animation: typewriter 2s steps(40, end) both;
+      overflow: hidden;
+      white-space: nowrap;
+      border-right: 2px solid;
+      padding-right: 5px;
+    }
+
+    .flip { 
+      animation: flip 1s ease both;
+      transform-style: preserve-3d;
+    }
+
+    .zoom { 
+      animation: zoom 0.6s ease-out both;
+    }
+
+    .rotate { 
+      animation: rotate 1s ease-out both;
+    }
+
+    .shake { 
+      animation: shake 0.5s ease-in-out both;
+    }
+
+    /* Efeito de brilho */
+    .glow {
+      animation: pulse 2s infinite;
+      text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+    }
+
+    /* Efeito de gradiente animado */
+    .gradient-text {
+      background: linear-gradient(45deg, #ff0000, #ff9900, #33cc33, #3399ff, #cc33ff);
+      background-size: 400% 400%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gradientShift 3s ease infinite;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
     }
   </style>
 </head>
@@ -42,6 +157,8 @@
     const bgColor = `#${urlParams.get('bg') || 'ffffff'}`;
     const fontWeight = urlParams.get('weight') || 'normal';
     const fontStyle = urlParams.get('style') || 'normal';
+    const animation = urlParams.get('animation') || 'fadeIn';
+    const effect = urlParams.get('effect') || 'none';
     
     // Aplicar estilos
     const textContainer = document.getElementById('textContainer');
@@ -55,9 +172,39 @@
     textContent.style.fontStyle = fontStyle;
     textContainer.style.backgroundColor = bgColor;
     
+    // Aplicar animação
+    if (animation && animation !== 'none') {
+      textContent.classList.add(animation);
+    }
+    
+    // Aplicar efeitos especiais
+    if (effect === 'glow') {
+      textContent.classList.add('glow');
+    } else if (effect === 'gradient') {
+      textContent.classList.add('gradient-text');
+    }
+
     // Ajustar container para conteúdo
     textContainer.style.display = 'inline-block';
     textContainer.style.minWidth = 'min-content';
+
+    // Efeito de entrada para o container
+    textContainer.style.animation = 'fadeIn 0.8s ease-out';
+
+    // Reset animation on click for testing
+    textContent.addEventListener('click', function() {
+      this.style.animation = 'none';
+      setTimeout(() => {
+        if (animation && animation !== 'none') {
+          this.classList.remove(animation);
+          void this.offsetWidth; // Trigger reflow
+          this.classList.add(animation);
+        }
+      }, 10);
+    });
+
+    console.log('Animação aplicada:', animation);
+    console.log('Efeito aplicado:', effect);
   </script>
 </body>
 </html>
