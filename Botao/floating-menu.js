@@ -1,17 +1,35 @@
-// URL do arquivo de texto com os botões (ALTERE PARA SUA URL)
-const BUTTONS_FILE_URL = 'buttons.txt';
+// URL do arquivo de texto com os botões
+const BUTTONS_FILE_URL = 'https://alexandre7888.github.io/CodeHUB/Botao/buttons.txt';
 
 // Carregar botões do arquivo de texto
 async function loadButtonsFromFile() {
     try {
+        console.log('Carregando botões de:', BUTTONS_FILE_URL);
         const response = await fetch(BUTTONS_FILE_URL);
         if (!response.ok) throw new Error('Arquivo não encontrado');
         
         const text = await response.text();
+        console.log('Conteúdo do arquivo:', text);
         return parseButtonsText(text);
     } catch (error) {
         console.error('Erro ao carregar botões:', error);
-        return []; // Retorna array vazio se der erro
+        // Botões de fallback caso o arquivo não carregue
+        return [
+            {
+                title: "Editor de Código",
+                description: "Crie e edite projetos online", 
+                url: "https://alexandre7888.github.io/CodeHUB/editor.html",
+                color: "#667eea",
+                icon: "💻"
+            },
+            {
+                title: "WhatsApp",
+                description: "Fale conosco",
+                url: "https://wa.me/5511999999999",
+                color: "#25d366", 
+                icon: "💬"
+            }
+        ];
     }
 }
 
@@ -53,26 +71,29 @@ function parseButtonsText(text) {
         buttons.push(currentButton);
     }
     
+    console.log('Botões carregados:', buttons);
     return buttons;
 }
 
 // Criar botão flutuante e menu
 async function createFloatingMenu() {
+    console.log('Iniciando criação do menu flutuante...');
+    
     const buttons = await loadButtonsFromFile();
     
     if (buttons.length === 0) {
-        console.log('Nenhum botão encontrado no arquivo');
+        console.log('Nenhum botão encontrado');
         return;
     }
 
-    // Criar botão flutuante
+    // Criar botão flutuante - AGORA NO LADO ESQUERDO
     const floatingBtn = document.createElement('button');
     floatingBtn.innerHTML = '⚙️';
-    floatingBtn.className = 'floating-btn';
+    floatingBtn.id = 'floating-menu-btn';
     floatingBtn.style.cssText = `
         position: fixed;
         bottom: 30px;
-        right: 30px;
+        left: 30px;  <!-- MUDADO PARA ESQUERDA -->
         width: 60px;
         height: 60px;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -88,7 +109,7 @@ async function createFloatingMenu() {
 
     // Criar overlay de fundo
     const overlay = document.createElement('div');
-    overlay.className = 'menu-overlay';
+    overlay.id = 'menu-overlay';
     overlay.style.cssText = `
         position: fixed;
         top: 0;
@@ -103,24 +124,24 @@ async function createFloatingMenu() {
         transition: opacity 0.3s ease;
     `;
 
-    // Criar menu lateral
+    // Criar menu lateral - AGORA NO LADO ESQUERDO
     const menu = document.createElement('div');
-    menu.className = 'floating-menu';
+    menu.id = 'floating-menu';
     menu.style.cssText = `
         position: fixed;
         top: 0;
-        right: -400px;
+        left: -400px;  <!-- MUDADO PARA ESQUERDA -->
         width: 350px;
         height: 100%;
         background: white;
-        box-shadow: -5px 0 25px rgba(0,0,0,0.2);
+        box-shadow: 5px 0 25px rgba(0,0,0,0.2);  <!-- SOMBRA NA DIREITA -->
         z-index: 9999;
-        transition: right 0.3s ease;
+        transition: left 0.3s ease;  <!-- TRANSITION PARA LEFT -->
         padding: 30px 25px;
         overflow-y: auto;
     `;
 
-    // Criar conteúdo do menu com os botões carregados
+    // Criar conteúdo do menu
     menu.innerHTML = `
         <div style="text-align: center; margin-bottom: 30px;">
             <h2 style="color: #333; margin-bottom: 10px;">🚀 CodeHUB</h2>
@@ -133,7 +154,7 @@ async function createFloatingMenu() {
         </div>
 
         <div style="margin-top: 30px; text-align: center;">
-            <button onclick="closeMenu()" style="
+            <button onclick="closeFloatingMenu()" style="
                 background: #6c757d;
                 color: white;
                 border: none;
@@ -153,13 +174,13 @@ async function createFloatingMenu() {
     document.body.appendChild(menu);
 
     // Event listeners
-    floatingBtn.addEventListener('click', openMenu);
-    overlay.addEventListener('click', closeMenu);
+    floatingBtn.addEventListener('click', openFloatingMenu);
+    overlay.addEventListener('click', closeFloatingMenu);
 
     // Adicionar estilos hover
     const style = document.createElement('style');
     style.textContent = `
-        .floating-btn:hover {
+        #floating-menu-btn:hover {
             transform: scale(1.1);
             box-shadow: 0 6px 25px rgba(0,0,0,0.4);
         }
@@ -169,30 +190,32 @@ async function createFloatingMenu() {
             transform: translateX(5px);
         }
         
-        .floating-menu::-webkit-scrollbar {
+        #floating-menu::-webkit-scrollbar {
             width: 6px;
         }
         
-        .floating-menu::-webkit-scrollbar-track {
+        #floating-menu::-webkit-scrollbar-track {
             background: #f1f1f1;
         }
         
-        .floating-menu::-webkit-scrollbar-thumb {
+        #floating-menu::-webkit-scrollbar-thumb {
             background: #c1c1c1;
             border-radius: 3px;
         }
         
-        .floating-menu::-webkit-scrollbar-thumb:hover {
+        #floating-menu::-webkit-scrollbar-thumb:hover {
             background: #a8a8a8;
         }
     `;
     document.head.appendChild(style);
+    
+    console.log('Menu flutuante criado com sucesso! (Lado Esquerdo)');
 }
 
 // Gerar HTML dos botões
 function generateButtonsHTML(buttons) {
     return buttons.map(button => `
-        <div class="menu-item" onclick="openLink('${button.url}')" style="
+        <div class="menu-item" onclick="openFloatingLink('${button.url}')" style="
             padding: 12px 15px;
             background: #f8f9fa;
             border-radius: 8px;
@@ -212,36 +235,49 @@ function generateButtonsHTML(buttons) {
     `).join('');
 }
 
-// Função para abrir menu
-function openMenu() {
-    const overlay = document.querySelector('.menu-overlay');
-    const menu = document.querySelector('.floating-menu');
+// Função para abrir menu - AGORA ANIMA LEFT
+function openFloatingMenu() {
+    const overlay = document.getElementById('menu-overlay');
+    const menu = document.getElementById('floating-menu');
     
-    overlay.style.display = 'block';
-    setTimeout(() => {
-        overlay.style.opacity = '1';
-        menu.style.right = '0';
-    }, 10);
+    if (overlay && menu) {
+        overlay.style.display = 'block';
+        setTimeout(() => {
+            overlay.style.opacity = '1';
+            menu.style.left = '0';  <!-- ANIMA LEFT -->
+        }, 10);
+    }
 }
 
-// Função para fechar menu
-function closeMenu() {
-    const overlay = document.querySelector('.menu-overlay');
-    const menu = document.querySelector('.floating-menu');
+// Função para fechar menu - AGORA ANIMA LEFT
+function closeFloatingMenu() {
+    const overlay = document.getElementById('menu-overlay');
+    const menu = document.getElementById('floating-menu');
     
-    overlay.style.opacity = '0';
-    menu.style.right = '-400px';
-    
-    setTimeout(() => {
-        overlay.style.display = 'none';
-    }, 300);
+    if (overlay && menu) {
+        overlay.style.opacity = '0';
+        menu.style.left = '-400px';  <!-- ANIMA LEFT -->
+        
+        setTimeout(() => {
+            overlay.style.display = 'none';
+        }, 300);
+    }
 }
 
 // Função para abrir links
-function openLink(url) {
+function openFloatingLink(url) {
     window.open(url, '_blank');
-    closeMenu();
+    closeFloatingMenu();
 }
 
 // Inicializar quando a página carregar
-document.addEventListener('DOMContentLoaded', createFloatingMenu);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', createFloatingMenu);
+} else {
+    createFloatingMenu();
+}
+
+// Também exportar funções globalmente
+window.openFloatingMenu = openFloatingMenu;
+window.closeFloatingMenu = closeFloatingMenu;
+window.openFloatingLink = openFloatingLink;
