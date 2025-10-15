@@ -7,16 +7,18 @@ const predefinedFonts = [
     color: "#2c3e50",
     bg: "#ecf0f1",
     weight: "normal",
-    style: "italic"
+    style: "italic",
+    animation: "fadeIn"
   },
   {
-    name: "Título Impactante",
+    name: "Título Impactante", 
     family: "Arial",
     size: 60,
     color: "#e74c3c",
     bg: "#f39c12",
     weight: "bold",
-    style: "normal"
+    style: "normal",
+    animation: "bounce"
   },
   {
     name: "Subtítulo Moderno",
@@ -25,7 +27,8 @@ const predefinedFonts = [
     color: "#34495e",
     bg: "#bdc3c7",
     weight: "normal",
-    style: "oblique"
+    style: "oblique",
+    animation: "slideIn"
   },
   {
     name: "Texto Decorativo",
@@ -34,7 +37,8 @@ const predefinedFonts = [
     color: "#8e44ad",
     bg: "#d7bde2",
     weight: "bolder",
-    style: "normal"
+    style: "normal",
+    animation: "pulse"
   },
   {
     name: "Mono Espacial",
@@ -43,7 +47,8 @@ const predefinedFonts = [
     color: "#27ae60",
     bg: "#2c3e50",
     weight: "normal",
-    style: "normal"
+    style: "normal",
+    animation: "typewriter"
   },
   {
     name: "Clássico Serif",
@@ -52,7 +57,8 @@ const predefinedFonts = [
     color: "#c0392b",
     bg: "#f5b7b1",
     weight: "bold",
-    style: "italic"
+    style: "italic",
+    animation: "flip"
   }
 ];
 
@@ -66,21 +72,48 @@ const elements = {
   fontStyle: document.getElementById('fontStyle'),
   textColor: document.getElementById('textColor'),
   bgColor: document.getElementById('bgColor'),
+  animationType: document.getElementById('animationType'),
   textColorPreview: document.getElementById('textColorPreview'),
   bgColorPreview: document.getElementById('bgColorPreview'),
   previewBox: document.getElementById('previewBox'),
   previewText: document.getElementById('previewText'),
   urlOutput: document.getElementById('urlOutput'),
   usageExample: document.getElementById('usageExample'),
-  fontsGrid: document.getElementById('fontsGrid')
+  fontsGrid: document.getElementById('fontsGrid'),
+  iframeCode: document.getElementById('iframeCode')
 };
+
+// Animações disponíveis
+const animations = [
+  { name: "Nenhuma", value: "none" },
+  { name: "Fade In", value: "fadeIn" },
+  { name: "Bounce", value: "bounce" },
+  { name: "Slide In", value: "slideIn" },
+  { name: "Pulse", value: "pulse" },
+  { name: "Typewriter", value: "typewriter" },
+  { name: "Flip", value: "flip" },
+  { name: "Zoom", value: "zoom" },
+  { name: "Rotate", value: "rotate" }
+];
 
 // Inicialização
 function init() {
+  setupAnimations();
   updatePreview();
   setupEventListeners();
   renderPredefinedFonts();
   updateColorPreviews();
+}
+
+// Configurar opções de animação
+function setupAnimations() {
+  elements.animationType.innerHTML = '';
+  animations.forEach(anim => {
+    const option = document.createElement('option');
+    option.value = anim.value;
+    option.textContent = anim.name;
+    elements.animationType.appendChild(option);
+  });
 }
 
 // Configurar event listeners
@@ -92,6 +125,7 @@ function setupEventListeners() {
   elements.fontStyle.addEventListener('change', updatePreview);
   elements.textColor.addEventListener('input', updateColors);
   elements.bgColor.addEventListener('input', updateColors);
+  elements.animationType.addEventListener('change', updatePreview);
 }
 
 // Atualizar tamanho da fonte
@@ -107,6 +141,19 @@ function updateColors() {
   updatePreview();
 }
 
+// Aplicar animação
+function applyAnimation(element, animationName) {
+  // Remove animações anteriores
+  element.classList.remove('fadeIn', 'bounce', 'slideIn', 'pulse', 'typewriter', 'flip', 'zoom', 'rotate');
+  
+  if (animationName && animationName !== 'none') {
+    // Adiciona a nova animação
+    setTimeout(() => {
+      element.classList.add(animationName);
+    }, 100);
+  }
+}
+
 // Atualizar pré-visualização
 function updatePreview() {
   const text = elements.textInput.value || 'Seu Texto Aqui';
@@ -116,6 +163,7 @@ function updatePreview() {
   const fontStyle = elements.fontStyle.value;
   const color = elements.textColor.value;
   const bgColor = elements.bgColor.value;
+  const animation = elements.animationType.value;
 
   // Aplicar estilos ao preview
   elements.previewText.textContent = text;
@@ -125,6 +173,9 @@ function updatePreview() {
   elements.previewText.style.fontStyle = fontStyle;
   elements.previewText.style.color = color;
   elements.previewBox.style.backgroundColor = bgColor;
+
+  // Aplicar animação
+  applyAnimation(elements.previewText, animation);
 
   // Gerar URL
   generateUrl();
@@ -142,22 +193,21 @@ function generateUrl() {
     color: elements.textColor.value.replace('#', ''),
     bg: elements.bgColor.value.replace('#', ''),
     weight: elements.fontWeight.value,
-    style: elements.fontStyle.value
+    style: elements.fontStyle.value,
+    animation: elements.animationType.value
   });
 
   const url = `${basePath}?${params.toString()}`;
   elements.urlOutput.textContent = url;
   
-  // EXECUTA o iframe e mostra o código
+  // Código iframe limpo (só o código)
+  const iframeCode = `<iframe src="${url}" width="400" height="200" frameborder="0"></iframe>`;
+  elements.iframeCode.textContent = iframeCode;
+  
+  // EXECUTA o iframe
   elements.usageExample.innerHTML = `
     <div class="iframe-container" style="margin-bottom: 15px;">
       <iframe src="${url}" width="100%" height="200" frameborder="0" style="border: 2px solid #ccc; border-radius: 8px;"></iframe>
-    </div>
-    <div class="code-example" style="background: #f5f5f5; padding: 10px; border-radius: 5px; font-size: 14px;">
-      <strong>Código para incorporar:</strong><br>
-      <code style="word-break: break-all; display: block; margin-top: 5px;">
-        &lt;iframe src="${url}" width="400" height="200" frameborder="0"&gt;&lt;/iframe&gt;
-      </code>
     </div>
   `;
 }
@@ -177,8 +227,7 @@ function copyUrl() {
 
 // Copiar código iframe
 function copyIframeCode() {
-  const url = elements.urlOutput.textContent;
-  const iframeCode = `<iframe src="${url}" width="400" height="200" frameborder="0"></iframe>`;
+  const iframeCode = elements.iframeCode.textContent;
   
   navigator.clipboard.writeText(iframeCode).then(() => {
     const btn = document.querySelector('.copy-iframe-btn');
@@ -203,6 +252,8 @@ function renderPredefinedFonts() {
       padding: 15px;
       background: white;
       text-align: center;
+      transition: transform 0.3s ease;
+      cursor: pointer;
     `;
     
     fontCard.innerHTML = `
@@ -221,6 +272,7 @@ function renderPredefinedFonts() {
         display: flex;
         align-items: center;
         justify-content: center;
+        animation: ${font.animation} 1s ease;
       ">
         ${elements.textInput.value || 'Seu Texto'}
       </div>
@@ -232,10 +284,19 @@ function renderPredefinedFonts() {
         border-radius: 4px;
         cursor: pointer;
         width: 100%;
+        transition: background 0.3s ease;
       ">
         Usar Esta Fonte
       </button>
     `;
+    
+    // Efeito hover
+    fontCard.addEventListener('mouseenter', () => {
+      fontCard.style.transform = 'translateY(-5px)';
+    });
+    fontCard.addEventListener('mouseleave', () => {
+      fontCard.style.transform = 'translateY(0)';
+    });
     
     elements.fontsGrid.appendChild(fontCard);
   });
@@ -252,6 +313,7 @@ function usePredefinedFont(index) {
   elements.fontStyle.value = font.style;
   elements.textColor.value = font.color;
   elements.bgColor.value = font.bg;
+  elements.animationType.value = font.animation;
   
   updateColors();
   updatePreview();
