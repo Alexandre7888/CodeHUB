@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API de Texto - CodeHUB</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+    }
+    
+    .text-container {
+      text-align: center;
+      padding: 40px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      max-width: 90%;
+      word-wrap: break-word;
+    }
+  </style>
+</head>
+<body>
+  <div class="text-container" id="textContainer">
+    <span id="textContent">Texto Padrão</span>
+  </div>
+
+  <script>
+    // Pegar parâmetros da URL
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Configurar texto e estilos
+    const text = urlParams.get('text') || 'Texto Padrão';
+    const fontFamily = urlParams.get('font') || 'Arial';
+    const fontSize = `${urlParams.get('size') || 48}px`;
+    const color = `#${urlParams.get('color') || '333333'}`;
+    const bgColor = `#${urlParams.get('bg') || 'ffffff'}`;
+    const fontWeight = urlParams.get('weight') || 'normal';
+    const fontStyle = urlParams.get('style') || 'normal';
+    
+    // Aplicar estilos
+    const textContainer = document.getElementById('textContainer');
+    const textContent = document.getElementById('textContent');
+    
+    textContent.textContent = decodeURIComponent(text);
+    textContent.style.fontFamily = fontFamily;
+    textContent.style.fontSize = fontSize;
+    textContent.style.color = color;
+    textContent.style.fontWeight = fontWeight;
+    textContent.style.fontStyle = fontStyle;
+    textContainer.style.backgroundColor = bgColor;
+    
+    // Ajustar container para conteúdo
+    textContainer.style.display = 'inline-block';
+    textContainer.style.minWidth = 'min-content';
+  </script>
+</body>
+</html>
