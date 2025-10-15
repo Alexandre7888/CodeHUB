@@ -107,6 +107,22 @@ async function createFloatingMenu() {
         transition: all 0.3s ease;
     `;
 
+    // Criar overlay de fundo - SEM BLUR
+    const overlay = document.createElement('div');
+    overlay.id = 'menu-overlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.3);
+        z-index: 9998;
+        display: none;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    `;
+
     // Criar menu lateral - LADO ESQUERDO
     const menu = document.createElement('div');
     menu.id = 'floating-menu';
@@ -189,27 +205,10 @@ async function createFloatingMenu() {
         #floating-menu::-webkit-scrollbar-thumb:hover {
             background: #a8a8a8;
         }
-        
-        /* CORREÇÃO: Aplica blur apenas no conteúdo atrás do overlay */
-        body.menu-open {
-            overflow: hidden;
-        }
-        
-        body.menu-open::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            backdrop-filter: blur(5px);
-            z-index: 9997;
-            pointer-events: none;
-        }
     `;
     document.head.appendChild(style);
     
-    console.log('Menu flutuante criado com sucesso! (Lado Esquerdo - Sem blur no menu)');
+    console.log('Menu flutuante criado com sucesso! (Sem blur)');
 }
 
 // Gerar HTML dos botões
@@ -241,7 +240,6 @@ function openFloatingMenu() {
     const menu = document.getElementById('floating-menu');
     
     if (overlay && menu) {
-        document.body.classList.add('menu-open');
         overlay.style.display = 'block';
         setTimeout(() => {
             overlay.style.opacity = '1';
@@ -256,7 +254,6 @@ function closeFloatingMenu() {
     const menu = document.getElementById('floating-menu');
     
     if (overlay && menu) {
-        document.body.classList.remove('menu-open');
         overlay.style.opacity = '0';
         menu.style.left = '-400px';
         
