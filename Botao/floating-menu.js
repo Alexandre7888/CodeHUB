@@ -86,14 +86,14 @@ async function createFloatingMenu() {
         return;
     }
 
-    // Criar botão flutuante - AGORA NO LADO ESQUERDO
+    // Criar botão flutuante - LADO ESQUERDO
     const floatingBtn = document.createElement('button');
     floatingBtn.innerHTML = '⚙️';
     floatingBtn.id = 'floating-menu-btn';
     floatingBtn.style.cssText = `
         position: fixed;
         bottom: 30px;
-        left: 30px;  <!-- MUDADO PARA ESQUERDA -->
+        left: 30px;
         width: 60px;
         height: 60px;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -107,7 +107,7 @@ async function createFloatingMenu() {
         transition: all 0.3s ease;
     `;
 
-    // Criar overlay de fundo
+    // Criar overlay de fundo - CORRIGIDO: blur só no fundo, não no menu
     const overlay = document.createElement('div');
     overlay.id = 'menu-overlay';
     overlay.style.cssText = `
@@ -117,26 +117,25 @@ async function createFloatingMenu() {
         width: 100%;
         height: 100%;
         background: rgba(0,0,0,0.5);
-        backdrop-filter: blur(5px);
         z-index: 9998;
         display: none;
         opacity: 0;
         transition: opacity 0.3s ease;
     `;
 
-    // Criar menu lateral - AGORA NO LADO ESQUERDO
+    // Criar menu lateral - LADO ESQUERDO
     const menu = document.createElement('div');
     menu.id = 'floating-menu';
     menu.style.cssText = `
         position: fixed;
         top: 0;
-        left: -400px;  <!-- MUDADO PARA ESQUERDA -->
+        left: -400px;
         width: 350px;
         height: 100%;
         background: white;
-        box-shadow: 5px 0 25px rgba(0,0,0,0.2);  <!-- SOMBRA NA DIREITA -->
+        box-shadow: 5px 0 25px rgba(0,0,0,0.2);
         z-index: 9999;
-        transition: left 0.3s ease;  <!-- TRANSITION PARA LEFT -->
+        transition: left 0.3s ease;
         padding: 30px 25px;
         overflow-y: auto;
     `;
@@ -206,10 +205,27 @@ async function createFloatingMenu() {
         #floating-menu::-webkit-scrollbar-thumb:hover {
             background: #a8a8a8;
         }
+        
+        /* CORREÇÃO: Aplica blur apenas no conteúdo atrás do overlay */
+        body.menu-open {
+            overflow: hidden;
+        }
+        
+        body.menu-open::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            backdrop-filter: blur(5px);
+            z-index: 9997;
+            pointer-events: none;
+        }
     `;
     document.head.appendChild(style);
     
-    console.log('Menu flutuante criado com sucesso! (Lado Esquerdo)');
+    console.log('Menu flutuante criado com sucesso! (Lado Esquerdo - Sem blur no menu)');
 }
 
 // Gerar HTML dos botões
@@ -235,28 +251,30 @@ function generateButtonsHTML(buttons) {
     `).join('');
 }
 
-// Função para abrir menu - AGORA ANIMA LEFT
+// Função para abrir menu
 function openFloatingMenu() {
     const overlay = document.getElementById('menu-overlay');
     const menu = document.getElementById('floating-menu');
     
     if (overlay && menu) {
+        document.body.classList.add('menu-open');
         overlay.style.display = 'block';
         setTimeout(() => {
             overlay.style.opacity = '1';
-            menu.style.left = '0';  <!-- ANIMA LEFT -->
+            menu.style.left = '0';
         }, 10);
     }
 }
 
-// Função para fechar menu - AGORA ANIMA LEFT
+// Função para fechar menu
 function closeFloatingMenu() {
     const overlay = document.getElementById('menu-overlay');
     const menu = document.getElementById('floating-menu');
     
     if (overlay && menu) {
+        document.body.classList.remove('menu-open');
         overlay.style.opacity = '0';
-        menu.style.left = '-400px';  <!-- ANIMA LEFT -->
+        menu.style.left = '-400px';
         
         setTimeout(() => {
             overlay.style.display = 'none';
