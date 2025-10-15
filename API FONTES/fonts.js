@@ -132,7 +132,9 @@ function updatePreview() {
 
 // Gerar URL da API
 function generateUrl() {
-  const baseUrl = window.location.origin + window.location.pathname.replace('fonts.html', 'text.html');
+  const baseUrl = window.location.origin + window.location.pathname;
+  const basePath = baseUrl.replace(/\/[^\/]*$/, '/text.html');
+  
   const params = new URLSearchParams({
     text: elements.textInput.value || 'Seu Texto Aqui',
     font: elements.fontFamily.value,
@@ -143,11 +145,21 @@ function generateUrl() {
     style: elements.fontStyle.value
   });
 
-  const url = `${baseUrl}?${params.toString()}`;
+  const url = `${basePath}?${params.toString()}`;
   elements.urlOutput.textContent = url;
   
-  // Gerar iframe em vez de imagem
-  elements.usageExample.innerHTML = `<iframe src="${url}" width="400" height="200" frameborder="0"></iframe>`;
+  // EXECUTA o iframe e mostra o código
+  elements.usageExample.innerHTML = `
+    <div class="iframe-container" style="margin-bottom: 15px;">
+      <iframe src="${url}" width="100%" height="200" frameborder="0" style="border: 2px solid #ccc; border-radius: 8px;"></iframe>
+    </div>
+    <div class="code-example" style="background: #f5f5f5; padding: 10px; border-radius: 5px; font-size: 14px;">
+      <strong>Código para incorporar:</strong><br>
+      <code style="word-break: break-all; display: block; margin-top: 5px;">
+        &lt;iframe src="${url}" width="400" height="200" frameborder="0"&gt;&lt;/iframe&gt;
+      </code>
+    </div>
+  `;
 }
 
 // Copiar URL
@@ -163,6 +175,21 @@ function copyUrl() {
   });
 }
 
+// Copiar código iframe
+function copyIframeCode() {
+  const url = elements.urlOutput.textContent;
+  const iframeCode = `<iframe src="${url}" width="400" height="200" frameborder="0"></iframe>`;
+  
+  navigator.clipboard.writeText(iframeCode).then(() => {
+    const btn = document.querySelector('.copy-iframe-btn');
+    const originalText = btn.textContent;
+    btn.textContent = '✅ Código Copiado!';
+    setTimeout(() => {
+      btn.textContent = originalText;
+    }, 2000);
+  });
+}
+
 // Renderizar fontes pré-definidas
 function renderPredefinedFonts() {
   elements.fontsGrid.innerHTML = '';
@@ -170,9 +197,16 @@ function renderPredefinedFonts() {
   predefinedFonts.forEach((font, index) => {
     const fontCard = document.createElement('div');
     fontCard.className = 'font-card';
+    fontCard.style.cssText = `
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 15px;
+      background: white;
+      text-align: center;
+    `;
     
     fontCard.innerHTML = `
-      <h3>${font.name}</h3>
+      <h3 style="margin-bottom: 10px; font-size: 16px;">${font.name}</h3>
       <div class="font-preview" style="
         font-family: ${font.family};
         font-size: ${font.size}px;
@@ -180,12 +214,25 @@ function renderPredefinedFonts() {
         background: ${font.bg};
         font-weight: ${font.weight};
         font-style: ${font.style};
-        padding: 10px;
+        padding: 15px;
         border-radius: 5px;
+        margin-bottom: 10px;
+        min-height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       ">
         ${elements.textInput.value || 'Seu Texto'}
       </div>
-      <button class="use-font-btn" onclick="usePredefinedFont(${index})">
+      <button class="use-font-btn" onclick="usePredefinedFont(${index})" style="
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        width: 100%;
+      ">
         Usar Esta Fonte
       </button>
     `;
