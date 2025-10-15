@@ -1,5 +1,5 @@
 // URL do arquivo de texto com os botões (ALTERE PARA SUA URL)
-const BUTTONS_FILE_URL = 'https://seusite.com/buttons.txt';
+const BUTTONS_FILE_URL = 'buttons.txt';
 
 // Carregar botões do arquivo de texto
 async function loadButtonsFromFile() {
