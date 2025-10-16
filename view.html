@@ -220,13 +220,14 @@
     let currentSubdomain = null;
     let currentProjectId = null;
     let currentFileName = null;
+    let substituicaoAplicada = false;
 
-    // FUNÇÃO DE SUBSTITUIÇÃO AUTOMÁTICA - VERSÃO SIMPLIFICADA E FUNCIONAL
+    // FUNÇÃO DE SUBSTITUIÇÃO AUTOMÁTICA CORRIGIDA
     function substituirArquivosPorURLs(htmlContent, projectFiles) {
       console.log('🔍 Iniciando substituição automática de arquivos...');
-      
-      if (!projectFiles || !htmlContent) {
-        console.log('❌ Dados insuficientes para substituição');
+
+      if (!projectFiles || !htmlContent || substituicaoAplicada) {
+        console.log('❌ Substituição já aplicada ou dados insuficientes');
         return htmlContent;
       }
 
@@ -238,13 +239,13 @@
 
         // Remove caminhos e parâmetros, fica só com o nome do arquivo
         const nomeLimpo = nomeArquivo.split('/').pop().split('?')[0];
-        
+
         console.log(`🔎 Procurando: "${nomeArquivo}" -> "${nomeLimpo}"`);
 
         // Procura em todos os arquivos
         for (const fileKey in projectFiles) {
           const file = projectFiles[fileKey];
-          
+
           // Verifica por diferentes nomes
           if (file.originalName === nomeLimpo || 
               file.name === nomeLimpo ||
@@ -254,7 +255,7 @@
             return file;
           }
         }
-        
+
         console.log(`❌ Não encontrado: ${nomeLimpo}`);
         return null;
       }
@@ -266,7 +267,7 @@
         if (src.startsWith('http') || src.startsWith('data:') || src.startsWith('//') || src.includes('://')) {
           return match;
         }
-        
+
         const arquivo = encontrarArquivo(src);
         if (arquivo && (arquivo.directUrl || arquivo.url)) {
           const novaUrl = arquivo.directUrl || arquivo.url;
@@ -284,11 +285,11 @@
             href.startsWith('tel:') || href.includes('://') || href.endsWith('.html')) {
           return match;
         }
-        
+
         // Só substitui se for arquivo de mídia
         const extensoesMidia = ['.mp3', '.mp4', '.jpg', '.jpeg', '.png', '.gif', '.pdf', '.wav', '.ogg'];
         const temExtensaoMidia = extensoesMidia.some(ext => href.toLowerCase().endsWith(ext));
-        
+
         if (temExtensaoMidia) {
           const arquivo = encontrarArquivo(href);
           if (arquivo && (arquivo.directUrl || arquivo.url)) {
@@ -300,8 +301,69 @@
         return match;
       });
 
+      // SISTEMA DE BOTÕES PARA ABRIR ARQUIVOS - NOVA FUNCIONALIDADE
+      const buttonRegex = /<button[^>]*data-open-file=["']([^"']+)["'][^>]*>([^<]*)<\/button>/gi;
+      novoHTML = novoHTML.replace(buttonRegex, (match, fileName, buttonText) => {
+        console.log(`🎯 Botão encontrado: "${buttonText}" -> arquivo: "${fileName}"`);
+        
+        const arquivo = encontrarArquivo(fileName);
+        if (arquivo && (arquivo.directUrl || arquivo.url)) {
+          const url = arquivo.directUrl || arquivo.url;
+          console.log(`🔗 Criando botão com URL: ${url}`);
+          
+          // Cria um botão que abre o arquivo em nova aba
+          return `<button onclick="window.open('${url}', '_blank')" style="cursor: pointer; padding: 10px 15px; background: #4361ee; color: white; border: none; border-radius: 5px;">${buttonText}</button>`;
+        } else {
+          // Se não encontrou o arquivo, mantém o botão original
+          console.log(`❌ Arquivo não encontrado para botão: ${fileName}`);
+          return match;
+        }
+      });
+
+      // SISTEMA DE LINKS ESPECIAIS - Abre arquivos dentro do visualizador
+      const linkRegex = /<a[^>]*href=["']#open-file\/([^"']+)["'][^>]*>([^<]*)<\/a>/gi;
+      novoHTML = novoHTML.replace(linkRegex, (match, fileName, linkText) => {
+        console.log(`🔗 Link especial encontrado: "${linkText}" -> arquivo: "${fileName}"`);
+        
+        const arquivo = encontrarArquivo(fileName);
+        if (arquivo) {
+          console.log(`📁 Arquivo encontrado para link especial: ${fileName}`);
+          
+          // Cria um link que chama a função global para abrir o arquivo
+          return `<a href="javascript:void(0)" onclick="window.abrirArquivoNoVisualizador('${fileName}')" style="cursor: pointer; color: #4361ee; text-decoration: underline;">${linkText}</a>`;
+        } else {
+          console.log(`❌ Arquivo não encontrado para link especial: ${fileName}`);
+          return match;
+        }
+      });
+
+      substituicaoAplicada = true;
       console.log('✅ Substituição concluída');
       return novoHTML;
+    }
+
+    // FUNÇÃO GLOBAL PARA ABRIR ARQUIVOS NO VISUALIZADOR
+    function abrirArquivoNoVisualizador(fileName) {
+      console.log(`🚀 Abrindo arquivo no visualizador: ${fileName}`);
+      if (currentProjectData && currentProjectData.files) {
+        openSpecificFile(fileName);
+      } else {
+        alert('Arquivo não encontrado no projeto atual');
+      }
+    }
+
+    // FUNÇÃO PARA CRIAR URL DE ACESSO DIRETO
+    function criarUrlParaArquivo(fileName) {
+      const urlAtual = window.location.href;
+      const urlBase = urlAtual.split('?')[0]; // Remove parâmetros atuais
+      
+      if (currentSubdomain) {
+        return `${urlBase}?l=${currentSubdomain}/${fileName}`;
+      } else if (currentProjectId) {
+        return `${urlBase}?projectId=${currentProjectId}/${fileName}`;
+      } else {
+        return urlAtual;
+      }
     }
 
     function showError(message) {
@@ -456,10 +518,13 @@
 
     function showTextFile(content, fileName, type = 'html') {
       if (type === 'html') {
+        // Reseta a flag de substituição para aplicar novamente
+        substituicaoAplicada = false;
+        
         // APLICA A SUBSTITUIÇÃO AUTOMÁTICA AQUI
         console.log('🎯 Aplicando substituição automática...');
         const htmlComSubstituicao = substituirArquivosPorURLs(content, currentProjectData.files);
-        
+
         previewFrame.srcdoc = htmlComSubstituicao;
         previewFrame.style.display = 'block';
         loadingEl.style.display = 'none';
@@ -718,10 +783,13 @@
       loadProject();
     });
 
-    // Funções globais para acesso externo
+    // FUNÇÕES GLOBAIS PARA ACESSO EXTERNO
     window.showFileList = showFileList;
     window.showProject = showProject;
     window.substituirArquivosPorURLs = substituirArquivosPorURLs;
+    window.abrirArquivoNoVisualizador = abrirArquivoNoVisualizador;
+    window.criarUrlParaArquivo = criarUrlParaArquivo;
+    window.openSpecificFile = openSpecificFile;
   </script>
 </body>
 </html>
