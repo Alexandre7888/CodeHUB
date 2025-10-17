@@ -203,7 +203,15 @@
       measurementId: "G-7E1VWN07GM"
     };
 
-    const app = firebase.initializeApp(firebaseConfig);
+    // Verifica se já existe uma app do Firebase para evitar erro de duplicação
+    let app;
+    try {
+      app = firebase.initializeApp(firebaseConfig);
+    } catch (error) {
+      // Se já foi inicializada, usa a existente
+      app = firebase.app();
+    }
+
     const db = firebase.database();
     const auth = firebase.auth();
 
@@ -220,13 +228,15 @@
     let currentSubdomain = null;
     let currentProjectId = null;
     let currentFileName = null;
+    let substituicaoAplicada = false;
+    let projetoCarregado = false;
 
-    // FUNÇÃO DE SUBSTITUIÇÃO AUTOMÁTICA - VERSÃO SIMPLIFICADA E FUNCIONAL
+    // FUNÇÃO DE SUBSTITUIÇÃO AUTOMÁTICA CORRIGIDA
     function substituirArquivosPorURLs(htmlContent, projectFiles) {
       console.log('🔍 Iniciando substituição automática de arquivos...');
-      
-      if (!projectFiles || !htmlContent) {
-        console.log('❌ Dados insuficientes para substituição');
+
+      if (!projectFiles || !htmlContent || substituicaoAplicada) {
+        console.log('❌ Substituição já aplicada ou dados insuficientes');
         return htmlContent;
       }
 
@@ -238,23 +248,23 @@
 
         // Remove caminhos e parâmetros, fica só com o nome do arquivo
         const nomeLimpo = nomeArquivo.split('/').pop().split('?')[0];
-        
+
         console.log(`🔎 Procurando: "${nomeArquivo}" -> "${nomeLimpo}"`);
 
         // Procura em todos os arquivos
         for (const fileKey in projectFiles) {
           const file = projectFiles[fileKey];
-          
-          // Verifica por diferentes nomes
-          if (file.originalName === nomeLimpo || 
-              file.name === nomeLimpo ||
-              file.originalName === nomeArquivo ||
-              file.name === nomeArquivo) {
+
+          // Verifica por diferentes nomes (case insensitive)
+          if (file.originalName?.toLowerCase() === nomeLimpo.toLowerCase() || 
+              file.name?.toLowerCase() === nomeLimpo.toLowerCase() ||
+              file.originalName?.toLowerCase() === nomeArquivo.toLowerCase() ||
+              file.name?.toLowerCase() === nomeArquivo.toLowerCase()) {
             console.log(`✅ Encontrado: ${file.originalName || file.name}`);
             return file;
           }
         }
-        
+
         console.log(`❌ Não encontrado: ${nomeLimpo}`);
         return null;
       }
@@ -266,7 +276,7 @@
         if (src.startsWith('http') || src.startsWith('data:') || src.startsWith('//') || src.includes('://')) {
           return match;
         }
-        
+
         const arquivo = encontrarArquivo(src);
         if (arquivo && (arquivo.directUrl || arquivo.url)) {
           const novaUrl = arquivo.directUrl || arquivo.url;
@@ -284,11 +294,11 @@
             href.startsWith('tel:') || href.includes('://') || href.endsWith('.html')) {
           return match;
         }
-        
+
         // Só substitui se for arquivo de mídia
         const extensoesMidia = ['.mp3', '.mp4', '.jpg', '.jpeg', '.png', '.gif', '.pdf', '.wav', '.ogg'];
         const temExtensaoMidia = extensoesMidia.some(ext => href.toLowerCase().endsWith(ext));
-        
+
         if (temExtensaoMidia) {
           const arquivo = encontrarArquivo(href);
           if (arquivo && (arquivo.directUrl || arquivo.url)) {
@@ -300,8 +310,93 @@
         return match;
       });
 
+      // SISTEMA DE BOTÕES PARA ABRIR ARQUIVOS
+      const buttonRegex = /<button[^>]*data-open-file=["']([^"']+)["'][^>]*>([^<]*)<\/button>/gi;
+      novoHTML = novoHTML.replace(buttonRegex, (match, fileName, buttonText) => {
+        console.log(`🎯 Botão encontrado: "${buttonText}" -> arquivo: "${fileName}"`);
+        
+        const arquivo = encontrarArquivo(fileName);
+        if (arquivo && (arquivo.directUrl || arquivo.url)) {
+          const url = arquivo.directUrl || arquivo.url;
+          console.log(`🔗 Criando botão com URL: ${url}`);
+          
+          // Cria um botão que abre o arquivo em nova aba
+          return `<button onclick="window.open('${url}', '_blank')" style="cursor: pointer; padding: 10px 15px; background: #4361ee; color: white; border: none; border-radius: 5px;">${buttonText}</button>`;
+        } else {
+          // Se não encontrou o arquivo, mantém o botão original
+          console.log(`❌ Arquivo não encontrado para botão: ${fileName}`);
+          return match;
+        }
+      });
+
+      // SISTEMA DE LINKS ESPECIAIS - Abre arquivos dentro do visualizador
+      const linkRegex = /<a[^>]*href=["']#open-file\/([^"']+)["'][^>]*>([^<]*)<\/a>/gi;
+      novoHTML = novoHTML.replace(linkRegex, (match, fileName, linkText) => {
+        console.log(`🔗 Link especial encontrado: "${linkText}" -> arquivo: "${fileName}"`);
+        
+        const arquivo = encontrarArquivo(fileName);
+        if (arquivo) {
+          console.log(`📁 Arquivo encontrado para link especial: ${fileName}`);
+          
+          // Cria um link que chama a função global para abrir o arquivo
+          return `<a href="javascript:void(0)" onclick="window.abrirArquivoNoVisualizador('${fileName}')" style="cursor: pointer; color: #4361ee; text-decoration: underline;">${linkText}</a>`;
+        } else {
+          console.log(`❌ Arquivo não encontrado para link especial: ${fileName}`);
+          return match;
+        }
+      });
+
+      substituicaoAplicada = true;
       console.log('✅ Substituição concluída');
       return novoHTML;
+    }
+
+    // FUNÇÃO GLOBAL PARA ABRIR ARQUIVOS NO VISUALIZADOR
+    function abrirArquivoNoVisualizador(fileName) {
+      console.log(`🚀 Abrindo arquivo no visualizador: ${fileName}`);
+      if (currentProjectData && currentProjectData.files) {
+        openSpecificFile(fileName);
+      } else {
+        alert('Arquivo não encontrado no projeto atual');
+      }
+    }
+
+    // FUNÇÃO PARA CRIAR URL DE ACESSO DIRETO - CORRIGIDA
+    function criarUrlParaArquivo(fileName) {
+      const urlAtual = window.location.href;
+      const urlBase = urlAtual.split('/view.html')[0]; // Pega a base até view.html
+      
+      // SEMPRE usa minúsculas para domínios
+      const dominioNormalizado = currentSubdomain ? currentSubdomain.toLowerCase() : null;
+      const projectIdNormalizado = currentProjectId ? currentProjectId.toLowerCase() : null;
+      
+      if (dominioNormalizado) {
+        if (fileName) {
+          return {
+            novaForma: `${urlBase}/view.html/${dominioNormalizado}/${fileName}`,
+            formaAntiga: `${urlBase}/view.html?l=${dominioNormalizado}/${fileName}`
+          };
+        } else {
+          return {
+            novaForma: `${urlBase}/view.html/${dominioNormalizado}`,
+            formaAntiga: `${urlBase}/view.html?l=${dominioNormalizado}`
+          };
+        }
+      } else if (projectIdNormalizado) {
+        if (fileName) {
+          return {
+            novaForma: `${urlBase}/view.html/${projectIdNormalizado}/${fileName}`,
+            formaAntiga: `${urlBase}/view.html?projectId=${projectIdNormalizado}/${fileName}`
+          };
+        } else {
+          return {
+            novaForma: `${urlBase}/view.html/${projectIdNormalizado}`,
+            formaAntiga: `${urlBase}/view.html?projectId=${projectIdNormalizado}`
+          };
+        }
+      } else {
+        return { novaForma: urlAtual, formaAntiga: urlAtual };
+      }
     }
 
     function showError(message) {
@@ -315,25 +410,30 @@
     function findFileByName(files, fileName) {
       if (!files) return null;
 
-      // Primeiro procura pelo nome original
+      // Busca case insensitive
+      const fileNameLower = fileName.toLowerCase();
+
+      // Primeiro procura pelo nome original (case insensitive)
       for (const fileKey in files) {
         const file = files[fileKey];
-        if (file.originalName === fileName) {
+        if (file.originalName && file.originalName.toLowerCase() === fileNameLower) {
           return file;
         }
       }
 
-      // Depois procura pelo nome codificado
+      // Depois procura pelo nome codificado (case insensitive)
       for (const fileKey in files) {
         const file = files[fileKey];
-        if (file.name === fileName) {
+        if (file.name && file.name.toLowerCase() === fileNameLower) {
           return file;
         }
       }
 
-      // Finalmente procura pela chave
-      if (files[fileName]) {
-        return files[fileName];
+      // Finalmente procura pela chave (case insensitive)
+      for (const fileKey in files) {
+        if (fileKey.toLowerCase() === fileNameLower) {
+          return files[fileKey];
+        }
       }
 
       return null;
@@ -344,16 +444,17 @@
 
       const fileList = Object.values(files);
 
-      // 1. Procura por index.html
+      // 1. Procura por index.html (case insensitive)
       let mainFile = fileList.find(f => 
-        f.originalName === 'index.html' || f.name === 'index.html'
+        (f.originalName && f.originalName.toLowerCase() === 'index.html') || 
+        (f.name && f.name.toLowerCase() === 'index.html')
       );
 
       // 2. Se não encontrou, procura qualquer arquivo HTML
       if (!mainFile) {
         mainFile = fileList.find(f => 
-          (f.originalName && f.originalName.endsWith('.html')) ||
-          (f.name && f.name.endsWith('.html'))
+          (f.originalName && f.originalName.toLowerCase().endsWith('.html')) ||
+          (f.name && f.name.toLowerCase().endsWith('.html'))
         );
       }
 
@@ -379,31 +480,11 @@
       return '📄';
     }
 
+    // ATUALIZADO PARA NÃO MODIFICAR A URL AUTOMATICAMENTE
     function updateUrl(fileName = null) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const subdomain = urlParams.get('l');
-      const projectId = urlParams.get('projectId');
-
-      let newUrl = window.location.pathname + '?';
-
-      if (subdomain) {
-        if (fileName) {
-          newUrl += `l=${subdomain}/${fileName}`;
-        } else {
-          newUrl += `l=${subdomain}`;
-        }
-      } else if (projectId) {
-        // Remove qualquer arquivo atual do projectId
-        const cleanProjectId = projectId.split('/')[0];
-        if (fileName) {
-          newUrl += `projectId=${cleanProjectId}/${fileName}`;
-        } else {
-          newUrl += `projectId=${cleanProjectId}`;
-        }
-      }
-
-      // Atualiza URL sem recarregar a página
-      window.history.replaceState({}, '', newUrl);
+      // NÃO atualiza mais a URL automaticamente para evitar problemas
+      // A URL original fica como foi acessada
+      console.log('📝 URL mantida como original para evitar problemas');
       currentFileName = fileName;
     }
 
@@ -450,16 +531,19 @@
       previewFrame.style.display = 'none';
       fileList.style.display = 'none';
 
-      // Atualiza URL
+      // Atualiza URL (agora não modifica mais)
       updateUrl(fileName);
     }
 
     function showTextFile(content, fileName, type = 'html') {
       if (type === 'html') {
+        // Reseta a flag de substituição para aplicar novamente
+        substituicaoAplicada = false;
+        
         // APLICA A SUBSTITUIÇÃO AUTOMÁTICA AQUI
         console.log('🎯 Aplicando substituição automática...');
         const htmlComSubstituicao = substituirArquivosPorURLs(content, currentProjectData.files);
-        
+
         previewFrame.srcdoc = htmlComSubstituicao;
         previewFrame.style.display = 'block';
         loadingEl.style.display = 'none';
@@ -483,7 +567,7 @@
         fileList.style.display = 'none';
       }
 
-      // Atualiza URL
+      // Atualiza URL (agora não modifica mais)
       updateUrl(fileName);
     }
 
@@ -533,7 +617,7 @@
       previewFrame.style.display = 'none';
       fileViewer.style.display = 'none';
 
-      // Atualiza URL para raiz
+      // Atualiza URL para raiz (agora não modifica mais)
       updateUrl(null);
     }
 
@@ -590,7 +674,9 @@
     // FUNÇÃO PARA BUSCAR PROJETO POR SUBDOMÍNIO
     async function getProjectBySubdomain(subdomain) {
       try {
-        const domainRef = db.ref('domains/' + subdomain);
+        // SEMPRE usa minúsculas para buscar no Firebase
+        const dominioLower = subdomain.toLowerCase();
+        const domainRef = db.ref('domains/' + dominioLower);
         const snapshot = await domainRef.once('value');
         const domainData = snapshot.val();
 
@@ -605,50 +691,86 @@
       }
     }
 
-    // FUNÇÃO PARA PROCESSAR PARÂMETROS DA URL
+    // FUNÇÃO PARA PROCESSAR PARÂMETROS DA URL - CORRIGIDA
     function parseUrlParameters() {
+      const path = window.location.pathname;
       const urlParams = new URLSearchParams(window.location.search);
       const subdomain = urlParams.get('l');
       const projectId = urlParams.get('projectId');
 
-      let cleanProjectId = null;
-      let fileName = null;
+      console.log('📍 Path atual:', path);
+      console.log('📋 Parâmetros URL:', { subdomain, projectId });
 
+      // PRIMEIRO: Verifica se tem parâmetros na query string (?l= ou ?projectId=)
       if (subdomain) {
-        // Exemplo: ?l=meusite/arquivo.html
+        console.log('📝 Usando parâmetro ?l=');
+        let fileName = null;
         if (subdomain.includes('/')) {
           const parts = subdomain.split('/');
-          cleanProjectId = parts[0];
-          fileName = parts.slice(1).join('/'); // Pega todo o resto como nome do arquivo
+          const cleanSubdomain = parts[0];
+          fileName = parts.slice(1).join('/');
+          return { type: 'subdomain', projectId: cleanSubdomain, fileName };
         } else {
-          cleanProjectId = subdomain;
+          return { type: 'subdomain', projectId: subdomain, fileName: null };
         }
-        return { type: 'subdomain', projectId: cleanProjectId, fileName };
-      } 
-      else if (projectId) {
-        // Exemplo: ?projectId=ABC123/arquivo.html
+      } else if (projectId) {
+        console.log('📝 Usando parâmetro ?projectId=');
+        let fileName = null;
         if (projectId.includes('/')) {
           const parts = projectId.split('/');
-          cleanProjectId = parts[0];
+          const cleanProjectId = parts[0];
           fileName = parts.slice(1).join('/');
+          return { type: 'projectId', projectId: cleanProjectId, fileName };
         } else {
-          cleanProjectId = projectId;
+          return { type: 'projectId', projectId: projectId, fileName: null };
         }
-        return { type: 'projectId', projectId: cleanProjectId, fileName };
       }
 
+      // SEGUNDO: Verifica se o path segue o padrão /view.html/domínio/arquivo (nova forma)
+      if (path.includes('/view.html/')) {
+        console.log('📝 Usando nova forma (view.html/)');
+        const parts = path.split('/view.html/');
+        if (parts.length > 1) {
+          const restante = parts[1];
+          const subParts = restante.split('/');
+          
+          if (subParts.length >= 1) {
+            const dominioOuProjectId = subParts[0];
+            const fileName = subParts.length > 1 ? subParts.slice(1).join('/') : null;
+            
+            console.log('📋 Parâmetros extraídos:', { dominioOuProjectId, fileName });
+            
+            // Verifica se é subdomínio (normalmente letras e números) ou projectId (normalmente começa com -)
+            if (dominioOuProjectId.startsWith('-')) {
+              return { type: 'projectId', projectId: dominioOuProjectId, fileName };
+            } else {
+              return { type: 'subdomain', projectId: dominioOuProjectId, fileName };
+            }
+          }
+        }
+      }
+
+      console.log('❌ Nenhum projeto especificado');
       return null;
     }
 
     async function loadProject() {
+      // Evita carregar múltiplas vezes
+      if (projetoCarregado) {
+        console.log('✅ Projeto já carregado, ignorando nova tentativa');
+        return;
+      }
+
       const params = parseUrlParameters();
 
       if (!params) {
-        showError('Nenhum projeto especificado na URL.');
+        showError('Nenhum projeto especificado. Use: /view.html/dominio ou /view.html?l=dominio');
         return;
       }
 
       try {
+        loadingEl.style.display = 'flex';
+        
         const user = await new Promise((resolve) => {
           const unsubscribe = auth.onAuthStateChanged(user => {
             unsubscribe();
@@ -664,14 +786,18 @@
 
         let finalProjectId = params.projectId;
 
-        // Se for subdomínio, busca o projectId real
+        // Se for subdomínio, busca o projectId real (SEMPRE em minúsculas)
         if (params.type === 'subdomain') {
-          finalProjectId = await getProjectBySubdomain(params.projectId);
+          // Normaliza para minúsculas
+          const dominioNormalizado = params.projectId.toLowerCase();
+          finalProjectId = await getProjectBySubdomain(dominioNormalizado);
           if (!finalProjectId) {
             showError('Subdomínio não encontrado.');
             return;
           }
-          currentSubdomain = params.projectId;
+          currentSubdomain = dominioNormalizado; // Armazena em minúsculas
+        } else {
+          currentProjectId = params.projectId;
         }
 
         currentProjectId = finalProjectId;
@@ -693,6 +819,7 @@
         }
 
         currentProjectData = projectData;
+        projetoCarregado = true;
 
         // Se tem arquivo específico na URL
         if (params.fileName) {
@@ -714,14 +841,24 @@
       showProject(); // Volta para o projeto principal
     });
 
+    // Previne recarregamento duplo
+    let carregamentoIniciado = false;
+    
     document.addEventListener('DOMContentLoaded', function() {
-      loadProject();
+      if (!carregamentoIniciado) {
+        carregamentoIniciado = true;
+        console.log('🚀 Iniciando carregamento do projeto...');
+        loadProject();
+      }
     });
 
-    // Funções globais para acesso externo
+    // FUNÇÕES GLOBAIS PARA ACESSO EXTERNO
     window.showFileList = showFileList;
     window.showProject = showProject;
     window.substituirArquivosPorURLs = substituirArquivosPorURLs;
+    window.abrirArquivoNoVisualizador = abrirArquivoNoVisualizador;
+    window.criarUrlParaArquivo = criarUrlParaArquivo;
+    window.openSpecificFile = openSpecificFile;
   </script>
 </body>
 </html>
