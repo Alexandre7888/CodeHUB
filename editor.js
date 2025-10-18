@@ -102,14 +102,14 @@ function sanitizeFilename(filename) {
 // SISTEMA DE SUBDOMÍNIOS
 function createCustomDomain(projectId, subdomain) {
     if (!subdomain || !projectId) return null;
-    
+
     const cleanSubdomain = subdomain.toLowerCase().replace(/[^a-z0-9-]/g, '');
-    
+
     if (cleanSubdomain.length < 3) {
         alert('Subdomínio deve ter pelo menos 3 caracteres');
         return null;
     }
-    
+
     const domainRef = db.ref(`domains/${cleanSubdomain}`);
     domainRef.set({
         projectId: projectId,
@@ -117,7 +117,7 @@ function createCustomDomain(projectId, subdomain) {
         createdAt: new Date().toISOString(),
         subdomain: cleanSubdomain
     });
-    
+
     return cleanSubdomain;
 }
 
@@ -130,7 +130,7 @@ async function checkSubdomainAvailable(subdomain) {
 
 function generateProjectUrl(projectId, subdomain = null) {
     const baseUrl = window.location.origin + window.location.pathname.replace('editor.html', '');
-    
+
     if (subdomain) {
         return `${baseUrl}view.html?l=${subdomain}`;
     } else {
@@ -140,7 +140,7 @@ function generateProjectUrl(projectId, subdomain = null) {
 
 function generateFileUrl(projectId, fileName, subdomain = null) {
     const baseUrl = window.location.origin + window.location.pathname.replace('editor.html', '');
-    
+
     if (subdomain) {
         return `${baseUrl}view.html?l=${subdomain}/${fileName}`;
     } else {
@@ -162,7 +162,7 @@ function showDomainModal() {
         align-items: center;
         z-index: 10000;
     `;
-    
+
     modal.innerHTML = `
         <div style="background: #252526; padding: 20px; border-radius: 10px; width: 400px; max-width: 90%;">
             <h3 style="color: #4cc9f0; margin-top: 0;">🌐 Configurar Subdomínio</h3>
@@ -183,15 +183,15 @@ function showDomainModal() {
             </div>
         </div>
     `;
-    
+
     document.body.appendChild(modal);
-    
+
     const subdomainInput = modal.querySelector('#subdomainInput');
     const previewUrl = modal.querySelector('#previewUrl');
     const domainStatus = modal.querySelector('#domainStatus');
     const cancelBtn = modal.querySelector('#cancelDomain');
     const saveBtn = modal.querySelector('#saveDomain');
-    
+
     subdomainInput.addEventListener('input', function() {
         const sub = this.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
         if (sub) {
@@ -202,14 +202,14 @@ function showDomainModal() {
             previewUrl.style.color = '#ccc';
         }
     });
-    
+
     subdomainInput.addEventListener('blur', async function() {
         const sub = this.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
         if (sub.length < 3) {
             domainStatus.innerHTML = '<span style="color: #ff4444;">Mínimo 3 caracteres</span>';
             return;
         }
-        
+
         const available = await checkSubdomainAvailable(sub);
         if (available) {
             domainStatus.innerHTML = '<span style="color: #4caf50;">✅ Subdomínio disponível</span>';
@@ -217,40 +217,40 @@ function showDomainModal() {
             domainStatus.innerHTML = '<span style="color: #ff4444;">❌ Subdomínio já está em uso</span>';
         }
     });
-    
+
     saveBtn.addEventListener('click', async function() {
         const sub = subdomainInput.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
-        
+
         if (sub.length < 3) {
             alert('Subdomínio deve ter pelo menos 3 caracteres');
             return;
         }
-        
+
         const available = await checkSubdomainAvailable(sub);
         if (!available) {
             alert('Este subdomínio já está em uso. Escolha outro.');
             return;
         }
-        
+
         createCustomDomain(currentProjectId, sub);
         currentSubdomain = sub;
-        
+
         updateDomainButton();
-        
+
         modal.remove();
         alert(`✅ Domínio configurado! Seu projeto está disponível em: ${generateProjectUrl(currentProjectId, sub)}`);
     });
-    
+
     cancelBtn.addEventListener('click', function() {
         modal.remove();
     });
-    
+
     modal.addEventListener('click', function(e) {
         if (e.target === modal) {
             modal.remove();
         }
     });
-    
+
     previewUrl.textContent = generateProjectUrl(currentProjectId);
 }
 
@@ -269,7 +269,7 @@ function splitLargeContent(content, maxChunkSize = 60000) {
     if (content.length <= maxChunkSize) {
         return null;
     }
-    
+
     const chunks = [];
     for (let i = 0; i < content.length; i += maxChunkSize) {
         chunks.push(content.slice(i, i + maxChunkSize));
@@ -283,7 +283,7 @@ function joinChunks(chunks) {
 
 function saveFileWithChunks(fileKey, content) {
     const chunks = splitLargeContent(content);
-    
+
     if (!chunks) {
         files[fileKey].content = content;
         files[fileKey].chunks = null;
@@ -365,7 +365,92 @@ function initializeApp() {
     loadProject();
     loadUploadedFiles();
     setupEventListeners();
+    setupClipboardListener(); // Adicionado: listener para área de transferência
   });
+}
+
+// NOVA FUNÇÃO: Configurar listener para área de transferência
+function setupClipboardListener() {
+  document.addEventListener('paste', handlePasteEvent);
+}
+
+// NOVA FUNÇÃO: Manipular evento de colagem
+function handlePasteEvent(event) {
+  const clipboardData = event.clipboardData || window.clipboardData;
+  
+  if (!clipboardData) return;
+
+  // Verificar se há arquivos na área de transferência
+  const items = clipboardData.items;
+  
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    
+    if (item.kind === 'file') {
+      const file = item.getAsFile();
+      if (file) {
+        event.preventDefault();
+        handlePastedFile(file);
+        break;
+      }
+    }
+  }
+}
+
+// NOVA FUNÇÃO: Manipular arquivo colado da área de transferência
+function handlePastedFile(file) {
+  if (!currentProjectId) return;
+
+  // Mostrar status de upload
+  showUploadStatus(`Processando arquivo da área de transferência: ${file.name}...`, 'info');
+
+  // Criar um FormData para simular upload
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('projectId', currentProjectId);
+  formData.append('source', 'clipboard');
+
+  // Enviar para o endpoint de upload
+  const uploadUrl = 'https://nuvem-de-arquivos-drive--narrownarwhal3891229.on.websim.com/upload';
+  
+  fetch(uploadUrl, {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      showUploadStatus(`✅ Arquivo "${file.name}" copiado com sucesso!`, 'success');
+      
+      // Recarregar arquivos após um breve delay
+      setTimeout(() => {
+        loadProject();
+        loadUploadedFiles();
+      }, 1000);
+    } else {
+      showUploadStatus(`❌ Erro ao copiar arquivo: ${data.message || 'Erro desconhecido'}`, 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Erro ao enviar arquivo da área de transferência:', error);
+    showUploadStatus(`❌ Erro ao copiar arquivo: ${error.message}`, 'error');
+  });
+}
+
+// NOVA FUNÇÃO: Mostrar status do upload
+function showUploadStatus(message, type) {
+  if (elements.uploadStatus) {
+    elements.uploadStatus.textContent = message;
+    elements.uploadStatus.className = `status-${type}`;
+    elements.uploadStatus.style.display = 'block';
+    
+    // Auto-esconder após 5 segundos para mensagens de sucesso/info
+    if (type === 'success' || type === 'info') {
+      setTimeout(() => {
+        elements.uploadStatus.style.display = 'none';
+      }, 5000);
+    }
+  }
 }
 
 function loadProjectDomain() {
@@ -412,7 +497,7 @@ function setupEventListeners() {
 
   elements.uploadBtn.addEventListener('click', function() {
     if (!currentProjectId) return;
-    const uploadUrl = `https://nuvem-de-arquivos-drive--narrownarwhal3891229.on.websim.com/?projectId=${currentProjectId}`;
+    const uploadUrl = `https://nuvem-de-arquivos-drive--narrownarwhal3891229.on.websim.com/?projectId=${currentProjectId}&clipboard=true`;
     elements.uploadIframe.src = uploadUrl;
     elements.uploadIframeContainer.style.display = 'flex';
   });
@@ -676,14 +761,14 @@ function updateTabs() {
 
     const label = document.createElement('span');
     label.textContent = fileData.originalName || fileData.name;
-    
+
     if (fileData.chunks && fileData.chunks.length > 1) {
       const sizeIndicator = document.createElement('span');
       sizeIndicator.textContent = ' 📦';
       sizeIndicator.title = 'Arquivo grande (dividido)';
       label.appendChild(sizeIndicator);
     }
-    
+
     tab.appendChild(label);
 
     const closeBtn = document.createElement('button');
