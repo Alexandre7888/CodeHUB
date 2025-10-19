@@ -46,7 +46,8 @@ function mostrarPaginaBloqueio(dominio) {
             <h1 style="font-size: 2.5em; margin-bottom: 20px;">🚫 ACESSO BLOQUEADO</h1>
             <p style="font-size: 1.2em; color: white;">Domínio não autorizado:</p>
             <p style="font-size: 1.5em; color: #ff4444; font-weight: bold; background: #222; padding: 10px; border-radius: 5px;">${dominio}</p>
-            <p style="color: #ccc; margin-top: 20px;">Este domínio não tem permissão para acessar este conteúdo.</p>
+            <p style="color: #ccc; margin-top: 20px;">Este domínio não tem permissão para acessar este conteúdo.
+            mas se aconteceu isso por engano é só pedir permissão de domínio!</p>
             
             <div style="
                 margin-top: 30px;
