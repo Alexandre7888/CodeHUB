@@ -162,6 +162,114 @@
       font-size: 10px;
       margin-left: 10px;
     }
+
+    /* Estilos para o executor de API */
+    #api-executor {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: white;
+      z-index: 1003;
+      flex-direction: column;
+    }
+
+    #api-header {
+      padding: 10px;
+      background: #f5f5f5;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #api-controls {
+      padding: 15px;
+      background: #f9f9f9;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    #api-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #api-editor {
+      flex: 1;
+      border: none;
+      padding: 15px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      resize: none;
+      outline: none;
+    }
+
+    #api-output {
+      flex: 1;
+      border-top: 1px solid #ddd;
+      padding: 15px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      background: #f8f8f8;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+
+    .api-button {
+      padding: 8px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #run-api {
+      background: #4caf50;
+      color: white;
+    }
+
+    #clear-api {
+      background: #ff9800;
+      color: white;
+    }
+
+    #close-api {
+      background: #ff4444;
+      color: white;
+    }
+
+    .api-status {
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .status-ready {
+      background: #e7f3ff;
+      color: #1976d2;
+    }
+
+    .status-running {
+      background: #fff8e1;
+      color: #ff8f00;
+    }
+
+    .status-success {
+      background: #e8f5e9;
+      color: #388e3c;
+    }
+
+    .status-error {
+      background: #ffebee;
+      color: #d32f2f;
+    }
   </style>
 </head>
 <body>
@@ -182,6 +290,22 @@
       <button id="close-file">Fechar</button>
     </div>
     <div id="file-content"></div>
+  </div>
+
+  <div id="api-executor">
+    <div id="api-header">
+      <span>Executor de API</span>
+      <button id="close-api">Fechar</button>
+    </div>
+    <div id="api-controls">
+      <button id="run-api" class="api-button">Executar API</button>
+      <button id="clear-api" class="api-button">Limpar</button>
+      <span id="api-status" class="api-status status-ready">Pronto</span>
+    </div>
+    <div id="api-content">
+      <textarea id="api-editor" placeholder="Cole seu código JavaScript aqui para testar APIs..."></textarea>
+      <div id="api-output">// Resultados aparecerão aqui...</div>
+    </div>
   </div>
 
   <iframe id="preview-frame" style="display: none;"></iframe>
@@ -223,6 +347,15 @@
     const closeFileBtn = document.getElementById('close-file');
     const fileList = document.getElementById('file-list');
     const fileListContent = document.getElementById('file-list-content');
+    
+    // Elementos do executor de API
+    const apiExecutor = document.getElementById('api-executor');
+    const apiEditor = document.getElementById('api-editor');
+    const apiOutput = document.getElementById('api-output');
+    const runApiBtn = document.getElementById('run-api');
+    const clearApiBtn = document.getElementById('clear-api');
+    const closeApiBtn = document.getElementById('close-api');
+    const apiStatus = document.getElementById('api-status');
 
     let currentProjectData = null;
     let currentSubdomain = null;
@@ -314,12 +447,12 @@
       const buttonRegex = /<button[^>]*data-open-file=["']([^"']+)["'][^>]*>([^<]*)<\/button>/gi;
       novoHTML = novoHTML.replace(buttonRegex, (match, fileName, buttonText) => {
         console.log(`🎯 Botão encontrado: "${buttonText}" -> arquivo: "${fileName}"`);
-        
+
         const arquivo = encontrarArquivo(fileName);
         if (arquivo && (arquivo.directUrl || arquivo.url)) {
           const url = arquivo.directUrl || arquivo.url;
           console.log(`🔗 Criando botão com URL: ${url}`);
-          
+
           // Cria um botão que abre o arquivo em nova aba
           return `<button onclick="window.open('${url}', '_blank')" style="cursor: pointer; padding: 10px 15px; background: #4361ee; color: white; border: none; border-radius: 5px;">${buttonText}</button>`;
         } else {
@@ -333,11 +466,11 @@
       const linkRegex = /<a[^>]*href=["']#open-file\/([^"']+)["'][^>]*>([^<]*)<\/a>/gi;
       novoHTML = novoHTML.replace(linkRegex, (match, fileName, linkText) => {
         console.log(`🔗 Link especial encontrado: "${linkText}" -> arquivo: "${fileName}"`);
-        
+
         const arquivo = encontrarArquivo(fileName);
         if (arquivo) {
           console.log(`📁 Arquivo encontrado para link especial: ${fileName}`);
-          
+
           // Cria um link que chama a função global para abrir o arquivo
           return `<a href="javascript:void(0)" onclick="window.abrirArquivoNoVisualizador('${fileName}')" style="cursor: pointer; color: #4361ee; text-decoration: underline;">${linkText}</a>`;
         } else {
@@ -345,6 +478,18 @@
           return match;
         }
       });
+
+      // ADICIONAR BOTÃO DE EXECUTAR API
+      if (novoHTML.includes('<body>')) {
+        const apiButton = `
+          <div style="position: fixed; top: 10px; right: 10px; z-index: 9999;">
+            <button onclick="window.showApiExecutor()" style="background: #4caf50; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">
+              Executar API
+            </button>
+          </div>
+        `;
+        novoHTML = novoHTML.replace('<body>', '<body>' + apiButton);
+      }
 
       substituicaoAplicada = true;
       console.log('✅ Substituição concluída');
@@ -365,11 +510,11 @@
     function criarUrlParaArquivo(fileName) {
       const urlAtual = window.location.href;
       const urlBase = urlAtual.split('/view.html')[0]; // Pega a base até view.html
-      
+
       // SEMPRE usa minúsculas para domínios
       const dominioNormalizado = currentSubdomain ? currentSubdomain.toLowerCase() : null;
       const projectIdNormalizado = currentProjectId ? currentProjectId.toLowerCase() : null;
-      
+
       if (dominioNormalizado) {
         if (fileName) {
           return {
@@ -397,6 +542,104 @@
       } else {
         return { novaForma: urlAtual, formaAntiga: urlAtual };
       }
+    }
+
+    // FUNÇÕES DO EXECUTOR DE API
+    function showApiExecutor() {
+      apiExecutor.style.display = 'flex';
+      loadingEl.style.display = 'none';
+      previewFrame.style.display = 'none';
+      fileViewer.style.display = 'none';
+      fileList.style.display = 'none';
+      
+      // Foca no editor
+      setTimeout(() => {
+        apiEditor.focus();
+      }, 100);
+    }
+
+    function closeApiExecutor() {
+      apiExecutor.style.display = 'none';
+      showProject(); // Volta para o projeto principal
+    }
+
+    function runApiCode() {
+      const code = apiEditor.value.trim();
+      
+      if (!code) {
+        apiOutput.textContent = '// Nenhum código para executar.';
+        return;
+      }
+      
+      // Atualiza status
+      apiStatus.textContent = 'Executando...';
+      apiStatus.className = 'api-status status-running';
+      
+      // Limpa output anterior
+      apiOutput.textContent = '';
+      
+      try {
+        // Cria um contexto seguro para execução
+        const logs = [];
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        
+        // Captura logs
+        console.log = function(...args) {
+          logs.push(args.map(arg => 
+            typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+          ).join(' '));
+          originalConsoleLog.apply(console, args);
+        };
+        
+        console.error = function(...args) {
+          logs.push('ERRO: ' + args.map(arg => 
+            typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+          ).join(' '));
+          originalConsoleError.apply(console, args);
+        };
+        
+        // Executa o código
+        const result = eval(code);
+        
+        // Restaura console original
+        console.log = originalConsoleLog;
+        console.error = originalConsoleError;
+        
+        // Mostra resultado
+        let output = '';
+        
+        if (logs.length > 0) {
+          output += logs.join('\n') + '\n\n';
+        }
+        
+        if (result !== undefined) {
+          output += 'Resultado: ' + 
+            (typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result));
+        } else {
+          output += 'Execução concluída (sem retorno).';
+        }
+        
+        apiOutput.textContent = output;
+        apiStatus.textContent = 'Sucesso';
+        apiStatus.className = 'api-status status-success';
+        
+      } catch (error) {
+        // Restaura console original em caso de erro
+        console.log = originalConsoleLog;
+        console.error = originalConsoleError;
+        
+        apiOutput.textContent = 'ERRO: ' + error.message;
+        apiStatus.textContent = 'Erro';
+        apiStatus.className = 'api-status status-error';
+      }
+    }
+
+    function clearApiCode() {
+      apiEditor.value = '';
+      apiOutput.textContent = '// Resultados aparecerão aqui...';
+      apiStatus.textContent = 'Pronto';
+      apiStatus.className = 'api-status status-ready';
     }
 
     function showError(message) {
@@ -539,7 +782,7 @@
       if (type === 'html') {
         // Reseta a flag de substituição para aplicar novamente
         substituicaoAplicada = false;
-        
+
         // APLICA A SUBSTITUIÇÃO AUTOMÁTICA AQUI
         console.log('🎯 Aplicando substituição automática...');
         const htmlComSubstituicao = substituirArquivosPorURLs(content, currentProjectData.files);
@@ -588,6 +831,19 @@
 
       fileListContent.innerHTML = '';
       const files = currentProjectData.files;
+
+      // Adiciona item para Executar API
+      const apiItem = document.createElement('div');
+      apiItem.className = 'file-item';
+      apiItem.onclick = showApiExecutor;
+      apiItem.innerHTML = `
+        <div>
+          <span class="file-icon">🚀</span>
+          <span class="file-name">Executar API</span>
+          <div class="file-type">Teste qualquer API com JavaScript</div>
+        </div>
+      `;
+      fileListContent.appendChild(apiItem);
 
       for (const fileKey in files) {
         const file = files[fileKey];
@@ -733,13 +989,13 @@
         if (parts.length > 1) {
           const restante = parts[1];
           const subParts = restante.split('/');
-          
+
           if (subParts.length >= 1) {
             const dominioOuProjectId = subParts[0];
             const fileName = subParts.length > 1 ? subParts.slice(1).join('/') : null;
-            
+
             console.log('📋 Parâmetros extraídos:', { dominioOuProjectId, fileName });
-            
+
             // Verifica se é subdomínio (normalmente letras e números) ou projectId (normalmente começa com -)
             if (dominioOuProjectId.startsWith('-')) {
               return { type: 'projectId', projectId: dominioOuProjectId, fileName };
@@ -770,7 +1026,7 @@
 
       try {
         loadingEl.style.display = 'flex';
-        
+
         const user = await new Promise((resolve) => {
           const unsubscribe = auth.onAuthStateChanged(user => {
             unsubscribe();
@@ -835,15 +1091,20 @@
       }
     }
 
+    // Event Listeners
     closeFileBtn.addEventListener('click', function() {
       fileViewer.style.display = 'none';
       fileContent.innerHTML = '';
       showProject(); // Volta para o projeto principal
     });
 
+    closeApiBtn.addEventListener('click', closeApiExecutor);
+    runApiBtn.addEventListener('click', runApiCode);
+    clearApiBtn.addEventListener('click', clearApiCode);
+
     // Previne recarregamento duplo
     let carregamentoIniciado = false;
-    
+
     document.addEventListener('DOMContentLoaded', function() {
       if (!carregamentoIniciado) {
         carregamentoIniciado = true;
@@ -859,6 +1120,8 @@
     window.abrirArquivoNoVisualizador = abrirArquivoNoVisualizador;
     window.criarUrlParaArquivo = criarUrlParaArquivo;
     window.openSpecificFile = openSpecificFile;
+    window.showApiExecutor = showApiExecutor;
+    window.runApiCode = runApiCode;
   </script>
 </body>
 </html>
