@@ -33,6 +33,7 @@
       font-size: 18px;
       flex-direction: column;
       z-index: 1000;
+      transition: opacity 0.3s ease;
     }
 
     #file-viewer {
@@ -77,21 +78,6 @@
       padding: 5px 10px;
       border-radius: 4px;
       cursor: pointer;
-    }
-
-    .loader {
-      width: 50px;
-      height: 50px;
-      border: 5px solid #f3f3f3;
-      border-top: 5px solid #3498db;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 20px;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
     }
 
     .error {
@@ -162,119 +148,10 @@
       font-size: 10px;
       margin-left: 10px;
     }
-
-    /* Estilos para o executor de API */
-    #api-executor {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: white;
-      z-index: 1003;
-      flex-direction: column;
-    }
-
-    #api-header {
-      padding: 10px;
-      background: #f5f5f5;
-      border-bottom: 1px solid #ddd;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    #api-controls {
-      padding: 15px;
-      background: #f9f9f9;
-      border-bottom: 1px solid #ddd;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-
-    #api-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    #api-editor {
-      flex: 1;
-      border: none;
-      padding: 15px;
-      font-family: 'Courier New', monospace;
-      font-size: 14px;
-      resize: none;
-      outline: none;
-    }
-
-    #api-output {
-      flex: 1;
-      border-top: 1px solid #ddd;
-      padding: 15px;
-      font-family: 'Courier New', monospace;
-      font-size: 14px;
-      background: #f8f8f8;
-      overflow-y: auto;
-      white-space: pre-wrap;
-    }
-
-    .api-button {
-      padding: 8px 15px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    #run-api {
-      background: #4caf50;
-      color: white;
-    }
-
-    #clear-api {
-      background: #ff9800;
-      color: white;
-    }
-
-    #close-api {
-      background: #ff4444;
-      color: white;
-    }
-
-    .api-status {
-      padding: 5px 10px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: bold;
-    }
-
-    .status-ready {
-      background: #e7f3ff;
-      color: #1976d2;
-    }
-
-    .status-running {
-      background: #fff8e1;
-      color: #ff8f00;
-    }
-
-    .status-success {
-      background: #e8f5e9;
-      color: #388e3c;
-    }
-
-    .status-error {
-      background: #ffebee;
-      color: #d32f2f;
-    }
   </style>
 </head>
 <body>
   <div id="loading">
-    <div class="loader"></div>
     <div>Carregando projeto...</div>
   </div>
 
@@ -292,27 +169,10 @@
     <div id="file-content"></div>
   </div>
 
-  <div id="api-executor">
-    <div id="api-header">
-      <span>Executor de API</span>
-      <button id="close-api">Fechar</button>
-    </div>
-    <div id="api-controls">
-      <button id="run-api" class="api-button">Executar API</button>
-      <button id="clear-api" class="api-button">Limpar</button>
-      <span id="api-status" class="api-status status-ready">Pronto</span>
-    </div>
-    <div id="api-content">
-      <textarea id="api-editor" placeholder="Cole seu código JavaScript aqui para testar APIs..."></textarea>
-      <div id="api-output">// Resultados aparecerão aqui...</div>
-    </div>
-  </div>
-
   <iframe id="preview-frame" style="display: none;"></iframe>
 
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 
   <script>
     // Configuração do Firebase
@@ -327,17 +187,15 @@
       measurementId: "G-7E1VWN07GM"
     };
 
-    // Verifica se já existe uma app do Firebase para evitar erro de duplicação
+    // Inicializa Firebase
     let app;
     try {
       app = firebase.initializeApp(firebaseConfig);
     } catch (error) {
-      // Se já foi inicializada, usa a existente
       app = firebase.app();
     }
 
     const db = firebase.database();
-    const auth = firebase.auth();
 
     const loadingEl = document.getElementById('loading');
     const previewFrame = document.getElementById('preview-frame');
@@ -347,15 +205,6 @@
     const closeFileBtn = document.getElementById('close-file');
     const fileList = document.getElementById('file-list');
     const fileListContent = document.getElementById('file-list-content');
-    
-    // Elementos do executor de API
-    const apiExecutor = document.getElementById('api-executor');
-    const apiEditor = document.getElementById('api-editor');
-    const apiOutput = document.getElementById('api-output');
-    const runApiBtn = document.getElementById('run-api');
-    const clearApiBtn = document.getElementById('clear-api');
-    const closeApiBtn = document.getElementById('close-api');
-    const apiStatus = document.getElementById('api-status');
 
     let currentProjectData = null;
     let currentSubdomain = null;
@@ -479,18 +328,6 @@
         }
       });
 
-      // ADICIONAR BOTÃO DE EXECUTAR API
-      if (novoHTML.includes('<body>')) {
-        const apiButton = `
-          <div style="position: fixed; top: 10px; right: 10px; z-index: 9999;">
-            <button onclick="window.showApiExecutor()" style="background: #4caf50; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">
-              Executar API
-            </button>
-          </div>
-        `;
-        novoHTML = novoHTML.replace('<body>', '<body>' + apiButton);
-      }
-
       substituicaoAplicada = true;
       console.log('✅ Substituição concluída');
       return novoHTML;
@@ -504,142 +341,6 @@
       } else {
         alert('Arquivo não encontrado no projeto atual');
       }
-    }
-
-    // FUNÇÃO PARA CRIAR URL DE ACESSO DIRETO - CORRIGIDA
-    function criarUrlParaArquivo(fileName) {
-      const urlAtual = window.location.href;
-      const urlBase = urlAtual.split('/view.html')[0]; // Pega a base até view.html
-
-      // SEMPRE usa minúsculas para domínios
-      const dominioNormalizado = currentSubdomain ? currentSubdomain.toLowerCase() : null;
-      const projectIdNormalizado = currentProjectId ? currentProjectId.toLowerCase() : null;
-
-      if (dominioNormalizado) {
-        if (fileName) {
-          return {
-            novaForma: `${urlBase}/view.html/${dominioNormalizado}/${fileName}`,
-            formaAntiga: `${urlBase}/view.html?l=${dominioNormalizado}/${fileName}`
-          };
-        } else {
-          return {
-            novaForma: `${urlBase}/view.html/${dominioNormalizado}`,
-            formaAntiga: `${urlBase}/view.html?l=${dominioNormalizado}`
-          };
-        }
-      } else if (projectIdNormalizado) {
-        if (fileName) {
-          return {
-            novaForma: `${urlBase}/view.html/${projectIdNormalizado}/${fileName}`,
-            formaAntiga: `${urlBase}/view.html?projectId=${projectIdNormalizado}/${fileName}`
-          };
-        } else {
-          return {
-            novaForma: `${urlBase}/view.html/${projectIdNormalizado}`,
-            formaAntiga: `${urlBase}/view.html?projectId=${projectIdNormalizado}`
-          };
-        }
-      } else {
-        return { novaForma: urlAtual, formaAntiga: urlAtual };
-      }
-    }
-
-    // FUNÇÕES DO EXECUTOR DE API
-    function showApiExecutor() {
-      apiExecutor.style.display = 'flex';
-      loadingEl.style.display = 'none';
-      previewFrame.style.display = 'none';
-      fileViewer.style.display = 'none';
-      fileList.style.display = 'none';
-      
-      // Foca no editor
-      setTimeout(() => {
-        apiEditor.focus();
-      }, 100);
-    }
-
-    function closeApiExecutor() {
-      apiExecutor.style.display = 'none';
-      showProject(); // Volta para o projeto principal
-    }
-
-    function runApiCode() {
-      const code = apiEditor.value.trim();
-      
-      if (!code) {
-        apiOutput.textContent = '// Nenhum código para executar.';
-        return;
-      }
-      
-      // Atualiza status
-      apiStatus.textContent = 'Executando...';
-      apiStatus.className = 'api-status status-running';
-      
-      // Limpa output anterior
-      apiOutput.textContent = '';
-      
-      try {
-        // Cria um contexto seguro para execução
-        const logs = [];
-        const originalConsoleLog = console.log;
-        const originalConsoleError = console.error;
-        
-        // Captura logs
-        console.log = function(...args) {
-          logs.push(args.map(arg => 
-            typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-          ).join(' '));
-          originalConsoleLog.apply(console, args);
-        };
-        
-        console.error = function(...args) {
-          logs.push('ERRO: ' + args.map(arg => 
-            typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-          ).join(' '));
-          originalConsoleError.apply(console, args);
-        };
-        
-        // Executa o código
-        const result = eval(code);
-        
-        // Restaura console original
-        console.log = originalConsoleLog;
-        console.error = originalConsoleError;
-        
-        // Mostra resultado
-        let output = '';
-        
-        if (logs.length > 0) {
-          output += logs.join('\n') + '\n\n';
-        }
-        
-        if (result !== undefined) {
-          output += 'Resultado: ' + 
-            (typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result));
-        } else {
-          output += 'Execução concluída (sem retorno).';
-        }
-        
-        apiOutput.textContent = output;
-        apiStatus.textContent = 'Sucesso';
-        apiStatus.className = 'api-status status-success';
-        
-      } catch (error) {
-        // Restaura console original em caso de erro
-        console.log = originalConsoleLog;
-        console.error = originalConsoleError;
-        
-        apiOutput.textContent = 'ERRO: ' + error.message;
-        apiStatus.textContent = 'Erro';
-        apiStatus.className = 'api-status status-error';
-      }
-    }
-
-    function clearApiCode() {
-      apiEditor.value = '';
-      apiOutput.textContent = '// Resultados aparecerão aqui...';
-      apiStatus.textContent = 'Pronto';
-      apiStatus.className = 'api-status status-ready';
     }
 
     function showError(message) {
@@ -723,14 +424,6 @@
       return '📄';
     }
 
-    // ATUALIZADO PARA NÃO MODIFICAR A URL AUTOMATICAMENTE
-    function updateUrl(fileName = null) {
-      // NÃO atualiza mais a URL automaticamente para evitar problemas
-      // A URL original fica como foi acessada
-      console.log('📝 URL mantida como original para evitar problemas');
-      currentFileName = fileName;
-    }
-
     function showMediaFile(file, fileName) {
       const url = file.directUrl || file.url;
       const type = file.type || '';
@@ -773,9 +466,6 @@
       loadingEl.style.display = 'none';
       previewFrame.style.display = 'none';
       fileList.style.display = 'none';
-
-      // Atualiza URL (agora não modifica mais)
-      updateUrl(fileName);
     }
 
     function showTextFile(content, fileName, type = 'html') {
@@ -809,9 +499,6 @@
         previewFrame.style.display = 'none';
         fileList.style.display = 'none';
       }
-
-      // Atualiza URL (agora não modifica mais)
-      updateUrl(fileName);
     }
 
     function escapeHtml(unsafe) {
@@ -831,19 +518,6 @@
 
       fileListContent.innerHTML = '';
       const files = currentProjectData.files;
-
-      // Adiciona item para Executar API
-      const apiItem = document.createElement('div');
-      apiItem.className = 'file-item';
-      apiItem.onclick = showApiExecutor;
-      apiItem.innerHTML = `
-        <div>
-          <span class="file-icon">🚀</span>
-          <span class="file-name">Executar API</span>
-          <div class="file-type">Teste qualquer API com JavaScript</div>
-        </div>
-      `;
-      fileListContent.appendChild(apiItem);
 
       for (const fileKey in files) {
         const file = files[fileKey];
@@ -872,9 +546,6 @@
       loadingEl.style.display = 'none';
       previewFrame.style.display = 'none';
       fileViewer.style.display = 'none';
-
-      // Atualiza URL para raiz (agora não modifica mais)
-      updateUrl(null);
     }
 
     function showProject() {
@@ -1025,20 +696,15 @@
       }
 
       try {
-        loadingEl.style.display = 'flex';
-
-        const user = await new Promise((resolve) => {
-          const unsubscribe = auth.onAuthStateChanged(user => {
-            unsubscribe();
-            resolve(user);
-          });
-        });
-
-        if (!user) {
-          showError('Usuário não autenticado. Redirecionando...');
-          setTimeout(() => window.location.href = 'auth.html', 2000);
-          return;
-        }
+        // Esconde o loading mais rapidamente
+        setTimeout(() => {
+          if (loadingEl.style.display !== 'none') {
+            loadingEl.style.opacity = '0';
+            setTimeout(() => {
+              loadingEl.style.display = 'none';
+            }, 300);
+          }
+        }, 500);
 
         let finalProjectId = params.projectId;
 
@@ -1058,13 +724,14 @@
 
         currentProjectId = finalProjectId;
 
-        // Busca projeto
-        let projectRef = db.ref('projects/' + user.uid + '/' + finalProjectId);
+        // Busca projeto diretamente sem autenticação
+        let projectRef = db.ref('projects/' + finalProjectId);
         let snapshot = await projectRef.once('value');
         let projectData = snapshot.val();
 
+        // Se não encontrou no caminho direto, tenta buscar em projetos públicos
         if (!projectData) {
-          projectRef = db.ref('projects/' + finalProjectId);
+          projectRef = db.ref('public-projects/' + finalProjectId);
           snapshot = await projectRef.once('value');
           projectData = snapshot.val();
         }
@@ -1076,6 +743,12 @@
 
         currentProjectData = projectData;
         projetoCarregado = true;
+
+        // Esconde loading imediatamente
+        loadingEl.style.opacity = '0';
+        setTimeout(() => {
+          loadingEl.style.display = 'none';
+        }, 300);
 
         // Se tem arquivo específico na URL
         if (params.fileName) {
@@ -1098,10 +771,6 @@
       showProject(); // Volta para o projeto principal
     });
 
-    closeApiBtn.addEventListener('click', closeApiExecutor);
-    runApiBtn.addEventListener('click', runApiCode);
-    clearApiBtn.addEventListener('click', clearApiCode);
-
     // Previne recarregamento duplo
     let carregamentoIniciado = false;
 
@@ -1118,10 +787,7 @@
     window.showProject = showProject;
     window.substituirArquivosPorURLs = substituirArquivosPorURLs;
     window.abrirArquivoNoVisualizador = abrirArquivoNoVisualizador;
-    window.criarUrlParaArquivo = criarUrlParaArquivo;
     window.openSpecificFile = openSpecificFile;
-    window.showApiExecutor = showApiExecutor;
-    window.runApiCode = runApiCode;
   </script>
 </body>
 </html>
