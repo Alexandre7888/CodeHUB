@@ -32,12 +32,13 @@ const fileListContent = document.getElementById('file-list-content');
 // Variáveis de estado
 let currentProjectData = null;
 let currentFileName = null;
+let substituicaoAplicada = false;
 
-// FUNÇÃO DE SUBSTITUIÇÃO AUTOMÁTICA - CORRIGIDA
+// FUNÇÃO DE SUBSTITUIÇÃO AUTOMÁTICA - COMPLETA
 function substituirArquivosPorURLs(htmlContent, projectFiles) {
     console.log('🔍 Iniciando substituição automática de arquivos...');
 
-    if (!projectFiles || !htmlContent) {
+    if (!projectFiles || !htmlContent || substituicaoAplicada) {
         return htmlContent;
     }
 
@@ -67,27 +68,15 @@ function substituirArquivosPorURLs(htmlContent, projectFiles) {
     // FUNÇÃO PARA DETERMINAR SE É ARQUIVO DE MÍDIA
     function isArquivoMidia(fileName) {
         const extensoesMidia = [
-            // Imagens
-            '.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp', '.bmp', '.ico',
-            // Vídeos
-            '.mp4', '.avi', '.mov', '.webm', '.mkv', '.ogg', '.wmv',
-            // Áudio
-            '.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac',
-            // Documentos/Outros
+            '.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp', '.bmp',
+            '.mp4', '.avi', '.mov', '.webm', '.mkv', '.ogg',
+            '.mp3', '.wav', '.ogg', '.m4a', '.aac',
             '.pdf', '.zip', '.rar', '.7z'
         ];
         return extensoesMidia.some(ext => fileName.toLowerCase().endsWith(ext));
     }
 
-    // FUNÇÃO PARA DETERMINAR SE É ARQUIVO DE TEXTO/CÓDIGO
-    function isArquivoTexto(fileName) {
-        const extensoesTexto = [
-            '.html', '.htm', '.css', '.js', '.json', '.txt', '.xml', '.md'
-        ];
-        return extensoesTexto.some(ext => fileName.toLowerCase().endsWith(ext));
-    }
-
-    // SUBSTITUIÇÃO DE SRC (imagens, vídeos, scripts)
+    // SUBSTITUIÇÃO DE SRC
     const srcRegex = /src=["']([^"']+)["']/g;
     novoHTML = novoHTML.replace(srcRegex, (match, src) => {
         if (src.startsWith('http') || src.startsWith('data:') || src.startsWith('//') || src.includes('://')) {
@@ -95,64 +84,37 @@ function substituirArquivosPorURLs(htmlContent, projectFiles) {
         }
 
         const arquivo = encontrarArquivo(src);
-        if (!arquivo) return match;
-
-        // Se for mídia, usa a URL
-        if (isArquivoMidia(arquivo.originalName || arquivo.name)) {
-            const url = arquivo.directUrl || arquivo.url;
-            if (url) {
-                console.log(`🔄 Substituindo SRC (mídia): "${src}" -> "${url}"`);
-                return `src="${url}"`;
-            }
+        if (arquivo && (arquivo.directUrl || arquivo.url)) {
+            const novaUrl = arquivo.directUrl || arquivo.url;
+            console.log(`🔄 Substituindo SRC: "${src}" -> "${novaUrl}"`);
+            return `src="${novaUrl}"`;
         }
-        // Se for arquivo de texto, cria um blob URL (para CSS/JS)
-        else if (isArquivoTexto(arquivo.originalName || arquivo.name)) {
-            const content = arquivo.content || (arquivo.chunks ? arquivo.chunks.join('') : '');
-            if (content) {
-                const blob = new Blob([content], { type: getMimeType(arquivo.originalName || arquivo.name) });
-                const blobUrl = URL.createObjectURL(blob);
-                console.log(`📄 Criando blob URL para: "${src}"`);
-                return `src="${blobUrl}"`;
-            }
-        }
-
         return match;
     });
 
-    // SUBSTITUIÇÃO DE HREF (CSS, links, etc)
+    // SUBSTITUIÇÃO DE HREF
     const hrefRegex = /href=["']([^"']+)["']/g;
     novoHTML = novoHTML.replace(hrefRegex, (match, href) => {
         if (href.startsWith('http') || href.startsWith('#') || href.startsWith('mailto:') || 
-            href.startsWith('tel:') || href.includes('://')) {
+            href.startsWith('tel:') || href.includes('://') || href.endsWith('.html')) {
             return match;
         }
 
-        const arquivo = encontrarArquivo(href);
-        if (!arquivo) return match;
+        const extensoesMidia = ['.mp3', '.mp4', '.jpg', '.jpeg', '.png', '.gif', '.pdf', '.wav', '.ogg'];
+        const temExtensaoMidia = extensoesMidia.some(ext => href.toLowerCase().endsWith(ext));
 
-        // Se for mídia, usa a URL
-        if (isArquivoMidia(arquivo.originalName || arquivo.name)) {
-            const url = arquivo.directUrl || arquivo.url;
-            if (url) {
-                console.log(`🔗 Substituindo HREF (mídia): "${href}" -> "${url}"`);
-                return `href="${url}"`;
+        if (temExtensaoMidia) {
+            const arquivo = encontrarArquivo(href);
+            if (arquivo && (arquivo.directUrl || arquivo.url)) {
+                const novaUrl = arquivo.directUrl || arquivo.url;
+                console.log(`🔗 Substituindo HREF: "${href}" -> "${novaUrl}"`);
+                return `href="${novaUrl}"`;
             }
         }
-        // Se for CSS, cria blob URL
-        else if (href.toLowerCase().endsWith('.css')) {
-            const content = arquivo.content || (arquivo.chunks ? arquivo.chunks.join('') : '');
-            if (content) {
-                const blob = new Blob([content], { type: 'text/css' });
-                const blobUrl = URL.createObjectURL(blob);
-                console.log(`🎨 Criando blob URL para CSS: "${href}"`);
-                return `href="${blobUrl}"`;
-            }
-        }
-
         return match;
     });
 
-    // SUBSTITUIÇÃO DE BACKGROUND IMAGES
+    // SUBSTITUIÇÃO DE BACKGROUND
     const bgRegex = /background(-image)?\s*:\s*url\(["']?([^"')]+)["']?\)/gi;
     novoHTML = novoHTML.replace(bgRegex, (match, prop, bgUrl) => {
         if (bgUrl.startsWith('http') || bgUrl.startsWith('data:') || bgUrl.startsWith('//') || bgUrl.includes('://')) {
@@ -161,116 +123,60 @@ function substituirArquivosPorURLs(htmlContent, projectFiles) {
 
         const arquivo = encontrarArquivo(bgUrl);
         if (arquivo && (arquivo.directUrl || arquivo.url)) {
-            const url = arquivo.directUrl || arquivo.url;
-            console.log(`🎨 Substituindo BACKGROUND: "${bgUrl}" -> "${url}"`);
-            return `background${prop || ''}: url("${url}")`;
+            const novaUrl = arquivo.directUrl || arquivo.url;
+            console.log(`🎨 Substituindo BACKGROUND: "${bgUrl}" -> "${novaUrl}"`);
+            return `background${prop || ''}: url("${novaUrl}")`;
         }
         return match;
     });
 
+    // SISTEMA DE BOTÕES PARA ABRIR ARQUIVOS
+    const buttonRegex = /<button[^>]*data-open-file=["']([^"']+)["'][^>]*>([^<]*)<\/button>/gi;
+    novoHTML = novoHTML.replace(buttonRegex, (match, fileName, buttonText) => {
+        console.log(`🎯 Botão encontrado: "${buttonText}" -> arquivo: "${fileName}"`);
+
+        const arquivo = encontrarArquivo(fileName);
+        if (arquivo && (arquivo.directUrl || arquivo.url)) {
+            const url = arquivo.directUrl || arquivo.url;
+            console.log(`🔗 Criando botão com URL: ${url}`);
+            return `<button onclick="window.open('${url}', '_blank')" style="cursor: pointer; padding: 10px 15px; background: #4361ee; color: white; border: none; border-radius: 5px;">${buttonText}</button>`;
+        } else {
+            console.log(`❌ Arquivo não encontrado para botão: ${fileName}`);
+            return match;
+        }
+    });
+
+    // SISTEMA DE LINKS ESPECIAIS
+    const linkRegex = /<a[^>]*href=["']#open-file\/([^"']+)["'][^>]*>([^<]*)<\/a>/gi;
+    novoHTML = novoHTML.replace(linkRegex, (match, fileName, linkText) => {
+        console.log(`🔗 Link especial encontrado: "${linkText}" -> arquivo: "${fileName}"`);
+
+        const arquivo = encontrarArquivo(fileName);
+        if (arquivo) {
+            console.log(`📁 Arquivo encontrado para link especial: ${fileName}`);
+            return `<a href="javascript:void(0)" onclick="window.abrirArquivoNoVisualizador('${fileName}')" style="cursor: pointer; color: #4361ee; text-decoration: underline;">${linkText}</a>`;
+        } else {
+            console.log(`❌ Arquivo não encontrado para link especial: ${fileName}`);
+            return match;
+        }
+    });
+
+    substituicaoAplicada = true;
     console.log('✅ Substituição automática concluída!');
     return novoHTML;
 }
 
-// FUNÇÃO AUXILIAR - PEGA MIME TYPE
-function getMimeType(fileName) {
-    const extension = fileName.split('.').pop().toLowerCase();
-    const mimeTypes = {
-        'html': 'text/html',
-        'htm': 'text/html',
-        'css': 'text/css',
-        'js': 'application/javascript',
-        'json': 'application/json',
-        'txt': 'text/plain',
-        'xml': 'application/xml',
-        'md': 'text/markdown'
-    };
-    return mimeTypes[extension] || 'text/plain';
-}
-
-// FUNÇÃO PRINCIPAL - BUSCA NO FIREBASE
-async function loadProject() {
-    console.log('🚀 Iniciando...');
-    
-    const params = parseUrlParameters();
-    
-    if (!params.projectId) {
-        showError('URL inválida. Use: /view.html?l=SUBDOMINIO ou /view.html?project=ID_DO_PROJETO');
-        return;
-    }
-
-    console.log('🔍 Buscando projeto:', params.projectId);
-    if (params.fileName) {
-        console.log('📁 Arquivo específico:', params.fileName);
-    }
-
-    try {
-        // BUSCA DIRETA NO FIREBASE
-
-        // 1. Tenta como subdomínio
-        console.log('🔍 Tentando como subdomínio...');
-        const domainData = await getFromFirebase('domains/' + params.projectId.toLowerCase());
-        
-        if (domainData && domainData.projectId) {
-            console.log('✅ Subdomínio encontrado, buscando projeto...');
-            const projectData = await getFromFirebase('projects/' + domainData.projectId);
-            if (projectData) {
-                currentProjectData = projectData;
-                if (params.fileName) {
-                    openSpecificFile(params.fileName);
-                } else {
-                    showMainFile();
-                }
-                return;
-            }
-        }
-
-        // 2. Tenta como projeto público
-        console.log('🔍 Tentando como projeto público...');
-        let projectData = await getFromFirebase('projects/' + params.projectId);
-        
-        if (projectData) {
-            console.log('✅ Projeto público encontrado');
-            currentProjectData = projectData;
-            if (params.fileName) {
-                openSpecificFile(params.fileName);
-            } else {
-                showMainFile();
-            }
-            return;
-        }
-
-        // 3. Tenta em projetos de usuário
-        console.log('🔍 Tentando projetos de usuário...');
-        const usersRef = db.ref('projects');
-        const usersSnapshot = await usersRef.once('value');
-        const usersData = usersSnapshot.val();
-        
-        if (usersData) {
-            for (const userId in usersData) {
-                if (usersData[userId][params.projectId]) {
-                    projectData = usersData[userId][params.projectId];
-                    console.log('✅ Projeto encontrado em usuário:', userId);
-                    currentProjectData = projectData;
-                    if (params.fileName) {
-                        openSpecificFile(params.fileName);
-                    } else {
-                        showMainFile();
-                    }
-                    return;
-                }
-            }
-        }
-
-        showError(`Projeto "${params.projectId}" não encontrado no Firebase.`);
-
-    } catch (error) {
-        console.error('❌ Erro:', error);
-        showError('Erro ao buscar projeto: ' + error.message);
+// FUNÇÃO GLOBAL PARA ABRIR ARQUIVOS NO VISUALIZADOR
+function abrirArquivoNoVisualizador(fileName) {
+    console.log(`🚀 Abrindo arquivo no visualizador: ${fileName}`);
+    if (currentProjectData && currentProjectData.files) {
+        openSpecificFile(fileName);
+    } else {
+        alert('Arquivo não encontrado no projeto atual');
     }
 }
 
-// FUNÇÃO PARA PROCESSAR URL
+// FUNÇÃO PARA PROCESSAR URL - COM SUBDOMÍNIO
 function parseUrlParameters() {
     const urlParams = new URLSearchParams(window.location.search);
     const path = window.location.pathname;
@@ -278,7 +184,9 @@ function parseUrlParameters() {
     let projectId = null;
     let fileName = null;
 
-    // 1. Tenta parâmetro ?l=
+    console.log('📍 URL completa:', window.location.href);
+
+    // 1. Tenta parâmetro ?l= (subdomínio)
     let lParam = urlParams.get('l');
     if (lParam) {
         console.log('📝 Usando parâmetro ?l=', lParam);
@@ -289,10 +197,10 @@ function parseUrlParameters() {
         } else {
             projectId = lParam;
         }
-        return { projectId, fileName };
+        return { projectId, fileName, type: 'subdomain' };
     }
 
-    // 2. Tenta parâmetro ?project=
+    // 2. Tenta parâmetro ?project= (ID direto)
     let projectParam = urlParams.get('project');
     if (projectParam) {
         console.log('📝 Usando parâmetro ?project=', projectParam);
@@ -303,10 +211,10 @@ function parseUrlParameters() {
         } else {
             projectId = projectParam;
         }
-        return { projectId, fileName };
+        return { projectId, fileName, type: 'projectId' };
     }
 
-    // 3. Tenta parâmetro ?projectId=
+    // 3. Tenta parâmetro ?projectId= (ID direto)
     let projectIdParam = urlParams.get('projectId');
     if (projectIdParam) {
         console.log('📝 Usando parâmetro ?projectId=', projectIdParam);
@@ -317,10 +225,37 @@ function parseUrlParameters() {
         } else {
             projectId = projectIdParam;
         }
-        return { projectId, fileName };
+        return { projectId, fileName, type: 'projectId' };
     }
 
-    return { projectId: null, fileName: null };
+    // 4. Tenta path /view.html/SUBDOMINIO
+    if (path.includes('/view.html/')) {
+        const pathParts = path.split('/view.html/');
+        if (pathParts.length > 1) {
+            const restante = pathParts[1];
+            console.log('📝 Usando path com subdomínio:', restante);
+            
+            if (restante.includes('/')) {
+                const subParts = restante.split('/');
+                projectId = subParts[0];
+                fileName = subParts.slice(1).join('/');
+            } else {
+                projectId = restante;
+            }
+            
+            // Verifica se é subdomínio (não começa com -) ou projectId (começa com -)
+            if (projectId && !projectId.startsWith('-')) {
+                console.log('🔍 Identificado como subdomínio:', projectId);
+                return { projectId, fileName, type: 'subdomain' };
+            } else {
+                console.log('🔍 Identificado como projectId:', projectId);
+                return { projectId, fileName, type: 'projectId' };
+            }
+        }
+    }
+
+    console.log('❌ Nenhum parâmetro válido encontrado');
+    return { projectId: null, fileName: null, type: null };
 }
 
 // FUNÇÃO AUXILIAR - BUSCA NO FIREBASE
@@ -410,53 +345,33 @@ function showMediaFile(file, fileName) {
 
     // IMAGEM
     if (type.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp'].includes(extension)) {
-        fileContent.innerHTML = `
-            <div style="text-align: center;">
-                <img src="${url}" alt="${fileName}" style="max-width: 95%; max-height: 95%; border-radius: 8px;">
-            </div>
-        `;
+        fileContent.innerHTML = `<img src="${url}" alt="${fileName}" style="max-width: 100%; max-height: 100%;">`;
     } 
     // VÍDEO
     else if (type.startsWith('video/') || ['mp4', 'avi', 'mov', 'webm', 'mkv', 'ogg'].includes(extension)) {
         fileContent.innerHTML = `
-            <div style="text-align: center; width: 100%;">
-                <video controls autoplay style="max-width: 95%; max-height: 95%;">
-                    <source src="${url}" type="${type}">
-                    Seu navegador não suporta vídeo.
-                </video>
-            </div>
+            <video controls autoplay style="max-width: 100%; max-height: 100%;">
+                <source src="${url}" type="${type}">
+                Seu navegador não suporta vídeo.
+            </video>
         `;
     } 
     // ÁUDIO
     else if (type.startsWith('audio/') || ['mp3', 'wav', 'ogg', 'm4a', 'aac'].includes(extension)) {
         fileContent.innerHTML = `
-            <div style="text-align: center; width: 100%;">
-                <audio controls autoplay style="width: 80%;">
-                    <source src="${url}" type="${type}">
-                    Seu navegador não suporta áudio.
-                </audio>
-            </div>
+            <audio controls autoplay>
+                <source src="${url}" type="${type}">
+                Seu navegador não suporta áudio.
+            </audio>
         `;
     }
     // PDF
     else if (type.includes('pdf') || extension === 'pdf') {
-        fileContent.innerHTML = `
-            <div style="width: 100%; height: 100%;">
-                <iframe src="${url}" style="width: 100%; height: 100%; border: none;"></iframe>
-            </div>
-        `;
+        fileContent.innerHTML = `<iframe src="${url}" style="width: 100%; height: 100%; border: none;"></iframe>`;
     }
-    // OUTROS ARQUIVOS (abre em nova aba)
+    // OUTROS ARQUIVOS
     else {
-        fileContent.innerHTML = `
-            <div style="text-align: center; padding: 50px;">
-                <h3>Arquivo: ${fileName}</h3>
-                <p>Este tipo de arquivo não pode ser visualizado diretamente.</p>
-                <button onclick="window.open('${url}', '_blank')" style="padding: 10px 20px; background: #4361ee; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                    Abrir em Nova Aba
-                </button>
-            </div>
-        `;
+        fileContent.innerHTML = `<iframe src="${url}" style="width: 100%; height: 100%; border: none;"></iframe>`;
     }
 
     fileViewer.style.display = 'flex';
@@ -468,6 +383,9 @@ function showMediaFile(file, fileName) {
 // MOSTRA ARQUIVO DE TEXTO/HTML
 function showTextFile(content, fileName, type = 'html') {
     if (type === 'html') {
+        // Reseta a flag de substituição para aplicar novamente
+        substituicaoAplicada = false;
+
         // APLICA A SUBSTITUIÇÃO AUTOMÁTICA
         console.log('🎯 Aplicando substituição automática no HTML...');
         const htmlComSubstituicao = substituirArquivosPorURLs(content, currentProjectData.files);
@@ -479,14 +397,13 @@ function showTextFile(content, fileName, type = 'html') {
         fileList.style.display = 'none';
         document.title = fileName;
     } else {
-        // Para outros arquivos de texto, mostra no viewer
         fileTitle.textContent = fileName;
 
         // Formatação de código
         if (type === 'css' || type === 'javascript' || type === 'json') {
-            content = `<pre>${escapeHtml(content)}</pre>`;
+            content = `<pre style="font-family: 'Courier New', monospace; background: #f8f8f8; padding: 20px; border-radius: 5px; overflow: auto; margin: 0;">${escapeHtml(content)}</pre>`;
         } else {
-            content = `<pre class="code-plain">${escapeHtml(content)}</pre>`;
+            content = `<pre style="font-family: Arial, sans-serif; padding: 20px; margin: 0;">${escapeHtml(content)}</pre>`;
         }
 
         fileContent.innerHTML = content;
@@ -597,6 +514,89 @@ function closeFileViewer() {
     showProject();
 }
 
+// FUNÇÃO PRINCIPAL - BUSCA NO FIREBASE
+async function loadProject() {
+    console.log('🚀 Iniciando carregamento do projeto...');
+    
+    const params = parseUrlParameters();
+    
+    if (!params.projectId) {
+        showError('URL inválida. Use: /view.html?l=SUBDOMINIO ou /view.html?project=ID_DO_PROJETO ou /view.html/SUBDOMINIO');
+        return;
+    }
+
+    console.log('🔍 Buscando:', params.projectId, 'Tipo:', params.type);
+    if (params.fileName) {
+        console.log('📁 Arquivo específico:', params.fileName);
+    }
+
+    try {
+        loadingEl.style.display = 'flex';
+        
+        let finalProjectId = params.projectId;
+        let projectData = null;
+
+        // SE FOR SUBDOMÍNIO, BUSCA O PROJECT ID REAL
+        if (params.type === 'subdomain') {
+            console.log('🔍 Buscando projectId para subdomínio:', params.projectId);
+            const domainData = await getFromFirebase('domains/' + params.projectId.toLowerCase());
+            
+            if (domainData && domainData.projectId) {
+                console.log('✅ Subdomínio encontrado. ProjectId:', domainData.projectId);
+                finalProjectId = domainData.projectId;
+            } else {
+                showError(`Subdomínio "${params.projectId}" não encontrado.`);
+                return;
+            }
+        }
+
+        // BUSCA O PROJETO
+        console.log('🔍 Buscando projeto com ID:', finalProjectId);
+
+        // 1. Tenta como projeto público
+        projectData = await getFromFirebase('projects/' + finalProjectId);
+        
+        if (projectData) {
+            console.log('✅ Projeto público encontrado');
+            currentProjectData = projectData;
+            if (params.fileName) {
+                openSpecificFile(params.fileName);
+            } else {
+                showMainFile();
+            }
+            return;
+        }
+
+        // 2. Tenta em projetos de usuário
+        console.log('🔍 Tentando projetos de usuário...');
+        const usersRef = db.ref('projects');
+        const usersSnapshot = await usersRef.once('value');
+        const usersData = usersSnapshot.val();
+        
+        if (usersData) {
+            for (const userId in usersData) {
+                if (usersData[userId][finalProjectId]) {
+                    projectData = usersData[userId][finalProjectId];
+                    console.log('✅ Projeto encontrado em usuário:', userId);
+                    currentProjectData = projectData;
+                    if (params.fileName) {
+                        openSpecificFile(params.fileName);
+                    } else {
+                        showMainFile();
+                    }
+                    return;
+                }
+            }
+        }
+
+        showError(`Projeto "${finalProjectId}" não encontrado no Firebase.`);
+
+    } catch (error) {
+        console.error('❌ Erro:', error);
+        showError('Erro ao buscar projeto: ' + error.message);
+    }
+}
+
 // INICIALIZAÇÃO
 document.addEventListener('DOMContentLoaded', loadProject);
 
@@ -608,3 +608,5 @@ window.showProject = showProject;
 window.showFileList = showFileList;
 window.openSpecificFile = openSpecificFile;
 window.closeFileViewer = closeFileViewer;
+window.abrirArquivoNoVisualizador = abrirArquivoNoVisualizador;
+window.substituirArquivosPorURLs = substituirArquivosPorURLs;
