@@ -27,6 +27,7 @@
     .token-selector button {background:#3b82f6; color:white; border:none; cursor:pointer}
     .token-selector button:hover {background:#2563eb}
     .current-token {background:#dcfce7; padding:8px; border-radius:4px; margin-top:10px; font-family:monospace; word-break:break-all}
+    .api-url {background:#1e293b; color:#f1f5f9; padding:10px; border-radius:6px; margin:10px 0; font-family:monospace; word-break:break-all}
   </style>
 </head>
 <body>
@@ -47,6 +48,14 @@
       
       <div id="currentTokenDisplay" class="current-token" style="display:none">
         <strong>Token Atual:</strong> <span id="currentTokenValue"></span>
+      </div>
+
+      <div id="apiUrlDisplay" style="display:none; margin-top:15px;">
+        <strong>URL da API com seu token:</strong>
+        <div class="api-url" id="apiUrlValue"></div>
+        <button onclick="copyApiUrl()" style="margin-top:8px; padding:6px 12px; background:#10b981; color:white; border:none; border-radius:4px; cursor:pointer;">
+          📋 Copiar URL
+        </button>
       </div>
     </div>
 
@@ -106,8 +115,13 @@
 &lt;/body&gt;
 &lt;/html&gt;</code></pre>
 
+    <h2>URL da API Clima</h2>
+    <p>A API Clima está disponível em:</p>
+    <div class="api-url">https://code.codehub2025.ct.ws/API/clima.js?token=SEU_TOKEN</div>
+    <p class="note">Substitua <code>SEU_TOKEN</code> pelo token gerado no criador de aplicativos.</p>
+
     <h2>Parâmetros da URL</h2>
-    <p>A API espera os seguintes parâmetros (quando integrado com Firebase):</p>
+    <p>A API espera os seguintes parâmetros:</p>
     <table>
       <tr>
         <th>Parâmetro</th>
@@ -116,25 +130,24 @@
         <th>Descrição</th>
       </tr>
       <tr>
-        <td>userKey</td>
-        <td>String</td>
-        <td>Sim*</td>
-        <td>Chave única do usuário (formato: ID-TOKEN)</td>
-      </tr>
-      <tr>
-        <td>userName</td>
-        <td>String</td>
-        <td>Sim*</td>
-        <td>Nome do usuário para filtrar projetos</td>
-      </tr>
-      <tr>
         <td>token</td>
         <td>String</td>
         <td>Sim</td>
         <td>Token de autenticação para API Clima</td>
       </tr>
+      <tr>
+        <td>userKey</td>
+        <td>String</td>
+        <td>Não</td>
+        <td>Chave única do usuário (formato: ID-TOKEN)</td>
+      </tr>
+      <tr>
+        <td>userName</td>
+        <td>String</td>
+        <td>Não</td>
+        <td>Nome do usuário para filtrar projetos</td>
+      </tr>
     </table>
-    <p class="note">* Pelo menos um dos parâmetros (userKey ou userName) deve ser fornecido.</p>
 
     <h2>Métodos da API</h2>
     <h3>1. renderProjects(container, userKey, userName)</h3>
@@ -153,7 +166,7 @@
   &lt;script src="https://alexandre7888.github.io/CodeHUB/API/api2.js"&gt;&lt;/script&gt;
   &lt;script src="https://alexandre7888.github.io/CodeHUB/API/userKeyAPI.js"&gt;&lt;/script&gt;
   &lt;script src="https://assistente-ia--socialkoala6579904.on.websim.com/embed.js"&gt;&lt;/script&gt;
-  &lt;script src="https://code.codehub2025.ct.ws/API/clima.js"&gt;&lt;/script&gt;
+  &lt;script src="https://code.codehub2025.ct.ws/API/clima.js?token=SEU_TOKEN_AQUI"&gt;&lt;/script&gt;
 &lt;/head&gt;
 &lt;body&gt;
   &lt;h1&gt;Meu Assistente CodeFox&lt;/h1&gt;
@@ -199,14 +212,14 @@
         tokenSelect.remove(1);
       }
       
-      // Buscar tokens do localStorage (simulação - ajuste conforme sua estrutura)
+      // Buscar tokens do localStorage
       try {
         const savedTokens = JSON.parse(localStorage.getItem('userTokens') || '[]');
         
         savedTokens.forEach(token => {
           const option = document.createElement('option');
           option.value = token.value;
-          option.textContent = `${token.appName} - ${token.value}`;
+          option.textContent = `${token.appName} - ${token.value.substring(0, 10)}...`;
           tokenSelect.appendChild(option);
         });
         
@@ -232,6 +245,11 @@
         document.getElementById('currentTokenValue').textContent = selectedToken;
         document.getElementById('currentTokenDisplay').style.display = 'block';
         
+        // Mostrar URL da API com token
+        const apiUrl = `https://code.codehub2025.ct.ws/API/clima.js?token=${selectedToken}`;
+        document.getElementById('apiUrlValue').textContent = apiUrl;
+        document.getElementById('apiUrlDisplay').style.display = 'block';
+        
         // Atualizar exemplos de código com o token real
         updateCodeExamples(selectedToken);
         
@@ -241,12 +259,25 @@
       }
     }
     
+    // Copiar URL da API
+    function copyApiUrl() {
+      const apiUrl = document.getElementById('apiUrlValue').textContent;
+      navigator.clipboard.writeText(apiUrl).then(() => {
+        alert('URL copiada para a área de transferência!');
+      }).catch(err => {
+        alert('Erro ao copiar URL: ' + err);
+      });
+    }
+    
     // Atualizar exemplos de código com token real
     function updateCodeExamples(token) {
       const codeBlocks = document.querySelectorAll('pre code');
       codeBlocks.forEach(block => {
         block.textContent = block.textContent.replace(
           /token=SEU_TOKEN_AQUI/g, 
+          `token=${token}`
+        ).replace(
+          /token=SEU_TOKEN/g,
           `token=${token}`
         );
       });
