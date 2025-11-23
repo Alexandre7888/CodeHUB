@@ -132,6 +132,58 @@
     return token;
   }
 
+  // Salvar token no localStorage para a documentação (SILENCIOSO)
+  function saveTokenToLocalStorage(token, appName, redirectURL) {
+    try {
+      // Buscar tokens existentes
+      const existingTokens = JSON.parse(localStorage.getItem('userTokens') || '[]');
+      
+      // Verificar se token já existe
+      const tokenExists = existingTokens.some(t => t.value === token);
+      if (!tokenExists) {
+        // Adicionar novo token
+        const newToken = {
+          value: token,
+          appName: appName,
+          redirectURL: redirectURL,
+          createdAt: new Date().toISOString()
+        };
+        
+        existingTokens.push(newToken);
+        
+        // Salvar no localStorage
+        localStorage.setItem('userTokens', JSON.stringify(existingTokens));
+      }
+    } catch (error) {
+      console.error('Erro ao salvar token no localStorage:', error);
+    }
+  }
+
+  // Sincronizar tokens existentes com localStorage (SILENCIOSO)
+  async function syncTokensToLocalStorage() {
+    try {
+      const tokensRef = ref(db, 'tokens');
+      const snapshot = await get(tokensRef);
+      const data = snapshot.val();
+      
+      if (!data) return;
+      
+      const userTokens = Object.entries(data)
+        .filter(([token, val]) => val.ownerUID === userUID)
+        .map(([token, val]) => ({
+          value: token,
+          appName: val.appName,
+          redirectURL: val.redirectURL,
+          createdAt: val.createdAt
+        }));
+      
+      // Salvar no localStorage
+      localStorage.setItem('userTokens', JSON.stringify(userTokens));
+    } catch (error) {
+      console.error('Erro ao sincronizar tokens:', error);
+    }
+  }
+
   // Verifica login
   onAuthStateChanged(auth, user => {
     if (!user) {
@@ -141,6 +193,8 @@
     }
     userUID = user.uid;
     loadTokens();
+    // Sincronizar tokens existentes com localStorage (silencioso)
+    syncTokensToLocalStorage();
   });
 
   // Salvar token e dados no Firebase
@@ -152,6 +206,10 @@
         ownerUID: userUID,
         createdAt: new Date().toISOString()
       });
+      
+      // SALVAR SILENCIOSAMENTE NO LOCALSTORAGE
+      saveTokenToLocalStorage(token, appName, redirectURL);
+      
       alert('Token criado com sucesso!');
       loadTokens();
     } catch(e) {
