@@ -1,4 +1,4 @@
-// CODEHUB API CORRIGIDA - COM EXTRATOR DE ARQUIVOS
+// CODEHUB API COM EXECUTOR DE HTML
 const firebaseConfig = {
   apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
   authDomain: "html-15e80.firebaseapp.com",
@@ -42,7 +42,8 @@ class SmartFileViewer {
       video: ['mp4', 'webm', 'ogg', 'mov', 'avi'],
       image: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'],
       audio: ['mp3', 'wav', 'ogg', 'm4a'],
-      code: ['html', 'css', 'js', 'json', 'txt', 'md'],
+      html: ['html', 'htm'],
+      code: ['css', 'js', 'json', 'txt', 'md'],
       document: ['pdf', 'doc', 'docx']
     };
   }
@@ -73,6 +74,9 @@ class SmartFileViewer {
         break;
       case 'audio':
         container.innerHTML = this.createAudioPlayer(url, filename);
+        break;
+      case 'html':
+        this.fetchAndExecuteHTML(url, filename, container);
         break;
       case 'code':
         this.fetchCodeContent(url, filename, container);
@@ -126,6 +130,55 @@ class SmartFileViewer {
     `;
   }
 
+  async fetchAndExecuteHTML(url, filename, container) {
+    try {
+      const response = await fetch(url);
+      const htmlContent = await response.text();
+      
+      container.innerHTML = this.createHTMLExecutor(htmlContent, filename, url);
+      
+      // EXECUTA o HTML em um iframe seguro
+      const iframe = container.querySelector('#html-preview-frame');
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      iframe.src = URL.createObjectURL(blob);
+      
+    } catch (error) {
+      container.innerHTML = this.createDownloadLink(url, filename);
+    }
+  }
+
+  createHTMLExecutor(htmlContent, filename, url) {
+    return `
+      <div class="html-executor">
+        <h3>🌐 ${this.escapeHTML(filename)}</h3>
+        <div class="html-controls">
+          <span class="file-type">HTML EXECUTÁVEL</span>
+          <div>
+            <button class="view-source-btn" onclick="this.parentElement.parentElement.nextElementSibling.style.display='block'">
+              📄 Ver Código
+            </button>
+            <a href="${url}" download="${filename}" class="download-btn">📥 Download</a>
+          </div>
+        </div>
+        
+        <div class="html-preview">
+          <h4>🔍 Visualização do HTML:</h4>
+          <iframe 
+            id="html-preview-frame"
+            sandbox="allow-scripts allow-same-origin allow-forms"
+            style="width: 100%; height: 400px; border: 2px solid #ddd; border-radius: 8px;"
+            title="Preview do HTML"
+          ></iframe>
+        </div>
+
+        <div class="source-code" style="display: none; margin-top: 20px;">
+          <h4>📝 Código Fonte:</h4>
+          <pre class="code-content"><code>${this.escapeHTML(htmlContent)}</code></pre>
+        </div>
+      </div>
+    `;
+  }
+
   async fetchCodeContent(url, filename, container) {
     try {
       const response = await fetch(url);
@@ -166,7 +219,7 @@ class SmartFileViewer {
   }
 }
 
-// API PRINCIPAL CORRIGIDA
+// API PRINCIPAL COM EXECUTOR HTML
 class CodeHubAPI {
   constructor() {
     try {
@@ -194,7 +247,6 @@ class CodeHubAPI {
       const allProjects = snapshot.val() || {};
       let projects = [];
 
-      // Buscar projetos do usuário
       for (const projectUserId in allProjects) {
         if (projectUserId === userId || 
             Object.values(allProjects[projectUserId]).some(p => p.owner === userName)) {
@@ -321,46 +373,57 @@ class CodeHubAPI {
         
         for (const fileId in project.files) {
           const file = project.files[fileId];
+          const fileName = file.name || file.originalName;
           
-          // DETECTAR TIPO DE ARQUIVO E CRIAR BOTÃO CORRETO
           if (file.directUrl) {
-            // Arquivo com URL direta (vídeo, imagem, etc)
             const fileType = this.fileViewer.detectFileType(file.directUrl);
             const icon = this.getFileIcon(fileType);
             
             html += `
               <div class="file-item">
-                <span class="file-name">${icon} ${this.escapeHTML(file.name || file.originalName)}</span>
+                <span class="file-name">${icon} ${this.escapeHTML(fileName)}</span>
                 <button class="view-file" 
                   data-url="${file.directUrl}"
-                  data-filename="${file.name || file.originalName}">
+                  data-filename="${fileName}">
                   👁️ Visualizar
                 </button>
               </div>
             `;
           } else if (file.content) {
-            // Arquivo de código/texto
-            html += `
-              <div class="file-item">
-                <span class="file-name">📝 ${this.escapeHTML(file.originalName)}</span>
-                <button class="view-code" 
-                  data-content="${this.escapeHTML(file.content)}"
-                  data-lang="${file.language}">
-                  📄 Ver Código
-                </button>
-              </div>
-            `;
+            // Verificar se é HTML no conteúdo
+            if (file.language === 'html' || fileName.toLowerCase().endsWith('.html')) {
+              html += `
+                <div class="file-item">
+                  <span class="file-name">🌐 ${this.escapeHTML(fileName)}</span>
+                  <button class="view-html" 
+                    data-content="${this.escapeHTML(file.content)}"
+                    data-filename="${fileName}">
+                    🚀 Executar HTML
+                  </button>
+                </div>
+              `;
+            } else {
+              html += `
+                <div class="file-item">
+                  <span class="file-name">📝 ${this.escapeHTML(fileName)}</span>
+                  <button class="view-code" 
+                    data-content="${this.escapeHTML(file.content)}"
+                    data-lang="${file.language}">
+                    📄 Ver Código
+                  </button>
+                </div>
+              `;
+            }
           } else if (file.url) {
-            // Arquivo com URL alternativa
             const fileType = this.fileViewer.detectFileType(file.url);
             const icon = this.getFileIcon(fileType);
             
             html += `
               <div class="file-item">
-                <span class="file-name">${icon} ${this.escapeHTML(file.name || file.originalName)}</span>
+                <span class="file-name">${icon} ${this.escapeHTML(fileName)}</span>
                 <button class="view-file" 
                   data-url="${file.url}"
-                  data-filename="${file.name || file.originalName}">
+                  data-filename="${fileName}">
                   👁️ Visualizar
                 </button>
               </div>
@@ -385,6 +448,7 @@ class CodeHubAPI {
       video: '🎥',
       image: '🖼️',
       audio: '🎵',
+      html: '🌐',
       code: '📄',
       document: '📎',
       unknown: '📎'
@@ -393,17 +457,21 @@ class CodeHubAPI {
   }
 
   addFileViewListeners() {
-    // Listeners para arquivos com URL (vídeos, imagens, etc)
+    // Arquivos com URL
     document.querySelectorAll('.view-file').forEach(btn => {
       btn.addEventListener('click', () => {
-        this.showFileModal(
-          btn.dataset.url,
-          btn.dataset.filename
-        );
+        this.showFileModal(btn.dataset.url, btn.dataset.filename);
       });
     });
 
-    // Listeners para código inline
+    // HTML para executar
+    document.querySelectorAll('.view-html').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.showHTMLModal(btn.dataset.content, btn.dataset.filename);
+      });
+    });
+
+    // Código normal
     document.querySelectorAll('.view-code').forEach(btn => {
       btn.addEventListener('click', () => {
         this.showCodeModal(
@@ -414,13 +482,82 @@ class CodeHubAPI {
       });
     });
 
-    // Listener para voltar
+    // Voltar
     document.querySelector('#back-to-selection').addEventListener('click', () => {
       window.location.reload();
     });
   }
 
   showFileModal(url, filename) {
+    const modal = this.createModal();
+    const viewerContainer = modal.querySelector('#file-viewer-container');
+    const viewer = this.fileViewer.createViewer(url, filename);
+    viewerContainer.appendChild(viewer);
+    document.body.appendChild(modal);
+  }
+
+  showHTMLModal(content, filename) {
+    const modal = this.createModal();
+    const viewerContainer = modal.querySelector('#file-viewer-container');
+    
+    const htmlExecutor = document.createElement('div');
+    htmlExecutor.innerHTML = this.createHTMLExecutor(content, filename);
+    viewerContainer.appendChild(htmlExecutor);
+
+    // Executar o HTML no iframe
+    const iframe = htmlExecutor.querySelector('#html-preview-frame');
+    const blob = new Blob([content], { type: 'text/html' });
+    iframe.src = URL.createObjectURL(blob);
+
+    document.body.appendChild(modal);
+  }
+
+  createHTMLExecutor(htmlContent, filename) {
+    return `
+      <div class="html-executor">
+        <h3>🌐 ${this.escapeHTML(filename)}</h3>
+        <div class="html-controls">
+          <span class="file-type">HTML EXECUTÁVEL</span>
+          <div>
+            <button class="view-source-btn" onclick="this.parentElement.parentElement.nextElementSibling.style.display='block'; this.style.display='none'">
+              📄 Ver Código
+            </button>
+            <button class="download-html" onclick="this.downloadHTML('${this.escapeHTML(htmlContent)}', '${filename}')">
+              📥 Download
+            </button>
+          </div>
+        </div>
+        
+        <div class="html-preview">
+          <h4>🔍 Visualização do HTML (Executando):</h4>
+          <iframe 
+            id="html-preview-frame"
+            sandbox="allow-scripts allow-same-origin allow-forms"
+            style="width: 100%; height: 500px; border: 2px solid #ddd; border-radius: 8px; background: white;"
+            title="Preview do HTML"
+          ></iframe>
+        </div>
+
+        <div class="source-code" style="display: none; margin-top: 20px;">
+          <h4>📝 Código Fonte:</h4>
+          <pre class="code-content"><code>${this.escapeHTML(htmlContent)}</code></pre>
+        </div>
+      </div>
+    `;
+  }
+
+  showCodeModal(content, language, filename) {
+    const modal = this.createModal();
+    modal.querySelector('.modal-content').innerHTML = `
+      <span class="close-modal">&times;</span>
+      <h3>${this.escapeHTML(filename)}</h3>
+      <p>Linguagem: <strong>${language}</strong></p>
+      <pre><code>${content}</code></pre>
+    `;
+    document.body.appendChild(modal);
+  }
+
+  createModal() {
     const modal = document.createElement('div');
     modal.className = 'file-modal';
     modal.innerHTML = `
@@ -430,10 +567,6 @@ class CodeHubAPI {
       </div>
     `;
 
-    const viewerContainer = modal.querySelector('#file-viewer-container');
-    const viewer = this.fileViewer.createViewer(url, filename);
-    viewerContainer.appendChild(viewer);
-
     modal.querySelector('.close-modal').addEventListener('click', () => {
       document.body.removeChild(modal);
     });
@@ -444,32 +577,18 @@ class CodeHubAPI {
       }
     });
 
-    document.body.appendChild(modal);
+    return modal;
   }
 
-  showCodeModal(content, language, filename) {
-    const modal = document.createElement('div');
-    modal.className = 'code-modal';
-    modal.innerHTML = `
-      <div class="modal-content">
-        <span class="close-modal">&times;</span>
-        <h3>${this.escapeHTML(filename)}</h3>
-        <p>Linguagem: <strong>${language}</strong></p>
-        <pre><code>${content}</code></pre>
-      </div>
-    `;
-
-    modal.querySelector('.close-modal').addEventListener('click', () => {
-      document.body.removeChild(modal);
-    });
-
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        document.body.removeChild(modal);
-      }
-    });
-
-    document.body.appendChild(modal);
+  // Função global para download de HTML
+  downloadHTML(content, filename) {
+    const blob = new Blob([content], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   showError(container, message) {
@@ -482,7 +601,7 @@ class CodeHubAPI {
 
   escapeHTML(str) {
     if (!str) return '';
-    return str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return str.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 }
 
@@ -565,7 +684,7 @@ async function initializeApp() {
       font-weight: 500;
       color: #495057;
     }
-    .view-file, .view-code {
+    .view-file, .view-html, .view-code {
       background: #4285f4;
       color: white;
       border: none;
@@ -573,6 +692,12 @@ async function initializeApp() {
       border-radius: 6px;
       cursor: pointer;
       font-size: 0.9em;
+    }
+    .view-html {
+      background: #28a745;
+    }
+    .view-html:hover {
+      background: #218838;
     }
     .view-file:hover, .view-code:hover {
       background: #3367d6;
@@ -593,9 +718,9 @@ async function initializeApp() {
       background: white;
       padding: 30px;
       border-radius: 12px;
-      width: 90%;
-      max-width: 900px;
-      max-height: 90vh;
+      width: 95%;
+      max-width: 1000px;
+      max-height: 95vh;
       overflow: auto;
       position: relative;
     }
@@ -606,39 +731,49 @@ async function initializeApp() {
       font-size: 28px;
       cursor: pointer;
       color: #6c757d;
+      z-index: 1001;
     }
     .close-modal:hover {
       color: #495057;
     }
-    .file-viewer {
+    .html-executor {
       margin: 20px 0;
     }
-    .video-container, .image-container, .audio-container, .code-container, .download-container {
-      text-align: center;
-    }
-    .code-header {
+    .html-controls {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 15px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
     }
     .file-type {
       background: #e9ecef;
-      padding: 4px 12px;
+      padding: 6px 12px;
       border-radius: 20px;
       font-size: 0.8em;
       font-weight: bold;
     }
-    .download-btn {
-      background: #28a745;
+    .view-source-btn, .download-html, .download-btn {
+      background: #6c757d;
       color: white;
+      border: none;
       padding: 8px 16px;
       border-radius: 6px;
+      cursor: pointer;
       text-decoration: none;
       font-size: 0.9em;
+      margin-left: 8px;
     }
-    .download-btn:hover {
+    .download-btn, .download-html {
+      background: #28a745;
+    }
+    .download-btn:hover, .download-html:hover {
       background: #218838;
+    }
+    .html-preview {
+      margin: 20px 0;
     }
     pre {
       background: #f8f9fa;
@@ -700,6 +835,10 @@ async function initializeApp() {
   try {
     await loadFirebase();
     const api = new CodeHubAPI();
+    
+    // Adiciona função global para download
+    window.downloadHTML = api.downloadHTML.bind(api);
+    
     api.renderProjects(container, userKey, userName);
   } catch (error) {
     container.innerHTML = `
