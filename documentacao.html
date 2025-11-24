@@ -20,7 +20,7 @@
     table{width:100%; border-collapse:collapse; margin-top:8px}
     th, td{padding:8px; text-align:left; border-bottom:1px solid #eef2ff}
     footer{color:#94a3b8; font-size:13px; margin-top:20px}
-    
+
     /* Novo estilo para seletor de tokens */
     .token-selector {margin:20px 0; padding:15px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0}
     .token-selector select, .token-selector button {padding:8px 12px; margin:5px; border-radius:4px; border:1px solid #cbd5e1}
@@ -33,19 +33,19 @@
 <body>
   <div class="container">
     <h1>Documentação da API CodeHUB</h1>
-    <p class="note"><strong>Versão:</strong> 2.2 (Firebase + CodeFox + Editor Copiloto + API Clima)</p>
+    <p class="note"><strong>Versão:</strong> 2.3 (Firebase + CodeFox + Editor Copiloto + API Clima + IA CodeHUB)</p>
 
     <!-- NOVO SELETOR DE TOKENS -->
     <div class="token-selector">
       <h3>🔑 Seletor de Tokens</h3>
       <p>Selecione um token salvo ou use o exemplo:</p>
-      
+
       <select id="tokenSelect">
         <option value="WIWMgTST2LIG4z1sp4Mi">Token de Exemplo (não funcional)</option>
       </select>
-      
+
       <button onclick="useSelectedToken()">Usar Token Selecionado</button>
-      
+
       <div id="currentTokenDisplay" class="current-token" style="display:none">
         <strong>Token Atual:</strong> <span id="currentTokenValue"></span>
       </div>
@@ -79,10 +79,25 @@
     <p>Inclua os scripts da API e ative a IA em sua página:</p>
     <pre><code>&lt;script src="https://alexandre7888.github.io/CodeHUB/API/api2.js"&gt;&lt;/script&gt;
 &lt;script src="https://alexandre7888.github.io/CodeHUB/API/userKeyAPI.js"&gt;&lt;/script&gt;
-&lt;script src="https://assistente-ia--socialkoala6579904.on.websim.com/embed.js"&gt;&lt;/script&gt;
+&lt;script src="https://code.codehub2025.ct.ws/API/ia.js"&gt;&lt;/script&gt;
 
 &lt;!-- NOVA API CLIMA --&gt;
 &lt;script src="https://code.codehub2025.ct.ws/API/clima.js"&gt;&lt;/script&gt;</code></pre>
+
+    <h2>Como habilitar a IA CodeHUB no seu site?</h2>
+    <p>Adicione este exemplo simples ao seu HTML:</p>
+    <pre><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;title&gt;Meu Site com IA&lt;/title&gt;
+  &lt;!-- IA CODEHUB --&gt;
+  &lt;script src="https://code.codehub2025.ct.ws/API/ia.js"&gt;&lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Meu Site&lt;/h1&gt;
+  &lt;p&gt;O botão da IA aparecerá automaticamente no canto inferior direito!&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
 
     <h2>Como habilitar a API Clima no seu site?</h2>
     <p>Adicione este exemplo simples ao seu HTML:</p>
@@ -115,9 +130,13 @@
 &lt;/body&gt;
 &lt;/html&gt;</code></pre>
 
-    <h2>URL da API Clima</h2>
-    <p>A API Clima está disponível em:</p>
+    <h2>URLs das APIs</h2>
+    <p><strong>IA CodeHUB:</strong></p>
+    <div class="api-url">https://code.codehub2025.ct.ws/API/ia.js</div>
+    
+    <p><strong>API Clima:</strong></p>
     <div class="api-url">https://code.codehub2025.ct.ws/API/clima.js?token=SEU_TOKEN</div>
+    
     <p class="note">Substitua <code>SEU_TOKEN</code> pelo token gerado no criador de aplicativos.</p>
 
     <h2>Parâmetros da URL</h2>
@@ -165,13 +184,12 @@
   &lt;title&gt;Integração com CodeFox e API Clima&lt;/title&gt;
   &lt;script src="https://alexandre7888.github.io/CodeHUB/API/api2.js"&gt;&lt;/script&gt;
   &lt;script src="https://alexandre7888.github.io/CodeHUB/API/userKeyAPI.js"&gt;&lt;/script&gt;
-  &lt;script src="https://assistente-ia--socialkoala6579904.on.websim.com/embed.js"&gt;&lt;/script&gt;
+  &lt;script src="https://code.codehub2025.ct.ws/API/ia.js"&gt;&lt;/script&gt;
   &lt;script src="https://code.codehub2025.ct.ws/API/clima.js?token=SEU_TOKEN_AQUI"&gt;&lt;/script&gt;
 &lt;/head&gt;
 &lt;body&gt;
   &lt;h1&gt;Meu Assistente CodeFox&lt;/h1&gt;
   &lt;div id="projects-container"&gt;&lt;/div&gt;
-  &lt;div id="codefox-assistant"&gt;&lt;/div&gt;
 
   &lt;!-- Monitor de Clima --&gt;
   &lt;div class="wrapper"&gt;
@@ -186,43 +204,43 @@
   &lt;script&gt;
     // Inicialização da API CodeHUB
     renderProjects('#projects-container');
-
-    // Inicialização do assistente CodeFox
-    window.CodeFox.init({
-      container: '#codefox-assistant',
-      theme: 'light',
-      language: 'pt-BR'
-    });
   &lt;/script&gt;
 &lt;/body&gt;
 &lt;/html&gt;</code></pre>
 
+    <div class="note">
+      <strong>✨ Novidade:</strong> Agora com IA CodeHUB própria! Botão flutuante automático, totalmente integrado com sua plataforma.
+    </div>
+
     <footer>
-      Documentação atualizada em: 19/08/2025 | Versão da API: 2.2
+      Documentação atualizada em: 24/11/2025 | Versão da API: 2.3 | IA CodeHUB
     </footer>
   </div>
+
+  <!-- INCLUIR A IA CODEHUB NA DOCUMENTAÇÃO -->
+  <script src="https://code.codehub2025.ct.ws/API/ia.js"></script>
 
   <script>
     // Carregar tokens salvos do localStorage
     function loadSavedTokens() {
       const tokenSelect = document.getElementById('tokenSelect');
-      
+
       // Limpar opções exceto a primeira (exemplo)
       while (tokenSelect.options.length > 1) {
         tokenSelect.remove(1);
       }
-      
+
       // Buscar tokens do localStorage
       try {
         const savedTokens = JSON.parse(localStorage.getItem('userTokens') || '[]');
-        
+
         savedTokens.forEach(token => {
           const option = document.createElement('option');
           option.value = token.value;
           option.textContent = `${token.appName} - ${token.value.substring(0, 10)}...`;
           tokenSelect.appendChild(option);
         });
-        
+
         // Se não houver tokens salvos, mostrar mensagem
         if (savedTokens.length === 0) {
           const option = document.createElement('option');
@@ -235,30 +253,30 @@
         console.error('Erro ao carregar tokens:', error);
       }
     }
-    
+
     // Usar token selecionado
     function useSelectedToken() {
       const tokenSelect = document.getElementById('tokenSelect');
       const selectedToken = tokenSelect.value;
-      
+
       if (selectedToken && selectedToken !== 'WIWMgTST2LIG4z1sp4Mi') {
         document.getElementById('currentTokenValue').textContent = selectedToken;
         document.getElementById('currentTokenDisplay').style.display = 'block';
-        
+
         // Mostrar URL da API com token
         const apiUrl = `https://code.codehub2025.ct.ws/API/clima.js?token=${selectedToken}`;
         document.getElementById('apiUrlValue').textContent = apiUrl;
         document.getElementById('apiUrlDisplay').style.display = 'block';
-        
+
         // Atualizar exemplos de código com o token real
         updateCodeExamples(selectedToken);
-        
+
         alert('Token selecionado! Agora você pode usar este token nos exemplos de código.');
       } else {
         alert('Selecione um token válido (não o exemplo).');
       }
     }
-    
+
     // Copiar URL da API
     function copyApiUrl() {
       const apiUrl = document.getElementById('apiUrlValue').textContent;
@@ -268,7 +286,7 @@
         alert('Erro ao copiar URL: ' + err);
       });
     }
-    
+
     // Atualizar exemplos de código com token real
     function updateCodeExamples(token) {
       const codeBlocks = document.querySelectorAll('pre code');
@@ -282,7 +300,7 @@
         );
       });
     }
-    
+
     // Carregar tokens quando a página carregar
     document.addEventListener('DOMContentLoaded', loadSavedTokens);
   </script>
