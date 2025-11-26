@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/term.js": {
+      "runtime": "nodejs20.x"
+    }
+  }
+}
