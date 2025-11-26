@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Editor + Terminal (API)</title>
+<style>
+  body {
+    margin: 0;
+    background: #1e1e1e;
+    color: white;
+    font-family: monospace;
+    display: flex;
+    height: 100vh;
+  }
+
+  /* Editor */
+  #editor {
+    width: 50%;
+    padding: 10px;
+    background: #1e1e1e;
+    border-right: 2px solid #333;
+    outline: none;
+    white-space: pre;
+    overflow: auto;
+  }
+
+  /* Terminal */
+  #terminal {
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #output {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    background: #000;
+    color: #0f0;
+  }
+
+  #input {
+    padding: 10px;
+    border: none;
+    outline: none;
+    background: #000;
+    color: #0f0;
+    font-family: monospace;
+  }
+</style>
+</head>
+
+<body>
+
+<div id="editor" contenteditable="true">
+<h1>Seu Editor HTML</h1>
+<p>Edite aqui...</p>
+</div>
+
+<div id="terminal">
+    <pre id="output"></pre>
+    <input id="input" placeholder="Digite um comando...">
+</div>
+
+<script>
+async function sendCommand(cmd) {
+    const response = await fetch("/api/term", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cmd })
+    });
+
+    const data = await response.json();
+    return data.out;
+}
+
+function print(text) {
+    const out = document.getElementById("output");
+    out.textContent += text + "\n";
+    out.scrollTop = out.scrollHeight;
+}
+
+document.getElementById("input").addEventListener("keydown", async e => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        const cmd = e.target.value.trim();
+        e.target.value = "";
+
+        print("> " + cmd);
+
+        const result = await sendCommand(cmd);
+        print(result);
+        print(""); // quebra de linha
+    }
+});
+</script>
+
+</body>
+</html>
