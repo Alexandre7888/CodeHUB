@@ -27,7 +27,7 @@
       color: #eee;
     }
     textarea {
-      min-height: 100px;
+      min-height: 150px;
       resize: vertical;
     }
     button {
@@ -38,6 +38,7 @@
       transition: background 0.3s;
       width: auto;
       padding: 8px 16px;
+      margin-right: 10px;
     }
     button:hover {
       background: #45a049;
@@ -55,6 +56,13 @@
     }
     button.url-btn:hover {
       background: #F57C00;
+    }
+    button.edit-btn {
+      background: #9C27B0;
+      margin-top: 5px;
+    }
+    button.edit-btn:hover {
+      background: #7B1FA2;
     }
     h1, h2 {
       text-align: center;
@@ -101,8 +109,19 @@
       font-weight: bold;
       margin-bottom: 5px;
     }
-    .hidden {
-      display: none;
+    .training-status {
+      margin: 10px 0;
+      padding: 8px;
+      border-radius: 4px;
+      background: #1a1a1a;
+    }
+    .trained {
+      color: #4caf50;
+      border: 1px solid #4caf50;
+    }
+    .not-trained {
+      color: #ff9800;
+      border: 1px solid #ff9800;
     }
     .training-form {
       margin-top: 15px;
@@ -243,23 +262,36 @@
     }
   }
 
-  // Salvar dados de treinamento
+  // Salvar/Atualizar dados de treinamento (ÚNICO por token)
   async function saveTrainingData(token, trainingData) {
     try {
-      const trainingRef = ref(db, `training/${token}`);
-      const newTrainingKey = generateToken(10);
-      
-      await set(ref(db, `training/${token}/${newTrainingKey}`), {
+      await set(ref(db, `training/${token}`), {
         data: trainingData,
-        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         ownerUID: userUID
       });
 
-      alert('Dados de treinamento salvos com sucesso!');
+      alert('Dados de treinamento salvos/atualizados com sucesso!');
       return true;
     } catch(e) {
       alert('Erro ao salvar dados de treinamento: ' + e.message);
       return false;
+    }
+  }
+
+  // Carregar dados de treinamento existentes
+  async function loadTrainingData(token) {
+    try {
+      const trainingRef = ref(db, `training/${token}`);
+      const snapshot = await get(trainingRef);
+      
+      if (snapshot.exists()) {
+        return snapshot.val().data;
+      }
+      return '';
+    } catch(e) {
+      console.error('Erro ao carregar dados de treinamento:', e);
+      return '';
     }
   }
 
@@ -314,7 +346,8 @@
         return;
       }
       
-      tokens.forEach(([token, val]) => {
+      // Carregar status de treinamento para cada token
+      tokens.forEach(async ([token, val]) => {
         // Container para cada API
         const div = document.createElement('div');
         div.className = 'token-item';
@@ -322,10 +355,18 @@
         // URLs para continuar conta
         const baseURL = "https://code.codehub2025.ct.ws/API/continuar-conta";
         
+        // Verificar se já tem treinamento
+        const trainingData = await loadTrainingData(token);
+        const hasTraining = trainingData !== '';
+        
         div.innerHTML = `
           <strong>Aplicativo:</strong> ${val.appName}<br/>
           <strong>Token:</strong> ${token}<br/>
           <strong>Redirecionador:</strong> ${val.redirectURL}<br/>
+          
+          <div class="training-status ${hasTraining ? 'trained' : 'not-trained'}">
+            ${hasTraining ? '✅ IA Treinada' : '⚠️ IA Não Treinada'}
+          </div>
           
           <div class="url-container">
             <div class="url-type">URL para Continuar Conta:</div>
@@ -342,11 +383,11 @@
           alert('URL para continuar conta copiada!');
         };
         
-        // Botão para treinar IA
+        // Botão para treinar/editar IA
         const trainBtn = document.createElement('button');
-        trainBtn.className = 'train-btn';
-        trainBtn.textContent = 'Treinar IA';
-        trainBtn.onclick = () => showTrainingForm(token, val.appName);
+        trainBtn.className = hasTraining ? 'edit-btn' : 'train-btn';
+        trainBtn.textContent = hasTraining ? 'Editar Treinamento IA' : 'Treinar IA';
+        trainBtn.onclick = () => showTrainingForm(token, val.appName, trainingData);
         
         div.appendChild(copyUrlBtn);
         div.appendChild(trainBtn);
@@ -355,24 +396,32 @@
     });
   }
 
-  // Mostrar formulário de treinamento
-  function showTrainingForm(token, appName) {
+  // Mostrar formulário de treinamento com dados existentes
+  async function showTrainingForm(token, appName, existingData = '') {
     trainingContainer.innerHTML = '';
     
     const trainingDiv = document.createElement('div');
     trainingDiv.className = 'training-item';
     
+    // Se não tem dados existentes, carregar do Firebase
+    let trainingData = existingData;
+    if (!existingData) {
+      trainingData = await loadTrainingData(token);
+    }
+    
     trainingDiv.innerHTML = `
-      <h3>Treinar IA para: ${appName}</h3>
+      <h3>${trainingData ? 'Editar' : 'Treinar'} IA para: ${appName}</h3>
       <p><strong>Token:</strong> ${token}</p>
+      <p><em>${trainingData ? 'Editando treinamento existente' : 'Criando novo treinamento'}</em></p>
       <form class="training-form" id="trainingForm-${token}">
         <textarea 
           id="trainingData-${token}" 
           placeholder="Insira os dados para treinamento da IA (perguntas e respostas, exemplos, regras, etc.)" 
           required
-        ></textarea>
-        <button type="submit">Salvar Dados de Treinamento</button>
-        <button type="button" onclick="hideTrainingForm('${token}')">Cancelar</button>
+        >${trainingData || ''}</textarea>
+        <button type="submit">${trainingData ? 'Atualizar' : 'Salvar'} Dados de Treinamento</button>
+        <button type="button" onclick="hideTrainingForm()">Cancelar</button>
+        ${trainingData ? '<button type="button" onclick="clearTrainingData(\'' + token + '\', \'' + appName + '\')" style="background: #f44336;">Limpar Treinamento</button>' : ''}
       </form>
     `;
     
@@ -382,22 +431,37 @@
     const form = document.getElementById(`trainingForm-${token}`);
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const trainingData = document.getElementById(`trainingData-${token}`).value.trim();
+      const newTrainingData = document.getElementById(`trainingData-${token}`).value.trim();
       
-      if (!trainingData) {
+      if (!newTrainingData) {
         alert('Por favor, insira os dados de treinamento.');
         return;
       }
       
-      const success = await saveTrainingData(token, trainingData);
+      const success = await saveTrainingData(token, newTrainingData);
       if (success) {
-        hideTrainingForm(token);
+        hideTrainingForm();
+        loadTokens(); // Recarregar para atualizar status
       }
     });
   }
 
+  // Limpar dados de treinamento
+  async function clearTrainingData(token, appName) {
+    if (confirm(`Tem certeza que deseja limpar todos os dados de treinamento para "${appName}"?`)) {
+      try {
+        await set(ref(db, `training/${token}`), null);
+        alert('Dados de treinamento removidos com sucesso!');
+        hideTrainingForm();
+        loadTokens(); // Recarregar para atualizar status
+      } catch(e) {
+        alert('Erro ao remover dados de treinamento: ' + e.message);
+      }
+    }
+  }
+
   // Esconder formulário de treinamento
-  function hideTrainingForm(token) {
+  function hideTrainingForm() {
     trainingContainer.innerHTML = '<p>Selecione uma API para treinar a IA</p>';
   }
 
@@ -422,6 +486,7 @@
 
   // Adicionar funções ao escopo global para acesso dos event listeners
   window.hideTrainingForm = hideTrainingForm;
+  window.clearTrainingData = clearTrainingData;
 </script>
 
 </body>
