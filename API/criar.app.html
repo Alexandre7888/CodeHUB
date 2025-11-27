@@ -49,6 +49,13 @@
     button.train-btn:hover {
       background: #1976D2;
     }
+    button.url-btn {
+      background: #FF9800;
+      margin-top: 5px;
+    }
+    button.url-btn:hover {
+      background: #F57C00;
+    }
     h1, h2 {
       text-align: center;
       margin-bottom: 20px;
@@ -69,21 +76,30 @@
       margin-bottom: 4px;
       color: #81c784;
     }
-    .api-link {
+    .api-url {
       color: #64b5f6;
       text-decoration: none;
       word-break: break-all;
-      display: inline-block;
-      margin: 5px 0;
-    }
-    .api-link:hover {
-      text-decoration: underline;
+      display: block;
+      margin: 10px 0;
+      padding: 8px;
+      background: #1a1a1a;
+      border-radius: 4px;
+      border: 1px solid #333;
     }
     .section {
       background: #1a1a1a;
       padding: 20px;
       border-radius: 8px;
       margin-bottom: 20px;
+    }
+    .url-container {
+      margin: 10px 0;
+    }
+    .url-type {
+      color: #81c784;
+      font-weight: bold;
+      margin-bottom: 5px;
     }
     .hidden {
       display: none;
@@ -303,15 +319,27 @@
         const div = document.createElement('div');
         div.className = 'token-item';
         
-        // Link da API
-        const apiLink = document.createElement('a');
-        apiLink.href = '#';
-        apiLink.className = 'api-link';
-        apiLink.textContent = `API: ${window.location.origin}/api/${token}`;
-        apiLink.onclick = (e) => {
-          e.preventDefault();
-          navigator.clipboard.writeText(apiLink.textContent.replace('API: ', ''));
-          alert('Link da API copiado para a área de transferência!');
+        // URLs para continuar conta
+        const baseURL = "https://code.codehub2025.ct.ws/API/continuar-conta";
+        
+        div.innerHTML = `
+          <strong>Aplicativo:</strong> ${val.appName}<br/>
+          <strong>Token:</strong> ${token}<br/>
+          <strong>Redirecionador:</strong> ${val.redirectURL}<br/>
+          
+          <div class="url-container">
+            <div class="url-type">URL para Continuar Conta:</div>
+            <div class="api-url">${baseURL}?token=${token}</div>
+          </div>
+        `;
+        
+        // Botão para copiar URL de continuar conta
+        const copyUrlBtn = document.createElement('button');
+        copyUrlBtn.className = 'url-btn';
+        copyUrlBtn.textContent = 'Copiar URL Continuar Conta';
+        copyUrlBtn.onclick = () => {
+          navigator.clipboard.writeText(`${baseURL}?token=${token}`);
+          alert('URL para continuar conta copiada!');
         };
         
         // Botão para treinar IA
@@ -320,14 +348,7 @@
         trainBtn.textContent = 'Treinar IA';
         trainBtn.onclick = () => showTrainingForm(token, val.appName);
         
-        div.innerHTML = `
-          <strong>Aplicativo:</strong> ${val.appName}<br/>
-          <strong>Token:</strong> ${token}<br/>
-          <strong>Redirecionador:</strong> ${val.redirectURL}<br/>
-        `;
-        
-        div.appendChild(apiLink);
-        div.appendChild(document.createElement('br'));
+        div.appendChild(copyUrlBtn);
         div.appendChild(trainBtn);
         tokensContainer.appendChild(div);
       });
@@ -404,4 +425,4 @@
 </script>
 
 </body>
-</html></html>
+</html>
