@@ -6,24 +6,29 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      max-width: 600px;
+      max-width: 800px;
       margin: 40px auto;
       background: #121212;
       color: #eee;
       padding: 20px;
       border-radius: 8px;
     }
-    input, button {
+    input, button, textarea {
       padding: 10px;
       margin: 5px 0;
       width: 100%;
       border-radius: 5px;
       border: none;
       font-size: 16px;
+      box-sizing: border-box;
     }
-    input {
+    input, textarea {
       background: #222;
       color: #eee;
+    }
+    textarea {
+      min-height: 100px;
+      resize: vertical;
     }
     button {
       background: #4caf50;
@@ -31,22 +36,31 @@
       cursor: pointer;
       font-weight: bold;
       transition: background 0.3s;
+      width: auto;
+      padding: 8px 16px;
     }
     button:hover {
       background: #45a049;
     }
-    h1 {
+    button.train-btn {
+      background: #2196F3;
+      margin-top: 5px;
+    }
+    button.train-btn:hover {
+      background: #1976D2;
+    }
+    h1, h2 {
       text-align: center;
       margin-bottom: 20px;
       color: #4caf50;
     }
-    #tokenList {
+    #tokenList, #trainingSection {
       margin-top: 30px;
     }
-    .token-item {
+    .token-item, .training-item {
       background: #222;
-      padding: 10px;
-      margin-bottom: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
       border-radius: 6px;
       word-break: break-all;
     }
@@ -55,11 +69,35 @@
       margin-bottom: 4px;
       color: #81c784;
     }
+    .api-link {
+      color: #64b5f6;
+      text-decoration: none;
+      word-break: break-all;
+      display: inline-block;
+      margin: 5px 0;
+    }
+    .api-link:hover {
+      text-decoration: underline;
+    }
+    .section {
+      background: #1a1a1a;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .hidden {
+      display: none;
+    }
+    .training-form {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #333;
+    }
   </style>
 </head>
 <body>
 
-<h1>Criar Aplicativo</h1>
+<h1>Criador de Aplicativos</h1>
 
 <a href="https://alexandre7888.github.io/CodeHUB/documentacao.html"
    class="btn"
@@ -78,27 +116,38 @@
     border-radius:8px;
     font-weight:600;
     box-shadow:0 4px 10px rgba(0,0,0,0.08);
+    margin-bottom: 20px;
   }
   .btn:hover{ opacity:0.95; transform:translateY(-1px); }
 </style>
 
-<form id="appForm">
-  <input type="text" id="appName" placeholder="Nome do Aplicativo" required />
-  <input type="url" id="redirectURL" placeholder="URL do Redirecionador (ex: dashboard.html)" required />
-  <button type="submit">Gerar Token e Salvar</button>
-</form>
+<div class="section">
+  <h2>Criar Novo Aplicativo</h2>
+  <form id="appForm">
+    <input type="text" id="appName" placeholder="Nome do Aplicativo" required />
+    <input type="url" id="redirectURL" placeholder="URL do Redirecionador (ex: dashboard.html)" required />
+    <button type="submit">Gerar Token e Salvar</button>
+  </form>
+</div>
 
-<div id="tokenList">
-  <h2>Tokens Criados</h2>
+<div id="tokenList" class="section">
+  <h2>APIs Criadas</h2>
   <div id="tokensContainer">Carregando...</div>
+</div>
+
+<div id="trainingSection" class="section">
+  <h2>Treinar Inteligência Artificial</h2>
+  <div id="trainingContainer">
+    <p>Selecione uma API para treinar a IA</p>
+  </div>
 </div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-  import { getDatabase, ref, set, get, child, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+  import { getDatabase, ref, set, get, child, onValue, update } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
-  // Config do Firebase (separar num firebaseConfig.js e importar aqui se quiser)
+  // Config do Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
     authDomain: "html-15e80.firebaseapp.com",
@@ -119,8 +168,10 @@
   const appNameInput = document.getElementById('appName');
   const redirectInput = document.getElementById('redirectURL');
   const tokensContainer = document.getElementById('tokensContainer');
+  const trainingContainer = document.getElementById('trainingContainer');
 
   let userUID = null;
+  let currentTokens = [];
 
   // Gera token aleatório
   function generateToken(length = 20) {
@@ -132,26 +183,19 @@
     return token;
   }
 
-  // Salvar token no localStorage para a documentação (SILENCIOSO)
+  // Salvar token no localStorage
   function saveTokenToLocalStorage(token, appName, redirectURL) {
     try {
-      // Buscar tokens existentes
       const existingTokens = JSON.parse(localStorage.getItem('userTokens') || '[]');
-      
-      // Verificar se token já existe
       const tokenExists = existingTokens.some(t => t.value === token);
       if (!tokenExists) {
-        // Adicionar novo token
         const newToken = {
           value: token,
           appName: appName,
           redirectURL: redirectURL,
           createdAt: new Date().toISOString()
         };
-        
         existingTokens.push(newToken);
-        
-        // Salvar no localStorage
         localStorage.setItem('userTokens', JSON.stringify(existingTokens));
       }
     } catch (error) {
@@ -159,15 +203,15 @@
     }
   }
 
-  // Sincronizar tokens existentes com localStorage (SILENCIOSO)
+  // Sincronizar tokens existentes com localStorage
   async function syncTokensToLocalStorage() {
     try {
       const tokensRef = ref(db, 'tokens');
       const snapshot = await get(tokensRef);
       const data = snapshot.val();
-      
+
       if (!data) return;
-      
+
       const userTokens = Object.entries(data)
         .filter(([token, val]) => val.ownerUID === userUID)
         .map(([token, val]) => ({
@@ -176,11 +220,30 @@
           redirectURL: val.redirectURL,
           createdAt: val.createdAt
         }));
-      
-      // Salvar no localStorage
+
       localStorage.setItem('userTokens', JSON.stringify(userTokens));
     } catch (error) {
       console.error('Erro ao sincronizar tokens:', error);
+    }
+  }
+
+  // Salvar dados de treinamento
+  async function saveTrainingData(token, trainingData) {
+    try {
+      const trainingRef = ref(db, `training/${token}`);
+      const newTrainingKey = generateToken(10);
+      
+      await set(ref(db, `training/${token}/${newTrainingKey}`), {
+        data: trainingData,
+        createdAt: new Date().toISOString(),
+        ownerUID: userUID
+      });
+
+      alert('Dados de treinamento salvos com sucesso!');
+      return true;
+    } catch(e) {
+      alert('Erro ao salvar dados de treinamento: ' + e.message);
+      return false;
     }
   }
 
@@ -188,12 +251,11 @@
   onAuthStateChanged(auth, user => {
     if (!user) {
       alert("Você precisa estar logado para criar aplicativos.");
-      window.location.href = "https://alexandre7888.github.io/CodeHUB/auth"; // redireciona para login
+      window.location.href = "https://alexandre7888.github.io/CodeHUB/auth";
       return;
     }
     userUID = user.uid;
     loadTokens();
-    // Sincronizar tokens existentes com localStorage (silencioso)
     syncTokensToLocalStorage();
   });
 
@@ -206,10 +268,8 @@
         ownerUID: userUID,
         createdAt: new Date().toISOString()
       });
-      
-      // SALVAR SILENCIOSAMENTE NO LOCALSTORAGE
+
       saveTokenToLocalStorage(token, appName, redirectURL);
-      
       alert('Token criado com sucesso!');
       loadTokens();
     } catch(e) {
@@ -223,26 +283,101 @@
     onValue(tokensRef, (snapshot) => {
       const data = snapshot.val();
       tokensContainer.innerHTML = '';
+      trainingContainer.innerHTML = '<p>Selecione uma API para treinar a IA</p>';
+      
       if (!data) {
         tokensContainer.textContent = 'Nenhum token criado ainda.';
         return;
       }
+      
       const tokens = Object.entries(data).filter(([token, val]) => val.ownerUID === userUID);
+      currentTokens = tokens;
+      
       if (tokens.length === 0) {
         tokensContainer.textContent = 'Nenhum token criado ainda.';
         return;
       }
+      
       tokens.forEach(([token, val]) => {
+        // Container para cada API
         const div = document.createElement('div');
         div.className = 'token-item';
+        
+        // Link da API
+        const apiLink = document.createElement('a');
+        apiLink.href = '#';
+        apiLink.className = 'api-link';
+        apiLink.textContent = `API: ${window.location.origin}/api/${token}`;
+        apiLink.onclick = (e) => {
+          e.preventDefault();
+          navigator.clipboard.writeText(apiLink.textContent.replace('API: ', ''));
+          alert('Link da API copiado para a área de transferência!');
+        };
+        
+        // Botão para treinar IA
+        const trainBtn = document.createElement('button');
+        trainBtn.className = 'train-btn';
+        trainBtn.textContent = 'Treinar IA';
+        trainBtn.onclick = () => showTrainingForm(token, val.appName);
+        
         div.innerHTML = `
-          <strong>Token:</strong> ${token}<br/>
           <strong>Aplicativo:</strong> ${val.appName}<br/>
-          <strong>Redirecionador:</strong> ${val.redirectURL}
+          <strong>Token:</strong> ${token}<br/>
+          <strong>Redirecionador:</strong> ${val.redirectURL}<br/>
         `;
+        
+        div.appendChild(apiLink);
+        div.appendChild(document.createElement('br'));
+        div.appendChild(trainBtn);
         tokensContainer.appendChild(div);
       });
     });
+  }
+
+  // Mostrar formulário de treinamento
+  function showTrainingForm(token, appName) {
+    trainingContainer.innerHTML = '';
+    
+    const trainingDiv = document.createElement('div');
+    trainingDiv.className = 'training-item';
+    
+    trainingDiv.innerHTML = `
+      <h3>Treinar IA para: ${appName}</h3>
+      <p><strong>Token:</strong> ${token}</p>
+      <form class="training-form" id="trainingForm-${token}">
+        <textarea 
+          id="trainingData-${token}" 
+          placeholder="Insira os dados para treinamento da IA (perguntas e respostas, exemplos, regras, etc.)" 
+          required
+        ></textarea>
+        <button type="submit">Salvar Dados de Treinamento</button>
+        <button type="button" onclick="hideTrainingForm('${token}')">Cancelar</button>
+      </form>
+    `;
+    
+    trainingContainer.appendChild(trainingDiv);
+    
+    // Adicionar evento de submit ao formulário
+    const form = document.getElementById(`trainingForm-${token}`);
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const trainingData = document.getElementById(`trainingData-${token}`).value.trim();
+      
+      if (!trainingData) {
+        alert('Por favor, insira os dados de treinamento.');
+        return;
+      }
+      
+      const success = await saveTrainingData(token, trainingData);
+      if (success) {
+        hideTrainingForm(token);
+      }
+    });
+  }
+
+  // Esconder formulário de treinamento
+  function hideTrainingForm(token) {
+    trainingContainer.innerHTML = '<p>Selecione uma API para treinar a IA</p>';
   }
 
   // Quando enviar o formulário
@@ -263,7 +398,10 @@
     appNameInput.value = '';
     redirectInput.value = '';
   });
+
+  // Adicionar funções ao escopo global para acesso dos event listeners
+  window.hideTrainingForm = hideTrainingForm;
 </script>
 
 </body>
-</html>
+</html></html>
