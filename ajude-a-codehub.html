@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CodeHUB Ads</title>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f2f2f2;
+        padding: 20px;
+        text-align: center;
+    }
+
+    h1 {
+        margin-bottom: 20px;
+    }
+
+    .btn {
+        padding: 12px 20px;
+        border: none;
+        font-size: 18px;
+        margin: 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: 0.3s;
+        color: white;
+    }
+
+    .mostrar {
+        background: #007bff;
+    }
+    .mostrar:hover {
+        background: #0056d2;
+    }
+
+    .compartilhar {
+        background: #28a745;
+    }
+    .compartilhar:hover {
+        background: #1e7e34;
+    }
+
+    #areaAd {
+        margin-top: 25px;
+        display: none;
+        padding: 20px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    }
+</style>
+
+</head>
+<body>
+
+<h1>CodeHUB - Anúncio</h1>
+
+<button id="mostrarAd" class="btn mostrar">Mostrar anúncio</button>
+<button id="btnShare" class="btn compartilhar">Compartilhar</button>
+
+<div id="areaAd">
+
+<!-- SEU ANÚNCIO - CÓDIGO ORIGINAL -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4326714383982538"
+     crossorigin="anonymous"></script>
+<!-- CodeHUB -->
+<ins class="adsbygoogle"
+     style="display:inline-block;width:728px;height:90px"
+     data-ad-client="ca-pub-4326714383982538"
+     data-ad-slot="5155139232"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+<!-- FIM DO ANÚNCIO -->
+
+</div>
+
+<script>
+// Mostrar anúncio
+document.getElementById("mostrarAd").onclick = () => {
+    document.getElementById("areaAd").style.display = "block";
+};
+
+// Compartilhar URL
+document.getElementById("btnShare").onclick = async () => {
+    if (navigator.share) {
+        await navigator.share({
+            title: "CodeHUB",
+            text: "Veja esse anúncio:",
+            url: window.location.href
+        });
+    } else {
+        alert("Seu navegador não suporta compartilhamento.");
+    }
+};
+</script>
+
+</body>
+</html>
