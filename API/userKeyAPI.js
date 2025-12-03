@@ -1,41 +1,53 @@
-// Função para pegar parâmetros da URL
+// =======================================
+// URL do Firebase contendo todas as userKeys
+// =======================================
+const FIREBASE_URL = "https://html-15e80-default-rtdb.firebaseio.com/userKeysData.json";
+
+// =======================================
+// Pega parâmetros da URL
+// =======================================
 function getQueryParams() {
-  const urlParams = new URLSearchParams(window.location.search);
-  return Object.fromEntries(urlParams.entries());
+  const params = new URLSearchParams(window.location.search);
+  return Object.fromEntries(params.entries());
 }
 
-// Cria o conteúdo da página dinamicamente
-function createPage() {
-  // Limpa o body
-  document.body.innerHTML = '';
-  document.body.style.fontFamily = 'Arial, sans-serif';
-  document.body.style.textAlign = 'center';
-  document.body.style.padding = '50px';
-  document.body.style.background = '#f0f0f0';
-
-  // Cria título
-  const h1 = document.createElement('h1');
-  h1.textContent = 'Bem-vindo!';
-  document.body.appendChild(h1);
-
-  // Cria div para mostrar o nome
-  const userNameDisplay = document.createElement('div');
-  userNameDisplay.id = 'userNameDisplay';
-  userNameDisplay.style.fontSize = '1.5rem';
-  userNameDisplay.style.color = '#333';
-  userNameDisplay.style.marginTop = '20px';
-
+// =======================================
+// Função principal de validação (só é chamada manualmente)
+// =======================================
+async function validarLogin(callback) {
   const params = getQueryParams();
-  const userName = params.userName || null;
+  const userKey = params.userKey || null;
 
-  if (userName) {
-    userNameDisplay.textContent = `Olá, ${userName}!`;
-  } else {
-    userNameDisplay.textContent = 'Nome do usuário não encontrado na URL.';
+  // Se não veio userKey → negar
+  if (!userKey) {
+    callback({
+      success: false,
+      error: "acesso_negado"
+    });
+    return;
   }
 
-  document.body.appendChild(userNameDisplay);
-}
+  try {
+    const req = await fetch(FIREBASE_URL);
+    const data = await req.json();
 
-// Executa a criação da página
-createPage();
+    // Se a key existir → sucesso
+    if (data && data[userKey]) {
+      callback({
+        success: true,
+        userName: data[userKey].nome || null,
+        dados: data[userKey]
+      });
+    } else {
+      callback({
+        success: false,
+        error: "acesso_negado"
+      });
+    }
+  } catch (e) {
+    callback({
+      success: false,
+      error: "erro_servidor"
+    });
+  }
+}
