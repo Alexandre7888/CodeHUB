@@ -1,53 +1,49 @@
-// =======================================
-// URL do Firebase contendo todas as userKeys
-// =======================================
-const FIREBASE_URL = "https://html-15e80-default-rtdb.firebaseio.com/userKeysData.json";
+// ===============================
+// CONFIG DO FIREBASE
+// ===============================
+const FIREBASE_USERKEYS_URL =
+  "https://html-15e80-default-rtdb.firebaseio.com/userKeysData.json";
 
-// =======================================
-// Pega parâmetros da URL
-// =======================================
-function getQueryParams() {
-  const params = new URLSearchParams(window.location.search);
+// ===============================
+// LER PARÂMETROS DA URL
+// ===============================
+function getParams() {
+  const params = new URLSearchParams(location.search);
   return Object.fromEntries(params.entries());
 }
 
-// =======================================
-// Função principal de validação (só é chamada manualmente)
-// =======================================
+// ===============================
+// VALIDAR LOGIN
+// ===============================
 async function validarLogin(callback) {
-  const params = getQueryParams();
-  const userKey = params.userKey || null;
+  const p = getParams();
+  const userKey = p.userKey;
 
-  // Se não veio userKey → negar
   if (!userKey) {
-    callback({
-      success: false,
-      error: "acesso_negado"
-    });
+    callback({ success: false });
     return;
   }
 
   try {
-    const req = await fetch(FIREBASE_URL);
-    const data = await req.json();
+    const req = await fetch(FIREBASE_USERKEYS_URL);
+    const list = await req.json();
 
-    // Se a key existir → sucesso
-    if (data && data[userKey]) {
-      callback({
-        success: true,
-        userName: data[userKey].nome || null,
-        dados: data[userKey]
-      });
-    } else {
-      callback({
-        success: false,
-        error: "acesso_negado"
-      });
+    if (!list || !list[userKey]) {
+      callback({ success: false });
+      return;
     }
-  } catch (e) {
+
+    const userName = list[userKey].nome;
+    const userId = list[userKey].userId;
+
     callback({
-      success: false,
-      error: "erro_servidor"
+      success: true,
+      userKey,
+      userId,
+      userName
     });
+
+  } catch (e) {
+    callback({ success: false });
   }
 }
