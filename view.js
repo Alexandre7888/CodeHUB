@@ -177,27 +177,25 @@ function abrirArquivoNoVisualizador(fileName) {
 }
 
 // FUNÇÃO PARA PROCESSAR URL - COM SUBDOMÍNIO
+
 function parseUrlParameters() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const path = window.location.pathname;
+    const all = {};
+    const params = new URLSearchParams(window.location.search);
+    for (const [k,v] of params.entries()) all[k]=v;
 
     let projectId = null;
     let fileName = null;
 
-    console.log('📍 URL completa:', window.location.href);
-
-    // 1. Tenta parâmetro ?l= (subdomínio)
-    let lParam = urlParams.get('l');
-    if (lParam) {
-        console.log('📝 Usando parâmetro ?l=', lParam);
-        if (lParam.includes('/')) {
-            const parts = lParam.split('/');
-            projectId = parts[0];
-            fileName = parts.slice(1).join('/');
-        } else {
-            projectId = lParam;
+    for (const k in all) {
+        if (!fileName && (k.toLowerCase().includes("file") || k==="f" || k==="open")) {
+            fileName = all[k];
         }
-        return { projectId, fileName, type: 'subdomain' };
+        if (!projectId) projectId = all[k];
+    }
+
+    return { projectId, fileName, type: "param-only" };
+}
+;
     }
 
     // 2. Tenta parâmetro ?project= (ID direto)
