@@ -146,8 +146,6 @@
   </div>
 </div>
 
-<!-- Adicione o SDK do EmailJS -->
-<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
   import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
@@ -164,11 +162,6 @@
     measurementId: "G-V57KRZ02HJ"
   };
 
-  // Inicialize o EmailJS com seu User ID
-  (function() {
-    emailjs.init("YOUR_EMAILJS_USER_ID"); // Substitua pelo seu User ID do EmailJS
-  })();
-
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getDatabase(app);
@@ -177,6 +170,9 @@
   const usernameEl = document.getElementById('username');
   const continueBtn = document.getElementById('continueBtn');
   const errorEl = document.getElementById('error');
+
+  // URL do seu Google Apps Script (SUBSTITUA COM SUA URL)
+  const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxm0wWkhOPk68Cl0XjMUBMov6hwNfJGXXniXyD9cVikso6A-bQYO2vl3XqhO_SfUhRW/exec';
 
   // Pega token da URL
   const urlParams = new URLSearchParams(window.location.search);
@@ -187,31 +183,92 @@
     errorEl.textContent = 'Não é possível continuar no momento.';
   }
 
-  async function sendConfirmationEmail(userName, userEmail) {
+  // Função para coletar informações do dispositivo
+  function getDeviceInfo() {
+    return {
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      language: navigator.language,
+      screenWidth: window.screen.width,
+      screenHeight: window.screen.height,
+      colorDepth: window.screen.colorDepth,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      dateTime: new Date().toLocaleString('pt-BR'),
+      referrer: document.referrer || 'Direto'
+    };
+  }
+
+  // Função para enviar email via Google Apps Script
+  async function sendConfirmationEmail(userName, userEmail, deviceInfo) {
     if (!userEmail) {
       console.log('Usuário não tem e-mail cadastrado, não será enviado e-mail de confirmação');
       return;
     }
 
     try {
-      const templateParams = {
-        to_name: userName,
+      const emailData = {
         to_email: userEmail,
-        date: new Date().toLocaleDateString('pt-BR'),
+        to_name: userName,
+        subject: 'Confirmação de Login - Nova Sessão Detectada',
+        device_info: JSON.stringify(deviceInfo, null, 2),
+        login_time: new Date().toLocaleString('pt-BR'),
         app_name: 'Sistema de Autenticação'
       };
 
-      // Envie o email usando EmailJS
-      await emailjs.send(
-        'service_op9fbwk', // ID do serviço EmailJS
-        'template_sd9wuh9', // ID do template EmailJS
-        templateParams
-      );
+      const response = await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors', // Apps Script requer no-cors para funcionar
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(emailData)
+      });
 
-      console.log('Email de confirmação enviado com sucesso para:', userEmail);
+      console.log('Solicitação de email enviada para:', userEmail);
+      return true;
+      
     } catch (error) {
       console.error('Erro ao enviar email de confirmação:', error);
+      return false;
     }
+  }
+
+  // Função para gerar corpo do email em HTML
+  function generateEmailHTML(userName, deviceInfo) {
+    const browser = deviceInfo.userAgent.match(/(chrome|firefox|safari|edge|opera)[\/\s](\d+)/i) || ['Desconhecido'];
+    const os = deviceInfo.userAgent.match(/(windows|mac os|linux|android|ios)/i) || ['Desconhecido'];
+    
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #4361ee;">Nova Sessão Detectada</h2>
+        <p>Olá <strong>${userName}</strong>,</p>
+        <p>Uma nova sessão foi iniciada na sua conta. Aqui estão os detalhes do acesso:</p>
+        
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="color: #333;">📋 Informações do Dispositivo:</h3>
+          <ul style="list-style: none; padding-left: 0;">
+            <li><strong>📍 Sistema Operacional:</strong> ${os[0]}</li>
+            <li><strong>🌐 Navegador:</strong> ${browser[0]}</li>
+            <li><strong>🖥️ Resolução:</strong> ${deviceInfo.screenWidth} x ${deviceInfo.screenHeight}</li>
+            <li><strong>⏰ Fuso Horário:</strong> ${deviceInfo.timezone}</li>
+            <li><strong>🗓️ Data/Hora:</strong> ${deviceInfo.dateTime}</li>
+            <li><strong>🔗 Origem:</strong> ${deviceInfo.referrer}</li>
+          </ul>
+        </div>
+        
+        <p style="color: #666; font-size: 14px;">
+          <strong>⚠️ Se você não reconhece este acesso:</strong><br>
+          Altere sua senha imediatamente e verifique as atividades da sua conta.
+        </p>
+        
+        <hr style="border: none; border-top: 1px solid #eee; margin: 25px 0;">
+        
+        <p style="font-size: 12px; color: #888;">
+          Esta é uma mensagem automática do Sistema de Autenticação.<br>
+          Não responda este e-mail.
+        </p>
+      </div>
+    `;
   }
 
   if (!appToken) {
@@ -271,13 +328,15 @@
                 nome,
                 uid: user.uid,
                 email: userEmail,
-                criadoEm: Date.now()
+                criadoEm: Date.now(),
+                ultimoAcesso: Date.now()
               });
 
               // Envia email de confirmação apenas se o usuário tiver e-mail
               if (userEmail) {
                 statusEl.textContent = 'Enviando confirmação por e-mail...';
-                await sendConfirmationEmail(nome, userEmail);
+                const deviceInfo = getDeviceInfo();
+                await sendConfirmationEmail(nome, userEmail, deviceInfo);
               }
 
               statusEl.textContent = 'Redirecionando...';
@@ -288,11 +347,15 @@
               const urlFinal = redirectURL + sep + 
                 `userKey=${encodeURIComponent(userKey)}` + 
                 `&userName=${encodeURIComponent(nome)}`;
-              window.location.href = urlFinal;
+              
+              // Pequeno delay para garantir que tudo foi processado
+              setTimeout(() => {
+                window.location.href = urlFinal;
+              }, 1000);
 
             } catch (err) {
               statusEl.textContent = 'Erro ao preparar sua sessão';
-              errorEl.textContent = err.message;
+              errorEl.textContent = err.message || 'Erro desconhecido';
               continueBtn.disabled = false;
             }
           };
