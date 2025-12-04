@@ -1,0 +1,106 @@
+{
+  "site": {
+    "name": "CodeHUB",
+    "version": "2.3",
+    "description": "API CodeHUB com Firebase + CodeFox + Editor Copiloto + API Clima + IA CodeHUB",
+    "updated_at": "2025-11-24",
+    "base_url": "https://code.codehub2025.ct.ws"
+  },
+
+  "scripts": {
+    "core": [
+      "https://alexandre7888.github.io/CodeHUB/API/api2.js",
+      "https://alexandre7888.github.io/CodeHUB/API/userKeyAPI.js"
+    ],
+    "ia_codehub": "https://code.codehub2025.ct.ws/API/ia.js",
+    "clima": "https://code.codehub2025.ct.ws/API/clima.js?token=SEU_TOKEN"
+  },
+
+  "features": {
+    "codefox": "IA avançada para gerar, corrigir e melhorar códigos.",
+    "editor_copiloto": "Assistente de edição com autocompletar e refatoração inteligente.",
+    "api_clima": "Monitoramento climático com mapa ao vivo e alertas."
+  },
+
+  "pages": [
+    {
+      "path": "/",
+      "title": "Home",
+      "description": "Página inicial com integração CodeHUB."
+    },
+    {
+      "path": "/clima",
+      "title": "API Clima",
+      "description": "Página que exibe mapa, condições e relatórios."
+    },
+    {
+      "path": "/ia",
+      "title": "IA CodeHUB",
+      "description": "Página com botão flutuante da IA CodeFox."
+    }
+  ],
+
+  "api_urls": {
+    "ia_codehub": "https://code.codehub2025.ct.ws/API/ia.js",
+    "api_clima": "https://code.codehub2025.ct.ws/API/clima.js?token=SEU_TOKEN"
+  },
+
+  "api_parameters": {
+    "token": {
+      "type": "String",
+      "required": true,
+      "description": "Token de autenticação da API Clima."
+    },
+    "userKey": {
+      "type": "String",
+      "required": false,
+      "description": "Chave do usuário (ID-TOKEN)."
+    },
+    "userName": {
+      "type": "String",
+      "required": false,
+      "description": "Nome do usuário para filtrar projetos."
+    }
+  },
+
+  "methods": {
+    "renderProjects": {
+      "description": "Renderiza os projetos do usuário no container.",
+      "params": {
+        "container": "Elemento DOM alvo",
+        "userKey": "Chave do usuário (opcional)",
+        "userName": "Nome do usuário (opcional)"
+      }
+    }
+  },
+
+  "examples": {
+    "integracao_ia": {
+      "title": "Exemplo simples para habilitar IA CodeHUB",
+      "html": "<script src='https://code.codehub2025.ct.ws/API/ia.js'></script>"
+    },
+
+    "integracao_clima": {
+      "title": "Monitor de Clima completo",
+      "html": "<script src='https://code.codehub2025.ct.ws/API/clima.js?token=SEU_TOKEN'></script>"
+    },
+
+    "integracao_completa": {
+      "title": "Exemplo completo (IA + API Clima + projetos)",
+      "html": "<script src='https://alexandre7888.github.io/CodeHUB/API/api2.js'></script><script src='https://alexandre7888.github.io/CodeHUB/API/userKeyAPI.js'></script><script src='https://code.codehub2025.ct.ws/API/ia.js'></script><script src='https://code.codehub2025.ct.ws/API/clima.js?token=SEU_TOKEN'></script>"
+    }
+  },
+
+  "ui_elements": {
+    "ia_button": "Botão flutuante automático no canto inferior direito.",
+    "clima_map": "Mapa interativo para monitoramento climático."
+  },
+
+  "full_html_examples": {
+    "ia_only": "<!DOCTYPE html><html><head><script src='https://code.codehub2025.ct.ws/API/ia.js'></script></head><body><h1>Meu Site</h1></body></html>",
+
+    "clima_only": "<!DOCTYPE html><html><head><script src='https://code.codehub2025.ct.ws/API/clima.js?token=SEU_TOKEN'></script></head><body><div id='map'></div></body></html>",
+
+    "complete": "<!DOCTYPE html><html><head><script src='https://alexandre7888.github.io/CodeHUB/API/api2.js'></script><script src='https://alexandre7888.github.io/CodeHUB/API/userKeyAPI.js'></script><script src='https://code.codehub2025.ct.ws/API/ia.js'></script><script src='https://code.codehub2025.ct.ws/API/clima.js?token=SEU_TOKEN'></script></head><body><h1>CodeHUB Completo</h1><div id='projects-container'></div><div id='map'></div><script>renderProjects('#projects-container');</script></body></html>"
+  }
+}
