@@ -1,0 +1,1924 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Placar Ao Vivo - Sistema Esportivo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ====== ESTILOS GERAIS ====== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0c2461, #1e3799);
+            color: white;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* ====== HEADER ====== */
+        header {
+            background-color: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            padding: 20px 0;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo i {
+            font-size: 2.5rem;
+            color: #4cd137;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .logo h1 {
+            font-size: 2rem;
+            background: linear-gradient(to right, #4cd137, #44bd32);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 800;
+        }
+
+        .live-badge {
+            background-color: #e74c3c;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4cd137;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        /* ====== LAYOUT PRINCIPAL ====== */
+        .main-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ====== SEÇÕES ====== */
+        .section {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            color: #4cd137;
+        }
+
+        .last-update {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        /* ====== CARTÕES DE PARTIDA ====== */
+        .matches-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .match-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .match-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            border-color: rgba(76, 209, 55, 0.3);
+        }
+
+        .match-card.live {
+            border-left: 6px solid #e74c3c;
+        }
+
+        .match-card.finished {
+            border-left: 6px solid #4cd137;
+        }
+
+        .match-card.upcoming {
+            border-left: 6px solid #fbc531;
+        }
+
+        .match-sport {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .match-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .match-time {
+            font-size: 0.9rem;
+            color: #4cd137;
+            font-weight: 600;
+        }
+
+        .match-teams {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 30px 0;
+        }
+
+        .team {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 40%;
+            text-align: center;
+        }
+
+        .team-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            font-size: 35px;
+            color: white;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+        }
+
+        .team-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .team-name {
+            font-weight: 700;
+            font-size: 1.2rem;
+            line-height: 1.3;
+        }
+
+        .match-score {
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: #4cd137;
+            text-shadow: 0 0 15px rgba(76, 209, 55, 0.7);
+            width: 20%;
+            text-align: center;
+            position: relative;
+        }
+
+        .penalty-score {
+            font-size: 1.1rem;
+            color: #fbc531;
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            font-weight: bold;
+            background-color: rgba(0,0,0,0.3);
+            padding: 3px 10px;
+            border-radius: 10px;
+        }
+
+        /* ====== DETALHES DA PARTIDA ====== */
+        .match-details {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .goals-container {
+            margin-bottom: 20px;
+        }
+
+        .goals-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #4cd137;
+        }
+
+        .goal-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 15px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            transition: background-color 0.3s;
+        }
+
+        .goal-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .goal-time {
+            font-weight: bold;
+            color: #fbc531;
+            min-width: 45px;
+            font-size: 1rem;
+        }
+
+        .goal-team {
+            font-weight: 700;
+            min-width: 25px;
+            text-align: center;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .goal-player {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .goal-icon {
+            color: #fbc531;
+            font-size: 1.1rem;
+        }
+
+        .penalty-badge {
+            background-color: #e74c3c;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+
+        .cards-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .card-badge {
+            padding: 4px 10px;
+            border-radius: 5px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .yellow-card {
+            background-color: #fbc531;
+            color: #333;
+        }
+
+        .red-card {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .match-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.9rem;
+        }
+
+        .match-status {
+            padding: 6px 18px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+
+        .status-live {
+            background-color: #e74c3c;
+            color: white;
+            animation: blink 1.5s infinite;
+        }
+
+        .status-finished {
+            background-color: #4cd137;
+            color: white;
+        }
+
+        .status-upcoming {
+            background-color: #fbc531;
+            color: #333;
+        }
+
+        /* ====== BARRA LATERAL ====== */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .widget {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .widget-title {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #4cd137;
+        }
+
+        .live-updates {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .update-item {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            transition: background-color 0.3s;
+        }
+
+        .update-item:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .update-item:last-child {
+            border-bottom: none;
+        }
+
+        .update-time {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            min-width: 50px;
+        }
+
+        .update-content {
+            flex: 1;
+        }
+
+        .update-match {
+            font-weight: bold;
+            color: #4cd137;
+            margin-bottom: 5px;
+            font-size: 0.95rem;
+        }
+
+        .update-text {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            line-height: 1.4;
+        }
+
+        .goal-update {
+            border-left: 3px solid #fbc531;
+            padding-left: 12px;
+        }
+
+        /* ====== CAMPO DE FUTEBOL ====== */
+        .field-widget {
+            background-color: #2e7d32;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+            border: 3px solid #1b5e20;
+        }
+
+        .field-container {
+            width: 100%;
+            height: 350px;
+            background-color: #4caf50;
+            border-radius: 10px;
+            position: relative;
+            border: 2px solid white;
+            overflow: hidden;
+        }
+
+        /* Linhas do campo */
+        .field-line {
+            position: absolute;
+            background-color: white;
+        }
+
+        .half-line {
+            width: 2px;
+            height: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .center-circle {
+            width: 80px;
+            height: 80px;
+            border: 2px solid white;
+            border-radius: 50%;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            position: absolute;
+        }
+
+        .center-spot {
+            width: 8px;
+            height: 8px;
+            background-color: white;
+            border-radius: 50%;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            position: absolute;
+        }
+
+        .penalty-area {
+            border: 2px solid white;
+            position: absolute;
+        }
+
+        .penalty-area.left {
+            width: 100px;
+            height: 250px;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .penalty-area.right {
+            width: 100px;
+            height: 250px;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .goal-area {
+            border: 2px solid white;
+            position: absolute;
+        }
+
+        .goal-area.left {
+            width: 35px;
+            height: 140px;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .goal-area.right {
+            width: 35px;
+            height: 140px;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .goal {
+            width: 8px;
+            height: 160px;
+            background-color: white;
+            position: absolute;
+        }
+
+        .goal.left {
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .goal.right {
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* Jogadores no campo */
+        .player-on-field {
+            position: absolute;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 11px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: 2px solid white;
+            text-align: center;
+            padding: 2px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            z-index: 2;
+        }
+
+        .player-on-field:hover {
+            transform: scale(1.2);
+            z-index: 10;
+        }
+
+        .player-number-field {
+            font-size: 9px;
+            background-color: rgba(0,0,0,0.7);
+            padding: 1px 4px;
+            border-radius: 3px;
+            position: absolute;
+            bottom: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            font-weight: bold;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .field-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            align-items: center;
+        }
+
+        .field-select {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 15px;
+            border-radius: 8px;
+            width: 70%;
+            font-size: 0.9rem;
+        }
+
+        .field-select option {
+            background-color: #2e7d32;
+            color: white;
+        }
+
+        .field-btn {
+            background-color: #4cd137;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+
+        .field-btn:hover {
+            background-color: #44bd32;
+        }
+
+        .field-info {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+
+        .field-info-title {
+            color: #4cd137;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        /* ====== VÍDEO ====== */
+        .video-container {
+            margin-top: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            width: 100%;
+            height: 250px;
+        }
+
+        .video-placeholder {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #3498db, #2c3e50);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .video-player {
+            width: 100%;
+            height: 100%;
+            border: none;
+            pointer-events: none;
+        }
+
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .video-container:hover .video-overlay {
+            opacity: 1;
+        }
+
+        .watch-on-youtube {
+            background-color: #e74c3c;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.3s;
+        }
+
+        .watch-on-youtube:hover {
+            background-color: #c0392b;
+        }
+
+        /* ====== RELÓGIO ====== */
+        .live-clock {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(76, 209, 55, 0.2), rgba(52, 152, 219, 0.2));
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .clock-time {
+            font-size: 2.8rem;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            color: #4cd137;
+            margin-bottom: 5px;
+        }
+
+        .clock-date {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        /* ====== CONTROLES ====== */
+        .auto-refresh {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .refresh-btn {
+            background-color: #4cd137;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .refresh-btn:hover {
+            background-color: #44bd32;
+        }
+
+        .refresh-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #4cd137;
+            animation: pulse 1.5s infinite;
+        }
+
+        /* ====== ESTADOS VAZIOS ====== */
+        .no-matches {
+            text-align: center;
+            padding: 60px 20px;
+            grid-column: 1 / -1;
+        }
+
+        .no-matches i {
+            font-size: 5rem;
+            color: rgba(255, 255, 255, 0.1);
+            margin-bottom: 25px;
+        }
+
+        .no-matches h3 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: #4cd137;
+        }
+
+        .no-matches p {
+            font-size: 1.1rem;
+            opacity: 0.8;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* ====== FOOTER ====== */
+        footer {
+            text-align: center;
+            padding: 40px 0 30px;
+            margin-top: 50px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.95rem;
+            opacity: 0.8;
+        }
+
+        /* ====== SCROLLBAR ====== */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(76, 209, 55, 0.5);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(76, 209, 55, 0.8);
+        }
+
+        /* ====== ANIMAÇÕES ====== */
+        @keyframes highlight {
+            0% { background-color: rgba(76, 209, 55, 0.3); }
+            100% { background-color: transparent; }
+        }
+
+        .highlight-update {
+            animation: highlight 2s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .match-card {
+            animation: slideIn 0.5s ease-out;
+        }
+
+        /* ====== RESPONSIVIDADE ====== */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .stats-bar {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .stat-item {
+                min-width: 100%;
+            }
+            
+            .matches-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .match-score {
+                font-size: 2.8rem;
+            }
+            
+            .team-logo {
+                width: 60px;
+                height: 60px;
+                font-size: 25px;
+            }
+            
+            .field-container {
+                height: 300px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .section {
+                padding: 20px;
+            }
+            
+            .match-teams {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .team {
+                width: 100%;
+            }
+            
+            .match-score {
+                width: 100%;
+                order: -1;
+                margin-bottom: 10px;
+            }
+            
+            .field-container {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-broadcast-tower"></i>
+                    <h1>PLACAR AO VIVO</h1>
+                </div>
+                <div class="live-badge">
+                    <i class="fas fa-circle"></i>
+                    TRANSMISSÃO AO VIVO
+                </div>
+            </div>
+            
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <div class="stat-number" id="live-matches-count">0</div>
+                    <div class="stat-label">PARTIDAS AO VIVO</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="total-matches-count">0</div>
+                    <div class="stat-label">TOTAL DE JOGOS</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="total-goals-count">0</div>
+                    <div class="stat-label">GOLS HOJE</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="last-update-time">00:00</div>
+                    <div class="stat-label">ÚLTIMA ATUALIZAÇÃO</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="main-content">
+            <!-- COLUNA PRINCIPAL -->
+            <div class="main-column">
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <i class="fas fa-play-circle"></i>
+                            PARTIDAS EM ANDAMENTO
+                        </h2>
+                        <div class="last-update">
+                            Atualizando em: <span id="countdown">10</span>s
+                        </div>
+                    </div>
+                    
+                    <div id="live-matches-container" class="matches-grid">
+                        <!-- Partidas serão carregadas aqui -->
+                        <div class="no-matches" id="no-matches-message">
+                            <i class="fas fa-futbol"></i>
+                            <h3>Nenhuma partida ao vivo no momento</h3>
+                            <p>Aguardando início das partidas...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <i class="fas fa-history"></i>
+                            ÚLTIMAS ATUALIZAÇÕES
+                        </h2>
+                    </div>
+                    
+                    <div id="recent-updates-container" class="live-updates">
+                        <!-- Atualizações serão carregadas aqui -->
+                        <div class="update-item">
+                            <div class="update-time">--:--</div>
+                            <div class="update-content">
+                                <div class="update-match">SISTEMA ATIVO</div>
+                                <div class="update-text">Aguardando atualizações das partidas...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BARRA LATERAL -->
+            <div class="sidebar">
+                <div class="widget">
+                    <div class="live-clock">
+                        <div class="clock-time" id="current-time">00:00:00</div>
+                        <div class="clock-date" id="current-date">Carregando...</div>
+                    </div>
+                    
+                    <div class="auto-refresh">
+                        <div class="refresh-status">
+                            <div class="status-indicator"></div>
+                            <span>ATUALIZAÇÃO AUTOMÁTICA</span>
+                        </div>
+                        <button class="refresh-btn" id="manual-refresh">
+                            <i class="fas fa-sync-alt"></i>
+                            ATUALIZAR
+                        </button>
+                    </div>
+                </div>
+
+                <div class="widget">
+                    <h3 class="widget-title">
+                        <i class="fas fa-bolt"></i>
+                        ÚLTIMOS GOLS
+                    </h3>
+                    
+                    <div id="recent-goals-container" class="live-updates">
+                        <!-- Últimos gols serão carregados aqui -->
+                        <div class="update-item">
+                            <div class="update-time">--:--</div>
+                            <div class="update-content">
+                                <div class="update-match">SEM GOLS</div>
+                                <div class="update-text">Nenhum gol marcado ainda</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="widget">
+                    <h3 class="widget-title">
+                        <i class="fas fa-futbol"></i>
+                        CAMPO EM TEMPO REAL
+                    </h3>
+                    
+                    <div class="field-controls">
+                        <select id="field-match-select" class="field-select">
+                            <option value="">Selecione uma partida</option>
+                        </select>
+                        <button class="field-btn" id="field-refresh">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="field-widget">
+                        <div class="field-container" id="football-field">
+                            <!-- Campo será desenhado aqui -->
+                        </div>
+                        <div class="field-info">
+                            <div class="field-info-title">
+                                <i class="fas fa-info-circle"></i> CLIQUE EM UM JOGADOR
+                            </div>
+                            <div id="player-info">Selecione uma partida para ver o campo</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="widget">
+                    <h3 class="widget-title">
+                        <i class="fas fa-video"></i>
+                        VÍDEO AO VIVO
+                    </h3>
+                    
+                    <div id="highlight-video-container">
+                        <!-- Vídeo será carregado aqui -->
+                        <div class="video-container">
+                            <div class="video-placeholder">
+                                <i class="fas fa-play-circle" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                                <p>Sem transmissão no momento</p>
+                                <p style="font-size: 0.8rem; margin-top: 5px;">As transmissões aparecerão aqui</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <div class="container">
+            <p>SISTEMA DE PLACAR AO VIVO &copy; 2023 - TODOS OS DIREITOS RESERVADOS</p>
+            <p>Dados atualizados em tempo real via Firebase</p>
+        </div>
+    </footer>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script>
+        // ====== CONFIGURAÇÃO DO FIREBASE ======
+        const firebaseConfig = {
+            apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
+            authDomain: "html-15e80.firebaseapp.com",
+            databaseURL: "https://html-15e80-default-rtdb.firebaseio.com",
+            projectId: "html-15e80",
+            storageBucket: "html-15e80.firebasestorage.app",
+            messagingSenderId: "1068148640439",
+            appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32",
+            measurementId: "G-V57KRZ02HJ"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // ====== VARIÁVEIS GLOBAIS ======
+        let allMatches = [];
+        let recentGoals = [];
+        let currentFieldMatch = null;
+        let autoRefreshInterval;
+        let countdown = 10;
+        let lastUpdateTimestamp = new Date();
+
+        // ====== ELEMENTOS DA PÁGINA ======
+        const liveMatchesContainer = document.getElementById('live-matches-container');
+        const recentGoalsContainer = document.getElementById('recent-goals-container');
+        const recentUpdatesContainer = document.getElementById('recent-updates-container');
+        const highlightVideoContainer = document.getElementById('highlight-video-container');
+        const footballField = document.getElementById('football-field');
+        const fieldMatchSelect = document.getElementById('field-match-select');
+        const fieldRefreshBtn = document.getElementById('field-refresh');
+        const playerInfo = document.getElementById('player-info');
+        const noMatchesMessage = document.getElementById('no-matches-message');
+        const manualRefreshBtn = document.getElementById('manual-refresh');
+        const countdownElement = document.getElementById('countdown');
+        
+        // Elementos de estatísticas
+        const liveMatchesCount = document.getElementById('live-matches-count');
+        const totalMatchesCount = document.getElementById('total-matches-count');
+        const totalGoalsCount = document.getElementById('total-goals-count');
+        const lastUpdateTime = document.getElementById('last-update-time');
+        
+        // Elementos do relógio
+        const currentTimeElement = document.getElementById('current-time');
+        const currentDateElement = document.getElementById('current-date');
+
+        // ====== FUNÇÕES DE INICIALIZAÇÃO ======
+        document.addEventListener('DOMContentLoaded', function() {
+            updateClock();
+            setInterval(updateClock, 1000);
+            
+            loadMatches();
+            setupEventListeners();
+            startCountdown();
+            
+            // Atualização automática a cada 30 segundos
+            autoRefreshInterval = setInterval(loadMatches, 30000);
+        });
+
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('pt-BR', { hour12: false });
+            const dateString = now.toLocaleDateString('pt-BR', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            
+            currentTimeElement.textContent = timeString;
+            currentDateElement.textContent = dateString.charAt(0).toUpperCase() + dateString.slice(1);
+        }
+
+        function setupEventListeners() {
+            manualRefreshBtn.addEventListener('click', () => {
+                loadMatches();
+                manualRefreshBtn.innerHTML = '<i class="fas fa-check"></i> ATUALIZADO!';
+                setTimeout(() => {
+                    manualRefreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> ATUALIZAR';
+                }, 2000);
+            });
+            
+            fieldMatchSelect.addEventListener('change', function() {
+                if (this.value) {
+                    currentFieldMatch = this.value;
+                    drawFootballField(this.value);
+                }
+            });
+            
+            fieldRefreshBtn.addEventListener('click', function() {
+                if (currentFieldMatch) {
+                    drawFootballField(currentFieldMatch);
+                }
+            });
+        }
+
+        function startCountdown() {
+            countdown = 10;
+            countdownElement.textContent = countdown;
+            
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                countdownElement.textContent = countdown;
+                
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    loadMatches();
+                }
+            }, 1000);
+        }
+
+        // ====== CARREGAMENTO DE DADOS ======
+        function loadMatches() {
+            database.ref('matches').once('value').then((snapshot) => {
+                if (snapshot.exists()) {
+                    const matches = snapshot.val();
+                    allMatches = [];
+                    
+                    // Resetar contadores
+                    let liveCount = 0;
+                    let totalGoalsToday = 0;
+                    
+                    // Converter para array e processar
+                    Object.keys(matches).forEach(key => {
+                        const match = matches[key];
+                        match.id = key;
+                        allMatches.push(match);
+                        
+                        // Contar partidas ao vivo
+                        if (match.status === 'live') {
+                            liveCount++;
+                        }
+                        
+                        // Contar gols do dia
+                        if (match.goals && match.goals.length > 0) {
+                            const today = new Date().toDateString();
+                            const matchDate = new Date(match.updatedAt || match.createdAt).toDateString();
+                            
+                            if (today === matchDate) {
+                                totalGoalsToday += match.goals.length;
+                            }
+                        }
+                    });
+                    
+                    // Atualizar estatísticas
+                    liveMatchesCount.textContent = liveCount;
+                    totalMatchesCount.textContent = allMatches.length;
+                    totalGoalsCount.textContent = totalGoalsToday;
+                    lastUpdateTime.textContent = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                    
+                    // Ordenar partidas: ao vivo primeiro, depois as mais recentes
+                    allMatches.sort((a, b) => {
+                        if (a.status === 'live' && b.status !== 'live') return -1;
+                        if (a.status !== 'live' && b.status === 'live') return 1;
+                        return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
+                    });
+                    
+                    // Exibir partidas
+                    displayMatches();
+                    
+                    // Carregar últimos gols
+                    loadRecentGoals();
+                    
+                    // Carregar atualizações recentes
+                    loadRecentUpdates();
+                    
+                    // Carregar vídeo em destaque
+                    loadHighlightVideo();
+                    
+                    // Atualizar select do campo
+                    updateFieldMatchSelect();
+                    
+                    // Esconder mensagem de "nenhuma partida"
+                    if (allMatches.length > 0) {
+                        noMatchesMessage.style.display = 'none';
+                    } else {
+                        noMatchesMessage.style.display = 'block';
+                    }
+                    
+                    // Iniciar contador novamente
+                    startCountdown();
+                } else {
+                    // Nenhuma partida encontrada
+                    allMatches = [];
+                    liveMatchesCount.textContent = '0';
+                    totalMatchesCount.textContent = '0';
+                    totalGoalsCount.textContent = '0';
+                    noMatchesMessage.style.display = 'block';
+                    liveMatchesContainer.innerHTML = '';
+                    recentGoalsContainer.innerHTML = '';
+                    recentUpdatesContainer.innerHTML = '';
+                    startCountdown();
+                }
+            }).catch((error) => {
+                console.error('Erro ao carregar partidas:', error);
+                startCountdown();
+            });
+        }
+
+        // ====== EXIBIÇÃO DE PARTIDAS ======
+        function displayMatches() {
+            liveMatchesContainer.innerHTML = '';
+            
+            const liveMatches = allMatches.filter(match => match.status === 'live');
+            const otherMatches = allMatches.filter(match => match.status !== 'live').slice(0, 3);
+            
+            // Exibir partidas ao vivo primeiro
+            if (liveMatches.length > 0) {
+                liveMatches.forEach(match => {
+                    liveMatchesContainer.appendChild(createMatchCard(match));
+                });
+            }
+            
+            // Exibir outras partidas recentes
+            if (otherMatches.length > 0) {
+                otherMatches.forEach(match => {
+                    liveMatchesContainer.appendChild(createMatchCard(match));
+                });
+            }
+            
+            if (liveMatches.length === 0 && otherMatches.length === 0) {
+                noMatchesMessage.style.display = 'block';
+            }
+        }
+
+        function createMatchCard(match) {
+            const matchCard = document.createElement('div');
+            matchCard.className = `match-card ${match.status}`;
+            
+            // Determinar classe de status
+            let statusClass = '';
+            let statusText = '';
+            if (match.status === 'live') {
+                statusClass = 'status-live';
+                statusText = 'AO VIVO';
+            } else if (match.status === 'finished') {
+                statusClass = 'status-finished';
+                statusText = 'FINALIZADO';
+            } else {
+                statusClass = 'status-upcoming';
+                statusText = 'EM BREVE';
+            }
+            
+            // Formatar hora da partida
+            let matchTimeDisplay = match.time || '';
+            if (match.updatedAt) {
+                const updated = new Date(match.updatedAt);
+                matchTimeDisplay = updated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            }
+            
+            // Verificar se tem pênaltis
+            const hasPenalties = match.homePenalties !== undefined && match.awayPenalties !== undefined;
+            const penaltyDisplay = hasPenalties ? 
+                `Pênaltis: ${match.homePenalties || 0} x ${match.awayPenalties || 0}` : '';
+            
+            // Construir lista de gols
+            let goalsHTML = '';
+            if (match.goals && Array.isArray(match.goals) && match.goals.length > 0) {
+                const recentGoals = match.goals.slice(-5); // Últimos 5 gols
+                
+                goalsHTML = `
+                    <div class="goals-container">
+                        <div class="goals-title">
+                            <i class="fas fa-futbol"></i>
+                            ÚLTIMOS GOLS
+                        </div>
+                        ${recentGoals.map(goal => `
+                            <div class="goal-item">
+                                <div class="goal-time">${goal.minute || '?'}'</div>
+                                <div class="goal-team">${goal.team === 'home' ? 'C' : 'V'}</div>
+                                <div class="goal-player">${goal.player || 'Jogador'}</div>
+                                ${goal.isPenalty ? '<span class="penalty-badge">PÊNALTI</span>' : ''}
+                                <i class="fas fa-futbol goal-icon"></i>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            // Construir cartões
+            let cardsHTML = '';
+            if (match.cards && Array.isArray(match.cards) && match.cards.length > 0) {
+                const yellowCards = match.cards.filter(card => card.type === 'yellow').length;
+                const redCards = match.cards.filter(card => card.type === 'red').length;
+                
+                if (yellowCards > 0 || redCards > 0) {
+                    cardsHTML = `
+                        <div class="cards-container">
+                            ${yellowCards > 0 ? `<span class="card-badge yellow-card">🟨 ${yellowCards}</span>` : ''}
+                            ${redCards > 0 ? `<span class="card-badge red-card">🟥 ${redCards}</span>` : ''}
+                        </div>
+                    `;
+                }
+            }
+            
+            // Obter ícones/cores dos times
+            const homeLogo = match.homeTeamLogo || '🏠';
+            const awayLogo = match.awayTeamLogo || '⚽';
+            
+            matchCard.innerHTML = `
+                <div class="match-sport">${match.sportName || 'FUTEBOL'}</div>
+                
+                <div class="match-header">
+                    <div class="match-time">
+                        <i class="fas fa-clock"></i> ${matchTimeDisplay}
+                    </div>
+                </div>
+                
+                <div class="match-teams">
+                    <div class="team">
+                        <div class="team-logo">
+                            ${homeLogo.length <= 2 ? homeLogo : '<img src="' + homeLogo + '" alt="' + match.homeTeamName + '">'}
+                        </div>
+                        <div class="team-name">${match.homeTeamName}</div>
+                    </div>
+                    
+                    <div class="match-score">
+                        ${match.homeScore || 0} - ${match.awayScore || 0}
+                        ${penaltyDisplay ? `<div class="penalty-score">${penaltyDisplay}</div>` : ''}
+                    </div>
+                    
+                    <div class="team">
+                        <div class="team-logo">
+                            ${awayLogo.length <= 2 ? awayLogo : '<img src="' + awayLogo + '" alt="' + match.awayTeamName + '">'}
+                        </div>
+                        <div class="team-name">${match.awayTeamName}</div>
+                    </div>
+                </div>
+                
+                <div class="match-details">
+                    ${goalsHTML}
+                    ${cardsHTML}
+                    
+                    <div class="match-info">
+                        <div>
+                            <span class="match-status ${statusClass}">${statusText}</span>
+                        </div>
+                        <div>
+                            <i class="fas fa-calendar"></i>
+                            ${new Date(match.updatedAt || match.createdAt).toLocaleDateString('pt-BR')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            return matchCard;
+        }
+
+        // ====== ÚLTIMOS GOLS ======
+        function loadRecentGoals() {
+            const allGoals = [];
+            
+            // Coletar todos os gols de todas as partidas
+            allMatches.forEach(match => {
+                if (match.goals && match.goals.length > 0) {
+                    match.goals.forEach(goal => {
+                        allGoals.push({
+                            ...goal,
+                            matchId: match.id,
+                            matchName: `${match.homeTeamName} vs ${match.awayTeamName}`,
+                            timestamp: goal.timestamp || match.updatedAt
+                        });
+                    });
+                }
+            });
+            
+            // Ordenar por timestamp (mais recentes primeiro)
+            allGoals.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            // Pegar os 10 mais recentes
+            const recentGoals = allGoals.slice(0, 10);
+            
+            // Atualizar container
+            recentGoalsContainer.innerHTML = '';
+            
+            if (recentGoals.length === 0) {
+                recentGoalsContainer.innerHTML = `
+                    <div class="update-item">
+                        <div class="update-time">--:--</div>
+                        <div class="update-content">
+                            <div class="update-match">SEM GOLS</div>
+                            <div class="update-text">Nenhum gol marcado ainda</div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            recentGoals.forEach(goal => {
+                const updateTime = goal.minute ? `${goal.minute}'` : 
+                    new Date(goal.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                
+                const updateItem = document.createElement('div');
+                updateItem.className = 'update-item goal-update highlight-update';
+                updateItem.innerHTML = `
+                    <div class="update-time">${updateTime}</div>
+                    <div class="update-content">
+                        <div class="update-match">${goal.matchName}</div>
+                        <div class="update-text">
+                            <i class="fas fa-futbol"></i> ${goal.player || 'Jogador'} 
+                            ${goal.isPenalty ? '<span class="penalty-badge">PÊNALTI</span>' : ''}
+                        </div>
+                    </div>
+                `;
+                recentGoalsContainer.appendChild(updateItem);
+            });
+        }
+
+        // ====== ATUALIZAÇÕES RECENTES ======
+        function loadRecentUpdates() {
+            recentUpdatesContainer.innerHTML = '';
+            
+            // Coletar eventos recentes
+            const events = [];
+            
+            allMatches.forEach(match => {
+                // Evento de status da partida
+                events.push({
+                    type: 'match_status',
+                    match: match,
+                    text: `${match.status === 'live' ? '▶️ PARTIDA INICIADA' : 
+                           match.status === 'finished' ? '🏁 PARTIDA FINALIZADA' : 
+                           '⏰ PARTIDA AGENDADA'}: ${match.homeTeamName} vs ${match.awayTeamName}`,
+                    timestamp: match.updatedAt || match.createdAt
+                });
+                
+                // Eventos de gols
+                if (match.goals && match.goals.length > 0) {
+                    match.goals.slice(-3).forEach(goal => {
+                        events.push({
+                            type: 'goal',
+                            match: match,
+                            text: `⚽ GOL! ${goal.player || 'Jogador'} (${goal.minute || '?'}') - ${goal.isPenalty ? 'PÊNALTI' : ''}`,
+                            timestamp: goal.timestamp || match.updatedAt
+                        });
+                    });
+                }
+                
+                // Eventos de cartões
+                if (match.cards && match.cards.length > 0) {
+                    match.cards.slice(-3).forEach(card => {
+                        events.push({
+                            type: 'card',
+                            match: match,
+                            text: `${card.type === 'red' ? '🟥 CARTÃO VERMELHO' : '🟨 CARTÃO AMARELO'} - ${card.player || 'Jogador'}`,
+                            timestamp: card.timestamp || match.updatedAt
+                        });
+                    });
+                }
+            });
+            
+            // Ordenar por timestamp (mais recentes primeiro)
+            events.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            // Pegar os 15 mais recentes
+            const recentEvents = events.slice(0, 15);
+            
+            if (recentEvents.length === 0) {
+                recentUpdatesContainer.innerHTML = `
+                    <div class="update-item">
+                        <div class="update-time">--:--</div>
+                        <div class="update-content">
+                            <div class="update-match">SEM ATUALIZAÇÕES</div>
+                            <div class="update-text">Aguardando eventos das partidas</div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            recentEvents.forEach(event => {
+                const updateTime = new Date(event.timestamp).toLocaleTimeString('pt-BR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                
+                const updateItem = document.createElement('div');
+                updateItem.className = `update-item ${event.type === 'goal' ? 'goal-update' : ''}`;
+                updateItem.innerHTML = `
+                    <div class="update-time">${updateTime}</div>
+                    <div class="update-content">
+                        <div class="update-match">${event.match.sportName || 'ESPORTE'}</div>
+                        <div class="update-text">${event.text}</div>
+                    </div>
+                `;
+                recentUpdatesContainer.appendChild(updateItem);
+            });
+        }
+
+        // ====== CAMPO DE FUTEBOL ======
+        function updateFieldMatchSelect() {
+            fieldMatchSelect.innerHTML = '<option value="">Selecione uma partida</option>';
+            
+            // Adicionar apenas partidas com times que têm jogadores
+            const matchesWithPlayers = allMatches.filter(match => 
+                match.status === 'live' || match.status === 'finished'
+            );
+            
+            matchesWithPlayers.forEach(match => {
+                const option = document.createElement('option');
+                option.value = match.id;
+                option.textContent = `${match.homeTeamName} vs ${match.awayTeamName} (${match.status === 'live' ? 'AO VIVO' : 'FINALIZADO'})`;
+                option.dataset.match = JSON.stringify(match);
+                fieldMatchSelect.appendChild(option);
+            });
+            
+            // Selecionar a primeira partida ao vivo automaticamente
+            const firstLiveMatch = matchesWithPlayers.find(m => m.status === 'live');
+            if (firstLiveMatch && !currentFieldMatch) {
+                fieldMatchSelect.value = firstLiveMatch.id;
+                currentFieldMatch = firstLiveMatch.id;
+                drawFootballField(firstLiveMatch.id);
+            }
+        }
+
+        function drawFootballField(matchId) {
+            footballField.innerHTML = '';
+            playerInfo.innerHTML = 'Selecione um jogador para ver informações';
+            
+            // Desenhar linhas do campo
+            const lines = [
+                { className: 'half-line' },
+                { className: 'center-circle' },
+                { className: 'center-spot' },
+                { className: 'penalty-area left' },
+                { className: 'penalty-area right' },
+                { className: 'goal-area left' },
+                { className: 'goal-area right' },
+                { className: 'goal left' },
+                { className: 'goal right' }
+            ];
+            
+            lines.forEach(line => {
+                const div = document.createElement('div');
+                div.className = line.className;
+                footballField.appendChild(div);
+            });
+            
+            // Carregar dados da partida
+            database.ref('matches/' + matchId).once('value').then((matchSnap) => {
+                const match = matchSnap.val();
+                
+                // Carregar times
+                Promise.all([
+                    database.ref('teams/' + match.homeTeamId).once('value'),
+                    database.ref('teams/' + match.awayTeamId).once('value')
+                ]).then(([homeSnap, awaySnap]) => {
+                    const homeTeam = homeSnap.val();
+                    const awayTeam = awaySnap.val();
+                    
+                    if (!homeTeam || !awayTeam) return;
+                    
+                    // Desenhar jogadores do time da casa (esquerda)
+                    if (homeTeam.players) {
+                        drawTeamPlayers(homeTeam.players, 'home', homeTeam.color || '#1a2980');
+                    }
+                    
+                    // Desenhar jogadores do time visitante (direita)
+                    if (awayTeam.players) {
+                        drawTeamPlayers(awayTeam.players, 'away', awayTeam.color || '#e74c3c');
+                    }
+                    
+                    // Atualizar informações da partida
+                    playerInfo.innerHTML = `
+                        <strong>${match.homeTeamName} ${match.homeScore || 0} x ${match.awayScore || 0} ${match.awayTeamName}</strong><br>
+                        ${match.status === 'live' ? '⚫ AO VIVO' : '✅ FINALIZADO'} • ${match.sportName || 'Futebol'}
+                    `;
+                });
+            });
+        }
+
+        function drawTeamPlayers(playersString, teamSide, teamColor) {
+            const players = formatPlayersData(playersString);
+            
+            // Posições baseadas no lado do campo
+            const baseX = teamSide === 'home' ? 25 : 75;
+            
+            // Posições pré-definidas por posição
+            const positionLayout = {
+                'Goleiro': [{ x: baseX, y: 50 }],
+                'Defensor': [
+                    { x: baseX, y: 20 },
+                    { x: baseX, y: 35 },
+                    { x: baseX, y: 65 },
+                    { x: baseX, y: 80 }
+                ],
+                'Meio-campo': [
+                    { x: teamSide === 'home' ? 40 : 60, y: 20 },
+                    { x: teamSide === 'home' ? 40 : 60, y: 35 },
+                    { x: teamSide === 'home' ? 40 : 60, y: 50 },
+                    { x: teamSide === 'home' ? 40 : 60, y: 65 },
+                    { x: teamSide === 'home' ? 40 : 60, y: 80 }
+                ],
+                'Atacante': [
+                    { x: teamSide === 'home' ? 55 : 45, y: 20 },
+                    { x: teamSide === 'home' ? 55 : 45, y: 35 },
+                    { x: teamSide === 'home' ? 55 : 45, y: 65 },
+                    { x: teamSide === 'home' ? 55 : 45, y: 80 }
+                ],
+                'Não definida': [{ x: baseX, y: 50 }]
+            };
+            
+            const positionColors = {
+                'Goleiro': '#FF6B6B',
+                'Defensor': '#4ECDC4',
+                'Meio-campo': '#45B7D1',
+                'Atacante': '#96CEB4',
+                'Não definida': '#95A5A6'
+            };
+            
+            const positionCounters = {};
+            
+            players.forEach(player => {
+                const position = player.position;
+                
+                // Inicializar contador para esta posição
+                if (!positionCounters[position]) {
+                    positionCounters[position] = 0;
+                }
+                
+                // Obter coordenadas para esta posição
+                const positions = positionLayout[position] || positionLayout['Não definida'];
+                const index = positionCounters[position] % positions.length;
+                const coords = positions[index];
+                positionCounters[position]++;
+                
+                // Criar elemento do jogador
+                const playerDiv = document.createElement('div');
+                playerDiv.className = 'player-on-field';
+                playerDiv.style.left = `${coords.x}%`;
+                playerDiv.style.top = `${coords.y}%`;
+                playerDiv.style.backgroundColor = positionColors[position] || teamColor;
+                playerDiv.dataset.player = JSON.stringify(player);
+                playerDiv.dataset.team = teamSide;
+                
+                // Nome abreviado
+                const nameParts = player.name.split(' ');
+                let initials = '';
+                if (nameParts.length >= 2) {
+                    initials = nameParts[0].charAt(0) + nameParts[1].charAt(0);
+                } else {
+                    initials = player.name.substring(0, 2);
+                }
+                
+                playerDiv.innerHTML = `
+                    ${initials.toUpperCase()}
+                    <div class="player-number-field">${player.number}</div>
+                `;
+                
+                // Evento de clique
+                playerDiv.addEventListener('click', function() {
+                    const playerData = JSON.parse(this.dataset.player);
+                    playerInfo.innerHTML = `
+                        <strong>${playerData.name}</strong><br>
+                        Camisa: ${playerData.number}<br>
+                        Posição: ${playerData.position}<br>
+                        Time: ${teamSide === 'home' ? 'Casa' : 'Visitante'}
+                    `;
+                });
+                
+                footballField.appendChild(playerDiv);
+            });
+        }
+
+        function formatPlayersData(playersString) {
+            const players = [];
+            if (!playersString) return players;
+            
+            const playerEntries = playersString.split(',').map(p => p.trim());
+            
+            playerEntries.forEach(entry => {
+                const parts = entry.split('/').map(p => p.trim());
+                if (parts.length >= 2) {
+                    const player = {
+                        name: parts[0],
+                        number: parts[1],
+                        position: parts[2] || 'Não definida'
+                    };
+                    players.push(player);
+                }
+            });
+            
+            return players;
+        }
+
+        // ====== VÍDEO EM DESTAQUE ======
+        function loadHighlightVideo() {
+            // Encontrar partida com vídeo
+            const matchWithVideo = allMatches.find(match => match.videoId);
+            
+            if (!matchWithVideo || !matchWithVideo.videoId) {
+                highlightVideoContainer.innerHTML = `
+                    <div class="video-container">
+                        <div class="video-placeholder">
+                            <i class="fas fa-play-circle" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                            <p>Sem transmissão no momento</p>
+                            <p style="font-size: 0.8rem; margin-top: 5px;">As transmissões aparecerão aqui</p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Criar player do YouTube (autoplay, controles limitados)
+            highlightVideoContainer.innerHTML = `
+                <div class="video-container">
+                    <iframe 
+                        class="video-player"
+                        src="https://www.youtube.com/embed/${matchWithVideo.videoId}?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0&fs=0"
+                        title="Transmissão ao vivo"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen
+                    ></iframe>
+                    <div class="video-overlay">
+                        <a href="https://www.youtube.com/watch?v=${matchWithVideo.videoId}" 
+                           target="_blank" 
+                           class="watch-on-youtube">
+                            <i class="fab fa-youtube"></i>
+                            Assistir no YouTube
+                        </a>
+                    </div>
+                </div>
+                <div style="margin-top: 10px; font-size: 0.9rem; text-align: center;">
+                    ${matchWithVideo.homeTeamName} vs ${matchWithVideo.awayTeamName}
+                </div>
+            `;
+        }
+
+        // ====== MONITORAMENTO EM TEMPO REAL ======
+        // Monitorar mudanças nas partidas
+        database.ref('matches').on('child_changed', (snapshot) => {
+            const updatedMatch = snapshot.val();
+            updatedMatch.id = snapshot.key;
+            
+            // Atualizar lista de partidas
+            const matchIndex = allMatches.findIndex(m => m.id === snapshot.key);
+            if (matchIndex !== -1) {
+                allMatches[matchIndex] = updatedMatch;
+            }
+            
+            // Recarregar se for partida ao vivo
+            if (updatedMatch.status === 'live') {
+                setTimeout(loadMatches, 1000);
+            }
+        });
+
+        // Monitorar novas partidas
+        database.ref('matches').on('child_added', (snapshot) => {
+            const newMatch = snapshot.val();
+            newMatch.id = snapshot.key;
+            
+            // Adicionar à lista
+            if (!allMatches.find(m => m.id === snapshot.key)) {
+                allMatches.push(newMatch);
+                
+                // Recarregar se for partida ao vivo
+                if (newMatch.status === 'live') {
+                    setTimeout(loadMatches, 1000);
+                }
+            }
+        });
+
+        // ====== INICIALIZAÇÃO FINAL ======
+        // Garantir que tudo seja carregado
+        setTimeout(() => {
+            loadMatches();
+        }, 1500);
+    </script>
+</body>
+</html>
