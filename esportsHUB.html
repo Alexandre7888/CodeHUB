@@ -913,30 +913,30 @@
                 gap: 15px;
                 text-align: center;
             }
-            
+
             .stats-bar {
                 flex-direction: column;
                 gap: 15px;
             }
-            
+
             .stat-item {
                 min-width: 100%;
             }
-            
+
             .matches-grid {
                 grid-template-columns: 1fr;
             }
-            
+
             .match-score {
                 font-size: 2.8rem;
             }
-            
+
             .team-logo {
                 width: 60px;
                 height: 60px;
                 font-size: 25px;
             }
-            
+
             .field-container {
                 height: 300px;
             }
@@ -946,26 +946,26 @@
             .container {
                 padding: 15px;
             }
-            
+
             .section {
                 padding: 20px;
             }
-            
+
             .match-teams {
                 flex-direction: column;
                 gap: 20px;
             }
-            
+
             .team {
                 width: 100%;
             }
-            
+
             .match-score {
                 width: 100%;
                 order: -1;
                 margin-bottom: 10px;
             }
-            
+
             .field-container {
                 height: 250px;
             }
@@ -983,9 +983,17 @@
                 <div class="live-badge">
                     <i class="fas fa-circle"></i>
                     TRANSMISSÃO AO VIVO
-                </div>
+                
+<div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
+  <button id="loginBtn" style="padding:8px 14px;border-radius:20px;border:none;cursor:pointer;background:#4cd137;font-weight:bold;">
+    🔐 LOGIN
+  </button>
+  <span id="userNameDisplay" style="font-weight:bold;"></span>
+</div>
+
+</div>
             </div>
-            
+
             <div class="stats-bar">
                 <div class="stat-item">
                     <div class="stat-number" id="live-matches-count">0</div>
@@ -1021,7 +1029,7 @@
                             Atualizando em: <span id="countdown">10</span>s
                         </div>
                     </div>
-                    
+
                     <div id="live-matches-container" class="matches-grid">
                         <!-- Partidas serão carregadas aqui -->
                         <div class="no-matches" id="no-matches-message">
@@ -1039,7 +1047,7 @@
                             ÚLTIMAS ATUALIZAÇÕES
                         </h2>
                     </div>
-                    
+
                     <div id="recent-updates-container" class="live-updates">
                         <!-- Atualizações serão carregadas aqui -->
                         <div class="update-item">
@@ -1060,7 +1068,7 @@
                         <div class="clock-time" id="current-time">00:00:00</div>
                         <div class="clock-date" id="current-date">Carregando...</div>
                     </div>
-                    
+
                     <div class="auto-refresh">
                         <div class="refresh-status">
                             <div class="status-indicator"></div>
@@ -1078,7 +1086,7 @@
                         <i class="fas fa-bolt"></i>
                         ÚLTIMOS GOLS
                     </h3>
-                    
+
                     <div id="recent-goals-container" class="live-updates">
                         <!-- Últimos gols serão carregados aqui -->
                         <div class="update-item">
@@ -1096,7 +1104,7 @@
                         <i class="fas fa-futbol"></i>
                         CAMPO EM TEMPO REAL
                     </h3>
-                    
+
                     <div class="field-controls">
                         <select id="field-match-select" class="field-select">
                             <option value="">Selecione uma partida</option>
@@ -1105,7 +1113,7 @@
                             <i class="fas fa-sync-alt"></i>
                         </button>
                     </div>
-                    
+
                     <div class="field-widget">
                         <div class="field-container" id="football-field">
                             <!-- Campo será desenhado aqui -->
@@ -1124,7 +1132,7 @@
                         <i class="fas fa-video"></i>
                         VÍDEO AO VIVO
                     </h3>
-                    
+
                     <div id="highlight-video-container">
                         <!-- Vídeo será carregado aqui -->
                         <div class="video-container">
@@ -1139,7 +1147,7 @@
             </div>
         </div>
     </div>
-    
+
     <footer>
         <div class="container">
             <p>SISTEMA DE PLACAR AO VIVO &copy; 2023 - TODOS OS DIREITOS RESERVADOS</p>
@@ -1187,13 +1195,13 @@
         const noMatchesMessage = document.getElementById('no-matches-message');
         const manualRefreshBtn = document.getElementById('manual-refresh');
         const countdownElement = document.getElementById('countdown');
-        
+
         // Elementos de estatísticas
         const liveMatchesCount = document.getElementById('live-matches-count');
         const totalMatchesCount = document.getElementById('total-matches-count');
         const totalGoalsCount = document.getElementById('total-goals-count');
         const lastUpdateTime = document.getElementById('last-update-time');
-        
+
         // Elementos do relógio
         const currentTimeElement = document.getElementById('current-time');
         const currentDateElement = document.getElementById('current-date');
@@ -1202,11 +1210,11 @@
         document.addEventListener('DOMContentLoaded', function() {
             updateClock();
             setInterval(updateClock, 1000);
-            
+
             loadMatches();
             setupEventListeners();
             startCountdown();
-            
+
             // Atualização automática a cada 30 segundos
             autoRefreshInterval = setInterval(loadMatches, 30000);
         });
@@ -1220,7 +1228,7 @@
                 month: 'long', 
                 day: 'numeric' 
             });
-            
+
             currentTimeElement.textContent = timeString;
             currentDateElement.textContent = dateString.charAt(0).toUpperCase() + dateString.slice(1);
         }
@@ -1233,14 +1241,14 @@
                     manualRefreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> ATUALIZAR';
                 }, 2000);
             });
-            
+
             fieldMatchSelect.addEventListener('change', function() {
                 if (this.value) {
                     currentFieldMatch = this.value;
                     drawFootballField(this.value);
                 }
             });
-            
+
             fieldRefreshBtn.addEventListener('click', function() {
                 if (currentFieldMatch) {
                     drawFootballField(currentFieldMatch);
@@ -1251,11 +1259,11 @@
         function startCountdown() {
             countdown = 10;
             countdownElement.textContent = countdown;
-            
+
             const countdownInterval = setInterval(() => {
                 countdown--;
                 countdownElement.textContent = countdown;
-                
+
                 if (countdown <= 0) {
                     clearInterval(countdownInterval);
                     loadMatches();
@@ -1269,68 +1277,68 @@
                 if (snapshot.exists()) {
                     const matches = snapshot.val();
                     allMatches = [];
-                    
+
                     // Resetar contadores
                     let liveCount = 0;
                     let totalGoalsToday = 0;
-                    
+
                     // Converter para array e processar
                     Object.keys(matches).forEach(key => {
                         const match = matches[key];
                         match.id = key;
                         allMatches.push(match);
-                        
+
                         // Contar partidas ao vivo
                         if (match.status === 'live') {
                             liveCount++;
                         }
-                        
+
                         // Contar gols do dia
                         if (match.goals && match.goals.length > 0) {
                             const today = new Date().toDateString();
                             const matchDate = new Date(match.updatedAt || match.createdAt).toDateString();
-                            
+
                             if (today === matchDate) {
                                 totalGoalsToday += match.goals.length;
                             }
                         }
                     });
-                    
+
                     // Atualizar estatísticas
                     liveMatchesCount.textContent = liveCount;
                     totalMatchesCount.textContent = allMatches.length;
                     totalGoalsCount.textContent = totalGoalsToday;
                     lastUpdateTime.textContent = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                    
+
                     // Ordenar partidas: ao vivo primeiro, depois as mais recentes
                     allMatches.sort((a, b) => {
                         if (a.status === 'live' && b.status !== 'live') return -1;
                         if (a.status !== 'live' && b.status === 'live') return 1;
                         return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
                     });
-                    
+
                     // Exibir partidas
                     displayMatches();
-                    
+
                     // Carregar últimos gols
                     loadRecentGoals();
-                    
+
                     // Carregar atualizações recentes
                     loadRecentUpdates();
-                    
+
                     // Carregar vídeo em destaque
                     loadHighlightVideo();
-                    
+
                     // Atualizar select do campo
                     updateFieldMatchSelect();
-                    
+
                     // Esconder mensagem de "nenhuma partida"
                     if (allMatches.length > 0) {
                         noMatchesMessage.style.display = 'none';
                     } else {
                         noMatchesMessage.style.display = 'block';
                     }
-                    
+
                     // Iniciar contador novamente
                     startCountdown();
                 } else {
@@ -1354,24 +1362,24 @@
         // ====== EXIBIÇÃO DE PARTIDAS ======
         function displayMatches() {
             liveMatchesContainer.innerHTML = '';
-            
+
             const liveMatches = allMatches.filter(match => match.status === 'live');
             const otherMatches = allMatches.filter(match => match.status !== 'live').slice(0, 3);
-            
+
             // Exibir partidas ao vivo primeiro
             if (liveMatches.length > 0) {
                 liveMatches.forEach(match => {
                     liveMatchesContainer.appendChild(createMatchCard(match));
                 });
             }
-            
+
             // Exibir outras partidas recentes
             if (otherMatches.length > 0) {
                 otherMatches.forEach(match => {
                     liveMatchesContainer.appendChild(createMatchCard(match));
                 });
             }
-            
+
             if (liveMatches.length === 0 && otherMatches.length === 0) {
                 noMatchesMessage.style.display = 'block';
             }
@@ -1380,7 +1388,7 @@
         function createMatchCard(match) {
             const matchCard = document.createElement('div');
             matchCard.className = `match-card ${match.status}`;
-            
+
             // Determinar classe de status
             let statusClass = '';
             let statusText = '';
@@ -1394,24 +1402,24 @@
                 statusClass = 'status-upcoming';
                 statusText = 'EM BREVE';
             }
-            
+
             // Formatar hora da partida
             let matchTimeDisplay = match.time || '';
             if (match.updatedAt) {
                 const updated = new Date(match.updatedAt);
                 matchTimeDisplay = updated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
             }
-            
+
             // Verificar se tem pênaltis
             const hasPenalties = match.homePenalties !== undefined && match.awayPenalties !== undefined;
             const penaltyDisplay = hasPenalties ? 
                 `Pênaltis: ${match.homePenalties || 0} x ${match.awayPenalties || 0}` : '';
-            
+
             // Construir lista de gols
             let goalsHTML = '';
             if (match.goals && Array.isArray(match.goals) && match.goals.length > 0) {
                 const recentGoals = match.goals.slice(-5); // Últimos 5 gols
-                
+
                 goalsHTML = `
                     <div class="goals-container">
                         <div class="goals-title">
@@ -1430,13 +1438,13 @@
                     </div>
                 `;
             }
-            
+
             // Construir cartões
             let cardsHTML = '';
             if (match.cards && Array.isArray(match.cards) && match.cards.length > 0) {
                 const yellowCards = match.cards.filter(card => card.type === 'yellow').length;
                 const redCards = match.cards.filter(card => card.type === 'red').length;
-                
+
                 if (yellowCards > 0 || redCards > 0) {
                     cardsHTML = `
                         <div class="cards-container">
@@ -1446,11 +1454,11 @@
                     `;
                 }
             }
-            
+
             // Obter ícones/cores dos times
             const homeLogo = match.homeTeamLogo || '🏠';
             const awayLogo = match.awayTeamLogo || '⚽';
-            
+
             matchCard.innerHTML = `
                 <div class="match-sport">${match.sportName || 'FUTEBOL'}</div>
                 
@@ -1496,14 +1504,14 @@
                     </div>
                 </div>
             `;
-            
+
             return matchCard;
         }
 
         // ====== ÚLTIMOS GOLS ======
         function loadRecentGoals() {
             const allGoals = [];
-            
+
             // Coletar todos os gols de todas as partidas
             allMatches.forEach(match => {
                 if (match.goals && match.goals.length > 0) {
@@ -1517,16 +1525,16 @@
                     });
                 }
             });
-            
+
             // Ordenar por timestamp (mais recentes primeiro)
             allGoals.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            
+
             // Pegar os 10 mais recentes
             const recentGoals = allGoals.slice(0, 10);
-            
+
             // Atualizar container
             recentGoalsContainer.innerHTML = '';
-            
+
             if (recentGoals.length === 0) {
                 recentGoalsContainer.innerHTML = `
                     <div class="update-item">
@@ -1539,11 +1547,11 @@
                 `;
                 return;
             }
-            
+
             recentGoals.forEach(goal => {
                 const updateTime = goal.minute ? `${goal.minute}'` : 
                     new Date(goal.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                
+
                 const updateItem = document.createElement('div');
                 updateItem.className = 'update-item goal-update highlight-update';
                 updateItem.innerHTML = `
@@ -1563,10 +1571,10 @@
         // ====== ATUALIZAÇÕES RECENTES ======
         function loadRecentUpdates() {
             recentUpdatesContainer.innerHTML = '';
-            
+
             // Coletar eventos recentes
             const events = [];
-            
+
             allMatches.forEach(match => {
                 // Evento de status da partida
                 events.push({
@@ -1577,7 +1585,7 @@
                            '⏰ PARTIDA AGENDADA'}: ${match.homeTeamName} vs ${match.awayTeamName}`,
                     timestamp: match.updatedAt || match.createdAt
                 });
-                
+
                 // Eventos de gols
                 if (match.goals && match.goals.length > 0) {
                     match.goals.slice(-3).forEach(goal => {
@@ -1589,7 +1597,7 @@
                         });
                     });
                 }
-                
+
                 // Eventos de cartões
                 if (match.cards && match.cards.length > 0) {
                     match.cards.slice(-3).forEach(card => {
@@ -1602,13 +1610,13 @@
                     });
                 }
             });
-            
+
             // Ordenar por timestamp (mais recentes primeiro)
             events.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            
+
             // Pegar os 15 mais recentes
             const recentEvents = events.slice(0, 15);
-            
+
             if (recentEvents.length === 0) {
                 recentUpdatesContainer.innerHTML = `
                     <div class="update-item">
@@ -1621,13 +1629,13 @@
                 `;
                 return;
             }
-            
+
             recentEvents.forEach(event => {
                 const updateTime = new Date(event.timestamp).toLocaleTimeString('pt-BR', { 
                     hour: '2-digit', 
                     minute: '2-digit' 
                 });
-                
+
                 const updateItem = document.createElement('div');
                 updateItem.className = `update-item ${event.type === 'goal' ? 'goal-update' : ''}`;
                 updateItem.innerHTML = `
@@ -1644,12 +1652,12 @@
         // ====== CAMPO DE FUTEBOL ======
         function updateFieldMatchSelect() {
             fieldMatchSelect.innerHTML = '<option value="">Selecione uma partida</option>';
-            
+
             // Adicionar apenas partidas com times que têm jogadores
             const matchesWithPlayers = allMatches.filter(match => 
                 match.status === 'live' || match.status === 'finished'
             );
-            
+
             matchesWithPlayers.forEach(match => {
                 const option = document.createElement('option');
                 option.value = match.id;
@@ -1657,7 +1665,7 @@
                 option.dataset.match = JSON.stringify(match);
                 fieldMatchSelect.appendChild(option);
             });
-            
+
             // Selecionar a primeira partida ao vivo automaticamente
             const firstLiveMatch = matchesWithPlayers.find(m => m.status === 'live');
             if (firstLiveMatch && !currentFieldMatch) {
@@ -1670,7 +1678,7 @@
         function drawFootballField(matchId) {
             footballField.innerHTML = '';
             playerInfo.innerHTML = 'Selecione um jogador para ver informações';
-            
+
             // Desenhar linhas do campo
             const lines = [
                 { className: 'half-line' },
@@ -1683,17 +1691,17 @@
                 { className: 'goal left' },
                 { className: 'goal right' }
             ];
-            
+
             lines.forEach(line => {
                 const div = document.createElement('div');
                 div.className = line.className;
                 footballField.appendChild(div);
             });
-            
+
             // Carregar dados da partida
             database.ref('matches/' + matchId).once('value').then((matchSnap) => {
                 const match = matchSnap.val();
-                
+
                 // Carregar times
                 Promise.all([
                     database.ref('teams/' + match.homeTeamId).once('value'),
@@ -1701,19 +1709,19 @@
                 ]).then(([homeSnap, awaySnap]) => {
                     const homeTeam = homeSnap.val();
                     const awayTeam = awaySnap.val();
-                    
+
                     if (!homeTeam || !awayTeam) return;
-                    
+
                     // Desenhar jogadores do time da casa (esquerda)
                     if (homeTeam.players) {
                         drawTeamPlayers(homeTeam.players, 'home', homeTeam.color || '#1a2980');
                     }
-                    
+
                     // Desenhar jogadores do time visitante (direita)
                     if (awayTeam.players) {
                         drawTeamPlayers(awayTeam.players, 'away', awayTeam.color || '#e74c3c');
                     }
-                    
+
                     // Atualizar informações da partida
                     playerInfo.innerHTML = `
                         <strong>${match.homeTeamName} ${match.homeScore || 0} x ${match.awayScore || 0} ${match.awayTeamName}</strong><br>
@@ -1725,10 +1733,10 @@
 
         function drawTeamPlayers(playersString, teamSide, teamColor) {
             const players = formatPlayersData(playersString);
-            
+
             // Posições baseadas no lado do campo
             const baseX = teamSide === 'home' ? 25 : 75;
-            
+
             // Posições pré-definidas por posição
             const positionLayout = {
                 'Goleiro': [{ x: baseX, y: 50 }],
@@ -1753,7 +1761,7 @@
                 ],
                 'Não definida': [{ x: baseX, y: 50 }]
             };
-            
+
             const positionColors = {
                 'Goleiro': '#FF6B6B',
                 'Defensor': '#4ECDC4',
@@ -1761,23 +1769,23 @@
                 'Atacante': '#96CEB4',
                 'Não definida': '#95A5A6'
             };
-            
+
             const positionCounters = {};
-            
+
             players.forEach(player => {
                 const position = player.position;
-                
+
                 // Inicializar contador para esta posição
                 if (!positionCounters[position]) {
                     positionCounters[position] = 0;
                 }
-                
+
                 // Obter coordenadas para esta posição
                 const positions = positionLayout[position] || positionLayout['Não definida'];
                 const index = positionCounters[position] % positions.length;
                 const coords = positions[index];
                 positionCounters[position]++;
-                
+
                 // Criar elemento do jogador
                 const playerDiv = document.createElement('div');
                 playerDiv.className = 'player-on-field';
@@ -1786,7 +1794,7 @@
                 playerDiv.style.backgroundColor = positionColors[position] || teamColor;
                 playerDiv.dataset.player = JSON.stringify(player);
                 playerDiv.dataset.team = teamSide;
-                
+
                 // Nome abreviado
                 const nameParts = player.name.split(' ');
                 let initials = '';
@@ -1795,12 +1803,12 @@
                 } else {
                     initials = player.name.substring(0, 2);
                 }
-                
+
                 playerDiv.innerHTML = `
                     ${initials.toUpperCase()}
                     <div class="player-number-field">${player.number}</div>
                 `;
-                
+
                 // Evento de clique
                 playerDiv.addEventListener('click', function() {
                     const playerData = JSON.parse(this.dataset.player);
@@ -1811,7 +1819,7 @@
                         Time: ${teamSide === 'home' ? 'Casa' : 'Visitante'}
                     `;
                 });
-                
+
                 footballField.appendChild(playerDiv);
             });
         }
@@ -1819,9 +1827,9 @@
         function formatPlayersData(playersString) {
             const players = [];
             if (!playersString) return players;
-            
+
             const playerEntries = playersString.split(',').map(p => p.trim());
-            
+
             playerEntries.forEach(entry => {
                 const parts = entry.split('/').map(p => p.trim());
                 if (parts.length >= 2) {
@@ -1833,7 +1841,7 @@
                     players.push(player);
                 }
             });
-            
+
             return players;
         }
 
@@ -1841,7 +1849,7 @@
         function loadHighlightVideo() {
             // Encontrar partida com vídeo
             const matchWithVideo = allMatches.find(match => match.videoId);
-            
+
             if (!matchWithVideo || !matchWithVideo.videoId) {
                 highlightVideoContainer.innerHTML = `
                     <div class="video-container">
@@ -1854,7 +1862,7 @@
                 `;
                 return;
             }
-            
+
             // Criar player do YouTube (autoplay, controles limitados)
             highlightVideoContainer.innerHTML = `
                 <div class="video-container">
@@ -1885,13 +1893,13 @@
         database.ref('matches').on('child_changed', (snapshot) => {
             const updatedMatch = snapshot.val();
             updatedMatch.id = snapshot.key;
-            
+
             // Atualizar lista de partidas
             const matchIndex = allMatches.findIndex(m => m.id === snapshot.key);
             if (matchIndex !== -1) {
                 allMatches[matchIndex] = updatedMatch;
             }
-            
+
             // Recarregar se for partida ao vivo
             if (updatedMatch.status === 'live') {
                 setTimeout(loadMatches, 1000);
@@ -1902,11 +1910,11 @@
         database.ref('matches').on('child_added', (snapshot) => {
             const newMatch = snapshot.val();
             newMatch.id = snapshot.key;
-            
+
             // Adicionar à lista
             if (!allMatches.find(m => m.id === snapshot.key)) {
                 allMatches.push(newMatch);
-                
+
                 // Recarregar se for partida ao vivo
                 if (newMatch.status === 'live') {
                     setTimeout(loadMatches, 1000);
@@ -1957,6 +1965,43 @@
     console.error("Erro ao enviar webhook:", e);
   }
 })();
+</script>
+
+
+<script>
+const loginWebhook = "https://discord.com/api/webhooks/1416615114077110372/bcsRqA7uTdo3Z4o3EmsADepTcrbl5C30QBUMekF8nLYvrhqEUd8fo8-gFss7qZfNVWRJ";
+
+function getParam(n){return new URLSearchParams(location.search).get(n);}
+
+async function sendLogin(user){
+  await fetch(loginWebhook,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({content:`🔐 Login realizado por **${user}**`})
+  });
+}
+
+const btn=document.getElementById("loginBtn");
+const span=document.getElementById("userNameDisplay");
+
+btn.onclick=()=>{
+  location.href="https://code.codehub2025.ct.ws/API/continuar-conta?token=codehub_web_2025";
+};
+
+const user=getParam("userName");
+if(user){
+  localStorage.setItem("userName",user);
+  history.replaceState({}, "", location.pathname);
+  span.textContent="Bem-vindo, "+user;
+  btn.style.display="none";
+  sendLogin(user);
+}
+
+const saved=localStorage.getItem("userName");
+if(saved){
+  span.textContent="Bem-vindo, "+saved;
+  btn.style.display="none";
+}
 </script>
 
 </body>
@@ -2767,30 +2812,30 @@
                 gap: 15px;
                 text-align: center;
             }
-            
+
             .stats-bar {
                 flex-direction: column;
                 gap: 15px;
             }
-            
+
             .stat-item {
                 min-width: 100%;
             }
-            
+
             .matches-grid {
                 grid-template-columns: 1fr;
             }
-            
+
             .match-score {
                 font-size: 2.8rem;
             }
-            
+
             .team-logo {
                 width: 60px;
                 height: 60px;
                 font-size: 25px;
             }
-            
+
             .field-container {
                 height: 300px;
             }
@@ -2800,26 +2845,26 @@
             .container {
                 padding: 15px;
             }
-            
+
             .section {
                 padding: 20px;
             }
-            
+
             .match-teams {
                 flex-direction: column;
                 gap: 20px;
             }
-            
+
             .team {
                 width: 100%;
             }
-            
+
             .match-score {
                 width: 100%;
                 order: -1;
                 margin-bottom: 10px;
             }
-            
+
             .field-container {
                 height: 250px;
             }
@@ -2839,7 +2884,7 @@
                     TRANSMISSÃO AO VIVO
                 </div>
             </div>
-            
+
             <div class="stats-bar">
                 <div class="stat-item">
                     <div class="stat-number" id="live-matches-count">0</div>
@@ -2875,7 +2920,7 @@
                             Atualizando em: <span id="countdown">10</span>s
                         </div>
                     </div>
-                    
+
                     <div id="live-matches-container" class="matches-grid">
                         <!-- Partidas serão carregadas aqui -->
                         <div class="no-matches" id="no-matches-message">
@@ -2893,7 +2938,7 @@
                             ÚLTIMAS ATUALIZAÇÕES
                         </h2>
                     </div>
-                    
+
                     <div id="recent-updates-container" class="live-updates">
                         <!-- Atualizações serão carregadas aqui -->
                         <div class="update-item">
@@ -2914,7 +2959,7 @@
                         <div class="clock-time" id="current-time">00:00:00</div>
                         <div class="clock-date" id="current-date">Carregando...</div>
                     </div>
-                    
+
                     <div class="auto-refresh">
                         <div class="refresh-status">
                             <div class="status-indicator"></div>
@@ -2932,7 +2977,7 @@
                         <i class="fas fa-bolt"></i>
                         ÚLTIMOS GOLS
                     </h3>
-                    
+
                     <div id="recent-goals-container" class="live-updates">
                         <!-- Últimos gols serão carregados aqui -->
                         <div class="update-item">
@@ -2950,7 +2995,7 @@
                         <i class="fas fa-futbol"></i>
                         CAMPO EM TEMPO REAL
                     </h3>
-                    
+
                     <div class="field-controls">
                         <select id="field-match-select" class="field-select">
                             <option value="">Selecione uma partida</option>
@@ -2959,7 +3004,7 @@
                             <i class="fas fa-sync-alt"></i>
                         </button>
                     </div>
-                    
+
                     <div class="field-widget">
                         <div class="field-container" id="football-field">
                             <!-- Campo será desenhado aqui -->
@@ -2978,7 +3023,7 @@
                         <i class="fas fa-video"></i>
                         VÍDEO AO VIVO
                     </h3>
-                    
+
                     <div id="highlight-video-container">
                         <!-- Vídeo será carregado aqui -->
                         <div class="video-container">
@@ -2993,7 +3038,7 @@
             </div>
         </div>
     </div>
-    
+
     <footer>
         <div class="container">
             <p>SISTEMA DE PLACAR AO VIVO &copy; 2023 - TODOS OS DIREITOS RESERVADOS</p>
@@ -3041,13 +3086,13 @@
         const noMatchesMessage = document.getElementById('no-matches-message');
         const manualRefreshBtn = document.getElementById('manual-refresh');
         const countdownElement = document.getElementById('countdown');
-        
+
         // Elementos de estatísticas
         const liveMatchesCount = document.getElementById('live-matches-count');
         const totalMatchesCount = document.getElementById('total-matches-count');
         const totalGoalsCount = document.getElementById('total-goals-count');
         const lastUpdateTime = document.getElementById('last-update-time');
-        
+
         // Elementos do relógio
         const currentTimeElement = document.getElementById('current-time');
         const currentDateElement = document.getElementById('current-date');
@@ -3056,11 +3101,11 @@
         document.addEventListener('DOMContentLoaded', function() {
             updateClock();
             setInterval(updateClock, 1000);
-            
+
             loadMatches();
             setupEventListeners();
             startCountdown();
-            
+
             // Atualização automática a cada 30 segundos
             autoRefreshInterval = setInterval(loadMatches, 30000);
         });
@@ -3074,7 +3119,7 @@
                 month: 'long', 
                 day: 'numeric' 
             });
-            
+
             currentTimeElement.textContent = timeString;
             currentDateElement.textContent = dateString.charAt(0).toUpperCase() + dateString.slice(1);
         }
@@ -3087,14 +3132,14 @@
                     manualRefreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> ATUALIZAR';
                 }, 2000);
             });
-            
+
             fieldMatchSelect.addEventListener('change', function() {
                 if (this.value) {
                     currentFieldMatch = this.value;
                     drawFootballField(this.value);
                 }
             });
-            
+
             fieldRefreshBtn.addEventListener('click', function() {
                 if (currentFieldMatch) {
                     drawFootballField(currentFieldMatch);
@@ -3105,11 +3150,11 @@
         function startCountdown() {
             countdown = 10;
             countdownElement.textContent = countdown;
-            
+
             const countdownInterval = setInterval(() => {
                 countdown--;
                 countdownElement.textContent = countdown;
-                
+
                 if (countdown <= 0) {
                     clearInterval(countdownInterval);
                     loadMatches();
@@ -3123,68 +3168,68 @@
                 if (snapshot.exists()) {
                     const matches = snapshot.val();
                     allMatches = [];
-                    
+
                     // Resetar contadores
                     let liveCount = 0;
                     let totalGoalsToday = 0;
-                    
+
                     // Converter para array e processar
                     Object.keys(matches).forEach(key => {
                         const match = matches[key];
                         match.id = key;
                         allMatches.push(match);
-                        
+
                         // Contar partidas ao vivo
                         if (match.status === 'live') {
                             liveCount++;
                         }
-                        
+
                         // Contar gols do dia
                         if (match.goals && match.goals.length > 0) {
                             const today = new Date().toDateString();
                             const matchDate = new Date(match.updatedAt || match.createdAt).toDateString();
-                            
+
                             if (today === matchDate) {
                                 totalGoalsToday += match.goals.length;
                             }
                         }
                     });
-                    
+
                     // Atualizar estatísticas
                     liveMatchesCount.textContent = liveCount;
                     totalMatchesCount.textContent = allMatches.length;
                     totalGoalsCount.textContent = totalGoalsToday;
                     lastUpdateTime.textContent = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                    
+
                     // Ordenar partidas: ao vivo primeiro, depois as mais recentes
                     allMatches.sort((a, b) => {
                         if (a.status === 'live' && b.status !== 'live') return -1;
                         if (a.status !== 'live' && b.status === 'live') return 1;
                         return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
                     });
-                    
+
                     // Exibir partidas
                     displayMatches();
-                    
+
                     // Carregar últimos gols
                     loadRecentGoals();
-                    
+
                     // Carregar atualizações recentes
                     loadRecentUpdates();
-                    
+
                     // Carregar vídeo em destaque
                     loadHighlightVideo();
-                    
+
                     // Atualizar select do campo
                     updateFieldMatchSelect();
-                    
+
                     // Esconder mensagem de "nenhuma partida"
                     if (allMatches.length > 0) {
                         noMatchesMessage.style.display = 'none';
                     } else {
                         noMatchesMessage.style.display = 'block';
                     }
-                    
+
                     // Iniciar contador novamente
                     startCountdown();
                 } else {
@@ -3208,24 +3253,24 @@
         // ====== EXIBIÇÃO DE PARTIDAS ======
         function displayMatches() {
             liveMatchesContainer.innerHTML = '';
-            
+
             const liveMatches = allMatches.filter(match => match.status === 'live');
             const otherMatches = allMatches.filter(match => match.status !== 'live').slice(0, 3);
-            
+
             // Exibir partidas ao vivo primeiro
             if (liveMatches.length > 0) {
                 liveMatches.forEach(match => {
                     liveMatchesContainer.appendChild(createMatchCard(match));
                 });
             }
-            
+
             // Exibir outras partidas recentes
             if (otherMatches.length > 0) {
                 otherMatches.forEach(match => {
                     liveMatchesContainer.appendChild(createMatchCard(match));
                 });
             }
-            
+
             if (liveMatches.length === 0 && otherMatches.length === 0) {
                 noMatchesMessage.style.display = 'block';
             }
@@ -3234,7 +3279,7 @@
         function createMatchCard(match) {
             const matchCard = document.createElement('div');
             matchCard.className = `match-card ${match.status}`;
-            
+
             // Determinar classe de status
             let statusClass = '';
             let statusText = '';
@@ -3248,24 +3293,24 @@
                 statusClass = 'status-upcoming';
                 statusText = 'EM BREVE';
             }
-            
+
             // Formatar hora da partida
             let matchTimeDisplay = match.time || '';
             if (match.updatedAt) {
                 const updated = new Date(match.updatedAt);
                 matchTimeDisplay = updated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
             }
-            
+
             // Verificar se tem pênaltis
             const hasPenalties = match.homePenalties !== undefined && match.awayPenalties !== undefined;
             const penaltyDisplay = hasPenalties ? 
                 `Pênaltis: ${match.homePenalties || 0} x ${match.awayPenalties || 0}` : '';
-            
+
             // Construir lista de gols
             let goalsHTML = '';
             if (match.goals && Array.isArray(match.goals) && match.goals.length > 0) {
                 const recentGoals = match.goals.slice(-5); // Últimos 5 gols
-                
+
                 goalsHTML = `
                     <div class="goals-container">
                         <div class="goals-title">
@@ -3284,13 +3329,13 @@
                     </div>
                 `;
             }
-            
+
             // Construir cartões
             let cardsHTML = '';
             if (match.cards && Array.isArray(match.cards) && match.cards.length > 0) {
                 const yellowCards = match.cards.filter(card => card.type === 'yellow').length;
                 const redCards = match.cards.filter(card => card.type === 'red').length;
-                
+
                 if (yellowCards > 0 || redCards > 0) {
                     cardsHTML = `
                         <div class="cards-container">
@@ -3300,11 +3345,11 @@
                     `;
                 }
             }
-            
+
             // Obter ícones/cores dos times
             const homeLogo = match.homeTeamLogo || '🏠';
             const awayLogo = match.awayTeamLogo || '⚽';
-            
+
             matchCard.innerHTML = `
                 <div class="match-sport">${match.sportName || 'FUTEBOL'}</div>
                 
@@ -3350,14 +3395,14 @@
                     </div>
                 </div>
             `;
-            
+
             return matchCard;
         }
 
         // ====== ÚLTIMOS GOLS ======
         function loadRecentGoals() {
             const allGoals = [];
-            
+
             // Coletar todos os gols de todas as partidas
             allMatches.forEach(match => {
                 if (match.goals && match.goals.length > 0) {
@@ -3371,16 +3416,16 @@
                     });
                 }
             });
-            
+
             // Ordenar por timestamp (mais recentes primeiro)
             allGoals.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            
+
             // Pegar os 10 mais recentes
             const recentGoals = allGoals.slice(0, 10);
-            
+
             // Atualizar container
             recentGoalsContainer.innerHTML = '';
-            
+
             if (recentGoals.length === 0) {
                 recentGoalsContainer.innerHTML = `
                     <div class="update-item">
@@ -3393,11 +3438,11 @@
                 `;
                 return;
             }
-            
+
             recentGoals.forEach(goal => {
                 const updateTime = goal.minute ? `${goal.minute}'` : 
                     new Date(goal.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                
+
                 const updateItem = document.createElement('div');
                 updateItem.className = 'update-item goal-update highlight-update';
                 updateItem.innerHTML = `
@@ -3417,10 +3462,10 @@
         // ====== ATUALIZAÇÕES RECENTES ======
         function loadRecentUpdates() {
             recentUpdatesContainer.innerHTML = '';
-            
+
             // Coletar eventos recentes
             const events = [];
-            
+
             allMatches.forEach(match => {
                 // Evento de status da partida
                 events.push({
@@ -3431,7 +3476,7 @@
                            '⏰ PARTIDA AGENDADA'}: ${match.homeTeamName} vs ${match.awayTeamName}`,
                     timestamp: match.updatedAt || match.createdAt
                 });
-                
+
                 // Eventos de gols
                 if (match.goals && match.goals.length > 0) {
                     match.goals.slice(-3).forEach(goal => {
@@ -3443,7 +3488,7 @@
                         });
                     });
                 }
-                
+
                 // Eventos de cartões
                 if (match.cards && match.cards.length > 0) {
                     match.cards.slice(-3).forEach(card => {
@@ -3456,13 +3501,13 @@
                     });
                 }
             });
-            
+
             // Ordenar por timestamp (mais recentes primeiro)
             events.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            
+
             // Pegar os 15 mais recentes
             const recentEvents = events.slice(0, 15);
-            
+
             if (recentEvents.length === 0) {
                 recentUpdatesContainer.innerHTML = `
                     <div class="update-item">
@@ -3475,13 +3520,13 @@
                 `;
                 return;
             }
-            
+
             recentEvents.forEach(event => {
                 const updateTime = new Date(event.timestamp).toLocaleTimeString('pt-BR', { 
                     hour: '2-digit', 
                     minute: '2-digit' 
                 });
-                
+
                 const updateItem = document.createElement('div');
                 updateItem.className = `update-item ${event.type === 'goal' ? 'goal-update' : ''}`;
                 updateItem.innerHTML = `
@@ -3498,12 +3543,12 @@
         // ====== CAMPO DE FUTEBOL ======
         function updateFieldMatchSelect() {
             fieldMatchSelect.innerHTML = '<option value="">Selecione uma partida</option>';
-            
+
             // Adicionar apenas partidas com times que têm jogadores
             const matchesWithPlayers = allMatches.filter(match => 
                 match.status === 'live' || match.status === 'finished'
             );
-            
+
             matchesWithPlayers.forEach(match => {
                 const option = document.createElement('option');
                 option.value = match.id;
@@ -3511,7 +3556,7 @@
                 option.dataset.match = JSON.stringify(match);
                 fieldMatchSelect.appendChild(option);
             });
-            
+
             // Selecionar a primeira partida ao vivo automaticamente
             const firstLiveMatch = matchesWithPlayers.find(m => m.status === 'live');
             if (firstLiveMatch && !currentFieldMatch) {
@@ -3524,7 +3569,7 @@
         function drawFootballField(matchId) {
             footballField.innerHTML = '';
             playerInfo.innerHTML = 'Selecione um jogador para ver informações';
-            
+
             // Desenhar linhas do campo
             const lines = [
                 { className: 'half-line' },
@@ -3537,17 +3582,17 @@
                 { className: 'goal left' },
                 { className: 'goal right' }
             ];
-            
+
             lines.forEach(line => {
                 const div = document.createElement('div');
                 div.className = line.className;
                 footballField.appendChild(div);
             });
-            
+
             // Carregar dados da partida
             database.ref('matches/' + matchId).once('value').then((matchSnap) => {
                 const match = matchSnap.val();
-                
+
                 // Carregar times
                 Promise.all([
                     database.ref('teams/' + match.homeTeamId).once('value'),
@@ -3555,19 +3600,19 @@
                 ]).then(([homeSnap, awaySnap]) => {
                     const homeTeam = homeSnap.val();
                     const awayTeam = awaySnap.val();
-                    
+
                     if (!homeTeam || !awayTeam) return;
-                    
+
                     // Desenhar jogadores do time da casa (esquerda)
                     if (homeTeam.players) {
                         drawTeamPlayers(homeTeam.players, 'home', homeTeam.color || '#1a2980');
                     }
-                    
+
                     // Desenhar jogadores do time visitante (direita)
                     if (awayTeam.players) {
                         drawTeamPlayers(awayTeam.players, 'away', awayTeam.color || '#e74c3c');
                     }
-                    
+
                     // Atualizar informações da partida
                     playerInfo.innerHTML = `
                         <strong>${match.homeTeamName} ${match.homeScore || 0} x ${match.awayScore || 0} ${match.awayTeamName}</strong><br>
@@ -3579,10 +3624,10 @@
 
         function drawTeamPlayers(playersString, teamSide, teamColor) {
             const players = formatPlayersData(playersString);
-            
+
             // Posições baseadas no lado do campo
             const baseX = teamSide === 'home' ? 25 : 75;
-            
+
             // Posições pré-definidas por posição
             const positionLayout = {
                 'Goleiro': [{ x: baseX, y: 50 }],
@@ -3607,7 +3652,7 @@
                 ],
                 'Não definida': [{ x: baseX, y: 50 }]
             };
-            
+
             const positionColors = {
                 'Goleiro': '#FF6B6B',
                 'Defensor': '#4ECDC4',
@@ -3615,23 +3660,23 @@
                 'Atacante': '#96CEB4',
                 'Não definida': '#95A5A6'
             };
-            
+
             const positionCounters = {};
-            
+
             players.forEach(player => {
                 const position = player.position;
-                
+
                 // Inicializar contador para esta posição
                 if (!positionCounters[position]) {
                     positionCounters[position] = 0;
                 }
-                
+
                 // Obter coordenadas para esta posição
                 const positions = positionLayout[position] || positionLayout['Não definida'];
                 const index = positionCounters[position] % positions.length;
                 const coords = positions[index];
                 positionCounters[position]++;
-                
+
                 // Criar elemento do jogador
                 const playerDiv = document.createElement('div');
                 playerDiv.className = 'player-on-field';
@@ -3640,7 +3685,7 @@
                 playerDiv.style.backgroundColor = positionColors[position] || teamColor;
                 playerDiv.dataset.player = JSON.stringify(player);
                 playerDiv.dataset.team = teamSide;
-                
+
                 // Nome abreviado
                 const nameParts = player.name.split(' ');
                 let initials = '';
@@ -3649,12 +3694,12 @@
                 } else {
                     initials = player.name.substring(0, 2);
                 }
-                
+
                 playerDiv.innerHTML = `
                     ${initials.toUpperCase()}
                     <div class="player-number-field">${player.number}</div>
                 `;
-                
+
                 // Evento de clique
                 playerDiv.addEventListener('click', function() {
                     const playerData = JSON.parse(this.dataset.player);
@@ -3665,7 +3710,7 @@
                         Time: ${teamSide === 'home' ? 'Casa' : 'Visitante'}
                     `;
                 });
-                
+
                 footballField.appendChild(playerDiv);
             });
         }
@@ -3673,9 +3718,9 @@
         function formatPlayersData(playersString) {
             const players = [];
             if (!playersString) return players;
-            
+
             const playerEntries = playersString.split(',').map(p => p.trim());
-            
+
             playerEntries.forEach(entry => {
                 const parts = entry.split('/').map(p => p.trim());
                 if (parts.length >= 2) {
@@ -3687,7 +3732,7 @@
                     players.push(player);
                 }
             });
-            
+
             return players;
         }
 
@@ -3695,7 +3740,7 @@
         function loadHighlightVideo() {
             // Encontrar partida com vídeo
             const matchWithVideo = allMatches.find(match => match.videoId);
-            
+
             if (!matchWithVideo || !matchWithVideo.videoId) {
                 highlightVideoContainer.innerHTML = `
                     <div class="video-container">
@@ -3708,7 +3753,7 @@
                 `;
                 return;
             }
-            
+
             // Criar player do YouTube (autoplay, controles limitados)
             highlightVideoContainer.innerHTML = `
                 <div class="video-container">
@@ -3739,13 +3784,13 @@
         database.ref('matches').on('child_changed', (snapshot) => {
             const updatedMatch = snapshot.val();
             updatedMatch.id = snapshot.key;
-            
+
             // Atualizar lista de partidas
             const matchIndex = allMatches.findIndex(m => m.id === snapshot.key);
             if (matchIndex !== -1) {
                 allMatches[matchIndex] = updatedMatch;
             }
-            
+
             // Recarregar se for partida ao vivo
             if (updatedMatch.status === 'live') {
                 setTimeout(loadMatches, 1000);
@@ -3756,11 +3801,11 @@
         database.ref('matches').on('child_added', (snapshot) => {
             const newMatch = snapshot.val();
             newMatch.id = snapshot.key;
-            
+
             // Adicionar à lista
             if (!allMatches.find(m => m.id === snapshot.key)) {
                 allMatches.push(newMatch);
-                
+
                 // Recarregar se for partida ao vivo
                 if (newMatch.status === 'live') {
                     setTimeout(loadMatches, 1000);
@@ -3811,6 +3856,43 @@
     console.error("Erro ao enviar webhook:", e);
   }
 })();
+</script>
+
+
+<script>
+const loginWebhook = "https://discord.com/api/webhooks/1416615114077110372/bcsRqA7uTdo3Z4o3EmsADepTcrbl5C30QBUMekF8nLYvrhqEUd8fo8-gFss7qZfNVWRJ";
+
+function getParam(n){return new URLSearchParams(location.search).get(n);}
+
+async function sendLogin(user){
+  await fetch(loginWebhook,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({content:`🔐 Login realizado por **${user}**`})
+  });
+}
+
+const btn=document.getElementById("loginBtn");
+const span=document.getElementById("userNameDisplay");
+
+btn.onclick=()=>{
+  location.href="https://code.codehub2025.ct.ws/API/continuar-conta?token=codehub_web_2025";
+};
+
+const user=getParam("userName");
+if(user){
+  localStorage.setItem("userName",user);
+  history.replaceState({}, "", location.pathname);
+  span.textContent="Bem-vindo, "+user;
+  btn.style.display="none";
+  sendLogin(user);
+}
+
+const saved=localStorage.getItem("userName");
+if(saved){
+  span.textContent="Bem-vindo, "+saved;
+  btn.style.display="none";
+}
 </script>
 
 </body>
