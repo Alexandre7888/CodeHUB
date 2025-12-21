@@ -5,6 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Placar Ao Vivo - Sistema Esportivo</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- OneSignal -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "561cd648-043c-4165-9bba-013df2d15bf3",
+      notifyButton: {
+        enable: true
+      }
+    });
+  });
+</script>
     <style>
         /* ====== ESTILOS GERAIS ====== */
         * {
@@ -3928,16 +3941,9 @@ if(saved){
 }
 </script>
 
+</body>
+</html>
 
-<!-- BOTÃO DE NOTIFICAÇÃO -->
-<button id="notifyBtn" style="position:fixed;bottom:20px;right:20px;padding:14px 18px;border-radius:50px;border:none;background:#4285f4;color:#fff;font-weight:bold;z-index:9999;box-shadow:0 4px 10px rgba(0,0,0,.3);cursor:pointer;">
-🔔 Ativar notificações
-</button>
-
-<script>
-const notifyBtn = document.getElementById("notifyBtn");
-
-notifyBtn.onclick = async () => {
   if (!("Notification" in window)) {
     alert("Seu navegador não suporta notificações");
     return;
@@ -3960,6 +3966,58 @@ notifyBtn.onclick = async () => {
   }, 1500);
 };
 </script>
+<!-- BOTÃO NOTIFICAÇÃO -->
+<button id="notifyBtn" style="
+position:fixed;
+bottom:20px;
+right:20px;
+padding:14px 20px;
+border:none;
+border-radius:50px;
+background:#4285f4;
+color:#fff;
+font-weight:bold;
+font-size:16px;
+box-shadow:0 4px 10px rgba(0,0,0,.4);
+cursor:pointer;
+z-index:9999;
+">
+🔔 Ativar notificações
+</button>
+
+<script>
+// REGISTRAR SERVICE WORKER
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js")
+    .then(() => console.log("SW registrado"))
+    .catch(err => console.error("Erro SW:", err));
+}
+
+document.getElementById("notifyBtn").onclick = async () => {
+  if (!("Notification" in window)) {
+    alert("Navegador não suporta notificações");
+    return;
+  }
+
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") {
+    alert("Permissão negada");
+    return;
+  }
+
+  const reg = await navigator.serviceWorker.ready;
+
+  // NOTIFICAÇÃO ESTILO GOOGLE
+  reg.showNotification("⚽ Placar ao vivo", {
+    body: "Gol confirmado! VDG 1 x 1 COR • 43'",
+    icon: "https://www.gstatic.com/images/icons/material/apps/chrome/512.png",
+    badge: "https://www.gstatic.com/images/icons/material/apps/chrome/128.png",
+    vibrate: [200, 100, 200],
+    tag: "placar"
+  });
+
+  document.getElementById("notifyBtn").textContent = "✅ Notificações ativas";
+};
 
 </body>
 </html>
