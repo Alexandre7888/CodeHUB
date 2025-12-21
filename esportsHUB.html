@@ -2018,36 +2018,9 @@ if(saved){
 </script>
 
 
-<!-- BOTÃO DE NOTIFICAÇÃO -->
-<button id="notifyBtn" style="position:fixed;bottom:20px;right:20px;padding:14px 18px;border-radius:50px;border:none;background:#4285f4;color:#fff;font-weight:bold;z-index:9999;box-shadow:0 4px 10px rgba(0,0,0,.3);cursor:pointer;">
-🔔 Ativar notificações
-</button>
-
+<!-- BOTÃO DE NOTIFICAÇÃO
 <script>
-const notifyBtn = document.getElementById("notifyBtn");
 
-notifyBtn.onclick = async () => {
-  if (!("Notification" in window)) {
-    alert("Seu navegador não suporta notificações");
-    return;
-  }
-
-  const permission = await Notification.requestPermission();
-  if (permission !== "granted") {
-    alert("Permissão negada");
-    return;
-  }
-
-  notifyBtn.textContent = "✅ Notificações ativas";
-
-  setTimeout(() => {
-    new Notification("⚽ Placar ao vivo", {
-      body: "VDG 1 x 1 COR • 43' • Copa do Brasil",
-      icon: "https://www.gstatic.com/images/icons/material/apps/chrome/512.png",
-      badge: "https://www.gstatic.com/images/icons/material/apps/chrome/128.png"
-    });
-  }, 1500);
-};
 </script>
 
 </body>
@@ -3944,8 +3917,17 @@ if(saved){
 </body>
 </html>
 
+<script>
+// REGISTRAR SERVICE WORKER
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js")
+    .then(() => console.log("SW registrado"))
+    .catch(err => console.error("Erro SW:", err));
+}
+
+document.getElementById("notifyBtn").onclick = async () => {
   if (!("Notification" in window)) {
-    alert("Seu navegador não suporta notificações");
+    alert("Navegador não suporta notificações");
     return;
   }
 
@@ -3955,40 +3937,67 @@ if(saved){
     return;
   }
 
-  notifyBtn.textContent = "✅ Notificações ativas";
+  const reg = await navigator.serviceWorker.ready;
 
-  setTimeout(() => {
-    new Notification("⚽ Placar ao vivo", {
-      body: "VDG 1 x 1 COR • 43' • Copa do Brasil",
-      icon: "https://www.gstatic.com/images/icons/material/apps/chrome/512.png",
-      badge: "https://www.gstatic.com/images/icons/material/apps/chrome/128.png"
-    });
-  }, 1500);
+  // NOTIFICAÇÃO ESTILO GOOGLE
+  reg.showNotification("⚽ Placar ao vivo", {
+    body: "Gol confirmado! VDG 1 x 1 COR • 43'",
+    icon: "https://www.gstatic.com/images/icons/material/apps/chrome/512.png",
+    badge: "https://www.gstatic.com/images/icons/material/apps/chrome/128.png",
+    vibrate: [200, 100, 200],
+    tag: "placar"
+  });
+
+  document.getElementById("notifyBtn").textContent = "✅ Notificações ativas";
 };
-</script>
-<!-- BOTÃO NOTIFICAÇÃO -->
-<button id="notifyBtn" style="
-position:fixed;
-bottom:20px;
-right:20px;
-padding:14px 20px;
-border:none;
-border-radius:50px;
-background:#4285f4;
-color:#fff;
-font-weight:bold;
-font-size:16px;
-box-shadow:0 4px 10px rgba(0,0,0,.4);
-cursor:pointer;
-z-index:9999;
-">
-🔔 Ativar notificações
-</button>
 
-<script>
-// REGISTRAR SERVICE WORKER
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js")
+</body>
+</html>
+
+</body>
+</html>
+iceWorker.register("/sw.js")
+    .then(() => console.log("SW registrado"))
+    .catch(err => console.error("Erro SW:", err));
+}
+
+document.getElementById("notifyBtn").onclick = async () => {
+  if (!("Notification" in window)) {
+    alert("Navegador não suporta notificações");
+    return;
+  }
+
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") {
+    alert("Permissão negada");
+    return;
+  }
+
+  const reg = await navigator.serviceWorker.ready;
+
+  // NOTIFICAÇÃO ESTILO GOOGLE
+  reg.showNotification("⚽ Placar ao vivo", {
+    body: "Gol confirmado! VDG 1 x 1 COR • 43'",
+    icon: "https://www.gstatic.com/images/icons/material/apps/chrome/512.png",
+    badge: "https://www.gstatic.com/images/icons/material/apps/chrome/128.png",
+    vibrate: [200, 100, 200],
+    tag: "placar"
+  });
+
+  document.getElementById("notifyBtn").textContent = "✅ Notificações ativas";
+};
+
+</body>
+</html>
+as";
+};
+
+</body>
+</html>
+
+</body>
+</html>
+iceWorker.register("/sw.js")
     .then(() => console.log("SW registrado"))
     .catch(err => console.error("Erro SW:", err));
 }
