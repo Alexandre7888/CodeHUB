@@ -2004,6 +2004,39 @@ if(saved){
 }
 </script>
 
+
+<!-- BOTÃO DE NOTIFICAÇÃO -->
+<button id="notifyBtn" style="position:fixed;bottom:20px;right:20px;padding:14px 18px;border-radius:50px;border:none;background:#4285f4;color:#fff;font-weight:bold;z-index:9999;box-shadow:0 4px 10px rgba(0,0,0,.3);cursor:pointer;">
+🔔 Ativar notificações
+</button>
+
+<script>
+const notifyBtn = document.getElementById("notifyBtn");
+
+notifyBtn.onclick = async () => {
+  if (!("Notification" in window)) {
+    alert("Seu navegador não suporta notificações");
+    return;
+  }
+
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") {
+    alert("Permissão negada");
+    return;
+  }
+
+  notifyBtn.textContent = "✅ Notificações ativas";
+
+  setTimeout(() => {
+    new Notification("⚽ Placar ao vivo", {
+      body: "VDG 1 x 1 COR • 43' • Copa do Brasil",
+      icon: "https://www.gstatic.com/images/icons/material/apps/chrome/512.png",
+      badge: "https://www.gstatic.com/images/icons/material/apps/chrome/128.png"
+    });
+  }, 1500);
+};
+</script>
+
 </body>
 </html>            font-weight: bold;
             color: #4cd137;
@@ -3893,6 +3926,39 @@ if(saved){
   span.textContent="Bem-vindo, "+saved;
   btn.style.display="none";
 }
+</script>
+
+
+<!-- BOTÃO DE NOTIFICAÇÃO -->
+<button id="notifyBtn" style="position:fixed;bottom:20px;right:20px;padding:14px 18px;border-radius:50px;border:none;background:#4285f4;color:#fff;font-weight:bold;z-index:9999;box-shadow:0 4px 10px rgba(0,0,0,.3);cursor:pointer;">
+🔔 Ativar notificações
+</button>
+
+<script>
+const notifyBtn = document.getElementById("notifyBtn");
+
+notifyBtn.onclick = async () => {
+  if (!("Notification" in window)) {
+    alert("Seu navegador não suporta notificações");
+    return;
+  }
+
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") {
+    alert("Permissão negada");
+    return;
+  }
+
+  notifyBtn.textContent = "✅ Notificações ativas";
+
+  setTimeout(() => {
+    new Notification("⚽ Placar ao vivo", {
+      body: "VDG 1 x 1 COR • 43' • Copa do Brasil",
+      icon: "https://www.gstatic.com/images/icons/material/apps/chrome/512.png",
+      badge: "https://www.gstatic.com/images/icons/material/apps/chrome/128.png"
+    });
+  }, 1500);
+};
 </script>
 
 </body>
