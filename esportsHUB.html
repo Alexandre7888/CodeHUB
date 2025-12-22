@@ -4028,5 +4028,41 @@ document.getElementById("notifyBtn").onclick = async () => {
   document.getElementById("notifyBtn").textContent = "✅ Notificações ativas";
 };
 
+<!-- BOTÃO DE NOTIFICAÇÃO -->
+<button id="btnNotify" style="padding:12px 18px;font-size:16px;">
+  Ativar notificações
+</button>
+
+<p id="msgNotify" style="display:none;font-weight:bold;color:green;">
+  Muito obrigado por ativar 🙏
+</p>
+
+<script>
+  window.OneSignal = window.OneSignal || [];
+  OneSignal.push(function () {
+
+    OneSignal.isPushNotificationsEnabled(function (isEnabled) {
+      if (isEnabled) {
+        document.getElementById("btnNotify").style.display = "none";
+        document.getElementById("msgNotify").style.display = "block";
+      }
+    });
+
+    document.getElementById("btnNotify").onclick = function () {
+      OneSignal.showNativePrompt();
+
+      // checa de novo depois do clique
+      setTimeout(function () {
+        OneSignal.isPushNotificationsEnabled(function (isEnabled) {
+          if (isEnabled) {
+            document.getElementById("btnNotify").style.display = "none";
+            document.getElementById("msgNotify").style.display = "block";
+          }
+        });
+      }, 2000);
+    };
+  });
+</script>
+
 </body>
 </html>
