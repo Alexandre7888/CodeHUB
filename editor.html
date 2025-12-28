@@ -9,10 +9,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
-  <!-- Xterm.js para Terminal -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.2.0/css/xterm.css" />
-  <script src="https://cdn.jsdelivr.net/npm/xterm@5.2.0/lib/xterm.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.7.0/lib/xterm-addon-fit.js"></script>
   <script src="https://alexandre7888.github.io/CodeHUB/protecao.js"></script>
 </head>
 <body>
@@ -31,12 +27,12 @@
         <input type="text" id="newFileName" placeholder="ex: script.js" required>
         <button type="submit">Criar arquivo</button>
       </form>
-      <button id="uploadBtn" style="display: none;">📤 Upload</button>
-      <button id="insertFileBtn">💻 Inserir Código</button>
+      <button id="uploadBtn">📤 Upload</button>
+      <button id="insertFileBtn">📎 Inserir Arquivo</button>
       <button id="saveFileBtn" disabled>💾 Salvar</button>
       <button id="previewBtn">👁️ Visualizar</button>
       <!-- BOTÃO DE DOMÍNIO ADICIONADO AQUI -->
-      <button id="linkBtn">🔗 Copiar Link</button>
+      <button id="domainBtn">🌐 Domínio</button>
       <button id="aiBtn">🤖 IA Assistente</button>
       <div id="user-info">
         <span id="user-name">Carregando...</span>
@@ -50,6 +46,14 @@
         <iframe id="file-iframe" src="about:blank"></iframe>
       </div>
 
+      <div id="upload-iframe-container">
+        <div id="upload-iframe-header">
+          <h3>Upload de Arquivos</h3>
+          <button id="close-upload-btn">Fechar</button>
+        </div>
+        <iframe id="upload-iframe" src="about:blank"></iframe>
+      </div>
+
       <div id="ai-iframe-container">
         <div id="ai-iframe-header">
           <h3>Assistente de IA</h3>
@@ -57,16 +61,6 @@
         </div>
         <iframe id="ai-iframe" src="about:blank"></iframe>
       </div>
-    </div>
-
-    <!-- Terminal Integrado -->
-    <div id="terminal-container" class="terminal-hidden">
-      <div id="terminal-header">
-        <span>Terminal</span>
-        <button id="toggle-terminal" title="Minimizar/Maximizar">−</button>
-        <button id="close-terminal" title="Fechar">×</button>
-      </div>
-      <div id="terminal"></div>
     </div>
 
     <div id="code-notification">
@@ -96,6 +90,8 @@
         </div>
       </div>
     </div>
+
+    <div class="upload-status" id="uploadStatus"></div>
   </div>
 
 
@@ -103,9 +99,13 @@
   <script src="https://alexandre7888.github.io/CodeHUB/protecao.js"></script>
 
   <script src="editor.js"></script>
-  <script src="terminal.js"></script>
   <script src="https://alexandre7888.github.io/CodeHUB/protecao.js"></script>
 
+<div id="floatingVideo" class="floating-video">
+  <video id="localVideo" autoplay muted playsinline></video>
+  <div id="remoteVideos"></div>
+</div>
+<script src="webrtc_added.js"></script>
 </body>
 
 </html>

@@ -38,13 +38,16 @@ const elements = {
   aiBtn: document.getElementById('aiBtn'),
   uploadBtn: document.getElementById('uploadBtn'),
   insertFileBtn: document.getElementById('insertFileBtn'),
-  linkBtn: document.getElementById('linkBtn'),
+  domainBtn: document.getElementById('domainBtn'),
   projectNameInput: document.getElementById('project-name'),
   tabsContainer: document.getElementById('tabs'),
   userNameElement: document.getElementById('user-name'),
   aiIframeContainer: document.getElementById('ai-iframe-container'),
   aiIframe: document.getElementById('ai-iframe'),
   closeAiBtn: document.getElementById('close-ai-btn'),
+  uploadIframeContainer: document.getElementById('upload-iframe-container'),
+  uploadIframe: document.getElementById('upload-iframe'),
+  closeUploadBtn: document.getElementById('close-upload-btn'),
   codeNotification: document.getElementById('code-notification'),
   codePreview: document.getElementById('code-preview'),
   targetFileSelect: document.getElementById('target-file-select'),
@@ -53,6 +56,7 @@ const elements = {
   loadingScreen: document.getElementById('loading-screen'),
   appContent: document.getElementById('app-content'),
   codefoxImage: document.getElementById('codefox'),
+  uploadStatus: document.getElementById('uploadStatus'),
   fileContainer: document.getElementById('file-container'),
   fileIframe: document.getElementById('file-iframe'),
   insertModal: document.getElementById('insertModal'),
@@ -475,6 +479,8 @@ function setupEventListeners() {
     window.open(url, '_blank');
   });
 
+  elements.domainBtn.addEventListener('click', showDomainModal);
+
   elements.projectNameInput.addEventListener('blur', updateProjectName);
 
   elements.aiBtn.addEventListener('click', function() {
@@ -489,12 +495,22 @@ function setupEventListeners() {
     elements.aiIframe.src = 'about:blank';
   });
 
-  elements.insertFileBtn.addEventListener('click', function() {
-    showInsertCodeModal();
+  elements.uploadBtn.addEventListener('click', function() {
+    if (!currentProjectId) return;
+    const uploadUrl = `https://nuvem-de-arquivos-drive--narrownarwhal3891229.on.websim.com/?projectId=${currentProjectId}&clipboard=true`;
+    elements.uploadIframe.src = uploadUrl;
+    elements.uploadIframeContainer.style.display = 'flex';
   });
 
-  elements.linkBtn.addEventListener('click', function() {
-    generateAndCopyLink();
+  elements.closeUploadBtn.addEventListener('click', function() {
+    elements.uploadIframeContainer.style.display = 'none';
+    elements.uploadIframe.src = 'about:blank';
+    loadProject();
+    loadUploadedFiles();
+  });
+
+  elements.insertFileBtn.addEventListener('click', function() {
+    showInsertModal();
   });
 
   elements.cancelInsertBtn.addEventListener('click', function() {
@@ -906,210 +922,6 @@ function insertCode() {
     elements.codeNotification.style.display = 'none';
     currentCode = null;
   });
-}
-
-
-function showInsertCodeModal() {
-  // Criar modal para inserir código direto
-  const modal = document.createElement('div');
-  modal.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 10000;
-  `;
-
-  modal.innerHTML = `
-    <div style="background: #252526; padding: 20px; border-radius: 10px; width: 600px; max-width: 90%; max-height: 80vh; overflow-y: auto;">
-      <h3 style="color: #4cc9f0; margin-top: 0;">💻 Inserir Código Direto</h3>
-      <p style="color: #ccc; font-size: 14px;">Cole o código que deseja inserir no arquivo atual</p>
-      
-      <textarea id="codeInput" placeholder="Cole seu código aqui..." 
-                style="width: 100%; height: 300px; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #555; background: #1e1e1e; color: #0db147; font-family: 'Courier New', monospace; font-size: 12px; resize: vertical;"></textarea>
-      
-      <div style="display: flex; gap: 10px; justify-content: flex-end;">
-        <button id="cancelCode" style="padding: 8px 16px; background: #666; color: white; border: none; border-radius: 5px; cursor: pointer;">Cancelar</button>
-        <button id="insertCodeBtn2" style="padding: 8px 16px; background: #4cc9f0; color: white; border: none; border-radius: 5px; cursor: pointer;">Inserir Código</button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-
-  const cancelBtn = modal.querySelector('#cancelCode');
-  const insertBtn = modal.querySelector('#insertCodeBtn2');
-  const codeInput = modal.querySelector('#codeInput');
-
-  cancelBtn.addEventListener('click', () => {
-    modal.remove();
-  });
-
-  insertBtn.addEventListener('click', () => {
-    const code = codeInput.value.trim();
-    
-    if (!code) {
-      alert('Por favor, insira algum código!');
-      return;
-    }
-
-    if (editor && currentFile && files[currentFile]) {
-      const model = editor.getModel();
-      if (model) {
-        const position = editor.getPosition();
-        const range = new monaco.Range(
-          position.lineNumber,
-          position.column,
-          position.lineNumber,
-          position.column
-        );
-
-        const id = { major: 1, minor: 1 };
-        const op = { 
-          identifier: id, 
-          range: range, 
-          text: code + '\n', 
-          forceMoveMarkers: true 
-        };
-
-        model.applyEdits([op]);
-        
-        // Marcar arquivo como modificado
-        elements.saveFileBtn.disabled = false;
-        elements.saveFileBtn.style.background = '#ff9500';
-        
-        alert('✓ Código inserido com sucesso!');
-        modal.remove();
-      }
-    } else {
-      alert('Erro: Abra um arquivo antes de inserir código!');
-    }
-  });
-
-  codeInput.focus();
-}
-
-function generateAndCopyLink() {
-  if (!currentProjectId || !currentUser) {
-    alert('Erro: Projeto ou usuário não identificado!');
-    return;
-  }
-
-  const projectName = elements.projectNameInput.value || 'projeto-sem-nome';
-  const slugName = projectName.toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^\w\-]+/g, '')
-    .replace(/\-\-+/g, '-')
-    .trim();
-
-  // Gerar link compartilhável baseado na URL atual
-  const currentUrl = window.location.origin + window.location.pathname;
-  const shareLink = `${currentUrl}?projectId=${currentProjectId}&user=${currentUser.uid}`;
-
-  // Criar uma URL curta usando base64
-  const shortId = btoa(`${currentUser.uid}/${currentProjectId}`)
-    .replace(/=/g, '')
-    .substring(0, 12);
-
-  const shortLink = `${window.location.origin}/share/${shortId}`;
-
-  // Mostrar modal com links
-  const modal = document.createElement('div');
-  modal.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 10000;
-  `;
-
-  modal.innerHTML = `
-    <div style="background: #252526; padding: 20px; border-radius: 10px; width: 500px; max-width: 90%;">
-      <h3 style="color: #ff9500; margin-top: 0;">🔗 Link do Projeto Criado!</h3>
-      <p style="color: #ccc; font-size: 14px;">Compartilhe o link abaixo com outros usuários</p>
-      
-      <div style="background: #1e1e1e; padding: 15px; border-radius: 5px; margin: 15px 0;">
-        <p style="color: #999; font-size: 12px; margin: 0 0 5px 0;">Link Completo:</p>
-        <div style="display: flex; gap: 10px;">
-          <input type="text" id="fullLink" value="${shareLink}" readonly
-                 style="flex: 1; padding: 8px; background: #2d2d2d; color: #0db147; border: 1px solid #555; border-radius: 4px; font-family: monospace; font-size: 12px;">
-          <button id="copyFullLink" style="padding: 8px 12px; background: #4cc9f0; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;">Copiar</button>
-        </div>
-      </div>
-
-      <div style="background: #1e1e1e; padding: 15px; border-radius: 5px; margin: 15px 0;">
-        <p style="color: #999; font-size: 12px; margin: 0 0 5px 0;">Link Curto:</p>
-        <div style="display: flex; gap: 10px;">
-          <input type="text" id="shortLink" value="${shortLink}" readonly
-                 style="flex: 1; padding: 8px; background: #2d2d2d; color: #0db147; border: 1px solid #555; border-radius: 4px; font-family: monospace; font-size: 12px;">
-          <button id="copyShortLink" style="padding: 8px 12px; background: #4cc9f0; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;">Copiar</button>
-        </div>
-      </div>
-
-      <div style="background: #1a472a; padding: 10px; border-radius: 5px; border-left: 4px solid #4cc9f0; margin: 15px 0;">
-        <p style="color: #4cc9f0; font-size: 12px; margin: 0;">
-          ℹ️ Qualquer pessoa com o link pode acessar e visualizar seu projeto!
-        </p>
-      </div>
-
-      <div style="display: flex; gap: 10px; justify-content: flex-end;">
-        <button id="closeLink" style="padding: 8px 16px; background: #666; color: white; border: none; border-radius: 5px; cursor: pointer;">Fechar</button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-
-  const copyFullBtn = modal.querySelector('#copyFullLink');
-  const copyShortBtn = modal.querySelector('#copyShortLink');
-  const closeBtn = modal.querySelector('#closeLink');
-
-  copyFullBtn.addEventListener('click', () => {
-    const input = modal.querySelector('#fullLink');
-    input.select();
-    document.execCommand('copy');
-    copyFullBtn.textContent = '✓ Copiado!';
-    copyFullBtn.style.background = '#4caf50';
-    setTimeout(() => {
-      copyFullBtn.textContent = 'Copiar';
-      copyFullBtn.style.background = '#4cc9f0';
-    }, 2000);
-  });
-
-  copyShortBtn.addEventListener('click', () => {
-    const input = modal.querySelector('#shortLink');
-    input.select();
-    document.execCommand('copy');
-    copyShortBtn.textContent = '✓ Copiado!';
-    copyShortBtn.style.background = '#4caf50';
-    setTimeout(() => {
-      copyShortBtn.textContent = 'Copiar';
-      copyShortBtn.style.background = '#4cc9f0';
-    }, 2000);
-  });
-
-  closeBtn.addEventListener('click', () => {
-    modal.remove();
-  });
-
-  // Salvar link no banco de dados
-  if (currentUser && currentProjectId) {
-    db.ref(`projects/${currentUser.uid}/${currentProjectId}/shareLink`).set({
-      fullLink: shareLink,
-      shortLink: shortLink,
-      createdAt: new Date().toISOString()
-    }).catch(err => console.log('Erro ao salvar link:', err));
-  }
 }
 
 function showInsertModal() {

@@ -1,47 +1,815 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fim do CodeHUB</title>
+
+  <!-- SEO -->
+  <meta name="description" content="CodeHUB - Editor de código online grátis para HTML, CSS e JavaScript. Desenvolva, teste e compartilhe seus projetos direto do navegador.">
+  <meta name="keywords" content="CodeHUB, editor de código online, IDE online, programar no navegador, editor HTML, editor CSS, editor JavaScript, desenvolvimento web, programação online, criar sites, editor de código grátis, IDE para iniciantes, editor responsivo, ferramenta de programação, codar no navegador, editor com terminal, escrever código online, depuração online, editor de código rápido, desenvolvimento colaborativo">
+  <meta name="author" content="CodeHUB">
+
+  <title>CodeHUB - Editor de Código Online</title>
+  <link rel="icon" type="image/png" href="https://alexandre7888.github.io/CodeHUB/InShot_20250807_112151490.jpg">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="google-site-verification" content="d5deNmIStRgPPphEkAypCTSv-E_1gi9ba16et47RSmA" />
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XQE93JQ3RB"></script>
+<script src="https://alexandre7888.github.io/CodeHUB/protecao.js"></script>
+<script src="https://alexandre7888.github.io/CodeHUB/Botao/floating-menu.js"></script>
+  <script src="https://alexandre7888.github.io/CodeHUB/protecao.js"></script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-XQE93JQ3RB');
+</script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-7RYPMEN60E');
+  </script>
+  <title>Meus Projetos - CodeHub</title>
   <style>
-    body {
+    /* Loading Screen Styles */
+    #loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, #1e293b, #0f172a);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      color: white;
       font-family: Arial, sans-serif;
-      background: #1e1e2f;
-      color: #fff;
+      z-index: 9999;
+      transition: opacity 0.5s ease;
+    }
+
+    #loading-screen h1 {
+      margin-top: 20px;
+      font-size: 1.8em;
+      color: #ff9500;
+      text-shadow: 0 0 10px #ff9500, 0 0 20px #ff7300;
+      animation: glowText 2s infinite alternate;
+    }
+
+    .loader {
+      width: 280px;
+      height: 280px;
+      animation: spinScale 4s ease-in-out infinite, glow 2s ease-in-out infinite alternate;
+      border-radius: 50%;
+      box-shadow: 0 0 20px rgba(255,149,0,0.5);
+      transition: all 0.5s ease-in-out;
+    }
+
+    @keyframes glowText {
+      0% { text-shadow: 0 0 5px #ff9500, 0 0 15px #ff7300; }
+      100% { text-shadow: 0 0 15px #ff9500, 0 0 30px #ff7300; }
+    }
+
+    @keyframes spinScale {
+      0%   { transform: rotate(0deg) scale(1); }
+      25%  { transform: rotate(90deg) scale(1.1); }
+      50%  { transform: rotate(180deg) scale(0.9); }
+      75%  { transform: rotate(270deg) scale(1.1); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+
+    @keyframes glow {
+      0% { box-shadow: 0 0 20px rgba(255,149,0,0.5), 0 0 40px rgba(255,149,0,0.3); }
+      100% { box-shadow: 0 0 40px rgba(255,149,0,0.8), 0 0 80px rgba(255,149,0,0.5); }
+    }
+
+    /* Main App Styles (hidden initially) */
+    #app-content {
+      display: none;
+    }
+
+    :root {
+      --primary-color: #4361ee;
+      --secondary-color: #3f37c9;
+      --accent-color: #4895ef;
+      --danger-color: #f72585;
+      --success-color: #4cc9f0;
+      --light-color: #f8f9fa;
+      --dark-color: #212529;
+      --gray-color: #6c757d;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f7fa;
+      color: #333;
+      line-height: 1.6;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
+    }
+
+    header {
+      background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+      color: white;
+      padding: 1rem;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
       align-items: center;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logout-btn {
+      background-color: var(--danger-color);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .container {
+      flex: 1;
+      max-width: 1200px;
+      margin: 1rem auto;
+      padding: 0 1rem;
+      width: 100%;
+    }
+
+    .projects-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .new-project-btn {
+      background-color: var(--success-color);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.3s;
+      white-space: nowrap;
+    }
+
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .project-card {
+      background-color: white;
+      border-radius: 10px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+      border: 1px solid #eaeaea;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .project-name {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--dark-color);
+    }
+
+    .project-domain {
+      font-size: 0.9rem;
+      color: var(--gray-color);
+      margin-bottom: 1rem;
+    }
+
+    .project-actions {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: auto;
+    }
+
+    .action-btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+      flex: 1;
       justify-content: center;
-      height: 100vh;
-      text-align: center;
-      padding: 20px;
     }
-    h1 {
-      font-size: 3em;
-      color: #ff4d4d;
-      margin-bottom: 20px;
+
+    .edit-btn {
+      background-color: var(--accent-color);
+      color: white;
     }
-    p {
-      font-size: 1.2em;
-      margin-bottom: 10px;
+
+    .delete-btn {
+      background-color: var(--danger-color);
+      color: white;
     }
-    .highlight {
-      color: #00ffff;
-      font-weight: bold;
+
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(3px);
     }
-    .footer {
-      margin-top: 30px;
-      font-size: 0.9em;
-      color: #aaa;
+
+    .modal-content {
+      background-color: white;
+      margin: 10% auto;
+      padding: 2rem;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      position: relative;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-header h3 {
+      font-size: 1.5rem;
+      color: var(--dark-color);
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--gray-color);
+      padding: 0 0.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: var(--dark-color);
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+    }
+
+    .cancel-btn {
+      background-color: var(--gray-color);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .confirm-btn {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    /* Cookie Banner */
+    .cookie-banner {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 999;
+    }
+
+    .cookie-banner p {
+      margin: 0.5rem 0;
+      flex: 1;
+      min-width: 250px;
+    }
+
+    .cookie-banner-buttons {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .cookie-btn {
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .cookie-accept {
+      background-color: var(--success-color);
+      color: white;
+      border: none;
+    }
+
+    .cookie-reject {
+      background-color: transparent;
+      color: white;
+      border: 1px solid white;
+    }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+      .projects-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .project-actions {
+        flex-direction: column;
+      }
+
+      .modal-content {
+        margin: 20% auto;
+      }
+
+      .cookie-banner {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .cookie-banner-buttons {
+        width: 100%;
+        justify-content: center;
+        margin-top: 1rem;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>CodeHUB Encerrado</h1>
-  <p>O <span class="highlight">CodeHUB</span> chegou ao fim.</p>
-  <p>Mas não se preocupe, uma nova versão está a caminho!</p>
-  <p>Ela será <span class="highlight">mais leve e sem editor de código</span>, focada em APIs e funcionalidades rápidas.</p>
-  <div class="footer">Obrigado por acompanhar até aqui! 🚀</div>
+  <!-- Loading Screen -->
+  <div id="loading-screen">
+    <img id="codefox" src="https://alexandre7888.github.io/CodeHUB/CodeFOX/foto1.jpg" class="loader" alt="CodeFOX girando">
+    <h1>Carregando...</h1>
+  </div>
+
+  <!-- Main App Content (hidden initially) -->
+  <div id="app-content">
+    <header>
+      <div class="header-content">
+        <h1>Meus Projetos</h1>
+        <div class="user-info">
+          <span id="username"></span>
+          <button class="logout-btn" onclick="logout()">
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="18" height="18">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+            </svg>
+            Sair
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="projects-header">
+        <h2>Seus Projetos</h2>
+        <button class="new-project-btn" onclick="openNewProjectModal()">
+          <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="18" height="18">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+          </svg>
+          Novo Projeto
+        </button>
+      </div>
+
+      <div id="projects-container" class="projects-grid">
+        <!-- Projetos serão carregados aqui dinamicamente -->
+      </div>
+    </div>
+
+    <!-- Modal de Novo Projeto -->
+    <div id="new-project-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Criar Novo Projeto</h3>
+          <button type="button" class="close-btn" onclick="closeNewProjectModal()">&times;</button>
+        </div>
+        <form id="project-form">
+          <div class="form-group">
+            <label for="project-name">Nome do Projeto</label>
+            <input type="text" id="project-name" placeholder="Ex: Meu Site Pessoal" required maxlength="50">
+          </div>
+          <div class="form-actions">
+            <button type="button" class="cancel-btn" onclick="closeNewProjectModal()">Cancelar</button>
+            <button type="submit" class="confirm-btn">Criar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Cookie Banner -->
+    <div id="cookie-banner" class="cookie-banner" style="display: none;">
+      <p>Nós usamos cookies para melhorar sua experiência. Ao continuar navegando, você concorda com o uso de cookies.</p>
+      <div class="cookie-banner-buttons">
+        <button class="cookie-btn cookie-accept" onclick="acceptCookies()">Aceitar</button>
+        <button class="cookie-btn cookie-reject" onclick="rejectCookies()">Recusar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase e App Script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
+    import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
+    import { getDatabase, ref, push, set, onValue, remove } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
+
+    // Configuração do Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
+      authDomain: "html-15e80.firebaseapp.com",
+      databaseURL: "https://html-15e80-default-rtdb.firebaseio.com",
+      projectId: "html-15e80",
+      storageBucket: "html-15e80.appspot.com",
+      messagingSenderId: "1068148640439",
+      appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32",
+      measurementId: "G-V57KRZ02HJ"
+    };
+
+    // Inicializar Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const database = getDatabase(app);
+
+    // Variáveis globais
+    let userData = null;
+    const loadingScreen = document.getElementById('loading-screen');
+    const appContent = document.getElementById('app-content');
+    const codefoxImage = document.getElementById('codefox');
+
+    // Configurar animação do loader
+    const imagens = [
+      "https://alexandre7888.github.io/CodeHUB/CodeFOX/foto1.jpg",
+      "https://alexandre7888.github.io/CodeHUB/CodeFOX/foto2.jpg",
+      "https://alexandre7888.github.io/CodeHUB/CodeFOX/foto3.jpg"
+    ];
+
+    let index = 0;
+    const loaderInterval = setInterval(() => {
+      index = (index + 1) % imagens.length;
+      codefoxImage.src = imagens[index];
+    }, 2000);
+
+    // Função para mostrar o conteúdo principal
+    function showAppContent() {
+      loadingScreen.style.opacity = '0';
+      setTimeout(() => {
+        loadingScreen.style.display = 'none';
+        appContent.style.display = 'block';
+        clearInterval(loaderInterval);
+      }, 500);
+    }
+
+    // Função para sanitizar nomes de arquivos
+    function sanitizeFilename(filename) {
+      return filename.replace(/[.#$/[\]]/g, '_');
+    }
+
+    // Função para validar nome do projeto
+    function isValidProjectName(name) {
+      return name && name.trim().length > 0 && name.length <= 50;
+    }
+
+    // Quando o DOM estiver carregado
+    document.addEventListener('DOMContentLoaded', () => {
+      // Verificar cookies
+      checkCookies();
+
+      // Configurar o formulário
+      const projectForm = document.getElementById('project-form');
+      if (projectForm) {
+        projectForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          createProject();
+        });
+      }
+    });
+
+    // Monitorar estado de autenticação
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.href = 'auth.html';
+      } else {
+        try {
+          userData = {
+            username: user.email?.split('@')[0] || 'usuário',
+            email: user.email || '',
+            uid: user.uid,
+            displayName: user.displayName || user.email?.split('@')[0] || 'usuário'
+          };
+
+          document.getElementById('username').textContent = userData.displayName;
+          loadProjects(user.uid);
+        } catch (error) {
+          console.error("Erro ao carregar dados do usuário:", error);
+          alert("Erro ao carregar dados. Por favor, recarregue a página.");
+        }
+      }
+    });
+
+    // Carregar projetos do usuário
+    function loadProjects(userId) {
+      try {
+        const projectsRef = ref(database, `projects/${userId}`);
+
+        onValue(projectsRef, (snapshot) => {
+          try {
+            const projectsContainer = document.getElementById('projects-container');
+            if (!projectsContainer) return;
+
+            projectsContainer.innerHTML = '';
+            const projects = snapshot.val() || {};
+
+            for (const [projectId, project] of Object.entries(projects)) {
+              if (!projectId || !project) continue;
+
+              const projectCard = document.createElement('div');
+              projectCard.className = 'project-card';
+              projectCard.innerHTML = `
+                <div class="project-name">${project.name || 'Projeto sem nome'}</div>
+                <div class="project-domain">${project.owner || userData?.displayName || 'usuário'}/${project.slug || 'sem-slug'}</div>
+                <div class="project-actions">
+                  <button class="action-btn edit-btn" onclick="window.location.href='editor.html?projectId=${projectId}'">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                    Abrir
+                  </button>
+                  <button class="action-btn delete-btn" onclick="deleteProject('${projectId}')">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    Excluir
+                  </button>
+                </div>
+              `;
+              projectsContainer.appendChild(projectCard);
+            }
+
+            // Mostrar conteúdo principal após carregar projetos
+            showAppContent();
+          } catch (error) {
+            console.error("Erro ao renderizar projetos:", error);
+            alert("Erro ao carregar projetos. Por favor, recarregue a página.");
+          }
+        }, (error) => {
+          console.error("Erro ao carregar projetos:", error);
+          alert("Erro ao carregar projetos. Verifique sua conexão e tente novamente.");
+        });
+      } catch (error) {
+        console.error("Erro no carregamento de projetos:", error);
+        alert("Erro no sistema. Por favor, tente novamente mais tarde.");
+      }
+    }
+
+    // Funções do modal
+    function openNewProjectModal() {
+      document.getElementById('new-project-modal').style.display = 'block';
+      document.getElementById('project-name').focus();
+    }
+
+    function closeNewProjectModal() {
+      document.getElementById('new-project-modal').style.display = 'none';
+      document.getElementById('project-name').value = '';
+    }
+
+    // Criar novo projeto
+    async function createProject() {
+      const projectName = document.getElementById('project-name').value.trim();
+      const user = auth.currentUser;
+
+      if (!isValidProjectName(projectName)) {
+        alert('Por favor, informe um nome válido para o projeto (1-50 caracteres)');
+        return;
+      }
+
+      try {
+        // Mostrar loading novamente
+        loadingScreen.style.display = 'flex';
+        loadingScreen.style.opacity = '1';
+        appContent.style.display = 'none';
+
+        // Criar slug para URL
+        const slug = projectName.toLowerCase()
+          .replace(/\s+/g, '-')
+          .replace(/[^\w\-]+/g, '')
+          .replace(/\-\-+/g, '-')
+          .replace(/^-+/, '')
+          .replace(/-+$/, '');
+
+        if (!slug) {
+          throw new Error('Não foi possível criar um slug válido a partir do nome');
+        }
+
+        const newProjectRef = push(ref(database, `projects/${user.uid}`));
+        const projectId = newProjectRef.key;
+
+        if (!projectId) {
+          throw new Error('Não foi possível gerar um ID para o projeto');
+        }
+
+        // Sanitiza o nome do arquivo
+        const mainFileName = sanitizeFilename('index.html');
+
+        // Dados do projeto - agora incluindo o nome do usuário como owner
+        const projectData = {
+          name: projectName,
+          slug: slug,
+          owner: userData.displayName || userData.username, // Adiciona o nome do usuário como dono
+          ownerId: user.uid, // Adiciona o ID do usuário
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          files: {
+            [mainFileName]: {
+              content: `<!DOCTYPE html>
+<html>
+<head>
+  <title>${projectName}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+  </style>
+</head>
+<body>
+  <h1>${projectName}</h1>
+  <p>Comece a editar seu código aqui!</p>
+</body>
+</html>`,
+              language: 'html',
+              createdAt: new Date().toISOString(),
+              originalName: 'index.html'
+            }
+          }
+        };
+
+        // Tentativa de salvar com timeout
+        await Promise.race([
+          set(newProjectRef, projectData),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Tempo excedido ao criar projeto')), 5000)
+          )
+        ]);
+
+        // Fecha o modal e redireciona
+        closeNewProjectModal();
+        window.location.href = `editor.html?projectId=${projectId}`;
+
+      } catch (error) {
+        console.error("Erro detalhado ao criar projeto:", error);
+        alert(`Ocorreu um erro ao criar o projeto. ${error.message}`);
+
+        // Voltar para o app content mesmo com erro
+        showAppContent();
+      }
+    }
+
+    // Excluir projeto
+    function deleteProject(projectId) {
+      if (confirm('Tem certeza que deseja excluir este projeto?')) {
+        try {
+          const user = auth.currentUser;
+          if (!user || !user.uid) {
+            throw new Error('Usuário não autenticado');
+          }
+
+          remove(ref(database, `projects/${user.uid}/${projectId}`))
+            .catch(error => {
+              console.error("Erro ao excluir projeto:", error);
+              alert('Erro ao excluir projeto. Por favor, tente novamente.');
+            });
+        } catch (error) {
+          console.error("Erro ao excluir projeto:", error);
+          alert('Erro ao excluir projeto. Por favor, tente novamente.');
+        }
+      }
+    }
+
+    // Logout
+    function logout() {
+      signOut(auth).then(() => {
+        window.location.href = 'auth.html';
+      }).catch(error => {
+        console.error("Erro ao fazer logout:", error);
+        alert('Erro ao fazer logout. Por favor, tente novamente.');
+      });
+    }
+
+    // Cookie functions
+    function checkCookies() {
+      if (localStorage.getItem('cookiesAccepted') === null) {
+        document.getElementById('cookie-banner').style.display = 'flex';
+      }
+    }
+
+    function acceptCookies() {
+      localStorage.setItem('cookiesAccepted', 'true');
+      document.getElementById('cookie-banner').style.display = 'none';
+      // Ativar Google Analytics se necessário
+      gtag('consent', 'update', {
+        'analytics_storage': 'granted'
+      });
+    }
+
+    function rejectCookies() {
+      localStorage.setItem('cookiesAccepted', 'false');
+      document.getElementById('cookie-banner').style.display = 'none';
+      // Desativar Google Analytics se necessário
+      gtag('consent', 'update', {
+        'analytics_storage': 'denied'
+      });
+    }
+
+    // Expor funções para o escopo global
+    window.openNewProjectModal = openNewProjectModal;
+    window.closeNewProjectModal = closeNewProjectModal;
+    window.deleteProject = deleteProject;
+    window.logout = logout;
+    window.acceptCookies = acceptCookies;
+    window.rejectCookies = rejectCookies;
+  </script>
+<script src="https://assistente-ia--socialkoala6579904.on.websim.com/embed.js"></script>
+  <script src="https://alexandre7888.github.io/CodeHUB/protecao.js"></script>
+
+
+  <script src="https://alexandre7888.github.io/CodeHUB/protecao.js"></script>
+  <script>
+<iframe src="https://discord.com/widget?id=1406804799734677667&theme=dark" 
+        width="350" height="500" 
+        allowtransparency="true" 
+        frameborder="0">
+</iframe>
+        
 </body>
 </html>
