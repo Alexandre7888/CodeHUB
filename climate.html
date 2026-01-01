@@ -28,13 +28,16 @@ body{margin:0;padding:8px;background:#f5f5f3;color:#222;overflow:hidden}
 <!-- OneSignal -->
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script>
-window.OneSignalDeferred = window.OneSignalDeferred || [];
-OneSignalDeferred.push(async function(OneSignal){
-  await OneSignal.init({
-    appId:"7ddf93f9-0522-4c4b-90d0-70608f2f9dc0",
-    notifyButton:{ enable:true }
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "7ddf93f9-0522-4c4b-90d0-70608f2f9dc0",
+      safari_web_id: "web.onesignal.auto.27be598e-7a22-4ed6-a01a-10378439b214",
+      notifyButton: {
+        enable: true,
+      },
+    });
   });
-});
 </script>
 
 <!-- Clima (carrega depois de tudo) -->
