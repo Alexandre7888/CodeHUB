@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visualizar Projeto</title>
+  <link rel="stylesheet" href="view.css">
+</head>
+<body>
+  <div id="loading">
+    <div class="loader"></div>
+    <div>Carregando projeto...</div>
+  </div>
+
+  <div id="file-list">
+    <button class="back-button" onclick="showProject()">← Voltar ao Projeto</button>
+    <h2>Arquivos do Projeto</h2>
+    <div id="file-list-content"></div>
+  </div>
+
+  <div id="file-viewer">
+    <div id="file-header">
+      <span id="file-title">Visualizando Arquivo</span>
+      <button id="close-file">Fechar</button>
+    </div>
+    <div id="file-content"></div>
+  </div>
+
+  <iframe id="preview-frame"></iframe>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="view.js"></script>
+</body>
+</html>

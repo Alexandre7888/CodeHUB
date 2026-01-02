@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editor de Projeto</title>
+  <link rel="stylesheet" href="editor.css">
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+  <script src="https://alexandre7888.github.io/CodeHUB/protecao.js"></script>
+</head>
+<body>
+  <!-- Tela de carregamento -->
+  <div id="loading-screen">
+    <img id="codefox" src="https://alexandre7888.github.io/CodeHUB/CodeFOX/foto1.jpg" class="loader" alt="CodeFOX girando">
+    <h1>Carregando...</h1>
+  </div>
+
+  <!-- Conteúdo principal (inicialmente oculto) -->
+  <div id="app-content">
+    <div id="top-bar">
+      <a href="index.html" class="back-btn">← Voltar</a>
+      <input type="text" id="project-name" value="Carregando...">
+      <form id="newFileForm">
+        <input type="text" id="newFileName" placeholder="ex: script.js" required>
+        <button type="submit">Criar arquivo</button>
+      </form>
+      <button id="uploadBtn">📤 Upload</button>
+      <button id="insertFileBtn">📎 Inserir Arquivo</button>
+      <button id="saveFileBtn" disabled>💾 Salvar</button>
+      <button id="previewBtn">👁️ Visualizar</button>
+      <!-- BOTÃO DE DOMÍNIO ADICIONADO AQUI -->
+      <button id="domainBtn">🌐 Domínio</button>
+      <button id="aiBtn">🤖 IA Assistente</button>
+      <div id="user-info">
+        <span id="user-name">Carregando...</span>
+      </div>
+    </div>
+
+    <div id="tabs"></div>
+
+    <div id="container">
+      <div id="file-container">
+        <iframe id="file-iframe" src="about:blank"></iframe>
+      </div>
+
+      <div id="upload-iframe-container">
+        <div id="upload-iframe-header">
+          <h3>Upload de Arquivos</h3>
+          <button id="close-upload-btn">Fechar</button>
+        </div>
+        <iframe id="upload-iframe" src="about:blank"></iframe>
+      </div>
+
+      <div id="ai-iframe-container">
+        <div id="ai-iframe-header">
+          <h3>Assistente de IA</h3>
+          <button id="close-ai-btn">Fechar</button>
+        </div>
+        <iframe id="ai-iframe" src="about:blank"></iframe>
+      </div>
+    </div>
+
+    <div id="code-notification">
+      <h3>Novo código recebido da IA!</h3>
+      <p>Selecione em qual arquivo deseja inserir:</p>
+      <select id="target-file-select">
+        <!-- Opções serão preenchidas dinamicamente -->
+      </select>
+      <pre id="code-preview"></pre>
+      <div id="code-notification-buttons">
+        <button id="insert-code-btn">Inserir</button>
+        <button id="discard-code-btn">Descartar</button>
+      </div>
+    </div>
+
+    <!-- Modal para inserir arquivo -->
+    <div class="modal-backdrop" id="insertModal">
+      <div class="modal">
+        <h3>Inserir Arquivo</h3>
+        <select id="file-select" class="modal-select">
+          <option value="">Selecione um arquivo</option>
+        </select>
+        <div id="insert-status"></div>
+        <div class="modal-buttons">
+          <button id="cancel-insert-btn">Cancelar</button>
+          <button id="confirm-insert-btn">Inserir Iframe</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="upload-status" id="uploadStatus"></div>
+  </div>
+
+
+  
+  <script src="https://alexandre7888.github.io/CodeHUB/protecao.js"></script>
+
+  <script src="editor.js"></script>
+  <script src="https://alexandre7888.github.io/CodeHUB/protecao.js"></script>
+
+<div id="floatingVideo" class="floating-video">
+  <video id="localVideo" autoplay muted playsinline></video>
+  <div id="remoteVideos"></div>
+</div>
+<script src="webrtc_added.js"></script>
+</body>
+
+</html>
