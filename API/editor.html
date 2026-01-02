@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Criador de Aplicativos com Token e Redirecionador</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      background: #121212;
+      color: #eee;
+      padding: 20px;
+      border-radius: 8px;
+    }
+    input, button, textarea, select {
+      padding: 10px;
+      margin: 5px 0;
+      width: 100%;
+      border-radius: 5px;
+      border: none;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    input, textarea, select {
+      background: #222;
+      color: #eee;
+    }
+    textarea {
+      min-height: 150px;
+      resize: vertical;
+    }
+    button {
+      background: #4caf50;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s;
+      width: auto;
+      padding: 8px 16px;
+      margin-right: 10px;
+      margin-top: 5px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    button.train-btn {
+      background: #2196F3;
+    }
+    button.train-btn:hover {
+      background: #1976D2;
+    }
+    button.url-btn {
+      background: #FF9800;
+    }
+    button.url-btn:hover {
+      background: #F57C00;
+    }
+    button.edit-btn {
+      background: #9C27B0;
+    }
+    button.edit-btn:hover {
+      background: #7B1FA2;
+    }
+    button.id-btn {
+      background: #607D8B;
+    }
+    button.id-btn:hover {
+      background: #455A64;
+    }
+    h1, h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #4caf50;
+    }
+    #tokenList, #trainingSection {
+      margin-top: 30px;
+    }
+    .token-item, .training-item {
+      background: #222;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      word-break: break-all;
+    }
+    .token-item strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #81c784;
+    }
+    .api-url {
+      color: #64b5f6;
+      text-decoration: none;
+      word-break: break-all;
+      display: block;
+      margin: 10px 0;
+      padding: 8px;
+      background: #1a1a1a;
+      border-radius: 4px;
+      border: 1px solid #333;
+    }
+    .section {
+      background: #1a1a1a;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .url-container {
+      margin: 10px 0;
+    }
+    .url-type {
+      color: #81c784;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .training-status {
+      margin: 10px 0;
+      padding: 8px;
+      border-radius: 4px;
+      background: #1a1a1a;
+    }
+    .trained {
+      color: #4caf50;
+      border: 1px solid #4caf50;
+    }
+    .not-trained {
+      color: #ff9800;
+      border: 1px solid #ff9800;
+    }
+    .training-form {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #333;
+    }
+    .info-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      margin-left: 10px;
+    }
+    .token-id-badge {
+      background: #9C27B0;
+      color: white;
+    }
+    .user-id-badge {
+      background: #2196F3;
+      color: white;
+    }
+    .id-display {
+      margin: 5px 0;
+      padding: 5px;
+      background: #1a1a1a;
+      border-radius: 4px;
+      border: 1px solid #333;
+    }
+    .id-label {
+      color: #81c784;
+      font-weight: bold;
+      margin-right: 10px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Criador de Aplicativos</h1>
+<a href="https://alexandre7888.github.io/CodeHUB/documentacao.html"
+   class="btn"
+   target="_blank"
+   rel="noopener noreferrer">
+  Abrir Documentação
+</a>
+
+<style>
+  .btn {
+    display: inline-block;
+    padding: 10px 18px;
+    background: #2b6cb0;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    margin-bottom: 20px;
+  }
+  .btn:hover {
+    opacity: 0.95;
+    transform: translateY(-1px);
+  }
+</style>
+
+<div class="section">
+  <h2>Gerar Novo Token</h2>
+  <form id="newTokenForm">
+    <div class="form-group">
+      <label for="appName">Nome do Aplicativo:</label>
+      <input type="text" id="appName" placeholder="Digite o nome do aplicativo" required />
+    </div>
+    
+    <div class="form-group">
+      <label for="redirectURL">URL de Redirecionamento:</label>
+      <input type="url" id="redirectURL" placeholder="https://exemplo.com/dashboard" required />
+    </div>
+    
+    <div class="form-group">
+      <label for="tokenType">Tipo de Token:</label>
+      <select id="tokenType" required>
+        <option value="standard">Padrão (20 caracteres)</option>
+        <option value="enhanced">Avançado (32 caracteres)</option>
+        <option value="custom">Personalizado</option>
+      </select>
+    </div>
+    
+    <div class="form-group" id="customLengthGroup" style="display: none;">
+      <label for="customLength">Comprimento Personalizado:</label>
+      <input type="number" id="customLength" min="10" max="100" value="20" />
+    </div>
+    
+    <button type="submit">Gerar Novo Token</button>
+    <button type="button" onclick="generateAndDisplayToken()">Pré-visualizar Token</button>
+  </form>
+  
+  <div id="previewSection" style="display: none; margin-top: 20px; padding: 15px; background: #2d2d2d; border-radius: 5px;">
+    <h3>Pré-visualização do Token</h3>
+    <div id="tokenPreview"></div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Informações de Autenticação</h2>
+  <div id="authInfo">
+    <p>Carregando informações de autenticação...</p>
+  </div>
+</div>
+
+<div id="tokenList" class="section">
+  <h2>APIs Criadas</h2>
+  <div id="tokensContainer">Carregando...</div>
+</div>
+
+<div id="trainingSection" class="section">
+  <h2>Treinar Inteligência Artificial</h2>
+  <div id="trainingContainer">
+    <p>Selecione uma API para treinar a IA</p>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+  import { getDatabase, ref, set, get, child, onValue, update, remove } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+
+  // Config do Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
+    authDomain: "html-15e80.firebaseapp.com",
+    databaseURL: "https://html-15e80-default-rtdb.firebaseio.com",
+    projectId: "html-15e80",
+    storageBucket: "html-15e80.appspot.com",
+    messagingSenderId: "1068148640439",
+    appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32",
+    measurementId: "G-V57KRZ02HJ"
+  };
+
+  // Inicializa Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const auth = getAuth(app);
+
+  // Elementos DOM
+  const appForm = document.getElementById('newTokenForm');
+  const appNameInput = document.getElementById('appName');
+  const redirectInput = document.getElementById('redirectURL');
+  const tokenTypeSelect = document.getElementById('tokenType');
+  const customLengthGroup = document.getElementById('customLengthGroup');
+  const customLengthInput = document.getElementById('customLength');
+  const previewSection = document.getElementById('previewSection');
+  const tokenPreview = document.getElementById('tokenPreview');
+  const tokensContainer = document.getElementById('tokensContainer');
+  const trainingContainer = document.getElementById('trainingContainer');
+  const authInfo = document.getElementById('authInfo');
+
+  // Variáveis globais
+  let userUID = null;
+  let userEmail = null;
+  let currentTokens = [];
+  let lastGeneratedToken = null;
+  let tokenIdCounter = 1;
+
+  // Gera ID único para token
+  function generateTokenID() {
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 10000);
+    return `TK_${timestamp}_${random}`;
+  }
+
+  // Gera token aleatório baseado no tipo
+  function generateToken(type = 'standard', customLength = 20) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let length = 20;
+    
+    switch(type) {
+      case 'enhanced':
+        length = 32;
+        break;
+      case 'custom':
+        length = Math.max(10, Math.min(100, parseInt(customLength) || 20));
+        break;
+      default:
+        length = 20;
+    }
+    
+    let token = '';
+    for(let i = 0; i < length; i++) {
+      token += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    
+    return token;
+  }
+
+  // Gerar e mostrar pré-visualização
+  function generateAndDisplayToken() {
+    const type = tokenTypeSelect.value;
+    const customLength = customLengthInput.value;
+    const token = generateToken(type, customLength);
+    
+    lastGeneratedToken = token;
+    
+    tokenPreview.innerHTML = `
+      <div class="id-display">
+        <span class="id-label">Token Gerado:</span>
+        <strong>${token}</strong>
+      </div>
+      <div class="id-display">
+        <span class="id-label">Tipo:</span>
+        ${type === 'standard' ? 'Padrão (20 caracteres)' : 
+          type === 'enhanced' ? 'Avançado (32 caracteres)' : 
+          `Personalizado (${customLength} caracteres)`}
+      </div>
+      <button onclick="copyToClipboard('${token}', 'Token')">Copiar Token</button>
+    `;
+    
+    previewSection.style.display = 'block';
+  }
+
+  // Copiar para área de transferência
+  function copyToClipboard(text, label = 'Texto') {
+    navigator.clipboard.writeText(text)
+      .then(() => alert(`${label} copiado com sucesso!`))
+      .catch(err => alert('Erro ao copiar: ' + err));
+  }
+
+  // Salvar dados de autenticação
+  function saveAuthData(uid, email) {
+    const authData = {
+      uid: uid,
+      email: email,
+      lastLogin: new Date().toISOString(),
+      savedAt: new Date().toISOString()
+    };
+    
+    // Salvar no localStorage
+    localStorage.setItem('userAuthData', JSON.stringify(authData));
+    
+    // Salvar no Firebase
+    try {
+      set(ref(db, `users/${uid}/authInfo`), authData);
+    } catch (error) {
+      console.error('Erro ao salvar auth data no Firebase:', error);
+    }
+  }
+
+  // Carregar dados de autenticação
+  function loadAuthData() {
+    const savedData = localStorage.getItem('userAuthData');
+    if (savedData) {
+      return JSON.parse(savedData);
+    }
+    return null;
+  }
+
+  // Atualizar display de informações de autenticação
+  function updateAuthInfoDisplay() {
+    const authData = loadAuthData();
+    
+    if (authData && userUID) {
+      authInfo.innerHTML = `
+        <div class="token-item">
+          <strong>Usuário Autenticado</strong>
+          <div class="id-display">
+            <span class="id-label">ID do Usuário:</span>
+            ${authData.uid}
+            <span class="info-badge user-id-badge">Firebase + LocalStorage</span>
+          </div>
+          <div class="id-display">
+            <span class="id-label">Email:</span>
+            ${authData.email || 'Não disponível'}
+          </div>
+          <div class="id-display">
+            <span class="id-label">Último Login:</span>
+            ${new Date(authData.lastLogin).toLocaleString()}
+          </div>
+          <button class="id-btn" onclick="copyToClipboard('${authData.uid}', 'ID do Usuário')">Copiar ID do Usuário</button>
+          <button class="id-btn" onclick="refreshAuthData()">Atualizar Dados</button>
+        </div>
+      `;
+    } else {
+      authInfo.innerHTML = `
+        <div class="token-item">
+          <p>Nenhum usuário autenticado. Faça login para acessar esta funcionalidade.</p>
+        </div>
+      `;
+    }
+  }
+
+  // Atualizar dados de autenticação
+  function refreshAuthData() {
+    if (userUID && userEmail) {
+      saveAuthData(userUID, userEmail);
+      updateAuthInfoDisplay();
+      alert('Dados de autenticação atualizados!');
+    }
+  }
+
+  // Salvar token com ID no Firebase e localStorage
+  async function saveTokenWithID(token, appName, redirectURL, tokenType, customLength = null) {
+    try {
+      const tokenID = generateTokenID();
+      const tokenData = {
+        id: tokenID,
+        token: token,
+        appName: appName,
+        redirectURL: redirectURL,
+        tokenType: tokenType,
+        customLength: customLength,
+        ownerUID: userUID,
+        ownerEmail: userEmail,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      // Salvar no Firebase (estrutura dupla para fácil acesso)
+      await set(ref(db, `tokens/${token}`), tokenData);
+      await set(ref(db, `users/${userUID}/tokens/${tokenID}`), tokenData);
+
+      // Salvar no localStorage
+      saveTokenToLocalStorage(tokenData);
+
+      alert(`Token criado com sucesso!\nID do Token: ${tokenID}\nToken: ${token}`);
+      
+      // Limpar formulário
+      appNameInput.value = '';
+      redirectInput.value = '';
+      previewSection.style.display = 'none';
+      
+      // Recarregar lista
+      loadTokens();
+      
+      return tokenData;
+    } catch(e) {
+      alert('Erro ao salvar token: ' + e.message);
+      console.error(e);
+      return null;
+    }
+  }
+
+  // Salvar token no localStorage
+  function saveTokenToLocalStorage(tokenData) {
+    try {
+      const existingTokens = JSON.parse(localStorage.getItem('userTokens') || '[]');
+      
+      // Remover token antigo se existir
+      const filteredTokens = existingTokens.filter(t => t.id !== tokenData.id);
+      
+      // Adicionar novo token
+      filteredTokens.push(tokenData);
+      
+      localStorage.setItem('userTokens', JSON.stringify(filteredTokens));
+      
+      // Também salvar em uma lista separada por ID
+      const tokensById = JSON.parse(localStorage.getItem('tokensById') || '{}');
+      tokensById[tokenData.id] = tokenData;
+      localStorage.setItem('tokensById', JSON.stringify(tokensById));
+      
+    } catch (error) {
+      console.error('Erro ao salvar token no localStorage:', error);
+    }
+  }
+
+  // Sincronizar tokens com localStorage
+  async function syncTokensToLocalStorage() {
+    try {
+      const tokensRef = ref(db, 'tokens');
+      const snapshot = await get(tokensRef);
+      const data = snapshot.val();
+
+      if (!data) return;
+
+      const userTokens = Object.values(data)
+        .filter(val => val.ownerUID === userUID);
+
+      // Salvar todos os tokens do usuário
+      localStorage.setItem('userTokens', JSON.stringify(userTokens));
+
+      // Salvar por ID
+      const tokensById = {};
+      userTokens.forEach(token => {
+        tokensById[token.id] = token;
+      });
+      localStorage.setItem('tokensById', JSON.stringify(tokensById));
+
+    } catch (error) {
+      console.error('Erro ao sincronizar tokens:', error);
+    }
+  }
+
+  // Carregar tokens do usuário
+  function loadTokens() {
+    const tokensRef = ref(db, 'tokens');
+    onValue(tokensRef, (snapshot) => {
+      const data = snapshot.val();
+      tokensContainer.innerHTML = '';
+      trainingContainer.innerHTML = '<p>Selecione uma API para treinar a IA</p>';
+
+      if (!data) {
+        tokensContainer.textContent = 'Nenhum token criado ainda.';
+        return;
+      }
+
+      const tokens = Object.entries(data).filter(([token, val]) => val.ownerUID === userUID);
+      currentTokens = tokens;
+
+      if (tokens.length === 0) {
+        tokensContainer.textContent = 'Nenhum token criado ainda.';
+        return;
+      }
+
+      tokens.forEach(async ([token, val]) => {
+        const div = document.createElement('div');
+        div.className = 'token-item';
+
+        const baseURL = "https://alexandre7888.github.io/CodeHUB/API/continuar-conta";
+        const trainingData = await loadTrainingData(token);
+        const hasTraining = trainingData !== '';
+
+        div.innerHTML = `
+          <div class="id-display">
+            <span class="id-label">ID do Token:</span>
+            ${val.id || 'N/A'}
+            <span class="info-badge token-id-badge">Firebase + LocalStorage</span>
+          </div>
+          <strong>Aplicativo:</strong> ${val.appName}<br/>
+          <strong>Token:</strong> ${token}<br/>
+          <strong>Tipo:</strong> ${val.tokenType || 'standard'}<br/>
+          <strong>Redirecionador:</strong> ${val.redirectURL}<br/>
+          <strong>Criado em:</strong> ${new Date(val.createdAt).toLocaleString()}<br/>
+            
+          <div class="training-status ${hasTraining ? 'trained' : 'not-trained'}">
+            ${hasTraining ? '✅ IA Treinada' : '⚠️ IA Não Treinada'}
+          </div>
+            
+          <div class="url-container">
+            <div class="url-type">URL para Continuar Conta:</div>
+            <div class="api-url">${baseURL}?token=${token}</div>
+          </div>
+        `;
+
+        // Botões de ação
+        const copyTokenBtn = document.createElement('button');
+        copyTokenBtn.textContent = 'Copiar Token';
+        copyTokenBtn.onclick = () => copyToClipboard(token, 'Token');
+
+        const copyIdBtn = document.createElement('button');
+        copyIdBtn.className = 'id-btn';
+        copyIdBtn.textContent = 'Copiar ID do Token';
+        copyIdBtn.onclick = () => copyToClipboard(val.id || '', 'ID do Token');
+
+        const copyUrlBtn = document.createElement('button');
+        copyUrlBtn.className = 'url-btn';
+        copyUrlBtn.textContent = 'Copiar URL Continuar Conta';
+        copyUrlBtn.onclick = () => copyToClipboard(`${baseURL}?token=${token}`, 'URL');
+
+        const trainBtn = document.createElement('button');
+        trainBtn.className = hasTraining ? 'edit-btn' : 'train-btn';
+        trainBtn.textContent = hasTraining ? 'Editar Treinamento IA' : 'Treinar IA';
+        trainBtn.onclick = () => showTrainingForm(token, val.appName, trainingData);
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.style.background = '#f44336';
+        deleteBtn.textContent = 'Excluir Token';
+        deleteBtn.onclick = () => deleteToken(token, val.id, val.appName);
+
+        div.appendChild(copyTokenBtn);
+        div.appendChild(copyIdBtn);
+        div.appendChild(copyUrlBtn);
+        div.appendChild(trainBtn);
+        div.appendChild(deleteBtn);
+        tokensContainer.appendChild(div);
+      });
+    });
+  }
+
+  // Excluir token
+  async function deleteToken(token, tokenId, appName) {
+    if (confirm(`Tem certeza que deseja excluir o token "${appName}"?\nEsta ação não pode ser desfeita.`)) {
+      try {
+        // Remover do Firebase
+        await remove(ref(db, `tokens/${token}`));
+        await remove(ref(db, `users/${userUID}/tokens/${tokenId}`));
+        await remove(ref(db, `training/${token}`));
+
+        // Remover do localStorage
+        const existingTokens = JSON.parse(localStorage.getItem('userTokens') || '[]');
+        const filteredTokens = existingTokens.filter(t => t.id !== tokenId);
+        localStorage.setItem('userTokens', JSON.stringify(filteredTokens));
+
+        const tokensById = JSON.parse(localStorage.getItem('tokensById') || '{}');
+        delete tokensById[tokenId];
+        localStorage.setItem('tokensById', JSON.stringify(tokensById));
+
+        alert('Token excluído com sucesso!');
+        loadTokens();
+      } catch (error) {
+        alert('Erro ao excluir token: ' + error.message);
+      }
+    }
+  }
+
+  // Funções de treinamento (mantidas do código original)
+  async function saveTrainingData(token, trainingData) {
+    try {
+      await set(ref(db, `training/${token}`), {
+        data: trainingData,
+        updatedAt: new Date().toISOString(),
+        ownerUID: userUID
+      });
+
+      alert('Dados de treinamento salvos/atualizados com sucesso!');
+      return true;
+    } catch(e) {
+      alert('Erro ao salvar dados de treinamento: ' + e.message);
+      return false;
+    }
+  }
+
+  async function loadTrainingData(token) {
+    try {
+      const trainingRef = ref(db, `training/${token}`);
+      const snapshot = await get(trainingRef);
+
+      if (snapshot.exists()) {
+        return snapshot.val().data;
+      }
+      return '';
+    } catch(e) {
+      console.error('Erro ao carregar dados de treinamento:', e);
+      return '';
+    }
+  }
+
+  async function showTrainingForm(token, appName, existingData = '') {
+    trainingContainer.innerHTML = '';
+
+    const trainingDiv = document.createElement('div');
+    trainingDiv.className = 'training-item';
+
+    let trainingData = existingData;
+    if (!existingData) {
+      trainingData = await loadTrainingData(token);
+    }
+
+    trainingDiv.innerHTML = `
+      <h3>${trainingData ? 'Editar' : 'Treinar'} IA para: ${appName}</h3>
+      <p><strong>Token:</strong> ${token}</p>
+      <p><em>${trainingData ? 'Editando treinamento existente' : 'Criando novo treinamento'}</em></p>
+      <form class="training-form" id="trainingForm-${token}">
+        <textarea 
+          id="trainingData-${token}" 
+          placeholder="Insira os dados para treinamento da IA (perguntas e respostas, exemplos, regras, etc.)" 
+          required
+        >${trainingData || ''}</textarea>
+        <button type="submit">${trainingData ? 'Atualizar' : 'Salvar'} Dados de Treinamento</button>
+        <button type="button" onclick="hideTrainingForm()">Cancelar</button>
+        ${trainingData ? '<button type="button" onclick="clearTrainingData(\'' + token + '\', \'' + appName + '\')" style="background: #f44336;">Limpar Treinamento</button>' : ''}
+      </form>
+    `;
+
+    trainingContainer.appendChild(trainingDiv);
+
+    const form = document.getElementById(`trainingForm-${token}`);
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const newTrainingData = document.getElementById(`trainingData-${token}`).value.trim();
+
+      if (!newTrainingData) {
+        alert('Por favor, insira os dados de treinamento.');
+        return;
+      }
+
+      const success = await saveTrainingData(token, newTrainingData);
+      if (success) {
+        hideTrainingForm();
+        loadTokens();
+      }
+    });
+  }
+
+  async function clearTrainingData(token, appName) {
+    if (confirm(`Tem certeza que deseja limpar todos os dados de treinamento para "${appName}"?`)) {
+      try {
+        await remove(ref(db, `training/${token}`));
+        alert('Dados de treinamento removidos com sucesso!');
+        hideTrainingForm();
+        loadTokens();
+      } catch(e) {
+        alert('Erro ao remover dados de treinamento: ' + e.message);
+      }
+    }
+  }
+
+  function hideTrainingForm() {
+    trainingContainer.innerHTML = '<p>Selecione uma API para treinar a IA</p>';
+  }
+
+  // Verificar autenticação
+  onAuthStateChanged(auth, user => {
+    if (!user) {
+      alert("Você precisa estar logado para criar aplicativos.");
+      window.location.href = "https://alexandre7888.github.io/CodeHUB/auth";
+      return;
+    }
+    
+    userUID = user.uid;
+    userEmail = user.email;
+    
+    // Salvar dados de autenticação
+    saveAuthData(userUID, userEmail);
+    
+    // Atualizar display
+    updateAuthInfoDisplay();
+    
+    // Carregar tokens
+    loadTokens();
+    syncTokensToLocalStorage();
+  });
+
+  // Event Listeners
+  appForm.addEventListener('submit', e => {
+    e.preventDefault();
+    
+    const appName = appNameInput.value.trim();
+    const redirectURL = redirectInput.value.trim();
+    const tokenType = tokenTypeSelect.value;
+    const customLength = tokenType === 'custom' ? customLengthInput.value : null;
+    
+    if (!appName || !redirectURL) {
+      alert('Preencha todos os campos!');
+      return;
+    }
+    
+    const token = lastGeneratedToken || generateToken(tokenType, customLength);
+    
+    if (!token) {
+      alert('Por favor, gere um token primeiro usando o botão "Pré-visualizar Token"');
+      return;
+    }
+    
+    saveTokenWithID(token, appName, redirectURL, tokenType, customLength);
+  });
+
+  tokenTypeSelect.addEventListener('change', function() {
+    if (this.value === 'custom') {
+      customLengthGroup.style.display = 'block';
+    } else {
+      customLengthGroup.style.display = 'none';
+    }
+  });
+
+  // Exportar funções para escopo global
+  window.hideTrainingForm = hideTrainingForm;
+  window.clearTrainingData = clearTrainingData;
+  window.copyToClipboard = copyToClipboard;
+  window.generateAndDisplayToken = generateAndDisplayToken;
+  window.refreshAuthData = refreshAuthData;
+</script>
+
+</body>
+</html>
