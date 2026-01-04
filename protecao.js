@@ -1,5 +1,5 @@
 // === CONFIGURAÇÕES ===
-const dominiosPermitidos = ["code.codehub.ct.ws"];
+const dominiosPermitidos = ["code.codehub.1ct.ws"];
 const webhookURL = "https://discord.com/api/webhooks/1416615114077110372/bcsRqA7uTdo3Z4o3EmsADepTcrbl5C30QBUMekF8nLYvrhqEUd8fo8-gFss7qZfNVWRJ";
 
 // === VERIFICAÇÃO PRINCIPAL ===
