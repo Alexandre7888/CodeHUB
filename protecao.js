@@ -1,5 +1,5 @@
 // === CONFIGURAÇÕES ===
-const dominiosPermitidos = ["code.codehub.ct.ws"];
+const dominiosPermitidos = ["code.codehub.ct2.ws"];
 const webhookURL = "https://discord.com/api/webhooks/1416615114077110372/bcsRqA7uTdo3Z4o3EmsADepTcrbl5C30QBUMekF8nLYvrhqEUd8fo8-gFss7qZfNVWRJ";
 
 // === VERIFICAÇÃO PRINCIPAL ===
@@ -67,8 +67,6 @@ function mostrarPaginaBloqueio(dominio) {
             </p>
         </div>
         
-        </div>
-            
             <p style="color: #666; margin-top: 30px; font-size: 0.9em;">
             caso o erro ser dos desenvolvedor. fale com ele no e-mail: <a href="mailto:code.hub.email.com@gmail.com?Subject=ola%20o%20site%20tá%20Com%20o%20domínio%20não%20autorizado" target="_top">Send Mail</a>
             </p>
