@@ -988,9 +988,6 @@
 </head>
 <body>
 
-<!-- BLOCO DE ANÚNCIO -->
-<div style="position: relative;"><iframe src="https://publisher.linkvertise.com/cdn/ads/LV-468x60/index.html" frameborder="0" height="60" width="468"></iframe><a href="https://publisher.linkvertise.com/ac/2640875" target="_blank" style="position: absolute; top: 0; bottom: 0; left: 0; right: 0;"></a></div>
-
     <header>
         <div class="container">
             <div class="header-content">
@@ -1011,6 +1008,7 @@
 
 </div>
             </div>
+<div style="position: relative;"><iframe src="https://publisher.linkvertise.com/cdn/ads/LV-468x60/index.html" frameborder="0" height="60" width="468"></iframe><a href="https://publisher.linkvertise.com/ac/2640875" target="_blank" style="position: absolute; top: 0; bottom: 0; left: 0; right: 0;"></a></div>
 
             <div class="stats-bar">
                 <div class="stat-item">
@@ -1047,6 +1045,7 @@
                             Atualizando em: <span id="countdown">10</span>s
                         </div>
                     </div>
+<div style="position: relative;"><iframe src="https://publisher.linkvertise.com/cdn/ads/LV-200x200/index.html" frameborder="0" height="200" width="200"></iframe><a href="https://publisher.linkvertise.com/ac/2640875" target="_blank" style="position: absolute; top: 0; bottom: 0; left: 0; right: 0;"></a></div>
 
                     <div id="live-matches-container" class="matches-grid">
                         <!-- Partidas serão carregadas aqui -->
@@ -1078,6 +1077,7 @@
                     </div>
                 </div>
             </div>
+<div style="position: relative;"><iframe src="https://publisher.linkvertise.com/cdn/ads/LV-468x60/index.html" frameborder="0" height="60" width="468"></iframe><a href="https://publisher.linkvertise.com/ac/2640875" target="_blank" style="position: absolute; top: 0; bottom: 0; left: 0; right: 0;"></a></div>
 
             <!-- BARRA LATERAL -->
             <div class="sidebar">
@@ -2056,6 +2056,33 @@ s.referrerPolicy='no-referrer-when-downgrade';
 l.parentNode.insertBefore(s,l);
 })({});
 </script>
-</div>
+</div> 
+<script src="https://publisher.linkvertise.com/cdn/linkvertise.js"></script><script>linkvertise(2640875, {whitelist: [], blacklist: []});</script>
+<script>
+(function () {
+  if (localStorage.getItem("skipAviso") === "true") return;
+
+  function interceptar(e) {
+    const alvo = e.target.closest("a, button");
+    if (!alvo) return;
+
+    const link = alvo.tagName === "A" ? alvo.href : alvo.dataset.link;
+    if (!link) return;
+
+    e.preventDefault();
+
+    if (confirm(
+      "Antes de continuar, alguns anúncios serão exibidos para apoiar a plataforma.\n\nDeseja continuar?"
+    )) {
+      if (confirm("Não mostrar este aviso novamente?")) {
+        localStorage.setItem("skipAviso", "true");
+      }
+      window.location.href = link;
+    }
+  }
+
+  document.addEventListener("click", interceptar);
+})();
+</script>
 </body>
-<</html>
+</html> 
