@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Criador de Aplicativos com Token e Redirecionador</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -13,7 +14,8 @@
       padding: 20px;
       border-radius: 8px;
     }
-    input, button, textarea {
+
+    input, button {
       padding: 10px;
       margin: 5px 0;
       width: 100%;
@@ -22,167 +24,105 @@
       font-size: 16px;
       box-sizing: border-box;
     }
-    input, textarea {
+
+    input {
       background: #222;
       color: #eee;
     }
-    textarea {
-      min-height: 150px;
-      resize: vertical;
-    }
+
     button {
       background: #4caf50;
       color: white;
       cursor: pointer;
       font-weight: bold;
       transition: background 0.3s;
-      width: auto;
-      padding: 8px 16px;
-      margin-right: 10px;
     }
+
     button:hover {
       background: #45a049;
     }
-    button.train-btn {
-      background: #2196F3;
-      margin-top: 5px;
-    }
-    button.train-btn:hover {
-      background: #1976D2;
-    }
-    button.url-btn {
-      background: #FF9800;
-      margin-top: 5px;
-    }
-    button.url-btn:hover {
-      background: #F57C00;
-    }
-    button.edit-btn {
-      background: #9C27B0;
-      margin-top: 5px;
-    }
-    button.edit-btn:hover {
-      background: #7B1FA2;
-    }
+
     h1, h2 {
       text-align: center;
-      margin-bottom: 20px;
       color: #4caf50;
     }
-    #tokenList, #trainingSection {
-      margin-top: 30px;
-    }
-    .token-item, .training-item {
-      background: #222;
-      padding: 15px;
-      margin-bottom: 15px;
-      border-radius: 6px;
-      word-break: break-all;
-    }
-    .token-item strong {
-      display: block;
-      margin-bottom: 4px;
-      color: #81c784;
-    }
-    .api-url {
-      color: #64b5f6;
-      text-decoration: none;
-      word-break: break-all;
-      display: block;
-      margin: 10px 0;
-      padding: 8px;
-      background: #1a1a1a;
-      border-radius: 4px;
-      border: 1px solid #333;
-    }
+
     .section {
       background: #1a1a1a;
       padding: 20px;
       border-radius: 8px;
       margin-bottom: 20px;
     }
-    .url-container {
-      margin: 10px 0;
+
+    .token-item {
+      background: #222;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      word-break: break-all;
     }
-    .url-type {
-      color: #81c784;
-      font-weight: bold;
-      margin-bottom: 5px;
-    }
-    .training-status {
-      margin: 10px 0;
+
+    .api-url {
+      color: #64b5f6;
+      background: #1a1a1a;
       padding: 8px;
       border-radius: 4px;
-      background: #1a1a1a;
+      border: 1px solid #333;
+      margin-top: 10px;
     }
-    .trained {
-      color: #4caf50;
-      border: 1px solid #4caf50;
+
+    .copy-btn {
+      background: #ff9800;
+      margin-top: 10px;
     }
-    .not-trained {
-      color: #ff9800;
-      border: 1px solid #ff9800;
+
+    .copy-btn:hover {
+      background: #f57c00;
     }
-    .training-form {
-      margin-top: 15px;
-      padding-top: 15px;
-      border-top: 1px solid #333;
+
+    .doc-btn {
+      display: inline-block;
+      padding: 10px 18px;
+      background: #2b6cb0;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      margin-bottom: 20px;
     }
   </style>
 </head>
+
 <body>
 
 <h1>Criador de Aplicativos</h1>
 
 <a href="https://alexandre7888.github.io/CodeHUB/documentacao.html"
-   class="btn"
+   class="doc-btn"
    target="_blank"
    rel="noopener noreferrer">
   Abrir Documentação
 </a>
 
-<style>
-  .btn{
-    display:inline-block;
-    padding:10px 18px;
-    background:#2b6cb0;
-    color:#fff;
-    text-decoration:none;
-    border-radius:8px;
-    font-weight:600;
-    box-shadow:0 4px 10px rgba(0,0,0,0.08);
-    margin-bottom: 20px;
-  }
-  .btn:hover{ opacity:0.95; transform:translateY(-1px); }
-</style>
-
 <div class="section">
   <h2>Criar Novo Aplicativo</h2>
   <form id="appForm">
     <input type="text" id="appName" placeholder="Nome do Aplicativo" required />
-    <input type="url" id="redirectURL" placeholder="URL do Redirecionador (ex: dashboard.html)" required />
+    <input type="url" id="redirectURL" placeholder="URL do Redirecionador" required />
     <button type="submit">Gerar Token e Salvar</button>
   </form>
 </div>
 
-<div id="tokenList" class="section">
+<div class="section">
   <h2>APIs Criadas</h2>
   <div id="tokensContainer">Carregando...</div>
 </div>
 
-<div id="trainingSection" class="section">
-  <h2>Treinar Inteligência Artificial</h2>
-  <div id="trainingContainer">
-    <p>Selecione uma API para treinar a IA</p>
-  </div>
-</div>
-
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-  import { getDatabase, ref, set, get, child, onValue, update } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+  import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
-  // Config do Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
     authDomain: "html-15e80.firebaseapp.com",
@@ -190,303 +130,82 @@
     projectId: "html-15e80",
     storageBucket: "html-15e80.appspot.com",
     messagingSenderId: "1068148640439",
-    appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32",
-    measurementId: "G-V57KRZ02HJ"
+    appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32"
   };
 
-  // Inicializa Firebase
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
   const auth = getAuth(app);
 
-  const appForm = document.getElementById('appForm');
-  const appNameInput = document.getElementById('appName');
-  const redirectInput = document.getElementById('redirectURL');
-  const tokensContainer = document.getElementById('tokensContainer');
-  const trainingContainer = document.getElementById('trainingContainer');
+  const appForm = document.getElementById("appForm");
+  const tokensContainer = document.getElementById("tokensContainer");
 
   let userUID = null;
-  let currentTokens = [];
 
-  // Gera token aleatório
-  function generateToken(length = 20) {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let token = '';
-    for(let i=0; i<length; i++) {
+  function generateToken(length = 24) {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let token = "";
+    for (let i = 0; i < length; i++) {
       token += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return token;
   }
 
-  // Salvar token no localStorage
-  function saveTokenToLocalStorage(token, appName, redirectURL) {
-    try {
-      const existingTokens = JSON.parse(localStorage.getItem('userTokens') || '[]');
-      const tokenExists = existingTokens.some(t => t.value === token);
-      if (!tokenExists) {
-        const newToken = {
-          value: token,
-          appName: appName,
-          redirectURL: redirectURL,
-          createdAt: new Date().toISOString()
-        };
-        existingTokens.push(newToken);
-        localStorage.setItem('userTokens', JSON.stringify(existingTokens));
-      }
-    } catch (error) {
-      console.error('Erro ao salvar token no localStorage:', error);
-    }
-  }
-
-  // Sincronizar tokens existentes com localStorage
-  async function syncTokensToLocalStorage() {
-    try {
-      const tokensRef = ref(db, 'tokens');
-      const snapshot = await get(tokensRef);
-      const data = snapshot.val();
-
-      if (!data) return;
-
-      const userTokens = Object.entries(data)
-        .filter(([token, val]) => val.ownerUID === userUID)
-        .map(([token, val]) => ({
-          value: token,
-          appName: val.appName,
-          redirectURL: val.redirectURL,
-          createdAt: val.createdAt
-        }));
-
-      localStorage.setItem('userTokens', JSON.stringify(userTokens));
-    } catch (error) {
-      console.error('Erro ao sincronizar tokens:', error);
-    }
-  }
-
-  // Salvar/Atualizar dados de treinamento (ÚNICO por token)
-  async function saveTrainingData(token, trainingData) {
-    try {
-      await set(ref(db, `training/${token}`), {
-        data: trainingData,
-        updatedAt: new Date().toISOString(),
-        ownerUID: userUID
-      });
-
-      alert('Dados de treinamento salvos/atualizados com sucesso!');
-      return true;
-    } catch(e) {
-      alert('Erro ao salvar dados de treinamento: ' + e.message);
-      return false;
-    }
-  }
-
-  // Carregar dados de treinamento existentes
-  async function loadTrainingData(token) {
-    try {
-      const trainingRef = ref(db, `training/${token}`);
-      const snapshot = await get(trainingRef);
-      
-      if (snapshot.exists()) {
-        return snapshot.val().data;
-      }
-      return '';
-    } catch(e) {
-      console.error('Erro ao carregar dados de treinamento:', e);
-      return '';
-    }
-  }
-
-  // Verifica login
   onAuthStateChanged(auth, user => {
     if (!user) {
-      alert("Você precisa estar logado para criar aplicativos.");
+      alert("Você precisa estar logado.");
       window.location.href = "https://alexandre7888.github.io/CodeHUB/auth";
       return;
     }
     userUID = user.uid;
     loadTokens();
-    syncTokensToLocalStorage();
   });
 
-  // Salvar token e dados no Firebase
-  async function saveToken(token, appName, redirectURL) {
-    try {
-      await set(ref(db, `tokens/${token}`), {
-        appName,
-        redirectURL,
-        ownerUID: userUID,
-        createdAt: new Date().toISOString()
-      });
+  appForm.addEventListener("submit", e => {
+    e.preventDefault();
+    const appName = document.getElementById("appName").value.trim();
+    const redirectURL = document.getElementById("redirectURL").value.trim();
+    if (!appName || !redirectURL) return;
 
-      saveTokenToLocalStorage(token, appName, redirectURL);
-      alert('Token criado com sucesso!');
-      loadTokens();
-    } catch(e) {
-      alert('Erro ao salvar token: ' + e.message);
-    }
-  }
+    const token = generateToken();
 
-  // Carregar tokens do usuário
+    set(ref(db, "tokens/" + token), {
+      appName,
+      redirectURL,
+      ownerUID: userUID,
+      createdAt: new Date().toISOString()
+    });
+
+    appForm.reset();
+  });
+
   function loadTokens() {
-    const tokensRef = ref(db, 'tokens');
-    onValue(tokensRef, (snapshot) => {
-      const data = snapshot.val();
-      tokensContainer.innerHTML = '';
-      trainingContainer.innerHTML = '<p>Selecione uma API para treinar a IA</p>';
-      
+    onValue(ref(db, "tokens"), snap => {
+      tokensContainer.innerHTML = "";
+      const data = snap.val();
       if (!data) {
-        tokensContainer.textContent = 'Nenhum token criado ainda.';
+        tokensContainer.textContent = "Nenhuma API criada ainda.";
         return;
       }
-      
-      const tokens = Object.entries(data).filter(([token, val]) => val.ownerUID === userUID);
-      currentTokens = tokens;
-      
-      if (tokens.length === 0) {
-        tokensContainer.textContent = 'Nenhum token criado ainda.';
-        return;
-      }
-      
-      // Carregar status de treinamento para cada token
-      tokens.forEach(async ([token, val]) => {
-        // Container para cada API
-        const div = document.createElement('div');
-        div.className = 'token-item';
-        
-        // URLs para continuar conta
-        const baseURL = "https://code.codehub2025.ct.ws/API/continuar-conta";
-        
-        // Verificar se já tem treinamento
-        const trainingData = await loadTrainingData(token);
-        const hasTraining = trainingData !== '';
-        
+
+      Object.entries(data).forEach(([token, val]) => {
+        if (val.ownerUID !== userUID) return;
+
+        const div = document.createElement("div");
+        div.className = "token-item";
         div.innerHTML = `
-          <strong>Aplicativo:</strong> ${val.appName}<br/>
-          <strong>Token:</strong> ${token}<br/>
-          <strong>Redirecionador:</strong> ${val.redirectURL}<br/>
-          
-          <div class="training-status ${hasTraining ? 'trained' : 'not-trained'}">
-            ${hasTraining ? '✅ IA Treinada' : '⚠️ IA Não Treinada'}
-          </div>
-          
-          <div class="url-container">
-            <div class="url-type">URL para Continuar Conta:</div>
-            <div class="api-url">${baseURL}?token=${token}</div>
+          <strong>Aplicativo:</strong> ${val.appName}<br>
+          <strong>Token:</strong> ${token}<br>
+          <strong>Redirecionador:</strong> ${val.redirectURL}
+          <div class="api-url">
+            https://code.codehub.ct.ws/API/continuar-conta?token=${token}
           </div>
         `;
-        
-        // Botão para copiar URL de continuar conta
-        const copyUrlBtn = document.createElement('button');
-        copyUrlBtn.className = 'url-btn';
-        copyUrlBtn.textContent = 'Copiar URL Continuar Conta';
-        copyUrlBtn.onclick = () => {
-          navigator.clipboard.writeText(`${baseURL}?token=${token}`);
-          alert('URL para continuar conta copiada!');
-        };
-        
-        // Botão para treinar/editar IA
-        const trainBtn = document.createElement('button');
-        trainBtn.className = hasTraining ? 'edit-btn' : 'train-btn';
-        trainBtn.textContent = hasTraining ? 'Editar Treinamento IA' : 'Treinar IA';
-        trainBtn.onclick = () => showTrainingForm(token, val.appName, trainingData);
-        
-        div.appendChild(copyUrlBtn);
-        div.appendChild(trainBtn);
+
         tokensContainer.appendChild(div);
       });
     });
   }
-
-  // Mostrar formulário de treinamento com dados existentes
-  async function showTrainingForm(token, appName, existingData = '') {
-    trainingContainer.innerHTML = '';
-    
-    const trainingDiv = document.createElement('div');
-    trainingDiv.className = 'training-item';
-    
-    // Se não tem dados existentes, carregar do Firebase
-    let trainingData = existingData;
-    if (!existingData) {
-      trainingData = await loadTrainingData(token);
-    }
-    
-    trainingDiv.innerHTML = `
-      <h3>${trainingData ? 'Editar' : 'Treinar'} IA para: ${appName}</h3>
-      <p><strong>Token:</strong> ${token}</p>
-      <p><em>${trainingData ? 'Editando treinamento existente' : 'Criando novo treinamento'}</em></p>
-      <form class="training-form" id="trainingForm-${token}">
-        <textarea 
-          id="trainingData-${token}" 
-          placeholder="Insira os dados para treinamento da IA (perguntas e respostas, exemplos, regras, etc.)" 
-          required
-        >${trainingData || ''}</textarea>
-        <button type="submit">${trainingData ? 'Atualizar' : 'Salvar'} Dados de Treinamento</button>
-        <button type="button" onclick="hideTrainingForm()">Cancelar</button>
-        ${trainingData ? '<button type="button" onclick="clearTrainingData(\'' + token + '\', \'' + appName + '\')" style="background: #f44336;">Limpar Treinamento</button>' : ''}
-      </form>
-    `;
-    
-    trainingContainer.appendChild(trainingDiv);
-    
-    // Adicionar evento de submit ao formulário
-    const form = document.getElementById(`trainingForm-${token}`);
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const newTrainingData = document.getElementById(`trainingData-${token}`).value.trim();
-      
-      if (!newTrainingData) {
-        alert('Por favor, insira os dados de treinamento.');
-        return;
-      }
-      
-      const success = await saveTrainingData(token, newTrainingData);
-      if (success) {
-        hideTrainingForm();
-        loadTokens(); // Recarregar para atualizar status
-      }
-    });
-  }
-
-  // Limpar dados de treinamento
-  async function clearTrainingData(token, appName) {
-    if (confirm(`Tem certeza que deseja limpar todos os dados de treinamento para "${appName}"?`)) {
-      try {
-        await set(ref(db, `training/${token}`), null);
-        alert('Dados de treinamento removidos com sucesso!');
-        hideTrainingForm();
-        loadTokens(); // Recarregar para atualizar status
-      } catch(e) {
-        alert('Erro ao remover dados de treinamento: ' + e.message);
-      }
-    }
-  }
-
-  // Esconder formulário de treinamento
-  function hideTrainingForm() {
-    trainingContainer.innerHTML = '<p>Selecione uma API para treinar a IA</p>';
-  }
-
-  // Quando enviar o formulário
-  appForm.addEventListener('submit', e => {
-    e.preventDefault();
-    const appName = appNameInput.value.trim();
-    const redirectURL = redirectInput.value.trim();
-
-    if (!appName || !redirectURL) {
-      alert('Preencha todos os campos!');
-      return;
-    }
-
-    const token = generateToken();
-    saveToken(token, appName, redirectURL);
-
-    // Limpa campos
-    appNameInput.value = '';
-    redirectInput.value = '';
-  });
-
-  // Adicionar funções ao escopo global para acesso dos event listeners
-  window.hideTrainingForm = hideTrainingForm;
-  window.clearTrainingData = clearTrainingData;
 </script>
 
 </body>
