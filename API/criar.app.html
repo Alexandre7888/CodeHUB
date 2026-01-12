@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <title>Criador de Aplicativos com Token e Redirecionador</title>
+  <title>Criador de Aplicativos com Token - 1GB por Token</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -44,10 +44,10 @@
     button:hover {
       background: #45a049;
     }
-    button.edit-btn {
+    button.file-manager-btn {
       background: #9C27B0;
     }
-    button.edit-btn:hover {
+    button.file-manager-btn:hover {
       background: #7B1FA2;
     }
     button.url-btn {
@@ -93,6 +93,38 @@
       display: block;
       margin-bottom: 4px;
       color: #81c784;
+    }
+    .storage-info {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 10px;
+      border-radius: 5px;
+      margin: 10px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .storage-bar {
+      height: 20px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 5px;
+    }
+    .storage-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4caf50, #8bc34a);
+      transition: width 0.5s ease;
+    }
+    .storage-text {
+      font-size: 14px;
+      font-weight: bold;
+      color: white;
+    }
+    .storage-size {
+      font-size: 24px;
+      font-weight: bold;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
     }
     .api-url {
       color: #64b5f6;
@@ -242,14 +274,19 @@
   </style>
 </head>
 <body>
-  <h1>Criador de Aplicativos</h1>
+  <h1>Criador de Aplicativos - 1GB por Token</h1>
   <a href="https://alexandre7888.github.io/CodeHUB/documentacao.html"
      class="btn"
      target="_blank"
      rel="noopener noreferrer">
     Abrir Documentação
   </a>
-  
+  <a href="file-manager.html"
+     class="btn"
+     style="background: #9C27B0;">
+    📁 Gerenciador de Arquivos
+  </a>
+
   <div class="section">
     <h2>Criar Novo Aplicativo</h2>
     <form id="appForm">
@@ -259,10 +296,10 @@
       <div class="form-group">
         <input type="url" id="redirectURL" placeholder="URL do Redirecionador (ex: dashboard.html)" required />
       </div>
-      <button type="submit">Gerar Token e Salvar</button>
+      <button type="submit">Gerar Token e Salvar (1GB de Armazenamento)</button>
     </form>
   </div>
-  
+
   <div id="tokenList" class="section">
     <h2>APIs Criadas</h2>
     <div id="tokensContainer">Carregando...</div>
@@ -273,7 +310,6 @@
     import { getDatabase, ref, set, get, child, onValue, update, remove } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
-    // Config do Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
       authDomain: "html-15e80.firebaseapp.com",
@@ -285,7 +321,6 @@
       measurementId: "G-V57KRZ02HJ"
     };
 
-    // Inicializa Firebase
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const auth = getAuth(app);
@@ -338,28 +373,44 @@
       }
     }
 
-    // Sincronizar tokens existentes com localStorage
-    async function syncTokensToLocalStorage() {
+    // Calcular uso de armazenamento
+    async function calculateStorageUsage(token) {
       try {
-        const tokensRef = ref(db, 'tokens');
-        const snapshot = await get(tokensRef);
+        const filesRef = ref(db, `files/${token}`);
+        const snapshot = await get(filesRef);
         const data = snapshot.val();
-
-        if (!data) return;
-
-        const userTokens = Object.entries(data)
-          .filter(([token, val]) => val.ownerUID === userUID)
-          .map(([token, val]) => ({
-            value: token,
-            appName: val.appName,
-            redirectURL: val.redirectURL,
-            createdAt: val.createdAt
-          }));
-
-        localStorage.setItem('userTokens', JSON.stringify(userTokens));
+        
+        let totalSize = 0;
+        if (data) {
+          Object.values(data).forEach(file => {
+            if (file.size && typeof file.size === 'number') {
+              totalSize += file.size;
+            } else if (file.content) {
+              // Estimar tamanho do base64
+              totalSize += Math.floor(file.content.length * 0.75);
+            }
+          });
+        }
+        
+        return {
+          used: totalSize,
+          total: 1073741824, // 1GB em bytes
+          percent: (totalSize / 1073741824) * 100
+        };
       } catch (error) {
-        console.error('Erro ao sincronizar tokens:', error);
+        console.error('Erro ao calcular armazenamento:', error);
+        return { used: 0, total: 1073741824, percent: 0 };
       }
+    }
+
+    // Formatar bytes para tamanho legível
+    function formatBytes(bytes, decimals = 2) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const dm = decimals < 0 ? 0 : decimals;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
     }
 
     // Verifica login
@@ -371,24 +422,24 @@
       }
       userUID = user.uid;
       loadTokens();
-      syncTokensToLocalStorage();
     });
 
-    // Salvar token básico (sem configurações extras)
+    // Salvar token básico
     async function saveToken(token, appName, redirectURL) {
       try {
         const tokenData = {
           appName,
           redirectURL,
           ownerUID: userUID,
-          createdAt: new Date().toISOString()
-          // Não inclui rules, allowedDomains ou apiKey inicialmente
+          createdAt: new Date().toISOString(),
+          storageLimit: 1073741824, // 1GB em bytes
+          storageUsed: 0
         };
 
         await set(ref(db, `tokens/${token}`), tokenData);
 
         saveTokenToLocalStorage(token, appName, redirectURL);
-        alert('Token criado com sucesso!');
+        alert('Token criado com sucesso! (1GB de armazenamento disponível)');
         loadTokens();
         return true;
       } catch(e) {
@@ -397,121 +448,10 @@
       }
     }
 
-    // Salvar/atualizar configurações extras do token
-    async function saveTokenConfig(token, rules, allowedDomains, apiKey) {
-      try {
-        // Se não fornecer uma chave, gerar automaticamente
-        const finalApiKey = apiKey || generateApiKey();
-
-        // Criptografar a chave de API usando base64
-        const encryptedApiKey = btoa(finalApiKey);
-
-        // Processar domínios - converter string para array
-        let domainsArray = [];
-        if (allowedDomains && allowedDomains.trim() !== '') {
-          domainsArray = allowedDomains.split(',').map(domain => domain.trim()).filter(domain => domain !== '');
-        }
-
-        // Processar regras - validar JSON se fornecido
-        let rulesObj = {};
-        if (rules && rules.trim() !== '') {
-          try {
-            rulesObj = JSON.parse(rules);
-          } catch (e) {
-            console.error('Erro ao parsear JSON das regras:', e);
-            rulesObj = {};
-          }
-        }
-
-        const updates = {
-          rules: rulesObj,
-          allowedDomains: domainsArray,
-          apiKey: encryptedApiKey,
-          updatedAt: new Date().toISOString()
-        };
-
-        await update(ref(db, `tokens/${token}`), updates);
-
-        // Mostrar a chave gerada apenas se foi gerada automaticamente
-        if (!apiKey) {
-          alert('Configurações salvas com sucesso!\nChave de API gerada: ' + finalApiKey + '\n\nSalve esta chave em um local seguro!');
-        } else {
-          alert('Configurações salvas com sucesso!');
-        }
-
-        loadTokens();
-        return finalApiKey;
-      } catch(e) {
-        alert('Erro ao salvar configurações: ' + e.message);
-        return false;
-      }
-    }
-
-    // Excluir token
-    async function deleteToken(token, appName) {
-      if (confirm(`Tem certeza que deseja excluir o aplicativo "${appName}"?\nEsta ação não pode ser desfeita!`)) {
-        try {
-          await remove(ref(db, `tokens/${token}`));
-          alert('Aplicativo excluído com sucesso!');
-          loadTokens();
-        } catch(e) {
-          alert('Erro ao excluir token: ' + e.message);
-        }
-      }
-    }
-
-    // Função para baixar o arquivo JSON
-    function downloadJSONFile(token) {
-      const apiUrl = `http://codehub.ct.ws/API/api5.json?token=${token}`;
-      const fileName = `api5_${token}.json`;
-      
-      // Criar um objeto JSON de exemplo
-      const jsonData = {
-        token: token,
-        api_url: apiUrl,
-        sdk_config: {
-          version: "1.0.0",
-          endpoints: {
-            auth: `${apiUrl}/auth`,
-            users: `${apiUrl}/users`,
-            data: `${apiUrl}/data`
-          },
-          settings: {
-            rate_limit: 100,
-            timeout: 30
-          }
-        },
-        documentation: "https://alexandre7888.github.io/CodeHUB/documentacao.html",
-        generated_at: new Date().toISOString()
-      };
-
-      // Converter para string JSON
-      const jsonString = JSON.stringify(jsonData, null, 2);
-      
-      // Criar um blob com o conteúdo
-      const blob = new Blob([jsonString], { type: 'application/json' });
-      
-      // Criar um link para download
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      
-      // Simular clique para iniciar o download
-      document.body.appendChild(a);
-      a.click();
-      
-      // Limpar
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 100);
-    }
-
     // Carregar tokens do usuário
-    function loadTokens() {
+    async function loadTokens() {
       const tokensRef = ref(db, 'tokens');
-      onValue(tokensRef, (snapshot) => {
+      onValue(tokensRef, async (snapshot) => {
         const data = snapshot.val();
         tokensContainer.innerHTML = '';
 
@@ -528,27 +468,23 @@
           return;
         }
 
-        tokens.forEach(([token, val]) => {
+        for (const [token, val] of tokens) {
           // Container para cada API
           const div = document.createElement('div');
           div.className = 'token-item';
 
-          // URLs para continuar conta
-          const baseURL = "https://code.codehub2025.ct.ws/API/continuar-conta";
+          // Calcular uso de armazenamento
+          const storageInfo = await calculateStorageUsage(token);
           
-          // URL para download da API/SDK
+          // URLs
+          const baseURL = "https://code.codehub2025.ct.ws/API/continuar-conta";
           const apiDownloadURL = `https://script.google.com/macros/s/AKfycbzxZ4H1DeRbcZiaT9KiUPRQu2ajayUSabYY-NxLcdda9teZF60v0KwIqAhG-BlOem2EQg/exec?token=${token}`;
 
           // Verificar se tem configurações
           const hasConfig = val.apiKey || val.rules || val.allowedDomains;
-
-          // Descriptografar a chave de API se existir
           const decryptedApiKey = val.apiKey ? atob(val.apiKey) : null;
-
-          // Formatar regras para exibição
           const rulesDisplay = val.rules ? JSON.stringify(val.rules, null, 2) : 'Nenhuma regra definida';
-
-          // Formatar domínios para exibição
+          
           let domainsDisplay = 'Nenhum domínio restrito';
           if (val.allowedDomains && val.allowedDomains.length > 0) {
             domainsDisplay = val.allowedDomains.map(domain => `<span class="domain-tag">${domain}</span>`).join('');
@@ -559,6 +495,16 @@
             <strong>Token:</strong> ${token}<br/>
             <strong>Redirecionador:</strong> ${val.redirectURL}<br/>
             <strong>Criado em:</strong> ${new Date(val.createdAt).toLocaleString()}<br/>
+            
+            <div class="storage-info">
+              <div>
+                <div class="storage-text">Armazenamento: ${formatBytes(storageInfo.used)} / ${formatBytes(storageInfo.total)}</div>
+                <div class="storage-bar">
+                  <div class="storage-fill" style="width: ${Math.min(storageInfo.percent, 100)}%"></div>
+                </div>
+              </div>
+              <div class="storage-size">1 GB</div>
+            </div>
                 
             <div class="url-container">
               <div class="url-type">URL para Continuar Conta:</div>
@@ -566,12 +512,11 @@
             </div>
             
             <div class="url-container">
-              <div class="url-type">URL para API/SDK (arquivo para download):</div>
+              <div class="url-type">URL para API/SDK:</div>
               <div class="api-download-url">${apiDownloadURL}</div>
             </div>
           `;
 
-          // Adicionar seção de configurações se existirem
           if (hasConfig) {
             div.innerHTML += `
               <div class="api-info">
@@ -593,7 +538,6 @@
             div.innerHTML += `
               <div class="no-config">
                 ⚠️ Este aplicativo não tem configurações de API definidas.
-                Clique em "Configurar API" para adicionar chave de API, regras e domínios permitidos.
               </div>
             `;
           }
@@ -602,150 +546,42 @@
           const actionsDiv = document.createElement('div');
           actionsDiv.className = 'token-actions';
 
-          // Botão para copiar URL de continuar conta
+          // Botões
           const copyUrlBtn = document.createElement('button');
           copyUrlBtn.className = 'url-btn';
           copyUrlBtn.textContent = 'Copiar URL';
           copyUrlBtn.onclick = () => {
             navigator.clipboard.writeText(`${baseURL}?token=${token}`);
-            alert('URL copiada para a área de transferência!');
+            alert('URL copiada!');
           };
 
-          // Botão para copiar URL da API/SDK
-          const copyApiUrlBtn = document.createElement('button');
-          copyApiUrlBtn.className = 'url-btn';
-          copyApiUrlBtn.textContent = 'Copiar URL API';
-          copyApiUrlBtn.onclick = () => {
-            navigator.clipboard.writeText(apiDownloadURL);
-            alert('URL da API copiada para a área de transferência!');
+          const fileManagerBtn = document.createElement('button');
+          fileManagerBtn.className = 'file-manager-btn';
+          fileManagerBtn.textContent = '📁 Gerenciar Arquivos';
+          fileManagerBtn.onclick = () => {
+            window.location.href = `file-manager.html?token=${token}`;
           };
 
-          // Botão para baixar arquivo JSON
-          const downloadBtn = document.createElement('button');
-          downloadBtn.className = 'download-btn';
-          downloadBtn.textContent = 'Baixar Arquivo JSON';
-          downloadBtn.onclick = () => downloadJSONFile(token);
-
-          // Botão para configurar/editar API
           const configBtn = document.createElement('button');
           configBtn.className = 'settings-btn';
           configBtn.textContent = hasConfig ? 'Editar Configurações' : 'Configurar API';
           configBtn.onclick = () => showConfigForm(token, val, hasConfig);
 
-          // Botão para excluir token
           const deleteBtn = document.createElement('button');
           deleteBtn.className = 'delete-btn';
           deleteBtn.textContent = 'Excluir Aplicativo';
           deleteBtn.onclick = () => deleteToken(token, val.appName);
 
           actionsDiv.appendChild(copyUrlBtn);
-          actionsDiv.appendChild(copyApiUrlBtn);
-          actionsDiv.appendChild(downloadBtn);
+          actionsDiv.appendChild(fileManagerBtn);
           actionsDiv.appendChild(configBtn);
           actionsDiv.appendChild(deleteBtn);
           div.appendChild(actionsDiv);
 
           tokensContainer.appendChild(div);
-        });
-      });
-    }
-
-    // Mostrar formulário de configuração
-    function showConfigForm(token, tokenData, hasConfig) {
-      // Criar formulário de configuração
-      const configDiv = document.createElement('div');
-      configDiv.className = 'config-form';
-
-      // Dados atuais (se existirem)
-      const currentRules = tokenData.rules ? JSON.stringify(tokenData.rules, null, 2) : '';
-      const currentDomains = tokenData.allowedDomains ? tokenData.allowedDomains.join(', ') : '';
-      const currentApiKey = tokenData.apiKey ? atob(tokenData.apiKey) : '';
-
-      configDiv.innerHTML = `
-        <h3>${hasConfig ? 'Editar' : 'Adicionar'} Configurações da API</h3>
-        <p><strong>Aplicativo:</strong> ${tokenData.appName}</p>
-        <p><strong>Token:</strong> ${token}</p>
-            
-        <div class="form-group">
-          <label for="rules-${token}">Regras da API (JSON - opcional):</label>
-          <textarea id="rules-${token}" placeholder='Ex: {"maxRequests": 100, "rateLimit": "60/hour"}' rows="6">${currentRules}</textarea>
-        </div>
-
-        <div class="form-group">
-          <label for="domains-${token}">Domínios Permitidos (separados por vírgula - opcional):</label>
-          <input type="text" id="domains-${token}" placeholder="Ex: meusite.com, outrosite.com, app.meudominio.com" value="${currentDomains}" />
-        </div>
-
-        <div class="form-group">
-          <label for="apiKey-${token}">Chave de API (deixe em branco para gerar automaticamente):</label>
-          <input type="text" id="apiKey-${token}" placeholder="${hasConfig ? 'Deixe em branco para manter atual' : 'Chave personalizada (ou vazio para gerar)'}" value="${hasConfig ? '' : ''}" />
-          ${hasConfig ? '<p><small>Para manter a chave atual, deixe este campo em branco</small></p>' : ''}
-        </div>
-
-        <button onclick="saveConfig('${token}')" style="background: #4caf50;">Salvar Configurações</button>
-        <button onclick="cancelConfig('${token}')" style="background: #757575;">Cancelar</button>
-        ${hasConfig ? `<button onclick="removeConfig('${token}')" style="background: #f44336;">Remover Todas Configurações</button>` : ''}
-      `;
-
-      // Encontrar o elemento do token
-      const tokenElements = document.querySelectorAll('.token-item');
-      tokenElements.forEach(element => {
-        if (element.textContent.includes(token)) {
-          // Verificar se já tem um formulário aberto
-          const existingForm = element.querySelector('.config-form');
-          if (existingForm) {
-            existingForm.remove();
-          }
-          element.appendChild(configDiv);
         }
       });
     }
-
-    // Função para salvar configurações (adicionada ao window para ser acessível pelo onclick)
-    window.saveConfig = async function(token) {
-      const rules = document.getElementById(`rules-${token}`).value.trim();
-      const domains = document.getElementById(`domains-${token}`).value.trim();
-      const apiKey = document.getElementById(`apiKey-${token}`).value.trim();
-
-      const result = await saveTokenConfig(token, rules, domains, apiKey);
-      if (result) {
-        // Remover o formulário
-        cancelConfig(token);
-      }
-    };
-
-    // Função para cancelar edição
-    window.cancelConfig = function(token) {
-      const tokenElements = document.querySelectorAll('.token-item');
-      tokenElements.forEach(element => {
-        if (element.textContent.includes(token)) {
-          const configForm = element.querySelector('.config-form');
-          if (configForm) {
-            configForm.remove();
-          }
-        }
-      });
-    };
-
-    // Função para remover todas as configurações
-    window.removeConfig = async function(token) {
-      if (confirm('Tem certeza que deseja remover todas as configurações da API?\nIsso inclui chave de API, regras e domínios.')) {
-        try {
-          const updates = {
-            rules: null,
-            allowedDomains: null,
-            apiKey: null,
-            updatedAt: new Date().toISOString()
-          };
-
-          await update(ref(db, `tokens/${token}`), updates);
-          alert('Configurações removidas com sucesso!');
-          loadTokens();
-        } catch(e) {
-          alert('Erro ao remover configurações: ' + e.message);
-        }
-      }
-    };
 
     // Quando enviar o formulário
     appForm.addEventListener('submit', e => {
@@ -761,7 +597,6 @@
       const token = generateToken();
       saveToken(token, appName, redirectURL);
 
-      // Limpa campos
       appNameInput.value = '';
       redirectInput.value = '';
     });
