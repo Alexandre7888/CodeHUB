@@ -105,6 +105,24 @@
       border-radius: 4px;
       border: 1px solid #333;
     }
+    .api-download-url {
+      color: #81c784;
+      text-decoration: none;
+      word-break: break-all;
+      display: block;
+      margin: 10px 0;
+      padding: 8px;
+      background: #1a1a1a;
+      border-radius: 4px;
+      border: 1px solid #4caf50;
+    }
+    .download-btn {
+      background: #9C27B0;
+      margin-top: 5px;
+    }
+    .download-btn:hover {
+      background: #7B1FA2;
+    }
     .section {
       background: #1a1a1a;
       padding: 20px;
@@ -224,531 +242,529 @@
   </style>
 </head>
 <body>
+  <h1>Criador de Aplicativos</h1>
+  <a href="https://alexandre7888.github.io/CodeHUB/documentacao.html"
+     class="btn"
+     target="_blank"
+     rel="noopener noreferrer">
+    Abrir Documentação
+  </a>
+  
+  <div class="section">
+    <h2>Criar Novo Aplicativo</h2>
+    <form id="appForm">
+      <div class="form-group">
+        <input type="text" id="appName" placeholder="Nome do Aplicativo" required />
+      </div>
+      <div class="form-group">
+        <input type="url" id="redirectURL" placeholder="URL do Redirecionador (ex: dashboard.html)" required />
+      </div>
+      <button type="submit">Gerar Token e Salvar</button>
+    </form>
+  </div>
+  
+  <div id="tokenList" class="section">
+    <h2>APIs Criadas</h2>
+    <div id="tokensContainer">Carregando...</div>
+  </div>
 
-<h1>Criador de Aplicativos</h1>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getDatabase, ref, set, get, child, onValue, update, remove } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
-<a href="https://alexandre7888.github.io/CodeHUB/documentacao.html"
-   class="btn"
-   target="_blank"
-   rel="noopener noreferrer">
-  Abrir Documentação
-</a>
+    // Config do Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
+      authDomain: "html-15e80.firebaseapp.com",
+      databaseURL: "https://html-15e80-default-rtdb.firebaseio.com",
+      projectId: "html-15e80",
+      storageBucket: "html-15e80.appspot.com",
+      messagingSenderId: "1068148640439",
+      appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32",
+      measurementId: "G-V57KRZ02HJ"
+    };
 
-<div class="section">
-  <h2>Criar Novo Aplicativo</h2>
-  <form id="appForm">
-    <div class="form-group">
-      <input type="text" id="appName" placeholder="Nome do Aplicativo" required />
-    </div>
-    <div class="form-group">
-      <input type="url" id="redirectURL" placeholder="URL do Redirecionador (ex: dashboard.html)" required />
-    </div>
-    
-    <button type="submit">Gerar Token e Salvar</button>
-  </form>
-</div>
+    // Inicializa Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
 
-<div id="tokenList" class="section">
-  <h2>APIs Criadas</h2>
-  <div id="tokensContainer">Carregando...</div>
-</div>
+    const appForm = document.getElementById('appForm');
+    const appNameInput = document.getElementById('appName');
+    const redirectInput = document.getElementById('redirectURL');
+    const tokensContainer = document.getElementById('tokensContainer');
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-  import { getDatabase, ref, set, get, child, onValue, update, remove } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+    let userUID = null;
+    let currentTokens = [];
 
-  // Config do Firebase
-  const firebaseConfig = {
-    apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
-    authDomain: "html-15e80.firebaseapp.com",
-    databaseURL: "https://html-15e80-default-rtdb.firebaseio.com",
-    projectId: "html-15e80",
-    storageBucket: "html-15e80.appspot.com",
-    messagingSenderId: "1068148640439",
-    appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32",
-    measurementId: "G-V57KRZ02HJ"
-  };
-
-  // Inicializa Firebase
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-  const auth = getAuth(app);
-
-  const appForm = document.getElementById('appForm');
-  const appNameInput = document.getElementById('appName');
-  const redirectInput = document.getElementById('redirectURL');
-  const tokensContainer = document.getElementById('tokensContainer');
-
-  let userUID = null;
-  let currentTokens = [];
-
-  // Gera token aleatório
-  function generateToken(length = 20) {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let token = '';
-    for(let i=0; i<length; i++) {
-      token += chars.charAt(Math.floor(Math.random() * chars.length));
+    // Gera token aleatório
+    function generateToken(length = 20) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      let token = '';
+      for(let i=0; i<length; i++) {
+        token += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return token;
     }
-    return token;
-  }
 
-  // Gera uma chave de API aleatória
-  function generateApiKey(length = 32) {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_-+=';
-    let key = '';
-    for(let i=0; i<length; i++) {
-      key += chars.charAt(Math.floor(Math.random() * chars.length));
+    // Gera uma chave de API aleatória
+    function generateApiKey(length = 32) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_-+=';
+      let key = '';
+      for(let i=0; i<length; i++) {
+        key += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return key;
     }
-    return key;
-  }
 
-  // Salvar token no localStorage
-  function saveTokenToLocalStorage(token, appName, redirectURL) {
-    try {
-      const existingTokens = JSON.parse(localStorage.getItem('userTokens') || '[]');
-      const tokenExists = existingTokens.some(t => t.value === token);
-      if (!tokenExists) {
-        const newToken = {
-          value: token,
-          appName: appName,
-          redirectURL: redirectURL,
+    // Salvar token no localStorage
+    function saveTokenToLocalStorage(token, appName, redirectURL) {
+      try {
+        const existingTokens = JSON.parse(localStorage.getItem('userTokens') || '[]');
+        const tokenExists = existingTokens.some(t => t.value === token);
+        if (!tokenExists) {
+          const newToken = {
+            value: token,
+            appName: appName,
+            redirectURL: redirectURL,
+            createdAt: new Date().toISOString()
+          };
+          existingTokens.push(newToken);
+          localStorage.setItem('userTokens', JSON.stringify(existingTokens));
+        }
+      } catch (error) {
+        console.error('Erro ao salvar token no localStorage:', error);
+      }
+    }
+
+    // Sincronizar tokens existentes com localStorage
+    async function syncTokensToLocalStorage() {
+      try {
+        const tokensRef = ref(db, 'tokens');
+        const snapshot = await get(tokensRef);
+        const data = snapshot.val();
+
+        if (!data) return;
+
+        const userTokens = Object.entries(data)
+          .filter(([token, val]) => val.ownerUID === userUID)
+          .map(([token, val]) => ({
+            value: token,
+            appName: val.appName,
+            redirectURL: val.redirectURL,
+            createdAt: val.createdAt
+          }));
+
+        localStorage.setItem('userTokens', JSON.stringify(userTokens));
+      } catch (error) {
+        console.error('Erro ao sincronizar tokens:', error);
+      }
+    }
+
+    // Verifica login
+    onAuthStateChanged(auth, user => {
+      if (!user) {
+        alert("Você precisa estar logado para criar aplicativos.");
+        window.location.href = "https://alexandre7888.github.io/CodeHUB/auth";
+        return;
+      }
+      userUID = user.uid;
+      loadTokens();
+      syncTokensToLocalStorage();
+    });
+
+    // Salvar token básico (sem configurações extras)
+    async function saveToken(token, appName, redirectURL) {
+      try {
+        const tokenData = {
+          appName,
+          redirectURL,
+          ownerUID: userUID,
           createdAt: new Date().toISOString()
+          // Não inclui rules, allowedDomains ou apiKey inicialmente
         };
-        existingTokens.push(newToken);
-        localStorage.setItem('userTokens', JSON.stringify(existingTokens));
-      }
-    } catch (error) {
-      console.error('Erro ao salvar token no localStorage:', error);
-    }
-  }
 
-  // Sincronizar tokens existentes com localStorage
-  async function syncTokensToLocalStorage() {
-    try {
-      const tokensRef = ref(db, 'tokens');
-      const snapshot = await get(tokensRef);
-      const data = snapshot.val();
+        await set(ref(db, `tokens/${token}`), tokenData);
 
-      if (!data) return;
-
-      const userTokens = Object.entries(data)
-        .filter(([token, val]) => val.ownerUID === userUID)
-        .map(([token, val]) => ({
-          value: token,
-          appName: val.appName,
-          redirectURL: val.redirectURL,
-          createdAt: val.createdAt
-        }));
-
-      localStorage.setItem('userTokens', JSON.stringify(userTokens));
-    } catch (error) {
-      console.error('Erro ao sincronizar tokens:', error);
-    }
-  }
-
-  // Verifica login
-  onAuthStateChanged(auth, user => {
-    if (!user) {
-      alert("Você precisa estar logado para criar aplicativos.");
-      window.location.href = "https://alexandre7888.github.io/CodeHUB/auth";
-      return;
-    }
-    userUID = user.uid;
-    loadTokens();
-    syncTokensToLocalStorage();
-  });
-
-  // Salvar token básico (sem configurações extras)
-  async function saveToken(token, appName, redirectURL) {
-    try {
-      const tokenData = {
-        appName,
-        redirectURL,
-        ownerUID: userUID,
-        createdAt: new Date().toISOString()
-        // Não inclui rules, allowedDomains ou apiKey inicialmente
-      };
-      
-      await set(ref(db, `tokens/${token}`), tokenData);
-      
-      saveTokenToLocalStorage(token, appName, redirectURL);
-      alert('Token criado com sucesso!');
-      loadTokens();
-      return true;
-    } catch(e) {
-      alert('Erro ao salvar token: ' + e.message);
-      return false;
-    }
-  }
-
-  // Salvar/atualizar configurações extras do token
-  async function saveTokenConfig(token, rules, allowedDomains, apiKey) {
-    try {
-      // Se não fornecer uma chave, gerar automaticamente
-      const finalApiKey = apiKey || generateApiKey();
-      
-      // Criptografar a chave de API usando base64
-      const encryptedApiKey = btoa(finalApiKey);
-      
-      // Processar domínios - converter string para array
-      let domainsArray = [];
-      if (allowedDomains && allowedDomains.trim() !== '') {
-        domainsArray = allowedDomains.split(',').map(domain => domain.trim()).filter(domain => domain !== '');
-      }
-      
-      // Processar regras - validar JSON se fornecido
-      let rulesObj = {};
-      if (rules && rules.trim() !== '') {
-        try {
-          rulesObj = JSON.parse(rules);
-        } catch (e) {
-          console.error('Erro ao parsear JSON das regras:', e);
-          rulesObj = {};
-        }
-      }
-      
-      const updates = {
-        rules: rulesObj,
-        allowedDomains: domainsArray,
-        apiKey: encryptedApiKey,
-        updatedAt: new Date().toISOString()
-      };
-      
-      await update(ref(db, `tokens/${token}`), updates);
-      
-      // Mostrar a chave gerada apenas se foi gerada automaticamente
-      if (!apiKey) {
-        alert('Configurações salvas com sucesso!\nChave de API gerada: ' + finalApiKey + '\n\nSalve esta chave em um local seguro!');
-      } else {
-        alert('Configurações salvas com sucesso!');
-      }
-      
-      loadTokens();
-      return finalApiKey;
-    } catch(e) {
-      alert('Erro ao salvar configurações: ' + e.message);
-      return false;
-    }
-  }
-
-  // Excluir token
-  async function deleteToken(token, appName) {
-    if (confirm(`Tem certeza que deseja excluir o aplicativo "${appName}"?\nEsta ação não pode ser desfeita!`)) {
-      try {
-        await remove(ref(db, `tokens/${token}`));
-        alert('Aplicativo excluído com sucesso!');
+        saveTokenToLocalStorage(token, appName, redirectURL);
+        alert('Token criado com sucesso!');
         loadTokens();
+        return true;
       } catch(e) {
-        alert('Erro ao excluir token: ' + e.message);
+        alert('Erro ao salvar token: ' + e.message);
+        return false;
       }
     }
-  }
 
-  // Carregar tokens do usuário
-  function loadTokens() {
-    const tokensRef = ref(db, 'tokens');
-    onValue(tokensRef, (snapshot) => {
-      const data = snapshot.val();
-      tokensContainer.innerHTML = '';
-
-      if (!data) {
-        tokensContainer.textContent = 'Nenhum token criado ainda.';
-        return;
-      }
-
-      const tokens = Object.entries(data).filter(([token, val]) => val.ownerUID === userUID);
-      currentTokens = tokens;
-
-      if (tokens.length === 0) {
-        tokensContainer.textContent = 'Nenhum token criado ainda.';
-        return;
-      }
-
-      tokens.forEach(([token, val]) => {
-        // Container para cada API
-        const div = document.createElement('div');
-        div.className = 'token-item';
-
-        // URLs para continuar conta
-        const baseURL = "https://code.codehub2025.ct.ws/API/continuar-conta";
-        
-        // Verificar se tem configurações
-        const hasConfig = val.apiKey || val.rules || val.allowedDomains;
-        
-        // Descriptografar a chave de API se existir
-        const decryptedApiKey = val.apiKey ? atob(val.apiKey) : null;
-        
-        // Formatar regras para exibição
-        const rulesDisplay = val.rules ? JSON.stringify(val.rules, null, 2) : 'Nenhuma regra definida';
-        
-        // Formatar domínios para exibição
-        let domainsDisplay = 'Nenhum domínio restrito';
-        if (val.allowedDomains && val.allowedDomains.length > 0) {
-          domainsDisplay = val.allowedDomains.map(domain => `<span class="domain-tag">${domain}</span>`).join('');
-        }
-
-        div.innerHTML = `
-          <strong>Aplicativo:</strong> ${val.appName}<br/>
-          <strong>Token:</strong> ${token}<br/>
-          <strong>Redirecionador:</strong> ${val.redirectURL}<br/>
-          <strong>Criado em:</strong> ${new Date(val.createdAt).toLocaleString()}<br/>
-          
-          <div class="url-container">
-            <div class="url-type">URL para Continuar Conta:</div>
-            <div class="api-url">${baseURL}?token=${token}</div>
-          </div>
-        `;
-
-        // Adicionar seção de configurações se existirem
-        if (hasConfig) {
-          div.innerHTML += `
-            <div class="api-info">
-              <div class="api-info-item">
-                <strong>Chave de API:</strong><br>
-                <div class="api-key">${decryptedApiKey || 'Não definida'}</div>
-              </div>
-              <div class="api-info-item">
-                <strong>Regras da API:</strong><br>
-                <div class="rules-display">${rulesDisplay}</div>
-              </div>
-              <div class="api-info-item">
-                <strong>Domínios Autorizados:</strong><br>
-                <div class="domains-list">${domainsDisplay}</div>
-              </div>
-            </div>
-          `;
-        } else {
-          div.innerHTML += `
-            <div class="no-config">
-              ⚠️ Este aplicativo não tem configurações de API definidas. 
-              Clique em "Configurar API" para adicionar chave de API, regras e domínios permitidos.
-            </div>
-          `;
-        }
-
-        // Container para botões
-        const actionsDiv = document.createElement('div');
-        actionsDiv.className = 'token-actions';
-
-        // Botão para copiar URL de continuar conta
-        const copyUrlBtn = document.createElement('button');
-        copyUrlBtn.className = 'url-btn';
-        copyUrlBtn.textContent = 'Copiar URL';
-        copyUrlBtn.onclick = () => {
-          navigator.clipboard.writeText(`${baseURL}?token=${token}`);
-          alert('URL copiada para a área de transferência!');
-        };
-
-        // Botão para configurar/editar API
-        const configBtn = document.createElement('button');
-        configBtn.className = 'settings-btn';
-        configBtn.textContent = hasConfig ? 'Editar Configurações' : 'Configurar API';
-        configBtn.onclick = () => showConfigForm(token, val, hasConfig);
-
-        // Botão para excluir token
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'delete-btn';
-        deleteBtn.textContent = 'Excluir Aplicativo';
-        deleteBtn.onclick = () => deleteToken(token, val.appName);
-
-        actionsDiv.appendChild(copyUrlBtn);
-        actionsDiv.appendChild(configBtn);
-        actionsDiv.appendChild(deleteBtn);
-        div.appendChild(actionsDiv);
-        
-        tokensContainer.appendChild(div);
-      });
-    });
-  }
-
-  // Mostrar formulário de configuração
-  function showConfigForm(token, tokenData, hasConfig) {
-    // Criar formulário de configuração
-    const configDiv = document.createElement('div');
-    configDiv.className = 'config-form';
-    
-    // Dados atuais (se existirem)
-    const currentRules = tokenData.rules ? JSON.stringify(tokenData.rules, null, 2) : '';
-    const currentDomains = tokenData.allowedDomains ? tokenData.allowedDomains.join(', ') : '';
-    const currentApiKey = tokenData.apiKey ? atob(tokenData.apiKey) : '';
-    
-    configDiv.innerHTML = `
-      <h3>${hasConfig ? 'Editar' : 'Adicionar'} Configurações da API</h3>
-      <p><strong>Aplicativo:</strong> ${tokenData.appName}</p>
-      <p><strong>Token:</strong> ${token}</p>
-      
-      <div class="form-group">
-        <label for="rules-${token}">Regras da API (JSON - opcional):</label>
-        <textarea id="rules-${token}" placeholder='Ex: {"maxRequests": 100, "rateLimit": "60/hour"}' rows="6">${currentRules}</textarea>
-      </div>
-      
-      <div class="form-group">
-        <label for="domains-${token}">Domínios Permitidos (separados por vírgula - opcional):</label>
-        <input type="text" id="domains-${token}" placeholder="Ex: meusite.com, outrosite.com, app.meudominio.com" value="${currentDomains}" />
-      </div>
-      
-      <div class="form-group">
-        <label for="apiKey-${token}">Chave de API (deixe em branco para gerar automaticamente):</label>
-        <input type="text" id="apiKey-${token}" placeholder="${hasConfig ? 'Deixe em branco para manter atual' : 'Chave personalizada (ou vazio para gerar)'}" value="${hasConfig ? '' : ''}" />
-        ${hasConfig ? '<p><small>Para manter a chave atual, deixe este campo em branco</small></p>' : ''}
-      </div>
-      
-      <button onclick="saveConfig('${token}')" style="background: #4caf50;">Salvar Configurações</button>
-      <button onclick="cancelConfig('${token}')" style="background: #757575;">Cancelar</button>
-      ${hasConfig ? `<button onclick="removeConfig('${token}')" style="background: #f44336;">Remover Todas Configurações</button>` : ''}
-    `;
-    
-    // Encontrar o elemento do token
-    const tokenElements = document.querySelectorAll('.token-item');
-    tokenElements.forEach(element => {
-      if (element.textContent.includes(token)) {
-        // Verificar se já tem um formulário aberto
-        const existingForm = element.querySelector('.config-form');
-        if (existingForm) {
-          existingForm.remove();
-        }
-        element.appendChild(configDiv);
-      }
-    });
-  }
-
-  // Função para salvar configurações (adicionada ao window para ser acessível pelo onclick)
-  window.saveConfig = async function(token) {
-    const rules = document.getElementById(`rules-${token}`).value.trim();
-    const domains = document.getElementById(`domains-${token}`).value.trim();
-    const apiKey = document.getElementById(`apiKey-${token}`).value.trim();
-    
-    const result = await saveTokenConfig(token, rules, domains, apiKey);
-    if (result) {
-      // Remover o formulário
-      cancelConfig(token);
-    }
-  };
-
-  // Função para cancelar edição
-  window.cancelConfig = function(token) {
-    const tokenElements = document.querySelectorAll('.token-item');
-    tokenElements.forEach(element => {
-      if (element.textContent.includes(token)) {
-        const configForm = element.querySelector('.config-form');
-        if (configForm) {
-          configForm.remove();
-        }
-      }
-    });
-  };
-
-  // Função para remover todas as configurações
-  window.removeConfig = async function(token) {
-    if (confirm('Tem certeza que deseja remover todas as configurações da API?\nIsso inclui chave de API, regras e domínios.')) {
+    // Salvar/atualizar configurações extras do token
+    async function saveTokenConfig(token, rules, allowedDomains, apiKey) {
       try {
+        // Se não fornecer uma chave, gerar automaticamente
+        const finalApiKey = apiKey || generateApiKey();
+
+        // Criptografar a chave de API usando base64
+        const encryptedApiKey = btoa(finalApiKey);
+
+        // Processar domínios - converter string para array
+        let domainsArray = [];
+        if (allowedDomains && allowedDomains.trim() !== '') {
+          domainsArray = allowedDomains.split(',').map(domain => domain.trim()).filter(domain => domain !== '');
+        }
+
+        // Processar regras - validar JSON se fornecido
+        let rulesObj = {};
+        if (rules && rules.trim() !== '') {
+          try {
+            rulesObj = JSON.parse(rules);
+          } catch (e) {
+            console.error('Erro ao parsear JSON das regras:', e);
+            rulesObj = {};
+          }
+        }
+
         const updates = {
-          rules: null,
-          allowedDomains: null,
-          apiKey: null,
+          rules: rulesObj,
+          allowedDomains: domainsArray,
+          apiKey: encryptedApiKey,
           updatedAt: new Date().toISOString()
         };
-        
+
         await update(ref(db, `tokens/${token}`), updates);
-        alert('Configurações removidas com sucesso!');
+
+        // Mostrar a chave gerada apenas se foi gerada automaticamente
+        if (!apiKey) {
+          alert('Configurações salvas com sucesso!\nChave de API gerada: ' + finalApiKey + '\n\nSalve esta chave em um local seguro!');
+        } else {
+          alert('Configurações salvas com sucesso!');
+        }
+
         loadTokens();
+        return finalApiKey;
       } catch(e) {
-        alert('Erro ao remover configurações: ' + e.message);
+        alert('Erro ao salvar configurações: ' + e.message);
+        return false;
       }
     }
-  };
 
-  // Quando enviar o formulário
-  appForm.addEventListener('submit', e => {
-    e.preventDefault();
-    const appName = appNameInput.value.trim();
-    const redirectURL = redirectInput.value.trim();
-
-    if (!appName || !redirectURL) {
-      alert('Preencha todos os campos!');
-      return;
+    // Excluir token
+    async function deleteToken(token, appName) {
+      if (confirm(`Tem certeza que deseja excluir o aplicativo "${appName}"?\nEsta ação não pode ser desfeita!`)) {
+        try {
+          await remove(ref(db, `tokens/${token}`));
+          alert('Aplicativo excluído com sucesso!');
+          loadTokens();
+        } catch(e) {
+          alert('Erro ao excluir token: ' + e.message);
+        }
+      }
     }
 
-    const token = generateToken();
-    saveToken(token, appName, redirectURL);
+    // Função para baixar o arquivo JSON
+    function downloadJSONFile(token) {
+      const apiUrl = `http://codehub.ct.ws/API/api5.json?token=${token}`;
+      const fileName = `api5_${token}.json`;
+      
+      // Criar um objeto JSON de exemplo
+      const jsonData = {
+        token: token,
+        api_url: apiUrl,
+        sdk_config: {
+          version: "1.0.0",
+          endpoints: {
+            auth: `${apiUrl}/auth`,
+            users: `${apiUrl}/users`,
+            data: `${apiUrl}/data`
+          },
+          settings: {
+            rate_limit: 100,
+            timeout: 30
+          }
+        },
+        documentation: "https://alexandre7888.github.io/CodeHUB/documentacao.html",
+        generated_at: new Date().toISOString()
+      };
 
-    // Limpa campos
-    appNameInput.value = '';
-    redirectInput.value = '';
-  });
-</script>
-
-</body>
-</html>  const tokensContainer = document.getElementById("tokensContainer");
-
-  let userUID = null;
-
-  function generateToken(length = 24) {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let token = "";
-    for (let i = 0; i < length; i++) {
-      token += chars.charAt(Math.floor(Math.random() * chars.length));
+      // Converter para string JSON
+      const jsonString = JSON.stringify(jsonData, null, 2);
+      
+      // Criar um blob com o conteúdo
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      
+      // Criar um link para download
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      
+      // Simular clique para iniciar o download
+      document.body.appendChild(a);
+      a.click();
+      
+      // Limpar
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
     }
-    return token;
-  }
 
-  onAuthStateChanged(auth, user => {
-    if (!user) {
-      alert("Você precisa estar logado.");
-      window.location.href = "https://alexandre7888.github.io/CodeHUB/auth";
-      return;
+    // Carregar tokens do usuário
+    function loadTokens() {
+      const tokensRef = ref(db, 'tokens');
+      onValue(tokensRef, (snapshot) => {
+        const data = snapshot.val();
+        tokensContainer.innerHTML = '';
+
+        if (!data) {
+          tokensContainer.textContent = 'Nenhum token criado ainda.';
+          return;
+        }
+
+        const tokens = Object.entries(data).filter(([token, val]) => val.ownerUID === userUID);
+        currentTokens = tokens;
+
+        if (tokens.length === 0) {
+          tokensContainer.textContent = 'Nenhum token criado ainda.';
+          return;
+        }
+
+        tokens.forEach(([token, val]) => {
+          // Container para cada API
+          const div = document.createElement('div');
+          div.className = 'token-item';
+
+          // URLs para continuar conta
+          const baseURL = "https://code.codehub2025.ct.ws/API/continuar-conta";
+          
+          // URL para download da API/SDK
+          const apiDownloadURL = `http://codehub.ct.ws/API/api5.json?token=${token}`;
+
+          // Verificar se tem configurações
+          const hasConfig = val.apiKey || val.rules || val.allowedDomains;
+
+          // Descriptografar a chave de API se existir
+          const decryptedApiKey = val.apiKey ? atob(val.apiKey) : null;
+
+          // Formatar regras para exibição
+          const rulesDisplay = val.rules ? JSON.stringify(val.rules, null, 2) : 'Nenhuma regra definida';
+
+          // Formatar domínios para exibição
+          let domainsDisplay = 'Nenhum domínio restrito';
+          if (val.allowedDomains && val.allowedDomains.length > 0) {
+            domainsDisplay = val.allowedDomains.map(domain => `<span class="domain-tag">${domain}</span>`).join('');
+          }
+
+          div.innerHTML = `
+            <strong>Aplicativo:</strong> ${val.appName}<br/>
+            <strong>Token:</strong> ${token}<br/>
+            <strong>Redirecionador:</strong> ${val.redirectURL}<br/>
+            <strong>Criado em:</strong> ${new Date(val.createdAt).toLocaleString()}<br/>
+                
+            <div class="url-container">
+              <div class="url-type">URL para Continuar Conta:</div>
+              <div class="api-url">${baseURL}?token=${token}</div>
+            </div>
+            
+            <div class="url-container">
+              <div class="url-type">URL para API/SDK (arquivo para download):</div>
+              <div class="api-download-url">${apiDownloadURL}</div>
+            </div>
+          `;
+
+          // Adicionar seção de configurações se existirem
+          if (hasConfig) {
+            div.innerHTML += `
+              <div class="api-info">
+                <div class="api-info-item">
+                  <strong>Chave de API:</strong><br>
+                  <div class="api-key">${decryptedApiKey || 'Não definida'}</div>
+                </div>
+                <div class="api-info-item">
+                  <strong>Regras da API:</strong><br>
+                  <div class="rules-display">${rulesDisplay}</div>
+                </div>
+                <div class="api-info-item">
+                  <strong>Domínios Autorizados:</strong><br>
+                  <div class="domains-list">${domainsDisplay}</div>
+                </div>
+              </div>
+            `;
+          } else {
+            div.innerHTML += `
+              <div class="no-config">
+                ⚠️ Este aplicativo não tem configurações de API definidas.
+                Clique em "Configurar API" para adicionar chave de API, regras e domínios permitidos.
+              </div>
+            `;
+          }
+
+          // Container para botões
+          const actionsDiv = document.createElement('div');
+          actionsDiv.className = 'token-actions';
+
+          // Botão para copiar URL de continuar conta
+          const copyUrlBtn = document.createElement('button');
+          copyUrlBtn.className = 'url-btn';
+          copyUrlBtn.textContent = 'Copiar URL';
+          copyUrlBtn.onclick = () => {
+            navigator.clipboard.writeText(`${baseURL}?token=${token}`);
+            alert('URL copiada para a área de transferência!');
+          };
+
+          // Botão para copiar URL da API/SDK
+          const copyApiUrlBtn = document.createElement('button');
+          copyApiUrlBtn.className = 'url-btn';
+          copyApiUrlBtn.textContent = 'Copiar URL API';
+          copyApiUrlBtn.onclick = () => {
+            navigator.clipboard.writeText(apiDownloadURL);
+            alert('URL da API copiada para a área de transferência!');
+          };
+
+          // Botão para baixar arquivo JSON
+          const downloadBtn = document.createElement('button');
+          downloadBtn.className = 'download-btn';
+          downloadBtn.textContent = 'Baixar Arquivo JSON';
+          downloadBtn.onclick = () => downloadJSONFile(token);
+
+          // Botão para configurar/editar API
+          const configBtn = document.createElement('button');
+          configBtn.className = 'settings-btn';
+          configBtn.textContent = hasConfig ? 'Editar Configurações' : 'Configurar API';
+          configBtn.onclick = () => showConfigForm(token, val, hasConfig);
+
+          // Botão para excluir token
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = 'delete-btn';
+          deleteBtn.textContent = 'Excluir Aplicativo';
+          deleteBtn.onclick = () => deleteToken(token, val.appName);
+
+          actionsDiv.appendChild(copyUrlBtn);
+          actionsDiv.appendChild(copyApiUrlBtn);
+          actionsDiv.appendChild(downloadBtn);
+          actionsDiv.appendChild(configBtn);
+          actionsDiv.appendChild(deleteBtn);
+          div.appendChild(actionsDiv);
+
+          tokensContainer.appendChild(div);
+        });
+      });
     }
-    userUID = user.uid;
-    loadTokens();
-  });
 
-  appForm.addEventListener("submit", e => {
-    e.preventDefault();
-    const appName = document.getElementById("appName").value.trim();
-    const redirectURL = document.getElementById("redirectURL").value.trim();
-    if (!appName || !redirectURL) return;
+    // Mostrar formulário de configuração
+    function showConfigForm(token, tokenData, hasConfig) {
+      // Criar formulário de configuração
+      const configDiv = document.createElement('div');
+      configDiv.className = 'config-form';
 
-    const token = generateToken();
+      // Dados atuais (se existirem)
+      const currentRules = tokenData.rules ? JSON.stringify(tokenData.rules, null, 2) : '';
+      const currentDomains = tokenData.allowedDomains ? tokenData.allowedDomains.join(', ') : '';
+      const currentApiKey = tokenData.apiKey ? atob(tokenData.apiKey) : '';
 
-    set(ref(db, "tokens/" + token), {
-      appName,
-      redirectURL,
-      ownerUID: userUID,
-      createdAt: new Date().toISOString()
-    });
+      configDiv.innerHTML = `
+        <h3>${hasConfig ? 'Editar' : 'Adicionar'} Configurações da API</h3>
+        <p><strong>Aplicativo:</strong> ${tokenData.appName}</p>
+        <p><strong>Token:</strong> ${token}</p>
+            
+        <div class="form-group">
+          <label for="rules-${token}">Regras da API (JSON - opcional):</label>
+          <textarea id="rules-${token}" placeholder='Ex: {"maxRequests": 100, "rateLimit": "60/hour"}' rows="6">${currentRules}</textarea>
+        </div>
 
-    appForm.reset();
-  });
+        <div class="form-group">
+          <label for="domains-${token}">Domínios Permitidos (separados por vírgula - opcional):</label>
+          <input type="text" id="domains-${token}" placeholder="Ex: meusite.com, outrosite.com, app.meudominio.com" value="${currentDomains}" />
+        </div>
 
-  function loadTokens() {
-    onValue(ref(db, "tokens"), snap => {
-      tokensContainer.innerHTML = "";
-      const data = snap.val();
-      if (!data) {
-        tokensContainer.textContent = "Nenhuma API criada ainda.";
+        <div class="form-group">
+          <label for="apiKey-${token}">Chave de API (deixe em branco para gerar automaticamente):</label>
+          <input type="text" id="apiKey-${token}" placeholder="${hasConfig ? 'Deixe em branco para manter atual' : 'Chave personalizada (ou vazio para gerar)'}" value="${hasConfig ? '' : ''}" />
+          ${hasConfig ? '<p><small>Para manter a chave atual, deixe este campo em branco</small></p>' : ''}
+        </div>
+
+        <button onclick="saveConfig('${token}')" style="background: #4caf50;">Salvar Configurações</button>
+        <button onclick="cancelConfig('${token}')" style="background: #757575;">Cancelar</button>
+        ${hasConfig ? `<button onclick="removeConfig('${token}')" style="background: #f44336;">Remover Todas Configurações</button>` : ''}
+      `;
+
+      // Encontrar o elemento do token
+      const tokenElements = document.querySelectorAll('.token-item');
+      tokenElements.forEach(element => {
+        if (element.textContent.includes(token)) {
+          // Verificar se já tem um formulário aberto
+          const existingForm = element.querySelector('.config-form');
+          if (existingForm) {
+            existingForm.remove();
+          }
+          element.appendChild(configDiv);
+        }
+      });
+    }
+
+    // Função para salvar configurações (adicionada ao window para ser acessível pelo onclick)
+    window.saveConfig = async function(token) {
+      const rules = document.getElementById(`rules-${token}`).value.trim();
+      const domains = document.getElementById(`domains-${token}`).value.trim();
+      const apiKey = document.getElementById(`apiKey-${token}`).value.trim();
+
+      const result = await saveTokenConfig(token, rules, domains, apiKey);
+      if (result) {
+        // Remover o formulário
+        cancelConfig(token);
+      }
+    };
+
+    // Função para cancelar edição
+    window.cancelConfig = function(token) {
+      const tokenElements = document.querySelectorAll('.token-item');
+      tokenElements.forEach(element => {
+        if (element.textContent.includes(token)) {
+          const configForm = element.querySelector('.config-form');
+          if (configForm) {
+            configForm.remove();
+          }
+        }
+      });
+    };
+
+    // Função para remover todas as configurações
+    window.removeConfig = async function(token) {
+      if (confirm('Tem certeza que deseja remover todas as configurações da API?\nIsso inclui chave de API, regras e domínios.')) {
+        try {
+          const updates = {
+            rules: null,
+            allowedDomains: null,
+            apiKey: null,
+            updatedAt: new Date().toISOString()
+          };
+
+          await update(ref(db, `tokens/${token}`), updates);
+          alert('Configurações removidas com sucesso!');
+          loadTokens();
+        } catch(e) {
+          alert('Erro ao remover configurações: ' + e.message);
+        }
+      }
+    };
+
+    // Quando enviar o formulário
+    appForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const appName = appNameInput.value.trim();
+      const redirectURL = redirectInput.value.trim();
+
+      if (!appName || !redirectURL) {
+        alert('Preencha todos os campos!');
         return;
       }
 
-      Object.entries(data).forEach(([token, val]) => {
-        if (val.ownerUID !== userUID) return;
+      const token = generateToken();
+      saveToken(token, appName, redirectURL);
 
-        const div = document.createElement("div");
-        div.className = "token-item";
-        div.innerHTML = `
-          <strong>Aplicativo:</strong> ${val.appName}<br>
-          <strong>Token:</strong> ${token}<br>
-          <strong>Redirecionador:</strong> ${val.redirectURL}
-          <div class="api-url">
-            https://code.codehub.ct.ws/API/continuar-conta?token=${token}
-          </div>
-        `;
-
-        tokensContainer.appendChild(div);
-      });
+      // Limpa campos
+      appNameInput.value = '';
+      redirectInput.value = '';
     });
-  }
-</script>
-
+  </script>
 </body>
 </html>
