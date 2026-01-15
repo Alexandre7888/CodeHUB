@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta charset="utf-8" />
@@ -29,19 +29,24 @@
     .token-selector button:hover {background:#2563eb}
     .current-token {background:#dcfce7; padding:8px; border-radius:4px; margin-top:10px; font-family:monospace; word-break:break-all}
     .api-url {background:#1e293b; color:#f1f5f9; padding:10px; border-radius:6px; margin:10px 0; font-family:monospace; word-break:break-all}
-    
+
     /* Estilos para demonstração de autenticação */
     .auth-demo {margin:20px 0; padding:15px; background:#f0f9ff; border-radius:8px; border:1px solid #bae6fd}
     .auth-btn {padding:10px 18px; border-radius:8px; border:none; cursor:pointer; font-size:16px; margin:5px}
     .auth-login {background:#007bff; color:white}
     .auth-load {background:#28a745; color:white; display:none}
     .auth-logout {background:#ff4747; color:white; display:none}
+    
+    /* Estilos para a nova seção da API 7 */
+    .api7-section {margin:20px 0; padding:15px; background:#f0f9ff; border-radius:8px; border-left:4px solid #10b981}
+    .api7-method {background:#10b981; color:white; padding:4px 8px; border-radius:4px; font-size:14px; font-family:monospace}
+    .api7-example {background:#f8fafc; border:1px solid #e2e8f0; padding:12px; border-radius:8px; margin:10px 0}
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Documentação da API CodeHUB</h1>
-    <p class="note"><strong>Versão:</strong> 2.4 (Firebase + CodeFox + Editor Copiloto + API Clima + IA CodeHUB + Sistema de Autenticação)</p>
+    <p class="note"><strong>Versão:</strong> 3.0 (Firebase + CodeFox + Editor Copiloto + API Clima + IA CodeHUB + Sistema de Autenticação + <strong>API 7 - Sistema de Arquivos</strong>)</p>
 
     <!-- NOVO SELETOR DE TOKENS -->
     <div class="token-selector">
@@ -67,11 +72,177 @@
       </div>
     </div>
 
+    <!-- NOVA SEÇÃO: API 7 - SISTEMA DE ARQUIVOS -->
+    <div class="api7-section">
+      <h3>📁 NOVO: API 7 - Sistema de Arquivos</h3>
+      <p>Sistema completo de armazenamento e gerenciamento de arquivos usando tokens. Permite upload, download, renomeação e exclusão de arquivos.</p>
+      
+      <h4>Instalação:</h4>
+      <pre><code>&lt;script type="module" src="https://codehub.ct.ws/API/api7.js"&gt;&lt;/script&gt;</code></pre>
+      
+      <h4>Métodos Disponíveis:</h4>
+      <table>
+        <tr><th>Método</th><th>Descrição</th><th>Parâmetros</th></tr>
+        <tr><td><code>api7.getAll(token)</code></td><td>Busca todos os arquivos</td><td>token: string</td></tr>
+        <tr><td><code>api7.upload(token, fileData)</code></td><td>Faz upload de arquivo</td><td>token: string, fileData: objeto</td></tr>
+        <tr><td><code>api7.rename(token, id, newName)</code></td><td>Renomeia arquivo</td><td>token: string, id: string, newName: string</td></tr>
+        <tr><td><code>api7.remove(token, id)</code></td><td>Remove arquivo</td><td>token: string, id: string</td></tr>
+      </table>
+      
+      <h4>Exemplo Completo:</h4>
+      <div class="api7-example">
+        <pre><code>&lt;!DOCTYPE html&gt;
+&lt;html lang="pt-br"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;title&gt;Gerenciador&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+
+&lt;h2&gt;Upload&lt;/h2&gt;
+&lt;input type="file" id="file"&gt;
+&lt;button onclick="send()"&gt;Enviar&lt;/button&gt;
+
+&lt;hr&gt;
+
+&lt;h2&gt;Arquivos&lt;/h2&gt;
+&lt;ul id="list"&gt;&lt;/ul&gt;
+
+&lt;hr&gt;
+
+&lt;div id="viewer"&gt;&lt;/div&gt;
+
+&lt;div id="actions" style="display:none"&gt;
+  &lt;input id="newName" placeholder="Novo nome"&gt;
+  &lt;button onclick="rename()"&gt;Renomear&lt;/button&gt;
+  &lt;button onclick="download()"&gt;Baixar&lt;/button&gt;
+  &lt;button onclick="del()"&gt;Excluir&lt;/button&gt;
+&lt;/div&gt;
+
+&lt;script type="module" src="https://code.codehub.ct.ws/API/api7.js"&gt;&lt;/script&gt;
+
+&lt;script&gt;
+const TOKEN = "SEU_TOKEN_AQUI";
+let CACHE = {};
+let CURRENT_ID = null;
+let CURRENT_URL = null;
+
+/* ESPERAR API */
+function waitApi(cb){
+  if (window.api7 && api7.ready) cb();
+  else requestAnimationFrame(() => waitApi(cb));
+}
+waitApi(loadList);
+
+/* UPLOAD */
+function send() {
+  const f = document.getElementById("file").files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = async () => {
+    await api7.upload(TOKEN, {
+      name: f.name,
+      mimeType: f.type,
+      base64: r.result.split(",")[1]
+    });
+    loadList();
+  };
+  r.readAsDataURL(f);
+}
+
+/* LISTA */
+async function loadList() {
+  CACHE = await api7.getAll(TOKEN);
+  const ul = document.getElementById("list");
+  ul.innerHTML = "";
+  for (const id in CACHE) {
+    const li = document.createElement("li");
+    li.textContent = CACHE[id].name;
+    li.style.cursor = "pointer";
+    li.onclick = () => view(id);
+    ul.appendChild(li);
+  }
+}
+
+/* VISUALIZA */
+function view(id) {
+  CURRENT_ID = id;
+  const f = CACHE[id];
+  document.getElementById("newName").value = f.name;
+
+  if (CURRENT_URL) URL.revokeObjectURL(CURRENT_URL);
+  const blob = b64ToBlob(f.base64, f.mimeType);
+  const url = URL.createObjectURL(blob);
+  CURRENT_URL = url;
+
+  const v = document.getElementById("viewer");
+  v.innerHTML = "";
+
+  if (f.mimeType.startsWith("image/"))
+    v.innerHTML = `&lt;img src="${url}"&gt;`;
+  else if (f.mimeType.startsWith("video/"))
+    v.innerHTML = `&lt;video src="${url}" controls autoplay&gt;&lt;/video&gt;`;
+  else if (f.mimeType.startsWith("audio/"))
+    v.innerHTML = `&lt;audio src="${url}" controls autoplay&gt;&lt;/audio&gt;`;
+  else if (f.mimeType === "application/pdf")
+    v.innerHTML = `&lt;iframe src="${url}" width="100%" height="600"&gt;&lt;/iframe&gt;`;
+
+  document.getElementById("actions").style.display = "block";
+}
+
+/* RENOMEAR */
+async function rename() {
+  if (!CURRENT_ID) return;
+  const n = document.getElementById("newName").value.trim();
+  if (!n) return;
+  await api7.rename(TOKEN, CURRENT_ID, n);
+  loadList();
+}
+
+/* BAIXAR */
+function download() {
+  if (!CURRENT_ID) return;
+  const f = CACHE[CURRENT_ID];
+  const blob = b64ToBlob(f.base64, f.mimeType);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = f.name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* EXCLUIR */
+async function del() {
+  if (!CURRENT_ID) return;
+  await api7.remove(TOKEN, CURRENT_ID);
+  document.getElementById("viewer").innerHTML = "";
+  document.getElementById("actions").style.display = "none";
+  CURRENT_ID = null;
+  loadList();
+}
+
+/* UTIL */
+function b64ToBlob(b64, type) {
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i &lt; bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], { type });
+}
+&lt;/script&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+      </div>
+    </div>
+
     <!-- NOVA SEÇÃO: SISTEMA DE AUTENTICAÇÃO E PROJETOS -->
     <div class="auth-demo">
       <h3>🔐 Novo: Sistema de Autenticação e Visualização de Projetos</h3>
       <p>Exemplo completo de sistema de login e visualização de projetos:</p>
-      
+
       <div style="padding:10px; background:white; border-radius:6px; margin:10px 0;">
         <h4 style="margin-top:0;">Teste a Autenticação:</h4>
         <button id="demoLoginBtn" class="auth-btn auth-login">🔵 Fazer Login</button>
@@ -82,7 +253,7 @@
         </div>
         <div id="demoProjects" style="margin-top:15px;"></div>
       </div>
-      
+
       <p class="note" style="margin-top:10px;">
         <strong>💡 Funcionalidades incluídas:</strong> Login automático, persistência de sessão, busca de projetos, 
         visualização de arquivos (texto, imagens, vídeos, HTML, YouTube), e logout.
@@ -96,6 +267,7 @@
       <strong>🛠 Editor Copiloto:</strong> Um assistente que trabalha lado a lado com você no editor, sugerindo melhorias, corrigindo erros e automatizando tarefas repetitivas.<br><br>
       <strong>🌦️ API Clima:</strong> Nova API para monitoramento de condições climáticas em tempo real com mapa interativo e relatórios de alagamento.<br><br>
       <strong>🔐 Sistema de Autenticação:</strong> Novo sistema de login para usuários acessarem seus projetos de qualquer site.<br><br>
+      <strong>📁 API 7 - Sistema de Arquivos:</strong> Sistema completo de armazenamento e gerenciamento de arquivos com tokens individuais.<br><br>
       <em>Todos são parceiros e podem trabalhar juntos para tornar a experiência de desenvolvimento mais ágil e inteligente.</em>
     </div>
 
@@ -105,6 +277,7 @@
       <li><strong>Editor Copiloto:</strong> Autocompletar inteligente, sugestões de refatoração, integração com seu editor de código online ou local.</li>
       <li><strong>API Clima:</strong> Monitoramento em tempo real, mapas interativos, relatórios de risco de alagamento, localização geográfica.</li>
       <li><strong>Sistema de Autenticação:</strong> Login único, visualização de projetos, gerenciamento de arquivos, sessão persistente.</li>
+      <li><strong>API 7 - Sistema de Arquivos:</strong> Upload, download, renomeação e exclusão de arquivos com suporte para imagens, vídeos, PDFs e mais.</li>
     </ul>
 
     <h2>Configuração Inicial</h2>
@@ -112,7 +285,9 @@
     <pre><code>&lt;script src="https://code.codehub.ct.ws/API/api2.js"&gt;&lt;/script&gt;
 &lt;script src=https://code.codehub.ct.ws/API/userKeyAPI.js"&gt;&lt;/script&gt;
 &lt;script src="https://code.codehub.ct.ws/API/ia.js"&gt;&lt;/script&gt;
-&lt;script src="https://code.codehub.ct.ws/API/clima.js"&gt;&lt;/script&gt;</code></pre>
+&lt;script src="https://code.codehub.ct.ws/API/clima.js"&gt;&lt;/script&gt;
+&lt;!-- Nova API 7 --&gt;
+&lt;script type="module" src="https://code.codehub.ct.ws/API/api7.js"&gt;&lt;/script&gt;</code></pre>
 
     <h2>Novo: Sistema Completo de Autenticação</h2>
     <p>Implemente um sistema de login e visualização de projetos com este exemplo:</p>
@@ -186,25 +361,25 @@
 function renderProjetos(res) {
   const lista = document.getElementById("lista");
   const statusTxt = document.getElementById("status");
-  
+
   lista.innerHTML = "";
-  
+
   if (!res.sucesso) {
     statusTxt.textContent = "Erro: " + (res.erro || "Desconhecido");
     return;
   }
-  
+
   const projetos = res.projetos || {};
   const ids = Object.keys(projetos);
-  
+
   statusTxt.textContent = "Projetos encontrados: " + ids.length;
-  
+
   ids.forEach(pid => {
     const p = projetos[pid];
     const card = document.createElement("div");
     card.className = "projetoCard";
     card.textContent = "📁 " + p.name;
-    
+
     card.onclick = () => abrirProjeto(pid, p);
     lista.appendChild(card);
   });
@@ -214,22 +389,22 @@ function renderProjetos(res) {
 function abrirProjeto(pid, p) {
   const lista = document.getElementById("lista");
   const statusTxt = document.getElementById("status");
-  
+
   lista.innerHTML = "";
   statusTxt.textContent = "Arquivos do projeto: " + p.name;
-  
+
   const arquivos = p.files || {};
   const nomes = Object.keys(arquivos);
-  
+
   nomes.forEach(nome => {
     const arq = arquivos[nome] || {};
     const link = arq.link || "";
     const content = arq.content || "";
-    
+
     const item = document.createElement("div");
     item.className = "arquivoItem";
     item.innerHTML = "&lt;h3&gt;" + nome + "&lt;/h3&gt;";
-    
+
     if (!link && content) {
       item.innerHTML += "&lt;pre&gt;" + content + "&lt;/pre&gt;";
     } else if (link.includes("youtu")) {
@@ -242,7 +417,7 @@ function abrirProjeto(pid, p) {
           videoId = link.split("/").pop().split("?")[0];
         }
       } catch {}
-      
+
       if (videoId) {
         item.innerHTML += `
         &lt;iframe 
@@ -260,7 +435,7 @@ function abrirProjeto(pid, p) {
     } else if (link) {
       item.innerHTML += '&lt;p&gt;&lt;small&gt;Link: ' + link + '&lt;/small&gt;&lt;/p&gt;';
     }
-    
+
     lista.appendChild(item);
   });
 }
@@ -279,20 +454,20 @@ function initUI() {
 /* ========== EVENTOS DOS BOTÕES ========== */
 window.onload = function() {
   initUI();
-  
+
   // Botão de Login
   document.getElementById("loginBtn").onclick = function() {
     // IMPORTANTE: Substitua SEU_TOKEN pelo token do seu aplicativo
     window.location.href = 
       "https://code.codehub.ct.ws/API/continuar-conta?token=SEU_TOKEN_AQUI";
   };
-  
+
   // Botão de Logout
   document.getElementById("logoutBtn").onclick = function() {
     localStorage.clear();
     location.reload();
   };
-  
+
   // Botão para Carregar Projetos
   document.getElementById("loadBtn").onclick = async function() {
     document.getElementById("status").textContent = "Carregando projetos...";
@@ -303,7 +478,7 @@ window.onload = function() {
       document.getElementById("status").textContent = "Erro: API não carregada";
     }
   };
-  
+
   // Validação automática do login
   if (typeof validarLogin === "function") {
     validarLogin(function(res) {
@@ -354,11 +529,11 @@ validarLogin(function(resposta) {
     // Login bem-sucedido
     console.log("Usuário:", resposta.userName);
     console.log("Chave:", resposta.userKey);
-    
+
     // Salvar no localStorage para sessão persistente
     localStorage.setItem("userName", resposta.userName);
     localStorage.setItem("userKey", resposta.userKey);
-    
+
     // Atualizar interface
     document.getElementById("nome").textContent = "Bem-vindo, " + resposta.userName + "!";
   }
@@ -390,7 +565,7 @@ validarLogin(function(resposta) {
     body { margin: 0; padding: 8px; background: #f5f5f3; color: #222; overflow: hidden; }
     .wrapper { height: 100vh; display: flex; flex-direction: column; gap: 6px; }
     .header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border-radius: 10px; background: #fff; box-shadow: 0 1px 6px rgba(0,0,0,0.05); }
-    .badge { font-size: 11px; padding: 3px 7px; border-radius: 999px; background: #eef3ef; color: #314334; }
+    .badge { font-size: 11px; padding: 3px 7px; border-radius = 999px; background: #eef3ef; color: #314334; }
     #map { width: 100%; height: 42vh; border-radius: 10px; background: #d0d7db; box-shadow: 0 1px 6px rgba(0,0,0,0.05); }
     .list { flex: 1; overflow-y: auto; padding: 2px 1px 4px; }
   &lt;/style&gt;
@@ -419,10 +594,12 @@ validarLogin(function(resposta) {
   &lt;script src="https://code.codehub.ct.ws/API/userKeyAPI.js"&gt;&lt;/script&gt;
   &lt;script src="https://code.codehub.ct.ws/API/ia.js"&gt;&lt;/script&gt;
   &lt;script src="https://code.codehub.ct.ws/API/clima.js?token=SEU_TOKEN_AQUI"&gt;&lt;/script&gt;
+  &lt;!-- Nova API 7 --&gt;
+  &lt;script type="module" src="https://code.codehub.ct.ws/API/api7.js"&gt;&lt;/script&gt;
 &lt;/head&gt;
 &lt;body&gt;
   &lt;h1&gt;🏠 Meu Dashboard CodeHUB&lt;/h1&gt;
-  
+
   &lt;!-- Sistema de Autenticação --&gt;
   &lt;div id="authSection" style="padding:20px; background:#f0f9ff; border-radius:10px;"&gt;
     &lt;h3&gt;🔐 Autenticação&lt;/h3&gt;
@@ -432,31 +609,39 @@ validarLogin(function(resposta) {
       Bem-vindo, &lt;span id="userName"&gt;&lt;/span&gt;!
     &lt;/div&gt;
   &lt;/div&gt;
-  
+
   &lt;!-- Meus Projetos --&gt;
   &lt;div id="projectsSection" style="padding:20px; background:#f0f9ff; border-radius:10px; margin-top:20px;"&gt;
     &lt;h3&gt;📁 Meus Projetos&lt;/h3&gt;
     &lt;button onclick="carregarProjetos()"&gt;Carregar Projetos&lt;/button&gt;
     &lt;div id="projectsList"&gt;&lt;/div&gt;
   &lt;/div&gt;
-  
+
   &lt;!-- API Clima --&gt;
   &lt;div style="padding:20px; background:#f0f9ff; border-radius:10px; margin-top:20px;"&gt;
     &lt;h3&gt;🌦️ Monitor de Clima&lt;/h3&gt;
     &lt;div id="map" style="height:300px; background:#d0d7db; border-radius:10px;"&gt;&lt;/div&gt;
   &lt;/div&gt;
 
+  &lt;!-- API 7 - Gerenciador de Arquivos --&gt;
+  &lt;div style="padding:20px; background:#f0f9ff; border-radius:10px; margin-top:20px;"&gt;
+    &lt;h3&gt;📁 Gerenciador de Arquivos&lt;/h3&gt;
+    &lt;input type="file" id="api7File"&gt;
+    &lt;button onclick="uploadFile()"&gt;Upload&lt;/button&gt;
+    &lt;div id="api7Files"&gt;&lt;/div&gt;
+  &lt;/div&gt;
+
   &lt;script&gt;
   // Funções de autenticação
   function login() {
-    window.location.href = "https://code.codehub2025.ct.ws/API/continuar-conta?token=SEU_TOKEN_AQUI";
+    window.location.href = "https://code.codehub.ct.ws/API/continuar-conta?token=SEU_TOKEN_AQUI";
   }
-  
+
   function logout() {
     localStorage.clear();
     location.reload();
   }
-  
+
   async function carregarProjetos() {
     const resultado = await window.api2_buscarProjetos();
     if (resultado.sucesso) {
@@ -464,14 +649,33 @@ validarLogin(function(resposta) {
       console.log("Projetos carregados:", resultado.projetos);
     }
   }
-  
+
+  // Funções da API 7
+  async function uploadFile() {
+    if (!window.api7) return alert("API 7 não carregada!");
+    const fileInput = document.getElementById("api7File");
+    const file = fileInput.files[0];
+    if (!file) return alert("Selecione um arquivo!");
+    
+    const reader = new FileReader();
+    reader.onload = async () => {
+      await api7.upload("SEU_TOKEN_AQUI", {
+        name: file.name,
+        mimeType: file.type,
+        base64: reader.result.split(",")[1]
+      });
+      alert("Arquivo enviado com sucesso!");
+    };
+    reader.readAsDataURL(file);
+  }
+
   // Inicialização
   window.onload = function() {
     if (localStorage.getItem("userName")) {
       document.getElementById("userName").textContent = localStorage.getItem("userName");
       document.getElementById("userInfo").style.display = "block";
     }
-    
+
     // Validação automática
     if (typeof validarLogin === "function") {
       validarLogin(function(res) {
@@ -487,8 +691,9 @@ validarLogin(function(resposta) {
 &lt;/html&gt;</code></pre>
 
     <div class="note">
-      <strong>✨ Novidades na Versão 2.4:</strong>
+      <strong>✨ Novidades na Versão 3.0:</strong>
       <ul>
+        <li><strong>API 7 - Sistema de Arquivos:</strong> Upload, download, renomeação e exclusão de arquivos</li>
         <li>Sistema completo de autenticação de usuários</li>
         <li>Visualização de projetos com suporte a múltiplos tipos de arquivos</li>
         <li>Função <code>api2_buscarProjetos()</code> para buscar projetos</li>
@@ -499,7 +704,7 @@ validarLogin(function(resposta) {
     </div>
 
     <footer>
-      Documentação atualizada em: 2025 | Todos os direitos reservados | Versão da API: 2.4 | IA CodeHUB
+      Documentação atualizada em: 2025 | Todos os direitos reservados | Versão da API: 3.0 | IA CodeHUB
     </footer>
   </div>
 
@@ -590,27 +795,27 @@ validarLogin(function(resposta) {
     // ======================================================
     // DEMONSTRAÇÃO DO SISTEMA DE AUTENTICAÇÃO
     // ======================================================
-    
+
     // Carregar as APIs necessárias para a demonstração
     const apiScript = document.createElement('script');
     apiScript.src = 'https://code.codehub.ct.ws/API/api2.js';
     document.head.appendChild(apiScript);
-    
+
     const authScript = document.createElement('script');
     authScript.src = 'https://code.codehub.ct.ws/API/userKeyAPI.js';
     document.head.appendChild(authScript);
-    
+
     // Configurar demonstração interativa
     document.addEventListener('DOMContentLoaded', function() {
       loadSavedTokens();
-      
+
       const demoLoginBtn = document.getElementById('demoLoginBtn');
       const demoLogoutBtn = document.getElementById('demoLogoutBtn');
       const demoLoadBtn = document.getElementById('demoLoadBtn');
       const demoUserInfo = document.getElementById('demoUserInfo');
       const demoUserName = document.getElementById('demoUserName');
       const demoProjects = document.getElementById('demoProjects');
-      
+
       // Verificar se já está logado (demonstração)
       const demoUser = localStorage.getItem('demoCodeHubUser');
       if (demoUser) {
@@ -620,30 +825,30 @@ validarLogin(function(resposta) {
         demoLogoutBtn.style.display = 'inline-block';
         demoLoadBtn.style.display = 'inline-block';
       }
-      
+
       // Botão de Login (Demonstração)
       demoLoginBtn.addEventListener('click', function() {
         const tokenSelect = document.getElementById('tokenSelect');
         const selectedToken = tokenSelect.value;
-        
+
         if (selectedToken && selectedToken !== 'WIWMgTST2LIG4z1sp4Mi') {
           // Simulação de login para demonstração
           const userName = 'Usuario_' + Math.floor(Math.random() * 1000);
           localStorage.setItem('demoCodeHubUser', userName);
-          
+
           demoUserName.textContent = userName;
           demoUserInfo.style.display = 'block';
           demoLoginBtn.style.display = 'none';
           demoLogoutBtn.style.display = 'inline-block';
           demoLoadBtn.style.display = 'inline-block';
-          
+
           demoProjects.innerHTML = '<p style="color:green;">✅ Login realizado com sucesso!</p>' +
                                   '<p><small>Token usado: ' + selectedToken.substring(0, 20) + '...</small></p>';
         } else {
           alert('Selecione um token válido primeiro!');
         }
       });
-      
+
       // Botão de Logout (Demonstração)
       demoLogoutBtn.addEventListener('click', function() {
         localStorage.removeItem('demoCodeHubUser');
@@ -653,11 +858,11 @@ validarLogin(function(resposta) {
         demoLoadBtn.style.display = 'none';
         demoProjects.innerHTML = '';
       });
-      
+
       // Botão para Carregar Projetos (Demonstração)
       demoLoadBtn.addEventListener('click', async function() {
         demoProjects.innerHTML = '<p>Carregando projetos de demonstração...</p>';
-        
+
         // Simulação de projetos para demonstração
         setTimeout(function() {
           demoProjects.innerHTML = `
@@ -673,696 +878,7 @@ validarLogin(function(resposta) {
           `;
         }, 1000);
       });
-      
-      // Validação automática para demonstração
-      if (typeof validarLogin === 'function') {
-        setTimeout(function() {
-          validarLogin(function(res) {
-            if (res && res.success) {
-              // Esta parte funcionaria em um ambiente real
-              console.log('Login validado:', res);
-            }
-          });
-        }, 500);
-      }
-    });
-  </script>
-</body>
-</html><!doctype html>
-<html lang="pt-br">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Documentação da API CodeHUB</title>
-  <style>
-    :root{font-family: Inter,ui-sans-serif,system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; color:#0f172a}
-    body{margin:0; padding:32px; background:#f8fafc}
-    .container{max-width:900px; margin:0 auto; background:#fff; padding:28px; border-radius:12px; box-shadow:0 6px 24px rgba(15,23,42,0.06)}
-    h1{font-size:26px; margin:0 0 6px}
-    h2{font-size:18px; margin-top:18px}
-    p{line-height:1.5}
-    pre{background:#0f172a; color:#f8fafc; padding:12px; border-radius:8px; overflow:auto}
-    code{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace}
-    ul{margin-left:18px}
-    .note{background:#fffbeb; padding:10px; border-radius:8px; border:1px solid #fde68a}
-    .tips{background:#eef2ff; padding:10px; border-radius:8px}
-    .partners{background:#f1f5f9; padding:10px; border-radius:8px; margin-top:10px; border-left:4px solid #6366f1}
-    table{width:100%; border-collapse:collapse; margin-top:8px}
-    th, td{padding:8px; text-align:left; border-bottom:1px solid #eef2ff}
-    footer{color:#94a3b8; font-size:13px; margin-top:20px}
 
-    /* Novo estilo para seletor de tokens */
-    .token-selector {margin:20px 0; padding:15px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0}
-    .token-selector select, .token-selector button {padding:8px 12px; margin:5px; border-radius:4px; border:1px solid #cbd5e1}
-    .token-selector button {background:#3b82f6; color:white; border:none; cursor:pointer}
-    .token-selector button:hover {background:#2563eb}
-    .current-token {background:#dcfce7; padding:8px; border-radius:4px; margin-top:10px; font-family:monospace; word-break:break-all}
-    .api-url {background:#1e293b; color:#f1f5f9; padding:10px; border-radius:6px; margin:10px 0; font-family:monospace; word-break:break-all}
-    
-    /* Estilos para demonstração de autenticação */
-    .auth-demo {margin:20px 0; padding:15px; background:#f0f9ff; border-radius:8px; border:1px solid #bae6fd}
-    .auth-btn {padding:10px 18px; border-radius:8px; border:none; cursor:pointer; font-size:16px; margin:5px}
-    .auth-login {background:#007bff; color:white}
-    .auth-load {background:#28a745; color:white; display:none}
-    .auth-logout {background:#ff4747; color:white; display:none}
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>Documentação da API CodeHUB</h1>
-    <p class="note"><strong>Versão:</strong> 2.4 (Firebase + CodeFox + Editor Copiloto + API Clima + IA CodeHUB + Sistema de Autenticação)</p>
-
-    <!-- NOVO SELETOR DE TOKENS -->
-    <div class="token-selector">
-      <h3>🔑 Seletor de Tokens</h3>
-      <p>Selecione um token salvo ou use o exemplo:</p>
-
-      <select id="tokenSelect">
-        <option value="WIWMgTST2LIG4z1sp4Mi">Token de Exemplo (não funcional)</option>
-      </select>
-
-      <button onclick="useSelectedToken()">Usar Token Selecionado</button>
-
-      <div id="currentTokenDisplay" class="current-token" style="display:none">
-        <strong>Token Atual:</strong> <span id="currentTokenValue"></span>
-      </div>
-
-      <div id="apiUrlDisplay" style="display:none; margin-top:15px;">
-        <strong>URL da API com seu token:</strong>
-        <div class="api-url" id="apiUrlValue"></div>
-        <button onclick="copyApiUrl()" style="margin-top:8px; padding:6px 12px; background:#10b981; color:white; border:none; border-radius:4px; cursor:pointer;">
-          📋 Copiar URL
-        </button>
-      </div>
-    </div>
-
-    <!-- NOVA SEÇÃO: SISTEMA DE AUTENTICAÇÃO E PROJETOS -->
-    <div class="auth-demo">
-      <h3>🔐 Novo: Sistema de Autenticação e Visualização de Projetos</h3>
-      <p>Exemplo completo de sistema de login e visualização de projetos:</p>
-      
-      <div style="padding:10px; background:white; border-radius:6px; margin:10px 0;">
-        <h4 style="margin-top:0;">Teste a Autenticação:</h4>
-        <button id="demoLoginBtn" class="auth-btn auth-login">🔵 Fazer Login</button>
-        <button id="demoLoadBtn" class="auth-btn auth-load">📁 Carregar Meus Projetos</button>
-        <button id="demoLogoutBtn" class="auth-btn auth-logout">🔴 Sair</button>
-        <div id="demoUserInfo" style="margin-top:10px; display:none;">
-          <strong>👤 Usuário:</strong> <span id="demoUserName"></span>
-        </div>
-        <div id="demoProjects" style="margin-top:15px;"></div>
-      </div>
-      
-      <p class="note" style="margin-top:10px;">
-        <strong>💡 Funcionalidades incluídas:</strong> Login automático, persistência de sessão, busca de projetos, 
-        visualização de arquivos (texto, imagens, vídeos, HTML, YouTube), e logout.
-      </p>
-    </div>
-
-    <h2>Visão Geral</h2>
-    <p>A API CodeHUB integra projetos de código hospedados no Firebase com assistentes inteligentes. Agora conta com três recursos principais:</p>
-    <div class="partners">
-      <strong>👾 CodeFox:</strong> Nossa mascote e inteligência artificial avançada. Ajuda a gerar, corrigir e melhorar códigos, além de interagir com usuários de forma divertida e eficiente.<br><br>
-      <strong>🛠 Editor Copiloto:</strong> Um assistente que trabalha lado a lado com você no editor, sugerindo melhorias, corrigindo erros e automatizando tarefas repetitivas.<br><br>
-      <strong>🌦️ API Clima:</strong> Nova API para monitoramento de condições climáticas em tempo real com mapa interativo e relatórios de alagamento.<br><br>
-      <strong>🔐 Sistema de Autenticação:</strong> Novo sistema de login para usuários acessarem seus projetos de qualquer site.<br><br>
-      <em>Todos são parceiros e podem trabalhar juntos para tornar a experiência de desenvolvimento mais ágil e inteligente.</em>
-    </div>
-
-    <h2>O que você pode fazer com eles?</h2>
-    <ul>
-      <li><strong>CodeFox:</strong> Geração de código, explicações técnicas, integração com API, criação de snippets inteligentes.</li>
-      <li><strong>Editor Copiloto:</strong> Autocompletar inteligente, sugestões de refatoração, integração com seu editor de código online ou local.</li>
-      <li><strong>API Clima:</strong> Monitoramento em tempo real, mapas interativos, relatórios de risco de alagamento, localização geográfica.</li>
-      <li><strong>Sistema de Autenticação:</strong> Login único, visualização de projetos, gerenciamento de arquivos, sessão persistente.</li>
-    </ul>
-
-    <h2>Configuração Inicial</h2>
-    <p>Inclua os scripts da API e ative a IA em sua página:</p>
-    <pre><code>&lt;script src="https://code.codehub.ct.ws/API/api2.js"&gt;&lt;/script&gt;
-&lt;script src="https://code.codehub.ct.ws/API/userKeyAPI.js"&gt;&lt;/script&gt;
-&lt;script src=https://code.codehub.ct.ws/API/ia.js"&gt;&lt;/script&gt;
-&lt;script src="https://code.codehub.ct.ws/API/clima.js"&gt;&lt;/script&gt;</code></pre>
-
-    <h2>Novo: Sistema Completo de Autenticação</h2>
-    <p>Implemente um sistema de login e visualização de projetos com este exemplo:</p>
-    <pre><code>&lt;!DOCTYPE html&gt;
-&lt;html&gt;
-&lt;head&gt;
-  &lt;meta charset="UTF-8"&gt;
-  &lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;
-  &lt;title&gt;CodeHub — Meus Projetos&lt;/title&gt;
-  &lt;style&gt;
-    body {
-      margin: 0;
-      font-family: Arial;
-      background: #eef2f9;
-    }
-    header {
-      padding: 20px;
-      background: white;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    }
-    .btn {
-      padding: 10px 18px;
-      border-radius: 10px;
-      border: 0;
-      cursor: pointer;
-      font-size: 16px;
-      margin-right: 10px;
-    }
-    .login { background: #1777ff; color: white; }
-    .load { background: #28a745; color: white; display: none; }
-    .logout { background: #ff4b4b; color: white; display: none; }
-    .projetoCard {
-      background: white;
-      padding: 15px;
-      margin-bottom: 12px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      cursor: pointer;
-    }
-    .arquivoItem {
-      background: white;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      margin-bottom: 12px;
-    }
-  &lt;/style&gt;
-&lt;/head&gt;
-&lt;body&gt;
-
-&lt;header&gt;
-  &lt;h2&gt;CodeHub — Meus Projetos&lt;/h2&gt;
-  &lt;div id="nome"&gt;&lt;/div&gt;
-
-  &lt;button class="btn login" id="loginBtn"&gt;🔵 Login&lt;/button&gt;
-  &lt;button class="btn load" id="loadBtn"&gt;📁 Carregar Projetos&lt;/button&gt;
-  &lt;button class="btn logout" id="logoutBtn"&gt;🔴 Sair&lt;/button&gt;
-&lt;/header&gt;
-
-&lt;div style="padding:20px;"&gt;
-  &lt;div id="status"&gt;Faça login para ver seus projetos.&lt;/div&gt;
-  &lt;div id="lista"&gt;&lt;/div&gt;
-&lt;/div&gt;
-
-&lt;!-- APIs Necessárias --&gt;
-&lt;script src="https://code.codehub.ct.ws/API/userKeyAPI.js"&gt;&lt;/script&gt;
-&lt;script src="https://code.codehub.ct.ws/API/api2.js"&gt;&lt;/script&gt;
-
-&lt;script&gt;
-/* ========== FUNÇÃO: RENDERIZAR PROJETOS ========== */
-function renderProjetos(res) {
-  const lista = document.getElementById("lista");
-  const statusTxt = document.getElementById("status");
-  
-  lista.innerHTML = "";
-  
-  if (!res.sucesso) {
-    statusTxt.textContent = "Erro: " + (res.erro || "Desconhecido");
-    return;
-  }
-  
-  const projetos = res.projetos || {};
-  const ids = Object.keys(projetos);
-  
-  statusTxt.textContent = "Projetos encontrados: " + ids.length;
-  
-  ids.forEach(pid => {
-    const p = projetos[pid];
-    const card = document.createElement("div");
-    card.className = "projetoCard";
-    card.textContent = "📁 " + p.name;
-    
-    card.onclick = () => abrirProjeto(pid, p);
-    lista.appendChild(card);
-  });
-}
-
-/* ========== FUNÇÃO: ABRIR PROJETO ========== */
-function abrirProjeto(pid, p) {
-  const lista = document.getElementById("lista");
-  const statusTxt = document.getElementById("status");
-  
-  lista.innerHTML = "";
-  statusTxt.textContent = "Arquivos do projeto: " + p.name;
-  
-  const arquivos = p.files || {};
-  const nomes = Object.keys(arquivos);
-  
-  nomes.forEach(nome => {
-    const arq = arquivos[nome] || {};
-    const link = arq.link || "";
-    const content = arq.content || "";
-    
-    const item = document.createElement("div");
-    item.className = "arquivoItem";
-    item.innerHTML = "&lt;h3&gt;" + nome + "&lt;/h3&gt;";
-    
-    if (!link && content) {
-      item.innerHTML += "&lt;pre&gt;" + content + "&lt;/pre&gt;";
-    } else if (link.includes("youtu")) {
-      // Processar YouTube
-      let videoId = "";
-      try {
-        if (link.includes("watch")) {
-          videoId = new URL(link).searchParams.get("v");
-        } else {
-          videoId = link.split("/").pop().split("?")[0];
-        }
-      } catch {}
-      
-      if (videoId) {
-        item.innerHTML += `
-        &lt;iframe 
-          style="width:100%; height:260px; border-radius:6px;"
-          src="https://www.youtube.com/embed/${videoId}"
-          allowfullscreen&gt;
-        &lt;/iframe&gt;`;
-      }
-    } else if (link.match(/\\.(jpg|jpeg|png|gif|webp)$/i)) {
-      item.innerHTML += '&lt;img src="' + link + '" style="max-width:100%; border-radius:6px;"&gt;';
-    } else if (link.match(/\\.(mp4|webm|mov)$/i)) {
-      item.innerHTML += '&lt;video controls src="' + link + '" style="max-width:100%; border-radius:6px;"&gt;&lt;/video&gt;';
-    } else if (link.endsWith(".html") || link.endsWith(".htm")) {
-      item.innerHTML += '&lt;iframe src="' + link + '" style="width:100%; height:400px; border-radius:6px;"&gt;&lt;/iframe&gt;';
-    } else if (link) {
-      item.innerHTML += '&lt;p&gt;&lt;small&gt;Link: ' + link + '&lt;/small&gt;&lt;/p&gt;';
-    }
-    
-    lista.appendChild(item);
-  });
-}
-
-/* ========== INICIALIZAÇÃO DA INTERFACE ========== */
-function initUI() {
-  const name = localStorage.getItem("userName");
-  if (name) {
-    document.getElementById("nome").textContent = "Bem-vindo, " + name + "!";
-    document.getElementById("loginBtn").style.display = "none";
-    document.getElementById("logoutBtn").style.display = "inline-block";
-    document.getElementById("loadBtn").style.display = "inline-block";
-  }
-}
-
-/* ========== EVENTOS DOS BOTÕES ========== */
-window.onload = function() {
-  initUI();
-  
-  // Botão de Login
-  document.getElementById("loginBtn").onclick = function() {
-    // IMPORTANTE: Substitua SEU_TOKEN pelo token do seu aplicativo
-    window.location.href = 
-      "https://code.codehub.ct.ws/API/continuar-conta?token=SEU_TOKEN_AQUI";
-  };
-  
-  // Botão de Logout
-  document.getElementById("logoutBtn").onclick = function() {
-    localStorage.clear();
-    location.reload();
-  };
-  
-  // Botão para Carregar Projetos
-  document.getElementById("loadBtn").onclick = async function() {
-    document.getElementById("status").textContent = "Carregando projetos...";
-    if (typeof window.api2_buscarProjetos === "function") {
-      const resultado = await window.api2_buscarProjetos();
-      renderProjetos(resultado);
-    } else {
-      document.getElementById("status").textContent = "Erro: API não carregada";
-    }
-  };
-  
-  // Validação automática do login
-  if (typeof validarLogin === "function") {
-    validarLogin(function(res) {
-      if (res.success) {
-        localStorage.setItem("userName", res.userName);
-        localStorage.setItem("userKey", res.userKey);
-        initUI();
-        // Carrega projetos automaticamente após login
-        setTimeout(function() {
-          document.getElementById("loadBtn").click();
-        }, 500);
-      }
-    });
-  }
-};
-&lt;/script&gt;
-
-&lt;/body&gt;
-&lt;/html&gt;</code></pre>
-
-    <h2>Nova Função: api2_buscarProjetos()</h2>
-    <p>Esta função busca todos os projetos do usuário autenticado:</p>
-    <pre><code>// Uso da função
-const resultado = await window.api2_buscarProjetos();
-
-// Estrutura do retorno
-{
-  sucesso: true/false,
-  projetos: {
-    "id-do-projeto": {
-      name: "Nome do Projeto",
-      files: {
-        "arquivo.txt": {
-          link: "https://...",
-          content: "conteúdo do arquivo"
-        }
-      }
-    }
-  },
-  erro: "mensagem de erro (se houver)"
-}</code></pre>
-
-    <h2>Nova Função: validarLogin(callback)</h2>
-    <p>Esta função valida o login após o redirecionamento:</p>
-    <pre><code>// Uso da função
-validarLogin(function(resposta) {
-  if (resposta.success) {
-    // Login bem-sucedido
-    console.log("Usuário:", resposta.userName);
-    console.log("Chave:", resposta.userKey);
-    
-    // Salvar no localStorage para sessão persistente
-    localStorage.setItem("userName", resposta.userName);
-    localStorage.setItem("userKey", resposta.userKey);
-    
-    // Atualizar interface
-    document.getElementById("nome").textContent = "Bem-vindo, " + resposta.userName + "!";
-  }
-});</code></pre>
-
-    <h2>Como habilitar a IA CodeHUB no seu site?</h2>
-    <p>Adicione este exemplo simples ao seu HTML:</p>
-    <pre><code>&lt;!DOCTYPE html&gt;
-&lt;html&gt;
-&lt;head&gt;
-  &lt;title&gt;Meu Site com IA&lt;/title&gt;
-  &lt;!-- IA CODEHUB --&gt;
-  &lt;script src="https://code.codehub.ct.ws/API/ia.js"&gt;&lt;/script&gt;
-&lt;/head&gt;
-&lt;body&gt;
-  &lt;h1&gt;Meu Site&lt;/h1&gt;
-  &lt;p&gt;O botão da IA aparecerá automaticamente no canto inferior direito!&lt;/p&gt;
-&lt;/body&gt;
-&lt;/html&gt;</code></pre>
-
-    <h2>Como habilitar a API Clima no seu site?</h2>
-    <p>Adicione este exemplo simples ao seu HTML:</p>
-    <pre><code>&lt;!DOCTYPE html&gt;
-&lt;html&gt;
-&lt;head&gt;
-  &lt;title&gt;Monitor de Clima&lt;/title&gt;
-  &lt;style&gt;
-    * { box-sizing: border-box; font-family: system-ui, sans-serif; }
-    body { margin: 0; padding: 8px; background: #f5f5f3; color: #222; overflow: hidden; }
-    .wrapper { height: 100vh; display: flex; flex-direction: column; gap: 6px; }
-    .header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border-radius: 10px; background: #fff; box-shadow: 0 1px 6px rgba(0,0,0,0.05); }
-    .badge { font-size: 11px; padding: 3px 7px; border-radius: 999px; background: #eef3ef; color: #314334; }
-    #map { width: 100%; height: 42vh; border-radius: 10px; background: #d0d7db; box-shadow: 0 1px 6px rgba(0,0,0,0.05); }
-    .list { flex: 1; overflow-y: auto; padding: 2px 1px 4px; }
-  &lt;/style&gt;
-&lt;/head&gt;
-&lt;body&gt;
-  &lt;div class="wrapper"&gt;
-    &lt;div class="header"&gt;
-      &lt;div&gt;🌧️ Monitor de Clima&lt;/div&gt;
-      &lt;div class="badge"&gt;&lt;span id="badgeText"&gt;Carregando...&lt;/span&gt;&lt;/div&gt;
-    &lt;/div&gt;
-    &lt;div id="map"&gt;&lt;/div&gt;
-    &lt;div class="list" id="list"&gt;&lt;/div&gt;
-  &lt;/div&gt;
-
-  &lt;!-- API CLIMA COM TOKEN --&gt;
-  &lt;script src="https://code.codehub.ct.ws/API/clima.js?token=SEU_TOKEN_AQUI"&gt;&lt;/script&gt;
-&lt;/body&gt;
-&lt;/html&gt;</code></pre>
-
-    <h2>Exemplo Completo (Todas as APIs Juntas)</h2>
-    <pre><code>&lt;!DOCTYPE html&gt;
-&lt;html&gt;
-&lt;head&gt;
-  &lt;title&gt;Dashboard Completo CodeHUB&lt;/title&gt;
-  &lt;script src="https://code.codehub.ct.ws/API/api2.js"&gt;&lt;/script&gt;
-  &lt;script src=https://code.codehub.ct.ws/API/userKeyAPI.js"&gt;&lt;/script&gt;
-  &lt;script src="https://code.codehub.ct.ws/API/ia.js"&gt;&lt;/script&gt;
-  &lt;script src="https://code.codehub.ct.ws/API/clima.js?token=SEU_TOKEN_AQUI"&gt;&lt;/script&gt;
-&lt;/head&gt;
-&lt;body&gt;
-  &lt;h1&gt;🏠 Meu Dashboard CodeHUB&lt;/h1&gt;
-  
-  &lt;!-- Sistema de Autenticação --&gt;
-  &lt;div id="authSection" style="padding:20px; background:#f0f9ff; border-radius:10px;"&gt;
-    &lt;h3&gt;🔐 Autenticação&lt;/h3&gt;
-    &lt;button onclick="login()"&gt;Fazer Login&lt;/button&gt;
-    &lt;button onclick="logout()" style="display:none; background:#ff4747;"&gt;Sair&lt;/button&gt;
-    &lt;div id="userInfo" style="display:none;"&gt;
-      Bem-vindo, &lt;span id="userName"&gt;&lt;/span&gt;!
-    &lt;/div&gt;
-  &lt;/div&gt;
-  
-  &lt;!-- Meus Projetos --&gt;
-  &lt;div id="projectsSection" style="padding:20px; background:#f0f9ff; border-radius:10px; margin-top:20px;"&gt;
-    &lt;h3&gt;📁 Meus Projetos&lt;/h3&gt;
-    &lt;button onclick="carregarProjetos()"&gt;Carregar Projetos&lt;/button&gt;
-    &lt;div id="projectsList"&gt;&lt;/div&gt;
-  &lt;/div&gt;
-  
-  &lt;!-- API Clima --&gt;
-  &lt;div style="padding:20px; background:#f0f9ff; border-radius:10px; margin-top:20px;"&gt;
-    &lt;h3&gt;🌦️ Monitor de Clima&lt;/h3&gt;
-    &lt;div id="map" style="height:300px; background:#d0d7db; border-radius:10px;"&gt;&lt;/div&gt;
-  &lt;/div&gt;
-
-  &lt;script&gt;
-  // Funções de autenticação
-  function login() {
-    window.location.href = "https://code.codehub.ct.ws/API/continuar-conta?token=SEU_TOKEN_AQUI";
-  }
-  
-  function logout() {
-    localStorage.clear();
-    location.reload();
-  }
-  
-  async function carregarProjetos() {
-    const resultado = await window.api2_buscarProjetos();
-    if (resultado.sucesso) {
-      // Processar e exibir projetos
-      console.log("Projetos carregados:", resultado.projetos);
-    }
-  }
-  
-  // Inicialização
-  window.onload = function() {
-    if (localStorage.getItem("userName")) {
-      document.getElementById("userName").textContent = localStorage.getItem("userName");
-      document.getElementById("userInfo").style.display = "block";
-    }
-    
-    // Validação automática
-    if (typeof validarLogin === "function") {
-      validarLogin(function(res) {
-        if (res.success) {
-          localStorage.setItem("userName", res.userName);
-          location.reload();
-        }
-      });
-    }
-  };
-  &lt;/script&gt;
-&lt;/body&gt;
-&lt;/html&gt;</code></pre>
-
-    <div class="note">
-      <strong>✨ Novidades na Versão 2.4:</strong>
-      <ul>
-        <li>Sistema completo de autenticação de usuários</li>
-        <li>Visualização de projetos com suporte a múltiplos tipos de arquivos</li>
-        <li>Função <code>api2_buscarProjetos()</code> para buscar projetos</li>
-        <li>Função <code>validarLogin()</code> para autenticação automática</li>
-        <li>Sessão persistente com localStorage</li>
-        <li>Exemplos completos e prontos para uso</li>
-      </ul>
-    </div>
-
-    <footer>
-      Documentação atualizada em: 2025 | Todos os direitos reservados | Versão da API: 2.4 | IA CodeHUB
-    </footer>
-  </div>
-
-  <!-- INCLUIR A IA CODEHUB NA DOCUMENTAÇÃO -->
-  <script src="https://code.codehub.ct.ws/API/ia.js"></script>
-
-  <script>
-    // Carregar tokens salvos do localStorage
-    function loadSavedTokens() {
-      const tokenSelect = document.getElementById('tokenSelect');
-
-      // Limpar opções exceto a primeira (exemplo)
-      while (tokenSelect.options.length > 1) {
-        tokenSelect.remove(1);
-      }
-
-      // Buscar tokens do localStorage
-      try {
-        const savedTokens = JSON.parse(localStorage.getItem('userTokens') || '[]');
-
-        savedTokens.forEach(token => {
-          const option = document.createElement('option');
-          option.value = token.value;
-          option.textContent = `${token.appName} - ${token.value.substring(0, 10)}...`;
-          tokenSelect.appendChild(option);
-        });
-
-        // Se não houver tokens salvos, mostrar mensagem
-        if (savedTokens.length === 0) {
-          const option = document.createElement('option');
-          option.value = '';
-          option.textContent = 'Nenhum token salvo encontrado';
-          option.disabled = true;
-          tokenSelect.appendChild(option);
-        }
-      } catch (error) {
-        console.error('Erro ao carregar tokens:', error);
-      }
-    }
-
-    // Usar token selecionado
-    function useSelectedToken() {
-      const tokenSelect = document.getElementById('tokenSelect');
-      const selectedToken = tokenSelect.value;
-
-      if (selectedToken && selectedToken !== 'WIWMgTST2LIG4z1sp4Mi') {
-        document.getElementById('currentTokenValue').textContent = selectedToken;
-        document.getElementById('currentTokenDisplay').style.display = 'block';
-
-        // Mostrar URL da API com token
-        const apiUrl = `https://code.codehub.ct.ws/CodeHUB/API/clima.js?token=${selectedToken}`;
-        document.getElementById('apiUrlValue').textContent = apiUrl;
-        document.getElementById('apiUrlDisplay').style.display = 'block';
-
-        // Atualizar exemplos de código com o token real
-        updateCodeExamples(selectedToken);
-
-        alert('Token selecionado! Agora você pode usar este token nos exemplos de código.');
-      } else {
-        alert('Selecione um token válido (não o exemplo).');
-      }
-    }
-
-    // Copiar URL da API
-    function copyApiUrl() {
-      const apiUrl = document.getElementById('apiUrlValue').textContent;
-      navigator.clipboard.writeText(apiUrl).then(() => {
-        alert('URL copiada para a área de transferência!');
-      }).catch(err => {
-        alert('Erro ao copiar URL: ' + err);
-      });
-    }
-
-    // Atualizar exemplos de código com token real
-    function updateCodeExamples(token) {
-      const codeBlocks = document.querySelectorAll('pre code');
-      codeBlocks.forEach(block => {
-        block.textContent = block.textContent.replace(
-          /token=SEU_TOKEN_AQUI/g, 
-          `token=${token}`
-        ).replace(
-          /token=SEU_TOKEN/g,
-          `token=${token}`
-        );
-      });
-    }
-
-    // ======================================================
-    // DEMONSTRAÇÃO DO SISTEMA DE AUTENTICAÇÃO
-    // ======================================================
-    
-    // Carregar as APIs necessárias para a demonstração
-    const apiScript = document.createElement('script');
-    apiScript.src = 'https://code.codehub.ct.ws/API/api2.js';
-    document.head.appendChild(apiScript);
-    
-    const authScript = document.createElement('script');
-    authScript.src = 'https://code.codehub.ct.ws/API/userKeyAPI.js';
-    document.head.appendChild(authScript);
-    
-    // Configurar demonstração interativa
-    document.addEventListener('DOMContentLoaded', function() {
-      loadSavedTokens();
-      
-      const demoLoginBtn = document.getElementById('demoLoginBtn');
-      const demoLogoutBtn = document.getElementById('demoLogoutBtn');
-      const demoLoadBtn = document.getElementById('demoLoadBtn');
-      const demoUserInfo = document.getElementById('demoUserInfo');
-      const demoUserName = document.getElementById('demoUserName');
-      const demoProjects = document.getElementById('demoProjects');
-      
-      // Verificar se já está logado (demonstração)
-      const demoUser = localStorage.getItem('demoCodeHubUser');
-      if (demoUser) {
-        demoUserName.textContent = demoUser;
-        demoUserInfo.style.display = 'block';
-        demoLoginBtn.style.display = 'none';
-        demoLogoutBtn.style.display = 'inline-block';
-        demoLoadBtn.style.display = 'inline-block';
-      }
-      
-      // Botão de Login (Demonstração)
-      demoLoginBtn.addEventListener('click', function() {
-        const tokenSelect = document.getElementById('tokenSelect');
-        const selectedToken = tokenSelect.value;
-        
-        if (selectedToken && selectedToken !== 'WIWMgTST2LIG4z1sp4Mi') {
-          // Simulação de login para demonstração
-          const userName = 'Usuario_' + Math.floor(Math.random() * 1000);
-          localStorage.setItem('demoCodeHubUser', userName);
-          
-          demoUserName.textContent = userName;
-          demoUserInfo.style.display = 'block';
-          demoLoginBtn.style.display = 'none';
-          demoLogoutBtn.style.display = 'inline-block';
-          demoLoadBtn.style.display = 'inline-block';
-          
-          demoProjects.innerHTML = '<p style="color:green;">✅ Login realizado com sucesso!</p>' +
-                                  '<p><small>Token usado: ' + selectedToken.substring(0, 20) + '...</small></p>';
-        } else {
-          alert('Selecione um token válido primeiro!');
-        }
-      });
-      
-      // Botão de Logout (Demonstração)
-      demoLogoutBtn.addEventListener('click', function() {
-        localStorage.removeItem('demoCodeHubUser');
-        demoUserInfo.style.display = 'none';
-        demoLoginBtn.style.display = 'inline-block';
-        demoLogoutBtn.style.display = 'none';
-        demoLoadBtn.style.display = 'none';
-        demoProjects.innerHTML = '';
-      });
-      
-      // Botão para Carregar Projetos (Demonstração)
-      demoLoadBtn.addEventListener('click', async function() {
-        demoProjects.innerHTML = '<p>Carregando projetos de demonstração...</p>';
-        
-        // Simulação de projetos para demonstração
-        setTimeout(function() {
-          demoProjects.innerHTML = `
-            <div style="background:white; padding:15px; border-radius:8px; margin-top:10px;">
-              <h4>📁 Projeto de Exemplo 1</h4>
-              <p><small>Arquivos: 3 | Última atualização: Hoje</small></p>
-            </div>
-            <div style="background:white; padding:15px; border-radius:8px; margin-top:10px;">
-              <h4>📁 Projeto de Exemplo 2</h4>
-              <p><small>Arquivos: 5 | Última atualização: Ontem</small></p>
-            </div>
-            <p style="margin-top:10px;"><small><em>Em um ambiente real, os projetos do usuário seriam carregados aqui.</em></small></p>
-          `;
-        }, 1000);
-      });
-      
       // Validação automática para demonstração
       if (typeof validarLogin === 'function') {
         setTimeout(function() {
