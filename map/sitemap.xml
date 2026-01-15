@@ -1,20 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="https://www.sitemaps.org/schemas/sitemap/0.9">
 
-  <url>
-    <loc>https://code.codehub.ct.ws/index.html</loc>
-  </url>
+  <url><loc>https://code.codehub.ct.ws/MusicaHUB.html</loc></url>
+  <url><loc>https://code.codehub.ct.ws/ajude-a-codehub.html</loc></url>
+  <url><loc>https://code.codehub.ct.ws/auth.html</loc></url>
+  <url><loc>https://code.codehub.ct.ws/climate.html</loc></url>
+  <url><loc>https://code.codehub.ct.ws/documentacao.html</loc></url>
+  <url><loc>https://code.codehub.ct.ws/editor.html</loc></url>
+  <url><loc>https://code.codehub.ct.ws/esportsHUB.html</loc></url>
+  <url><loc>https://code.codehub.ct.ws/games.html</loc></url>
+  <url><loc>https://code.codehub.ct.ws/index.html</loc></url>
 
-  <url>
-    <loc>https://code.codehub.ct.ws/editor.html</loc>
-  </url>
+  <url><loc>https://code.codehub.ct.ws/m%C3%BAsica.html</loc></url>
+  <url><loc>https://code.codehub.ct.ws/notifica%C3%A7%C3%A3o.html</loc></url>
+  <url><loc>https://code.codehub.ct.ws/pol%C3%ADtica.html</loc></url>
 
-  <url>
-    <loc>https://code.codehub.ct.ws/API/file-manager.html</loc>
-  </url>
+  <url><loc>https://code.codehub.ct.ws/view.html</loc></url>
 
-  <url>
-    <loc>https://assistente-ia--socialkoala6579904.on.websim.com/</loc>
-  </url>
+  <url><loc>https://code.codehub.ct.ws/API/continuar-conta.html</loc></url>
+  <url><loc>https://code.codehub.ct.ws/API/criar.app.html</loc></url>
+  <url><loc>https://code.codehub.ct.ws/API/file-manager.html</loc></url>
+
+  <url><loc>https://code.codehub.ct.ws/API%20FONTES/fonts.html</loc></url>
+  <url><loc>https://code.codehub.ct.ws/API%20FONTES/text.html</loc></url>
+
+  <url><loc>https://code.codehub.ct.ws/app/index.html</loc></url>
+
+  <!-- Inteligência Artificial -->
+  <url><loc>https://assistente-ia--socialkoala6579904.on.websim.com/</loc></url>
 
 </urlset>
