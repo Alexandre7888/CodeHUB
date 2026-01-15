@@ -1,75 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="https://www.sitemaps.org/schemas/sitemap/0.9">
 
-  <!-- HTML da raiz -->
-  <url>
-    <loc>https://code.codehub.ct.ws/MusicaHUB.html</loc>
-  </url>
-  <url>
-    <loc>https://code.codehub.ct.ws/ajude-a-codehub.html</loc>
-  </url>
-  <url>
-    <loc>https://code.codehub.ct.ws/auth.html</loc>
-  </url>
-  <url>
-    <loc>https://code.codehub.ct.ws/climate.html</loc>
-  </url>
-  <url>
-    <loc>https://code.codehub.ct.ws/documentacao.html</loc>
-  </url>
-  <url>
-    <loc>https://code.codehub.ct.ws/editor.html</loc>
-  </url>
-  <url>
-    <loc>https://code.codehub.ct.ws/esportsHUB.html</loc>
-  </url>
-  <url>
-    <loc>https://code.codehub.ct.ws/games.html</loc>
-  </url>
   <url>
     <loc>https://code.codehub.ct.ws/index.html</loc>
   </url>
+
   <url>
-    <loc>https://code.codehub.ct.ws/música.html</loc>
-  </url>
-  <url>
-    <loc>https://code.codehub.ct.ws/notificação.html</loc>
-  </url>
-  <url>
-    <loc>https://code.codehub.ct.ws/política.html</loc>
-  </url>
-  <url>
-    <loc>https://code.codehub.ct.ws/view.html</loc>
+    <loc>https://code.codehub.ct.ws/editor.html</loc>
   </url>
 
-  <!-- HTML da pasta API -->
-  <url>
-    <loc>https://code.codehub.ct.ws/API/continuar-conta.html</loc>
-  </url>
-  <url>
-    <loc>https://code.codehub.ct.ws/API/criar.app.html</loc>
-  </url>
   <url>
     <loc>https://code.codehub.ct.ws/API/file-manager.html</loc>
   </url>
 
-  <!-- HTML da pasta API FONTES -->
-  <url>
-    <loc>https://code.codehub.ct.ws/API%20FONTES/fonts.html</loc>
-  </url>
-  <url>
-    <loc>https://code.codehub.ct.ws/API%20FONTES/text.html</loc>
-  </url>
-
-  <!-- HTML da pasta app -->
-  <url>
-    <loc>https://code.codehub.ct.ws/app/index.html</loc>
-  </url>
-
-  <!-- assistente -->
   <url>
     <loc>https://assistente-ia--socialkoala6579904.on.websim.com/</loc>
   </url>
 
 </urlset>
-.
