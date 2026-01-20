@@ -1,45 +1,40 @@
 export default async function handler(req, res) {
-  // CORS totalf
+  // CORS aberto
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "*");
-
-  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method === "OPTIONS") return res.end();
 
   const { token, fileName } = req.query;
-  if (!token) return res.status(400).send("token é obrigatório");
+  if (!token) return res.status(400).send("token obrigatório");
 
-  const url = `https://html-15e80-default-rtdb.firebaseio.com/index/${token}.json`;
-  const r = await fetch(url);
-  if (!r.ok) return res.status(500).send("Erro no Firebase");
+  const fbURL = `https://html-15e80-default-rtdb.firebaseio.com/index/${token}.json`;
+  const r = await fetch(fbURL);
+  if (!r.ok) return res.status(500).send("Erro Firebase");
 
   const data = await r.json();
-  if (!data) return res.status(404).send("Nenhum arquivo");
+  if (!data) return res.status(404).send("Sem arquivos");
 
-  // 🔹 MODO JSON (só token)
+  // 🔹 SEM fileName → JSON
   if (!fileName) {
     return res.json(data);
   }
 
-  // 🔹 MODO ARQUIVO
-  let file = null;
+  // 🔹 COM fileName → proxy
+  let found = null;
+
   for (const id in data) {
     if (data[id].name === fileName) {
-      file = data[id];
+      found = data[id];
       break;
     }
   }
 
-  if (!file) return res.status(404).send("Arquivo não encontrado");
+  if (!found) return res.status(404).send("Arquivo não encontrado");
 
-  const buffer = Buffer.from(file.base64, "base64");
-  res.setHeader("Content-Type", file.mimeType);
+  const buffer = Buffer.from(found.base64, "base64");
+  res.setHeader("Content-Type", found.mimeType);
+  res.setHeader("Content-Length", buffer.length);
 
-  // texto
-  if (file.mimeType.startsWith("text")) {
-    return res.send(buffer.toString());
-  }
-
-  // imagem / vídeo / áudio / download
   res.send(buffer);
 }
