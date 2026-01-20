@@ -1,23 +1,20 @@
-const VIDEO_URL = "https://api.websim.com/blobs/019bd91e-e198-758f-8b37-858823fa29a0.m4a"; // COLOQUE O LINK AQUI
+const AUDIO_URL = "https://www.learningcontainer.com/wp-content/uploads/2020/02/Kalimba.mp3";
 
 export default async function handler(req, res) {
   try {
-    const response = await fetch(VIDEO_URL, {
-      headers: {
-        "User-Agent": "Mozilla/5.0"
-      }
-    });
+    const response = await fetch(AUDIO_URL);
+    if (!response.ok) return res.status(500).send("Falha ao buscar áudio");
 
-    if (!response.ok) {
-      return res.status(500).send("Erro ao carregar o vídeo");
-    }
+    // CORS e tipo de conteúdo certo
+    res.setHeader("Access-Control-Allow-Origin", "*");
 
-    res.setHeader(
-      "Content-Type",
-      response.headers.get("content-type") || "video/mp4"
-    );
+    // Detecta tipo do arquivo ou força audio/mpeg
+    const contentType = response.headers.get("content-type") || "audio/mpeg";
+    res.setHeader("Content-Type", contentType);
 
+    // Stream direto
     response.body.pipe(res);
+
   } catch (e) {
     res.status(500).send("Erro interno");
   }
