@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-  // CORS aberto
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "*");
@@ -8,33 +7,44 @@ export default async function handler(req, res) {
   const { token, fileName } = req.query;
   if (!token) return res.status(400).send("token obrigatório");
 
-  const fbURL = `https://html-15e80-default-rtdb.firebaseio.com/index/${token}.json`;
-  const r = await fetch(fbURL);
-  if (!r.ok) return res.status(500).send("Erro Firebase");
+  // 🔹 buscar index
+  const indexURL = `https://html-15e80-default-rtdb.firebaseio.com/index/${token}.json`;
+  const indexRes = await fetch(indexURL);
+  const index = await indexRes.json();
 
-  const data = await r.json();
-  if (!data) return res.status(404).send("Sem arquivos");
+  if (!index) return res.status(404).send("sem arquivos");
 
-  // 🔹 SEM fileName → JSON
+  // 🔹 só token → JSON
   if (!fileName) {
-    return res.json(data);
+    return res.json(index);
   }
 
-  // 🔹 COM fileName → proxy
-  let found = null;
+  // 🔹 procurar arquivo pelo nome
+  let fileId = null;
+  let meta = null;
 
-  for (const id in data) {
-    if (data[id].name === fileName) {
-      found = data[id];
+  for (const id in index) {
+    if (index[id].name === fileName) {
+      fileId = id;
+      meta = index[id];
       break;
     }
   }
 
-  if (!found) return res.status(404).send("Arquivo não encontrado");
+  if (!fileId) return res.status(404).send("arquivo não encontrado");
 
-  const buffer = Buffer.from(found.base64, "base64");
-  res.setHeader("Content-Type", found.mimeType);
-  res.setHeader("Content-Length", buffer.length);
+  // 🔹 buscar chunks
+  const chunksURL = `https://html-15e80-default-rtdb.firebaseio.com/files/${token}/${fileId}/chunks.json`;
+  const chunksRes = await fetch(chunksURL);
+  const chunks = await chunksRes.json();
 
+  if (!chunks || !Array.isArray(chunks))
+    return res.status(500).send("chunks inválidos");
+
+  // 🔹 juntar tudo
+  const base64 = chunks.join("");
+  const buffer = Buffer.from(base64, "base64");
+
+  res.setHeader("Content-Type", meta.mimeType);
   res.send(buffer);
 }
