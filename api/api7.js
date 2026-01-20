@@ -1,5 +1,5 @@
 export default async function handler(req, res) {
-  // CORS total
+  // CORS totalf
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "*");
@@ -7,17 +7,21 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
 
   const { token, fileName } = req.query;
-  if (!token || !fileName)
-    return res.status(400).send("token e fileName são obrigatórios");
+  if (!token) return res.status(400).send("token é obrigatório");
 
   const url = `https://html-15e80-default-rtdb.firebaseio.com/index/${token}.json`;
-
   const r = await fetch(url);
   if (!r.ok) return res.status(500).send("Erro no Firebase");
 
   const data = await r.json();
   if (!data) return res.status(404).send("Nenhum arquivo");
 
+  // 🔹 MODO JSON (só token)
+  if (!fileName) {
+    return res.json(data);
+  }
+
+  // 🔹 MODO ARQUIVO
   let file = null;
   for (const id in data) {
     if (data[id].name === fileName) {
@@ -36,6 +40,6 @@ export default async function handler(req, res) {
     return res.send(buffer.toString());
   }
 
-  // imagem / vídeo / áudio
+  // imagem / vídeo / áudio / download
   res.send(buffer);
 }
