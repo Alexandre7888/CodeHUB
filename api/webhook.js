@@ -1,28 +1,26 @@
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(200).send("ok");
-  }
+  if (req.method !== "POST") return res.status(200).send("okk");
 
   const token = process.env.BOT_TOKEN;
   const update = req.body;
 
-  if (!update.message) {
-    return res.status(200).end();
-  }
+  if (!update.message) return res.status(200).end();
 
   const chatId = update.message.chat.id;
   const text = update.message.text || "";
 
-  let resposta = "🤖 Bot online!";
+  let resposta = "";
 
-  if (text === "/start") {
-    resposta = "🚀 Bot funcionando na Vercel";
+  // Comandos simples
+  if (text === "/oi") {
+    resposta = "Oi! 😄 Como você tá?";
+  } else if (text === "/start") {
+    resposta = "Bot iniciado 🚀 Use /oi para testar!";
+  } else {
+    resposta = "Não conheço esse comando 😅";
   }
 
-  if (text === "/id") {
-    resposta = `🆔 Chat ID: ${chatId}`;
-  }
-
+  // Envia resposta
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
