@@ -1,335 +1,290 @@
 // =======================
-// CONFIGURAÇÃO FIREBASE ADMIN (Server-Side)
+// CONFIGURAÇÃO
 // =======================
-const firebaseConfig = {
-    apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
-    authDomain: "html-15e80.firebaseapp.com",
-    databaseURL: "https://html-15e80-default-rtdb.firebaseio.com",
-    projectId: "html-15e80",
-    storageBucket: "html-15e80.appspot.com",
-    messagingSenderId: "1068148640439",
-    appId: "1:1068148640439:web:1ac651348e624f6be41b32"
-};
-
-// Importações necessárias para Vercel
-const { initializeApp, applicationDefault, cert } = require('firebase-admin/app');
-const { getDatabase } = require('firebase-admin/database');
-
-// Inicializar Firebase Admin (modo server-side)
-let db;
-try {
-    initializeApp({
-        credential: cert({
-            projectId: firebaseConfig.projectId,
-            clientEmail: process.env.FIREBASE_CLIENT_EMAIL || "firebase-adminsdk@html-15e80.iam.gserviceaccount.com",
-            privateKey: (process.env.FIREBASE_PRIVATE_KEY || "").replace(/\\n/g, '\n')
-        }),
-        databaseURL: firebaseConfig.databaseURL
-    });
-    db = getDatabase();
-    console.log('✅ Firebase Admin inicializado');
-} catch (e) {
-    console.error('❌ Erro ao inicializar Firebase:', e);
-}
+const FIREBASE_DB_URL = "https://html-15e80-default-rtdb.firebaseio.com";
 
 // =======================
-// FUNÇÕES AUXILIARES
-// =======================
-function escapeHtml(unsafe) {
-    return String(unsafe || '')
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-
-function joinChunks(chunks) {
-    return chunks ? chunks.join('') : '';
-}
-
-function isUploadedFile(file) {
-    return file && (file.directUrl || file.url);
-}
-
-function getFileIcon(fileName) {
-    const extension = fileName.split('.').pop().toLowerCase();
-    if (extension === 'html') return '🌐';
-    if (extension === 'css') return '🎨';
-    if (extension === 'js') return '⚡';
-    if (extension === 'json') return '📋';
-    if (extension === 'txt') return '📄';
-    if (['jpg','jpeg','png','gif','svg','webp'].includes(extension)) return '🖼️';
-    if (['mp4','avi','mov','webm','mkv'].includes(extension)) return '🎥';
-    if (['mp3','wav','ogg','m4a','aac'].includes(extension)) return '🎵';
-    if (['pdf'].includes(extension)) return '📕';
-    if (['zip','rar','7z'].includes(extension)) return '📦';
-    return '📄';
-}
-
-// =======================
-// FUNÇÕES DE BUSCA FIREBASE
-// =======================
-async function getFromFirebase(path) {
-    if (!db) return null;
-    try {
-        const snapshot = await db.ref(path).once('value');
-        return snapshot.val();
-    } catch (error) {
-        console.error('Erro Firebase:', error);
-        return null;
-    }
-}
-
-function findFileByName(fileName, files) {
-    if (!files) return null;
-    const fileNameLower = fileName.toLowerCase();
-    for (const key in files) {
-        const file = files[key];
-        const name = (file.originalName || file.name || key).toLowerCase();
-        if (name === fileNameLower) return file;
-    }
-    return null;
-}
-
-function findMainFile(files) {
-    if (!files) return null;
-    const fileList = Object.values(files);
-    let mainFile = fileList.find(f => (f.originalName||f.name||'').toLowerCase() === 'index.html');
-    if (!mainFile) mainFile = fileList.find(f => (f.originalName||f.name||'').toLowerCase().endsWith('.html'));
-    return mainFile;
-}
-
-// =======================
-// FUNÇÃO DE SUBSTITUIÇÃO DE URLs
-// =======================
-function substituirArquivosPorURLs(htmlContent, projectFiles) {
-    if (!projectFiles || !htmlContent) return htmlContent;
-    let novoHTML = htmlContent;
-
-    function encontrarArquivo(nomeArquivo) {
-        if (!projectFiles) return null;
-        const nomeLimpo = nomeArquivo.split('/').pop().split('?')[0];
-        for (const key in projectFiles) {
-            const f = projectFiles[key];
-            const fname = f.originalName || f.name || key;
-            if (fname.toLowerCase() === nomeLimpo.toLowerCase()) return f;
-        }
-        return null;
-    }
-
-    // Substituir SRC
-    novoHTML = novoHTML.replace(/src=["']([^"']+)["']/g, (match, src) => {
-        if (src.startsWith('http') || src.startsWith('data:') || src.includes('://')) return match;
-        const arquivo = encontrarArquivo(src);
-        if (arquivo && (arquivo.directUrl || arquivo.url)) return `src="${arquivo.directUrl || arquivo.url}"`;
-        return match;
-    });
-
-    // Substituir HREF (para CSS)
-    novoHTML = novoHTML.replace(/href=["']([^"']+)["']/g, (match, href) => {
-        if (href.startsWith('http') || href.startsWith('data:') || href.includes('://')) return match;
-        const arquivo = encontrarArquivo(href);
-        if (arquivo && (arquivo.directUrl || arquivo.url)) return `href="${arquivo.directUrl || arquivo.url}"`;
-        return match;
-    });
-
-    return novoHTML;
-}
-
-// =======================
-// FUNÇÕES DE PROCESSAMENTO DE ARQUIVO
-// =======================
-function processFileContent(file, fileName, allFiles) {
-    if (!file) return null;
-
-    const result = {
-        fileName: fileName || file.originalName || file.name || 'arquivo',
-        fileType: file.language || fileName?.split('.').pop() || 'text',
-        isMedia: false,
-        content: null,
-        url: null,
-        icon: getFileIcon(fileName || file.originalName || '')
-    };
-
-    // Arquivos com URL (imagens, vídeos, etc)
-    if (isUploadedFile(file)) {
-        result.isMedia = true;
-        result.url = file.directUrl || file.url;
-        result.contentType = file.type || 'application/octet-stream';
-        return result;
-    }
-
-    // Arquivos de texto/HTML
-    const content = joinChunks(file.chunks) || file.content || '';
-    
-    if (result.fileType === 'html') {
-        result.content = substituirArquivosPorURLs(content, allFiles);
-        result.contentType = 'text/html';
-    } else {
-        result.content = escapeHtml(content);
-        result.contentType = 'text/plain';
-        if (['css', 'js', 'javascript', 'json'].includes(result.fileType)) {
-            result.isCode = true;
-        }
-    }
-
-    return result;
-}
-
-// =======================
-// API PRINCIPAL DO VERCEL
+// FUNÇÃO PRINCIPAL
 // =======================
 module.exports = async (req, res) => {
-    // Configurar CORS
+    // Configurar headers
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-    // Lidar com OPTIONS para CORS preflight
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    
+    // CORS preflight
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
-
-    // Apenas GET permitido
+    
+    // Apenas GET
     if (req.method !== 'GET') {
-        return res.status(405).json({ error: 'Método não permitido' });
+        return res.status(405).json({
+            error: 'Método não permitido',
+            allowed: ['GET']
+        });
     }
-
+    
     try {
         const { query } = req;
+        const urlPath = req.url.split('?')[0];
         
-        // Extrair parâmetros
-        const projectId = query.project || query.projectId || query.l;
-        const fileName = query.file || query.fileName || query.open || query.f;
-        const pathParts = req.url.split('/').filter(Boolean);
+        // =======================
+        // 1. ANALISAR PARÂMETROS
+        // =======================
+        let projectId = query.project || query.projectId || query.l || query.id;
+        let fileName = query.file || query.fileName || query.f || query.open;
         
-        let finalProjectId = projectId;
-        let finalFileName = fileName;
-
-        // Se não tem query params, verifica na URL
-        if (!finalProjectId && pathParts.length > 1) {
-            finalProjectId = pathParts[0];
-            finalFileName = pathParts.slice(1).join('/') || null;
-        }
-
-        if (!finalProjectId) {
-            return res.status(400).json({
-                error: 'ID do projeto não especificado',
-                usage: 'Use ?project=ID ou /api/view/PROJETO_ID[/nome_arquivo]'
-            });
-        }
-
-        console.log(`📁 Buscando projeto: ${finalProjectId}, arquivo: ${finalFileName || '(principal)'}`);
-
-        // 1. Verificar domínio personalizado
-        let domainData = await getFromFirebase(`domains/${finalProjectId.toLowerCase()}`);
-        if (domainData && domainData.projectId) {
-            finalProjectId = domainData.projectId;
-            console.log(`🔗 Redirecionando domínio para projeto: ${finalProjectId}`);
-        }
-
-        // 2. Buscar projeto
-        let projectData = await getFromFirebase(`projects/${finalProjectId}`);
-        
-        // 3. Se não encontrar, buscar em projetos de usuários
-        if (!projectData) {
-            const usersData = await getFromFirebase('projects');
-            if (usersData) {
-                for (const userId in usersData) {
-                    if (usersData[userId][finalProjectId]) {
-                        projectData = usersData[userId][finalProjectId];
-                        break;
-                    }
+        // Se não tem query, verifica path: /api/view/PROJETO_ID/arquivo
+        if (!projectId && urlPath.includes('/api/view/')) {
+            const parts = urlPath.replace('/api/view/', '').split('/');
+            if (parts.length > 0 && parts[0]) {
+                projectId = parts[0];
+                if (parts.length > 1) {
+                    fileName = parts.slice(1).join('/');
                 }
             }
         }
-
-        if (!projectData) {
-            return res.status(404).json({
-                error: `Projeto "${finalProjectId}" não encontrado`
-            });
-        }
-
-        const files = projectData.files || {};
         
-        // 4. Determinar qual arquivo mostrar
-        let targetFile;
-        
-        if (finalFileName) {
-            targetFile = findFileByName(finalFileName, files);
-            if (!targetFile) {
-                return res.status(404).json({
-                    error: `Arquivo "${finalFileName}" não encontrado no projeto`
-                });
-            }
-        } else {
-            targetFile = findMainFile(files);
-            if (!targetFile) {
-                // Retornar lista de arquivos se não tem arquivo principal
-                const fileList = Object.keys(files).map(key => {
-                    const file = files[key];
-                    return {
-                        name: file.originalName || file.name || key,
-                        type: file.type || 'text/plain',
-                        icon: getFileIcon(file.originalName || file.name || key),
-                        hasUrl: !!(file.directUrl || file.url),
-                        size: file.size || null
-                    };
-                });
-                
-                return res.json({
-                    projectId: finalProjectId,
-                    projectName: projectData.name || finalProjectId,
-                    hasMainFile: false,
-                    files: fileList
-                });
-            }
-        }
-
-        // 5. Processar o arquivo
-        const fileInfo = processFileContent(
-            targetFile, 
-            finalFileName || targetFile.originalName || targetFile.name, 
-            files
-        );
-
-        if (!fileInfo) {
-            return res.status(500).json({ error: 'Erro ao processar arquivo' });
-        }
-
-        // 6. Responder conforme o tipo de arquivo
-        if (fileInfo.isMedia) {
-            // Redirecionar para URL do arquivo
+        // =======================
+        // 2. SEM PROJETO ID - PÁGINA INICIAL
+        // =======================
+        if (!projectId) {
             return res.json({
-                type: 'media',
-                fileName: fileInfo.fileName,
-                url: fileInfo.url,
-                contentType: fileInfo.contentType,
-                projectId: finalProjectId,
-                redirect: true
-            });
-        } else {
-            // Retornar conteúdo
-            return res.json({
-                type: 'text',
-                fileName: fileInfo.fileName,
-                fileType: fileInfo.fileType,
-                content: fileInfo.content,
-                contentType: fileInfo.contentType,
-                isCode: fileInfo.isCode || false,
-                icon: fileInfo.icon,
-                projectId: finalProjectId,
-                projectName: projectData.name || finalProjectId,
+                titulo: "🔥 Firebase Viewer API",
+                descricao: "API para visualizar projetos do Firebase",
+                uso: "Adicione ?project=ID_DO_PROJETO na URL",
+                exemplos: [
+                    "GET /api/view?project=SEU_ID",
+                    "GET /api/view/SEU_ID",
+                    "GET /api/view/SEU_ID/index.html",
+                    "GET /api/view?project=SEU_ID&file=style.css"
+                ],
+                parametros: {
+                    project: "ID do projeto (obrigatório)",
+                    file: "Nome do arquivo específico (opcional)",
+                    pretty: "1 para JSON formatado (opcional)"
+                },
+                firebase_url: FIREBASE_DB_URL,
                 timestamp: new Date().toISOString()
             });
         }
-
+        
+        // =======================
+        // 3. BUSCAR NO FIREBASE
+        // =======================
+        console.log(`🔍 Buscando projeto: ${projectId}, arquivo: ${fileName || '(principal)'}`);
+        
+        // URL para o Firebase
+        let firebaseUrl = `${FIREBASE_DB_URL}/projects/${projectId}.json`;
+        
+        // Se tem nome de arquivo, busca arquivo específico
+        if (fileName) {
+            firebaseUrl = `${FIREBASE_DB_URL}/projects/${projectId}/files.json?orderBy="originalName"&equalTo="${fileName}"`;
+        }
+        
+        // =======================
+        // 4. FAZER REQUISIÇÃO
+        // =======================
+        const fetchResponse = await fetch(firebaseUrl);
+        
+        if (!fetchResponse.ok) {
+            // Tenta buscar em domains
+            const domainUrl = `${FIREBASE_DB_URL}/domains/${projectId.toLowerCase()}.json`;
+            const domainResponse = await fetch(domainUrl);
+            
+            if (domainResponse.ok) {
+                const domainData = await domainResponse.json();
+                if (domainData && domainData.projectId) {
+                    // Redirecionar para o projeto real
+                    const redirectUrl = req.url.replace(projectId, domainData.projectId);
+                    return res.json({
+                        redirect: true,
+                        message: "Domínio encontrado, redirecionando...",
+                        originalProjectId: projectId,
+                        realProjectId: domainData.projectId,
+                        newUrl: `/api/view?project=${domainData.projectId}${fileName ? `&file=${fileName}` : ''}`,
+                        domainData: domainData
+                    });
+                }
+            }
+            
+            return res.status(404).json({
+                error: "Projeto não encontrado",
+                projectId: projectId,
+                firebaseUrl: firebaseUrl,
+                suggestions: [
+                    "Verifique se o ID está correto",
+                    "O projeto pode estar em um usuário: https://html-15e80-default-rtdb.firebaseio.com/projects/USUARIO/PROJETO.json",
+                    "Tente buscar diretamente: " + firebaseUrl
+                ]
+            });
+        }
+        
+        const data = await fetchResponse.json();
+        
+        // =======================
+        // 5. PROCESSAR RESPOSTA
+        // =======================
+        if (!data) {
+            return res.status(404).json({
+                error: "Projeto vazio ou não existe",
+                projectId: projectId,
+                firebaseUrl: firebaseUrl
+            });
+        }
+        
+        // Se estamos buscando arquivo específico
+        if (fileName) {
+            const files = data;
+            let fileFound = null;
+            let fileKey = null;
+            
+            // Buscar arquivo pelo nome
+            for (const key in files) {
+                const file = files[key];
+                const originalName = (file.originalName || file.name || key).toLowerCase();
+                if (originalName === fileName.toLowerCase()) {
+                    fileFound = file;
+                    fileKey = key;
+                    break;
+                }
+            }
+            
+            if (!fileFound) {
+                return res.status(404).json({
+                    error: "Arquivo não encontrado",
+                    projectId: projectId,
+                    fileName: fileName,
+                    availableFiles: Object.keys(files).map(k => files[k].originalName || files[k].name || k)
+                });
+            }
+            
+            // Retornar dados do arquivo
+            return res.json({
+                status: "success",
+                type: "file",
+                projectId: projectId,
+                fileName: fileName,
+                fileData: fileFound,
+                metadata: {
+                    firebaseKey: fileKey,
+                    hasUrl: !!(fileFound.directUrl || fileFound.url),
+                    hasChunks: !!(fileFound.chunks),
+                    type: fileFound.type || "unknown",
+                    size: fileFound.size || null,
+                    timestamp: new Date().toISOString()
+                },
+                links: {
+                    rawContent: fileFound.directUrl || fileFound.url || null,
+                    viewProject: `/api/view?project=${projectId}`,
+                    download: fileFound.directUrl || fileFound.url || null
+                }
+            });
+        }
+        
+        // =======================
+        // 6. RETORNAR PROJETO COMPLETO
+        // =======================
+        const result = {
+            status: "success",
+            type: "project",
+            projectId: projectId,
+            firebaseUrl: firebaseUrl,
+            projectData: data,
+            metadata: {
+                name: data.name || projectId,
+                hasFiles: !!(data.files),
+                fileCount: data.files ? Object.keys(data.files).length : 0,
+                timestamp: new Date().toISOString(),
+                fetchedFrom: FIREBASE_DB_URL
+            }
+        };
+        
+        // Adicionar lista de arquivos se existir
+        if (data.files) {
+            const files = data.files;
+            const fileList = [];
+            const fileExtensions = {};
+            
+            for (const key in files) {
+                const file = files[key];
+                const fileName = file.originalName || file.name || key;
+                const extension = fileName.split('.').pop().toLowerCase();
+                const hasUrl = !!(file.directUrl || file.url);
+                
+                fileList.push({
+                    name: fileName,
+                    key: key,
+                    type: file.type || "unknown",
+                    extension: extension,
+                    hasUrl: hasUrl,
+                    url: file.directUrl || file.url || null,
+                    size: file.size || null
+                });
+                
+                // Contar extensões
+                fileExtensions[extension] = (fileExtensions[extension] || 0) + 1;
+            }
+            
+            result.files = {
+                list: fileList,
+                count: fileList.length,
+                extensions: fileExtensions,
+                mainFile: fileList.find(f => f.name.toLowerCase() === 'index.html') || 
+                         fileList.find(f => f.extension === 'html') || 
+                         null
+            };
+            
+            // Links úteis
+            result.links = {
+                viewIndex: `/api/view?project=${projectId}&file=index.html`,
+                viewMain: result.files.mainFile ? 
+                    `/api/view?project=${projectId}&file=${result.files.mainFile.name}` : 
+                    null,
+                browseFiles: `/api/view?project=${projectId}&list=files`,
+                rawJson: firebaseUrl,
+                prettyJson: `${firebaseUrl}?print=pretty`
+            };
+        }
+        
+        // Formatar JSON se solicitado
+        const shouldPrettyPrint = query.pretty === '1' || query.format === 'pretty';
+        return res.json(shouldPrettyPrint ? 
+            JSON.stringify(result, null, 2) : 
+            result
+        );
+        
     } catch (error) {
-        console.error('❌ Erro na API:', error);
+        console.error('❌ ERRO CRÍTICO:', error);
+        
         return res.status(500).json({
-            error: 'Erro interno do servidor',
-            message: error.message
+            error: "Erro interno do servidor",
+            message: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+            timestamp: new Date().toISOString(),
+            support: "Verifique os logs do servidor para mais detalhes"
         });
     }
 };
+
+// =======================
+// FUNÇÕES AUXILIARES (não exportadas)
+// =======================
+async function fetchWithRetry(url, retries = 3) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const response = await fetch(url);
+            if (response.ok) return response;
+            
+            if (i === retries - 1) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            // Esperar antes de tentar novamente
+            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+        } catch (error) {
+            if (i === retries - 1) throw error;
+        }
+    }
+}
