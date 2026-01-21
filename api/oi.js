@@ -1,42 +1,101 @@
-export default async function handler(req, res) {
-  // Permitir CORS de qualquer domínio
+const fetch = require("node-fetch");
+const firebase = require("firebase/app");
+require("firebase/database");
+
+// Config Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
+  authDomain: "html-15e80.firebaseapp.com",
+  databaseURL: "https://html-15e80-default-rtdb.firebaseio.com",
+  projectId: "html-15e80",
+  storageBucket: "html-15e80.firebasestorage.app",
+  messagingSenderId: "1068148640439",
+  appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32",
+  measurementId: "G-V57KRZ02HJ"
+};
+
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+module.exports = async function handler(req, res) {
+  // Permitir CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  // Preflight OPTIONS
   if (req.method === "OPTIONS") return res.status(200).end();
 
-  if (req.method !== "POST")
-    return res.status(405).json({ error: "Method not allowed" });
+  const url = req.url;
 
   try {
-    const { order_nsu, items, redirect_success, redirect_fail } = req.body;
+    // -------- FUNÇÃO CHECKOUT ----------
+    if (url.startsWith("/api/checkout") && req.method === "POST") {
+      let body = "";
+      req.on("data", chunk => body += chunk.toString());
+      req.on("end", async () => {
+        const { order_nsu, items, redirect_url } = JSON.parse(body);
 
-    const data = {
-      handle: "ana-aline-braatz", // seu handle
-      order_nsu: order_nsu || "pedido_001",
-      redirect_url: redirect_success, // URL para voltar à página com ?status=paid
-      items: items || [
-        { quantity: 1, price: 1000, description: "Produto Exemplo" },
-      ],
-    };
+        // Salva pedido no Firebase com status pending
+        await db.ref("pedidos/" + order_nsu).set({
+          status: "pending",
+          items: items,
+          createdAt: Date.now()
+        });
 
-    const response = await fetch(
-      "https://api.infinitepay.io/invoices/public/checkout/links",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      }
-    );
+        // Cria link do InfinitePay
+        const data = {
+          handle: "ana-aline-braatz",
+          order_nsu: order_nsu,
+          redirect_url: redirect_url,
+          items: items
+        };
 
-    const json = await response.json();
+        const response = await fetch(
+          "https://api.infinitepay.io/invoices/public/checkout/links",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+          }
+        );
 
-    if (json.url) return res.status(200).json({ url: json.url });
-    return res.status(400).json({ error: "Erro ao gerar link", details: json });
+        const json = await response.json();
+
+        if (json.url) {
+          return res.end(JSON.stringify({ url: json.url }));
+        } else {
+          return res.status(400).end(JSON.stringify({ error: "Erro ao gerar link", details: json }));
+        }
+      });
+    }
+
+    // -------- FUNÇÃO WEBHOOK ----------
+    else if (url.startsWith("/api/webhook") && req.method === "POST") {
+      let body = "";
+      req.on("data", chunk => body += chunk.toString());
+      req.on("end", async () => {
+        const data = JSON.parse(body);
+        // Exemplo: InfinitePay envia order_nsu e status
+        const order_nsu = data.order_nsu;
+        const status = data.status; // "paid" ou "failed"
+
+        // Atualiza status real no Firebase
+        await db.ref("pedidos/" + order_nsu).update({
+          status: status,
+          updatedAt: Date.now()
+        });
+
+        return res.end(JSON.stringify({ ok: true }));
+      });
+    }
+
+    else {
+      res.statusCode = 404;
+      res.end("Not Found");
+    }
+
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: "Erro interno", details: err.message });
+    res.status(500).end(JSON.stringify({ error: err.message }));
   }
-}
+};
