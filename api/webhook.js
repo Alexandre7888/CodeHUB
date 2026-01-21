@@ -1,7 +1,8 @@
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(200).send("okk");
+  if (req.method !== "POST") return res.status(200).send("ok");
 
-  const token = process.env.BOT_TOKEN;
+  // Coloca seu token direto aqui
+  const token = "8486927008:AAE5EHA9NrCKOW7ujnUKzeyUbhGvX6DzrMU";
   const update = req.body;
 
   if (!update.message) return res.status(200).end();
