@@ -1,24 +1,22 @@
 export default async function handler(req, res) {
-  // Permite que qualquer domínio faça requisição
+  // Permitir CORS de qualquer domínio
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  // Responde imediatamente se for preflight OPTIONS
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
+  // Preflight OPTIONS
+  if (req.method === "OPTIONS") return res.status(200).end();
 
-  if (req.method !== "POST") {
+  if (req.method !== "POST")
     return res.status(405).json({ error: "Method not allowed" });
-  }
 
   try {
-    const { order_nsu, items } = req.body;
+    const { order_nsu, items, redirect_success, redirect_fail } = req.body;
 
     const data = {
       handle: "ana-aline-braatz", // seu handle
       order_nsu: order_nsu || "pedido_001",
+      redirect_url: redirect_success, // URL para voltar à página com ?status=paid
       items: items || [
         { quantity: 1, price: 1000, description: "Produto Exemplo" },
       ],
