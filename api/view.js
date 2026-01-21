@@ -1,10 +1,10 @@
 // =======================
-// CONFIGURAÇÃO
+// CONFIGURAÇÃO DO FIREBASE k
 // =======================
-const FIREBASE_DB_URL = "https://html-15e80-default-rtdb.firebaseio.com";
+const FIREBASE_URL = "https://html-15e80-default-rtdb.firebaseio.com";
 
 // =======================
-// FUNÇÃO PRINCIPAL
+// FUNÇÃO PRINCIPAL DA API
 // =======================
 module.exports = async (req, res) => {
     // Configurar headers
@@ -17,28 +17,28 @@ module.exports = async (req, res) => {
         return res.status(200).end();
     }
     
-    // Apenas GET
+    // Apenas GET permitido
     if (req.method !== 'GET') {
-        return res.status(405).json({
-            error: 'Método não permitido',
-            allowed: ['GET']
+        return res.status(405).json({ 
+            error: 'Método não permitido', 
+            allowed: ['GET'] 
         });
     }
     
     try {
         const { query } = req;
-        const urlPath = req.url.split('?')[0];
         
         // =======================
-        // 1. ANALISAR PARÂMETROS
+        // 1. EXTRAIR PARÂMETROS
         // =======================
         let projectId = query.project || query.projectId || query.l || query.id;
         let fileName = query.file || query.fileName || query.f || query.open;
         
-        // Se não tem query, verifica path: /api/view/PROJETO_ID/arquivo
-        if (!projectId && urlPath.includes('/api/view/')) {
-            const parts = urlPath.replace('/api/view/', '').split('/');
-            if (parts.length > 0 && parts[0]) {
+        // Verificar se veio pelo path: /api/view/ID_PROJETO
+        if (!projectId && req.url.includes('/api/view/')) {
+            const pathParts = req.url.split('/api/view/')[1]?.split('?')[0];
+            if (pathParts) {
+                const parts = pathParts.split('/');
                 projectId = parts[0];
                 if (parts.length > 1) {
                     fileName = parts.slice(1).join('/');
@@ -47,104 +47,147 @@ module.exports = async (req, res) => {
         }
         
         // =======================
-        // 2. SEM PROJETO ID - PÁGINA INICIAL
+        // 2. SE NÃO TEM ID, MOSTRA AJUDA
         // =======================
         if (!projectId) {
             return res.json({
-                titulo: "🔥 Firebase Viewer API",
-                descricao: "API para visualizar projetos do Firebase",
+                app: "Firebase Viewer API",
+                descricao: "API para acessar projetos do Firebase Realtime Database",
                 uso: "Adicione ?project=ID_DO_PROJETO na URL",
                 exemplos: [
-                    "GET /api/view?project=SEU_ID",
-                    "GET /api/view/SEU_ID",
-                    "GET /api/view/SEU_ID/index.html",
-                    "GET /api/view?project=SEU_ID&file=style.css"
+                    "/api/view?project=exemplo123",
+                    "/api/view/exemplo123",
+                    "/api/view?project=exemplo123&file=index.html",
+                    "/api/view/exemplo123/index.html"
                 ],
-                parametros: {
-                    project: "ID do projeto (obrigatório)",
-                    file: "Nome do arquivo específico (opcional)",
-                    pretty: "1 para JSON formatado (opcional)"
+                estrutura_firebase: {
+                    projects: "ID_DO_PROJETO (públicos)",
+                    users: "UID_USUARIO/projects/ID_DO_PROJETO (privados)",
+                    domains: "NOME_DOMINIO (redirecionamentos)"
                 },
-                firebase_url: FIREBASE_DB_URL,
-                timestamp: new Date().toISOString()
+                url_base: FIREBASE_URL
             });
         }
         
-        // =======================
-        // 3. BUSCAR NO FIREBASE
-        // =======================
-        console.log(`🔍 Buscando projeto: ${projectId}, arquivo: ${fileName || '(principal)'}`);
-        
-        // URL para o Firebase
-        let firebaseUrl = `${FIREBASE_DB_URL}/projects/${projectId}.json`;
-        
-        // Se tem nome de arquivo, busca arquivo específico
-        if (fileName) {
-            firebaseUrl = `${FIREBASE_DB_URL}/projects/${projectId}/files.json?orderBy="originalName"&equalTo="${fileName}"`;
-        }
+        console.log(`🔍 Buscando: projeto="${projectId}", arquivo="${fileName || 'principal'}"`);
         
         // =======================
-        // 4. FAZER REQUISIÇÃO
+        // 3. PRIMEIRO: VERIFICAR DOMÍNIO
         // =======================
-        const fetchResponse = await fetch(firebaseUrl);
+        let realProjectId = projectId;
+        const domainCheckUrl = `${FIREBASE_URL}/domains/${projectId.toLowerCase()}.json`;
         
-        if (!fetchResponse.ok) {
-            // Tenta buscar em domains
-            const domainUrl = `${FIREBASE_DB_URL}/domains/${projectId.toLowerCase()}.json`;
-            const domainResponse = await fetch(domainUrl);
-            
-            if (domainResponse.ok) {
-                const domainData = await domainResponse.json();
+        try {
+            const domainRes = await fetch(domainCheckUrl);
+            if (domainRes.ok) {
+                const domainData = await domainRes.json();
                 if (domainData && domainData.projectId) {
-                    // Redirecionar para o projeto real
-                    const redirectUrl = req.url.replace(projectId, domainData.projectId);
-                    return res.json({
-                        redirect: true,
-                        message: "Domínio encontrado, redirecionando...",
-                        originalProjectId: projectId,
-                        realProjectId: domainData.projectId,
-                        newUrl: `/api/view?project=${domainData.projectId}${fileName ? `&file=${fileName}` : ''}`,
-                        domainData: domainData
-                    });
+                    console.log(`🔄 Domínio encontrado: ${projectId} → ${domainData.projectId}`);
+                    realProjectId = domainData.projectId;
                 }
             }
-            
+        } catch (domainErr) {
+            console.log(`ℹ️  Nenhum domínio para: ${projectId}`);
+        }
+        
+        // =======================
+        // 4. BUSCAR PROJETO (3 TENTATIVAS)
+        // =======================
+        let projectData = null;
+        let projectSource = null;
+        
+        // TENTATIVA 1: Projeto público direto
+        try {
+            const url1 = `${FIREBASE_URL}/projects/${realProjectId}.json`;
+            console.log(`🔗 Tentando: ${url1}`);
+            const res1 = await fetch(url1);
+            if (res1.ok) {
+                projectData = await res1.json();
+                projectSource = "projects";
+            }
+        } catch (e1) { /* ignorar */ }
+        
+        // TENTATIVA 2: Buscar em todos os usuários
+        if (!projectData) {
+            try {
+                const url2 = `${FIREBASE_URL}/users.json`;
+                console.log(`🔗 Tentando buscar em usuários: ${url2}`);
+                const res2 = await fetch(url2);
+                if (res2.ok) {
+                    const usersData = await res2.json();
+                    
+                    // Procurar projeto em qualquer usuário
+                    for (const userId in usersData) {
+                        const user = usersData[userId];
+                        if (user && user.projects && user.projects[realProjectId]) {
+                            projectData = user.projects[realProjectId];
+                            projectSource = `users/${userId}/projects`;
+                            console.log(`✅ Encontrado em: users/${userId}/projects`);
+                            break;
+                        }
+                    }
+                }
+            } catch (e2) { 
+                console.log("❌ Erro ao buscar em usuários:", e2.message);
+            }
+        }
+        
+        // TENTATIVA 3: Buscar direto no users/UID/projects/
+        if (!projectData) {
+            try {
+                // Se projectId tem formato de UID (28 caracteres)
+                if (realProjectId.length === 28) {
+                    const url3 = `${FIREBASE_URL}/users/${realProjectId}/projects.json`;
+                    console.log(`🔗 Tentando: ${url3}`);
+                    const res3 = await fetch(url3);
+                    if (res3.ok) {
+                        const userProjects = await res3.json();
+                        // Pegar primeiro projeto do usuário
+                        const firstProjectKey = Object.keys(userProjects || {})[0];
+                        if (firstProjectKey) {
+                            projectData = userProjects[firstProjectKey];
+                            projectSource = `users/${realProjectId}/projects`;
+                            realProjectId = firstProjectKey; // Atualiza para o ID real do projeto
+                        }
+                    }
+                }
+            } catch (e3) { /* ignorar */ }
+        }
+        
+        // =======================
+        // 5. SE NÃO ENCONTROU
+        // =======================
+        if (!projectData) {
             return res.status(404).json({
                 error: "Projeto não encontrado",
-                projectId: projectId,
-                firebaseUrl: firebaseUrl,
-                suggestions: [
-                    "Verifique se o ID está correto",
-                    "O projeto pode estar em um usuário: https://html-15e80-default-rtdb.firebaseio.com/projects/USUARIO/PROJETO.json",
-                    "Tente buscar diretamente: " + firebaseUrl
-                ]
+                searchedId: projectId,
+                realId: realProjectId,
+                firebaseUrl: FIREBASE_URL,
+                possibleLocations: [
+                    `projects/${realProjectId}`,
+                    `users/*/projects/${realProjectId}`,
+                    `users/${realProjectId}/projects/*`
+                ],
+                tip: "Verifique se o projeto existe e se você tem permissão de leitura"
             });
         }
         
-        const data = await fetchResponse.json();
-        
         // =======================
-        // 5. PROCESSAR RESPOSTA
+        // 6. PROCESSAR ARQUIVO ESPECÍFICO
         // =======================
-        if (!data) {
-            return res.status(404).json({
-                error: "Projeto vazio ou não existe",
-                projectId: projectId,
-                firebaseUrl: firebaseUrl
-            });
-        }
-        
-        // Se estamos buscando arquivo específico
         if (fileName) {
-            const files = data;
+            const files = projectData.files || {};
             let fileFound = null;
             let fileKey = null;
             
-            // Buscar arquivo pelo nome
+            // Buscar arquivo (case insensitive)
+            const fileNameLower = fileName.toLowerCase();
             for (const key in files) {
                 const file = files[key];
-                const originalName = (file.originalName || file.name || key).toLowerCase();
-                if (originalName === fileName.toLowerCase()) {
+                const fileOriginalName = (file.originalName || file.name || key || "").toLowerCase();
+                const fileNameOnly = fileOriginalName.split('?')[0].split('#')[0];
+                
+                if (fileNameOnly === fileNameLower || fileOriginalName === fileNameLower) {
                     fileFound = file;
                     fileKey = key;
                     break;
@@ -154,137 +197,181 @@ module.exports = async (req, res) => {
             if (!fileFound) {
                 return res.status(404).json({
                     error: "Arquivo não encontrado",
-                    projectId: projectId,
+                    projectId: realProjectId,
                     fileName: fileName,
-                    availableFiles: Object.keys(files).map(k => files[k].originalName || files[k].name || k)
+                    availableFiles: Object.keys(files).map(k => ({
+                        key: k,
+                        name: files[k].originalName || files[k].name || k,
+                        type: files[k].type || "unknown",
+                        hasUrl: !!(files[k].directUrl || files[k].url)
+                    })),
+                    tip: "Tente o nome exato do arquivo (com extensão)"
                 });
             }
             
-            // Retornar dados do arquivo
-            return res.json({
+            // Preparar resposta do arquivo
+            const fileResult = {
                 status: "success",
                 type: "file",
-                projectId: projectId,
+                projectId: realProjectId,
+                projectSource: projectSource,
                 fileName: fileName,
+                fileKey: fileKey,
                 fileData: fileFound,
                 metadata: {
-                    firebaseKey: fileKey,
+                    originalName: fileFound.originalName || fileFound.name || fileKey,
+                    type: fileFound.type || "unknown",
+                    language: fileFound.language || null,
+                    size: fileFound.size || null,
                     hasUrl: !!(fileFound.directUrl || fileFound.url),
                     hasChunks: !!(fileFound.chunks),
-                    type: fileFound.type || "unknown",
-                    size: fileFound.size || null,
-                    timestamp: new Date().toISOString()
+                    chunksCount: fileFound.chunks ? Object.keys(fileFound.chunks).length : 0
                 },
-                links: {
-                    rawContent: fileFound.directUrl || fileFound.url || null,
-                    viewProject: `/api/view?project=${projectId}`,
+                urls: {
+                    directUrl: fileFound.directUrl || fileFound.url || null,
+                    viewInBrowser: `/api/view?project=${realProjectId}&file=${fileName}`,
                     download: fileFound.directUrl || fileFound.url || null
-                }
-            });
+                },
+                content: fileFound.chunks ? 
+                    Object.values(fileFound.chunks).join('') : 
+                    fileFound.content || ""
+            };
+            
+            // Se for HTML, aplicar substituição automática
+            if ((fileName.toLowerCase().endsWith('.html') || fileFound.language === 'html') && fileResult.content) {
+                fileResult.content = substituteFileUrls(fileResult.content, files);
+                fileResult.processed = true;
+            }
+            
+            return res.json(fileResult);
         }
         
         // =======================
-        // 6. RETORNAR PROJETO COMPLETO
+        // 7. RETORNAR PROJETO COMPLETO
         // =======================
         const result = {
             status: "success",
             type: "project",
-            projectId: projectId,
-            firebaseUrl: firebaseUrl,
-            projectData: data,
+            projectId: realProjectId,
+            originalRequestId: projectId,
+            projectSource: projectSource,
             metadata: {
-                name: data.name || projectId,
-                hasFiles: !!(data.files),
-                fileCount: data.files ? Object.keys(data.files).length : 0,
-                timestamp: new Date().toISOString(),
-                fetchedFrom: FIREBASE_DB_URL
+                name: projectData.name || realProjectId,
+                description: projectData.description || null,
+                createdAt: projectData.createdAt || null,
+                updatedAt: projectData.updatedAt || null,
+                isPublic: projectData.public !== false,
+                hasFiles: !!(projectData.files),
+                filesCount: projectData.files ? Object.keys(projectData.files).length : 0
+            },
+            firebasePaths: {
+                project: `${projectSource}/${realProjectId}`,
+                files: `${projectSource}/${realProjectId}/files`,
+                rawJson: `${FIREBASE_URL}/${projectSource}/${realProjectId}.json`
+            },
+            links: {
+                self: `/api/view?project=${realProjectId}`,
+                pretty: `/api/view?project=${realProjectId}&pretty=1`,
+                listFiles: `/api/view?project=${realProjectId}&list=1`
             }
         };
         
         // Adicionar lista de arquivos se existir
-        if (data.files) {
-            const files = data.files;
-            const fileList = [];
-            const fileExtensions = {};
+        if (projectData.files) {
+            const filesList = [];
+            const fileTypes = {};
             
-            for (const key in files) {
-                const file = files[key];
+            for (const key in projectData.files) {
+                const file = projectData.files[key];
                 const fileName = file.originalName || file.name || key;
                 const extension = fileName.split('.').pop().toLowerCase();
-                const hasUrl = !!(file.directUrl || file.url);
+                const isMedia = !!(file.directUrl || file.url);
                 
-                fileList.push({
+                filesList.push({
+                    id: key,
                     name: fileName,
-                    key: key,
-                    type: file.type || "unknown",
                     extension: extension,
-                    hasUrl: hasUrl,
-                    url: file.directUrl || file.url || null,
-                    size: file.size || null
+                    type: file.type || "unknown",
+                    isMedia: isMedia,
+                    mediaUrl: file.directUrl || file.url || null,
+                    size: file.size || null,
+                    language: file.language || null,
+                    viewUrl: `/api/view?project=${realProjectId}&file=${encodeURIComponent(fileName)}`
                 });
                 
-                // Contar extensões
-                fileExtensions[extension] = (fileExtensions[extension] || 0) + 1;
+                // Contar tipos
+                fileTypes[extension] = (fileTypes[extension] || 0) + 1;
             }
             
             result.files = {
-                list: fileList,
-                count: fileList.length,
-                extensions: fileExtensions,
-                mainFile: fileList.find(f => f.name.toLowerCase() === 'index.html') || 
-                         fileList.find(f => f.extension === 'html') || 
+                count: filesList.length,
+                list: filesList,
+                types: fileTypes,
+                mainFile: filesList.find(f => f.name.toLowerCase() === 'index.html') ||
+                         filesList.find(f => f.extension === 'html') ||
                          null
             };
             
-            // Links úteis
-            result.links = {
-                viewIndex: `/api/view?project=${projectId}&file=index.html`,
-                viewMain: result.files.mainFile ? 
-                    `/api/view?project=${projectId}&file=${result.files.mainFile.name}` : 
-                    null,
-                browseFiles: `/api/view?project=${projectId}&list=files`,
-                rawJson: firebaseUrl,
-                prettyJson: `${firebaseUrl}?print=pretty`
-            };
+            // Adicionar link para arquivo principal
+            if (result.files.mainFile) {
+                result.links.mainFile = `/api/view?project=${realProjectId}&file=${encodeURIComponent(result.files.mainFile.name)}`;
+            }
         }
         
-        // Formatar JSON se solicitado
-        const shouldPrettyPrint = query.pretty === '1' || query.format === 'pretty';
-        return res.json(shouldPrettyPrint ? 
-            JSON.stringify(result, null, 2) : 
-            result
-        );
+        // Formatar bonito se solicitado
+        const pretty = query.pretty === '1' || query.format === 'pretty';
+        return res.json(pretty ? JSON.stringify(result, null, 2) : result);
         
     } catch (error) {
-        console.error('❌ ERRO CRÍTICO:', error);
+        console.error("❌ ERRO NA API:", error);
         
         return res.status(500).json({
             error: "Erro interno do servidor",
             message: error.message,
             stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-            timestamp: new Date().toISOString(),
-            support: "Verifique os logs do servidor para mais detalhes"
+            timestamp: new Date().toISOString()
         });
     }
 };
 
 // =======================
-// FUNÇÕES AUXILIARES (não exportadas)
+// FUNÇÃO DE SUBSTITUIÇÃO DE URLs (igual ao original)
 // =======================
-async function fetchWithRetry(url, retries = 3) {
-    for (let i = 0; i < retries; i++) {
-        try {
-            const response = await fetch(url);
-            if (response.ok) return response;
-            
-            if (i === retries - 1) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
-            // Esperar antes de tentar novamente
-            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
-        } catch (error) {
-            if (i === retries - 1) throw error;
+function substituteFileUrls(htmlContent, projectFiles) {
+    if (!projectFiles || !htmlContent) return htmlContent;
+    
+    let novoHTML = htmlContent;
+    
+    function encontrarArquivo(nomeArquivo) {
+        if (!projectFiles) return null;
+        const nomeLimpo = nomeArquivo.split('/').pop().split('?')[0];
+        for (const key in projectFiles) {
+            const f = projectFiles[key];
+            const fname = (f.originalName || f.name || key).toLowerCase();
+            if (fname === nomeLimpo.toLowerCase()) return f;
         }
+        return null;
     }
+    
+    // Substituir src=""
+    novoHTML = novoHTML.replace(/src=["']([^"']+)["']/g, (match, src) => {
+        if (src.startsWith('http') || src.startsWith('data:') || src.includes('://')) return match;
+        const arquivo = encontrarArquivo(src);
+        if (arquivo && (arquivo.directUrl || arquivo.url)) {
+            return `src="${arquivo.directUrl || arquivo.url}"`;
+        }
+        return match;
+    });
+    
+    // Substituir href="" (para CSS)
+    novoHTML = novoHTML.replace(/href=["']([^"']+)["']/g, (match, href) => {
+        if (href.startsWith('http') || href.startsWith('data:') || href.includes('://')) return match;
+        const arquivo = encontrarArquivo(href);
+        if (arquivo && (arquivo.directUrl || arquivo.url)) {
+            return `href="${arquivo.directUrl || arquivo.url}"`;
+        }
+        return match;
+    });
+    
+    return novoHTML;
 }
