@@ -1,12 +1,13 @@
-export default function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
-  // Preflight
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(200).send("ok");
   }
 
-  res.status(200).json({ okkkk: true });
+  const update = req.body;
+
+  if (update.message) {
+    console.log("CHAT ID:", update.message.chat.id);
+  }
+
+  res.status(200).end();
 }
