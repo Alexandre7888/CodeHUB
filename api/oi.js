@@ -1,4 +1,4 @@
-const admin = require("firebase-admin");
+import admin from "firebase-admin";
 
 // Inicializa Firebase Admin
 if (!admin.apps.length) {
@@ -6,7 +6,7 @@ if (!admin.apps.length) {
     credential: admin.credential.cert({
       project_id: "html-15e80",
       client_email: "firebase-adminsdk-fbsvc@html-15e80.iam.gserviceaccount.com",
-      private_key: `-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCMm6ME7bxxr4k3\n...restante da chave...\n-----END PRIVATE KEY-----\n`
+      private_key: `-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCMm6ME7bxxr4k3\n...restante da chave...\n-----END PRIVATE KEY-----`
     }),
     databaseURL: "https://html-15e80-default-rtdb.firebaseio.com"
   });
@@ -14,28 +14,25 @@ if (!admin.apps.length) {
 
 const db = admin.database();
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
+  // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
   if (req.method === "OPTIONS") return res.status(200).end();
 
   try {
-    const { url, method, body } = req;
+    if (req.url.endsWith("/checkout") && req.method === "POST") {
+      const { order_nsu, items, redirect_url } = req.body;
 
-    // Checkout
-    if (url.startsWith("/api/checkout") && method === "POST") {
-      const { order_nsu, items, redirect_url } = body;
-
-      // Salva pedido
+      // Salva pedido pending
       await db.ref("pedidos/" + order_nsu).set({
         status: "pending",
         items,
         createdAt: Date.now()
       });
 
-      // InfinitePay fetch nativo
+      // Cria link InfinitePay
       const response = await fetch("https://api.infinitepay.io/invoices/public/checkout/links", {
         method: "POST",
         headers: {
@@ -55,9 +52,8 @@ module.exports = async function handler(req, res) {
       else return res.status(400).json({ error: "Erro ao gerar link", details: data });
     }
 
-    // Webhook
-    else if (url.startsWith("/api/webhook") && method === "POST") {
-      const { order_nsu, status } = body;
+    else if (req.url.endsWith("/webhook") && req.method === "POST") {
+      const { order_nsu, status } = req.body;
       if (!order_nsu || !status) return res.status(400).json({ error: "Dados inválidos" });
 
       await db.ref("pedidos/" + order_nsu).update({
@@ -65,14 +61,15 @@ module.exports = async function handler(req, res) {
         updatedAt: Date.now()
       });
 
-      return res.json({ ok: true });
+      return res.status(200).json({ ok: true });
     }
 
     else {
-      res.status(404).end("Not Found");
+      return res.status(404).end("Not Found");
     }
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
-};
+}
