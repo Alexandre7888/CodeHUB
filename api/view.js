@@ -1,18 +1,264 @@
-// =======================
-// CONFIGURAÇÃO DO FIREBASE k
-// =======================
 const FIREBASE_URL = "https://html-15e80-default-rtdb.firebaseio.com";
 
-// =======================
-// FUNÇÃO PRINCIPAL DA API
-// =======================
+// Função para testar múltiplos caminhos
+async function tryAllPaths(projectId) {
+    console.log(`🔍 Testando TODOS os caminhos para: ${projectId}`);
+    
+    const testPaths = [
+        // 1. Projeto público direto
+        `projects/${projectId}`,
+        
+        // 2. Projeto em usuário específico (precisa saber o UID)
+        // Vamos tentar alguns UIDs comuns ou buscar todos
+        
+        // 3. Em users/UID/projects/ (vamos buscar primeiro todos os users)
+    ];
+    
+    // Primeiro: tentar o caminho direto
+    try {
+        const directUrl = `${FIREBASE_URL}/projects/${projectId}.json`;
+        const res = await fetch(directUrl);
+        if (res.ok) {
+            const data = await res.json();
+            if (data) {
+                return {
+                    data,
+                    path: `projects/${projectId}`,
+                    source: 'projects'
+                };
+            }
+        }
+    } catch (e) {}
+    
+    // Segundo: buscar EM TODOS os usuários
+    try {
+        const usersUrl = `${FIREBASE_URL}/users.json`;
+        const usersRes = await fetch(usersUrl);
+        
+        if (usersRes.ok) {
+            const usersData = await usersRes.json();
+            
+            if (usersData) {
+                // Procurar projeto em QUALQUER usuário
+                for (const userId in usersData) {
+                    const user = usersData[userId];
+                    
+                    // Verificar se user tem projetos
+                    if (user && user.projects) {
+                        // Verificar se tem o projeto específico
+                        if (user.projects[projectId]) {
+                            return {
+                                data: user.projects[projectId],
+                                path: `users/${userId}/projects/${projectId}`,
+                                source: 'users',
+                                userId: userId
+                            };
+                        }
+                        
+                        // Verificar todos os projetos do usuário
+                        // (às vezes o projectId pode ser diferente)
+                        for (const projId in user.projects) {
+                            const project = user.projects[projId];
+                            // Verificar por nome ou ID interno
+                            if (project.name === projectId || 
+                                project.id === projectId ||
+                                projId === projectId) {
+                                return {
+                                    data: project,
+                                    path: `users/${userId}/projects/${projId}`,
+                                    source: 'users',
+                                    userId: userId,
+                                    realProjectId: projId
+                                };
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Erro ao buscar em users:", e);
+    }
+    
+    // Terceiro: buscar em /public/ ou /public_projects/
+    const alternativePaths = [
+        `public/${projectId}`,
+        `public_projects/${projectId}`,
+        `shared/${projectId}`,
+        `published/${projectId}`
+    ];
+    
+    for (const path of alternativePaths) {
+        try {
+            const url = `${FIREBASE_URL}/${path}.json`;
+            const res = await fetch(url);
+            if (res.ok) {
+                const data = await res.json();
+                if (data) {
+                    return {
+                        data,
+                        path: path,
+                        source: 'alternative'
+                    };
+                }
+            }
+        } catch (e) {}
+    }
+    
+    return null;
+}
+
+// API principal
 module.exports = async (req, res) => {
-    // Configurar headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
     
-    // CORS preflight
+    if (req.method === 'OPTIONS') return res.status(200).end();
+    if (req.method !== 'GET') return res.status(405).json({ error: 'Método não permitido' });
+    
+    try {
+        const { query } = req;
+        
+        // Extrair projectId
+        let projectId = query.project || query.projectId || query.l || query.id;
+        
+        // Se não tem, mostrar ajuda
+        if (!projectId) {
+            return res.json({
+                status: 'info',
+                message: 'API Firebase Viewer',
+                usage: 'Adicione ?project=ID_DO_PROJETO',
+                example: '/api/view?project=-OiB60evJmQ5u26huxmZ',
+                endpoints: {
+                    test_all: '/api/debug/project/-OiB60evJmQ5u26huxmZ',
+                    search: '/api/search?q=ID_DO_PROJETO',
+                    firebase_structure: '/api/structure'
+                }
+            });
+        }
+        
+        console.log(`🚀 Buscando projeto: ${projectId}`);
+        
+        // TESTAR: Ver URL direta no navegador primeiro
+        const testUrl = `${FIREBASE_URL}/.json`;
+        console.log(`🔗 URL completa do Firebase: ${testUrl}`);
+        
+        // 1. Primeiro tentar a URL MÃE de tudo
+        try {
+            const rootRes = await fetch(testUrl);
+            if (rootRes.ok) {
+                const rootData = await rootRes.json();
+                
+                // Salvar para debug
+                console.log("📊 Estrutura raiz do Firebase:");
+                console.log("Keys disponíveis:", Object.keys(rootData || {}));
+                
+                // Retornar estrutura para debug
+                if (query.debug === '1') {
+                    return res.json({
+                        status: 'debug',
+                        projectId: projectId,
+                        firebaseRoot: Object.keys(rootData || {}),
+                        fullStructure: rootData,
+                        testUrl: testUrl
+                    });
+                }
+            }
+        } catch (e) {
+            console.error("Erro ao buscar raiz:", e);
+        }
+        
+        // 2. Buscar projeto usando a função que testa tudo
+        const projectResult = await tryAllPaths(projectId);
+        
+        if (!projectResult) {
+            // Última tentativa: buscar TODOS os dados e procurar
+            try {
+                const allDataUrl = `${FIREBASE_URL}/.json?shallow=true`;
+                const allRes = await fetch(allDataUrl);
+                
+                if (allRes.ok) {
+                    const allData = await allRes.json();
+                    
+                    return res.json({
+                        status: 'not_found_but_here_is_structure',
+                        searchedId: projectId,
+                        firebaseStructure: allData,
+                        allPaths: Object.keys(allData || {}),
+                        searchTip: 'O projeto pode estar em uma dessas pastas acima',
+                        directLinks: {
+                            projects: `${FIREBASE_URL}/projects.json`,
+                            users: `${FIREBASE_URL}/users.json`,
+                            domains: `${FIREBASE_URL}/domains.json`
+                        }
+                    });
+                }
+            } catch (finalErr) {
+                return res.status(404).json({
+                    error: "Projeto não encontrado após busca completa",
+                    projectId: projectId,
+                    firebaseUrl: FIREBASE_URL,
+                    directTestUrl: `${FIREBASE_URL}/.json`,
+                    suggestion: "Acesse o link acima para ver a estrutura completa do Firebase"
+                });
+            }
+        }
+        
+        // 3. Se encontrou, retornar dados
+        const { data, path, source, userId, realProjectId } = projectResult;
+        
+        const response = {
+            status: 'success',
+            project: {
+                id: realProjectId || projectId,
+                originalId: projectId,
+                foundIn: path,
+                source: source,
+                userId: userId
+            },
+            metadata: {
+                name: data.name || realProjectId || projectId,
+                hasFiles: !!(data.files),
+                fileCount: data.files ? Object.keys(data.files).length : 0,
+                createdAt: data.createdAt || data.timestamp || null
+            },
+            data: data,
+            links: {
+                raw: `${FIREBASE_URL}/${path}.json`,
+                pretty: `${FIREBASE_URL}/${path}.json?print=pretty`,
+                download: `${FIREBASE_URL}/${path}.json?download=true`
+            }
+        };
+        
+        // Adicionar lista de arquivos se existir
+        if (data.files) {
+            const files = [];
+            for (const key in data.files) {
+                const file = data.files[key];
+                files.push({
+                    id: key,
+                    name: file.originalName || file.name || key,
+                    type: file.type || 'unknown',
+                    hasUrl: !!(file.directUrl || file.url),
+                    url: file.directUrl || file.url || null,
+                    size: file.size || null
+                });
+            }
+            response.files = files;
+        }
+        
+        return res.json(response);
+        
+    } catch (error) {
+        console.error("❌ ERRO CRÍTICO:", error);
+        return res.status(500).json({
+            error: "Erro interno",
+            message: error.message,
+            firebaseUrl: FIREBASE_URL,
+            tip: "Verifique se o Firebase está acessível"
+        });
+    }
+};
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
