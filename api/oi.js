@@ -28,21 +28,28 @@ module.exports = async function handler(req, res) {
   try {
     const url = req.url;
 
-    // -------- CHECKOUT ----------
+    // -------- FUNÇÃO CHECKOUT ----------
     if (url.startsWith("/api/checkout") && req.method === "POST") {
       let body = "";
       req.on("data", chunk => body += chunk.toString());
       req.on("end", async () => {
         const { order_nsu, items, redirect_url } = JSON.parse(body);
 
-        // Salva pedido no Firebase
+        // Salva pedido no Firebase com status pending
         await db.ref("pedidos/" + order_nsu).set({
           status: "pending",
           items,
           createdAt: Date.now()
         });
 
-        // Cria link InfinitePay
+        // Cria link do InfinitePay
+        const data = {
+          handle: "ana-aline-braatz",
+          order_nsu,
+          redirect_url,
+          items
+        };
+
         const response = await fetch(
           "https://api.infinitepay.io/invoices/public/checkout/links",
           {
@@ -51,29 +58,34 @@ module.exports = async function handler(req, res) {
               "Content-Type": "application/json",
               "Authorization": "Bearer 6beZJtyP1RWkvwum2c9gIY7TzHRwgd2vT9aSX9k5"
             },
-            body: JSON.stringify({
-              handle: "ana-aline-braatz",
-              order_nsu,
-              redirect_url,
-              items
-            })
+            body: JSON.stringify(data)
           }
         );
 
         const json = await response.json();
-        if (json.url) return res.end(JSON.stringify({ url: json.url }));
-        else return res.status(400).end(JSON.stringify({ error: "Erro", details: json }));
+
+        if (json.url) {
+          return res.end(JSON.stringify({ url: json.url }));
+        } else {
+          return res.status(400).end(JSON.stringify({ error: "Erro ao gerar link", details: json }));
+        }
       });
     }
 
-    // -------- WEBHOOK ----------
+    // -------- FUNÇÃO WEBHOOK ----------
     else if (url.startsWith("/api/webhook") && req.method === "POST") {
       let body = "";
       req.on("data", chunk => body += chunk.toString());
       req.on("end", async () => {
         const data = JSON.parse(body);
+
+        // Segurança: validar se veio do InfinitePay (opcional, mas recomendado)
+        if (!data.order_nsu || !data.status) {
+          return res.status(400).end(JSON.stringify({ error: "Dados inválidos" }));
+        }
+
         const order_nsu = data.order_nsu;
-        const status = data.status;
+        const status = data.status; // "paid" ou "failed"
 
         // Atualiza status real no Firebase
         await db.ref("pedidos/" + order_nsu).update({
