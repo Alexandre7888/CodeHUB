@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Salvar Consoles</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<h2>Web App de Consoles</h2>
+
+<input type="text" id="console" placeholder="Digite o nome do console">
+<button onclick="salvar()">Salvar Console</button>
+
+<p id="status"></p>
+
+<script>
+  // Config do Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
+    authDomain: "html-15e80.firebaseapp.com",
+    databaseURL: "https://html-15e80-default-rtdb.firebaseio.com",
+    projectId: "html-15e80",
+    storageBucket: "html-15e80.firebasestorage.app",
+    messagingSenderId: "1068148640439",
+    appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32",
+    measurementId: "G-V57KRZ02HJ"
+  };
+
+  // Inicializa Firebase
+  const app = firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  // Função para salvar
+  function salvar() {
+    const consoleNome = document.getElementById("console").value;
+    if (!consoleNome) return alert("Digite algo!");
+
+    // Aqui pegamos o user_id do Telegram via query string (ou outro método seguro)
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get("user"); // ex: https://site.com/?user=123456
+
+    if (!userId) return alert("User ID não encontrado!");
+
+    db.ref('usuarios/' + userId + '/consoles').push(consoleNome);
+    document.getElementById("status").innerText = "Console salvo ✅";
+    document.getElementById("console").value = "";
+  }
+</script>
+
+</body>
+</html>
