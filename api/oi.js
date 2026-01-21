@@ -1,16 +1,12 @@
-const fetch = require("node-fetch");
 const admin = require("firebase-admin");
 
-// Inicializa Firebase Admin (somente campos obrigatórios)
+// Inicializa Firebase Admin
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert({
       project_id: "html-15e80",
       client_email: "firebase-adminsdk-fbsvc@html-15e80.iam.gserviceaccount.com",
-      private_key: `-----BEGIN PRIVATE KEY-----
-MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCMm6ME7bxxr4k3
-...restante da chave...
------END PRIVATE KEY-----`
+      private_key: `-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCMm6ME7bxxr4k3\n...restante da chave...\n-----END PRIVATE KEY-----\n`
     }),
     databaseURL: "https://html-15e80-default-rtdb.firebaseio.com"
   });
@@ -19,91 +15,64 @@ MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCMm6ME7bxxr4k3
 const db = admin.database();
 
 module.exports = async function handler(req, res) {
-  // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
   if (req.method === "OPTIONS") return res.status(200).end();
 
   try {
-    const url = req.url;
+    const { url, method, body } = req;
 
-    // -------- FUNÇÃO CHECKOUT ----------
-    if (url.startsWith("/api/checkout") && req.method === "POST") {
-      let body = "";
-      req.on("data", chunk => body += chunk.toString());
-      req.on("end", async () => {
-        const { order_nsu, items, redirect_url } = JSON.parse(body);
+    // Checkout
+    if (url.startsWith("/api/checkout") && method === "POST") {
+      const { order_nsu, items, redirect_url } = body;
 
-        // Salva pedido no Firebase com status pending
-        await db.ref("pedidos/" + order_nsu).set({
-          status: "pending",
-          items,
-          createdAt: Date.now()
-        });
+      // Salva pedido
+      await db.ref("pedidos/" + order_nsu).set({
+        status: "pending",
+        items,
+        createdAt: Date.now()
+      });
 
-        // Cria link do InfinitePay
-        const data = {
+      // InfinitePay fetch nativo
+      const response = await fetch("https://api.infinitepay.io/invoices/public/checkout/links", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer 6beZJtyP1RWkvwum2c9gIY7TzHRwgd2vT9aSX9k5"
+        },
+        body: JSON.stringify({
           handle: "ana-aline-braatz",
           order_nsu,
           redirect_url,
           items
-        };
-
-        const response = await fetch(
-          "https://api.infinitepay.io/invoices/public/checkout/links",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": "Bearer 6beZJtyP1RWkvwum2c9gIY7TzHRwgd2vT9aSX9k5"
-            },
-            body: JSON.stringify(data)
-          }
-        );
-
-        const json = await response.json();
-
-        if (json.url) {
-          return res.end(JSON.stringify({ url: json.url }));
-        } else {
-          return res.status(400).end(JSON.stringify({ error: "Erro ao gerar link", details: json }));
-        }
+        })
       });
+
+      const data = await response.json();
+      if (data.url) return res.status(200).json({ url: data.url });
+      else return res.status(400).json({ error: "Erro ao gerar link", details: data });
     }
 
-    // -------- FUNÇÃO WEBHOOK ----------
-    else if (url.startsWith("/api/webhook") && req.method === "POST") {
-      let body = "";
-      req.on("data", chunk => body += chunk.toString());
-      req.on("end", async () => {
-        const data = JSON.parse(body);
+    // Webhook
+    else if (url.startsWith("/api/webhook") && method === "POST") {
+      const { order_nsu, status } = body;
+      if (!order_nsu || !status) return res.status(400).json({ error: "Dados inválidos" });
 
-        // Segurança: validar se veio do InfinitePay (opcional, mas recomendado)
-        if (!data.order_nsu || !data.status) {
-          return res.status(400).end(JSON.stringify({ error: "Dados inválidos" }));
-        }
-
-        const order_nsu = data.order_nsu;
-        const status = data.status; // "paid" ou "failed"
-
-        // Atualiza status real no Firebase
-        await db.ref("pedidos/" + order_nsu).update({
-          status,
-          updatedAt: Date.now()
-        });
-
-        return res.end(JSON.stringify({ ok: true }));
+      await db.ref("pedidos/" + order_nsu).update({
+        status,
+        updatedAt: Date.now()
       });
+
+      return res.json({ ok: true });
     }
 
     else {
-      res.statusCode = 404;
-      res.end("Not Found");
+      res.status(404).end("Not Found");
     }
-
   } catch (err) {
     console.error(err);
-    res.status(500).end(JSON.stringify({ error: err.message }));
+    res.status(500).json({ error: err.message });
   }
 };
