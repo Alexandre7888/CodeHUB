@@ -1,5 +1,5 @@
 // api/payment.js
-let pedidos = {}; // memória temporária dos pedidos
+let pedidos = {}; // memória temporária para armazenar pedidos
 
 export default async function handler(req, res) {
   // CORS
@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const { action, order_nsu, items, redirect_success, status } = req.body;
+    const { action, order_nsu, items, redirect_success } = req.body;
     const handle = "ana-aline-braatz"; // seu handle InfinitePay
 
     // ---------------- #checkout ----------------
@@ -41,24 +41,28 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Erro ao gerar link", details: json });
     }
 
-    // ---------------- #webhook ----------------
-    else if (action === "#webhook") {
-      if (!order_nsu || !status) return res.status(400).json({ error: "Dados inválidos" });
-
-      if (!pedidos[order_nsu]) pedidos[order_nsu] = {};
-      pedidos[order_nsu].status = status;
-      pedidos[order_nsu].updatedAt = Date.now();
-
-      console.log("Webhook recebido:", pedidos[order_nsu]);
-      return res.status(200).json({ ok: true });
-    }
-
     // ---------------- #status ----------------
     else if (action === "#status") {
       if (!order_nsu || !pedidos[order_nsu])
         return res.status(404).json({ error: "Pedido não encontrado" });
 
-      return res.status(200).json({ status: pedidos[order_nsu].status });
+      // consulta pagamento usando payment_check
+      const checkRes = await fetch(
+        "https://api.infinitepay.io/invoices/public/checkout/payment_check",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ handle, order_nsu }),
+        }
+      );
+
+      const checkJson = await checkRes.json();
+
+      // atualiza status local
+      pedidos[order_nsu].status = checkJson.status || "pending";
+      pedidos[order_nsu].updatedAt = Date.now();
+
+      return res.status(200).json({ status: pedidos[order_nsu].status, details: checkJson });
     }
 
     else return res.status(400).json({ error: "Ação inválida" });
