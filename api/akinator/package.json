@@ -1,1 +1,8 @@
-j
+{
+  "name": "akinator-vercel",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "dependencies": {
+    "aki-api": "^6.0.0"
+  }
+}
