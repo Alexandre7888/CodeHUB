@@ -9,21 +9,20 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
 
   try {
-    const url = req.url;
+    if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-    // --------- CHECKOUT ----------
-    if (url.includes("/checkout") && req.method === "POST") {
-      const { order_nsu, items, redirect_success, redirect_fail } = req.body;
+    const { action, order_nsu, items, redirect_success, status } = req.body;
 
+    // ---------------- #checkout ----------------
+    if (action === "#checkout") {
       if (!order_nsu || !items || !redirect_success)
         return res.status(400).json({ error: "Dados incompletos" });
 
-      // salva pedido pendente na memória
+      // salva pedido pendente
       pedidos[order_nsu] = { status: "pending", items, createdAt: Date.now() };
 
-      // dados do InfinitePay
       const data = {
-        handle: "ana-aline-braatz", // seu handle
+        handle: "ana-aline-braatz",
         order_nsu,
         redirect_url: redirect_success,
         items
@@ -43,11 +42,9 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Erro ao gerar link", details: json });
     }
 
-    // --------- WEBHOOK ----------
-    else if (url.includes("/webhook") && req.method === "POST") {
-      const { order_nsu, status } = req.body;
-      if (!order_nsu || !status)
-        return res.status(400).json({ error: "Dados inválidos" });
+    // ---------------- #webhook ----------------
+    else if (action === "#webhook") {
+      if (!order_nsu || !status) return res.status(400).json({ error: "Dados inválidos" });
 
       if (!pedidos[order_nsu]) pedidos[order_nsu] = {};
       pedidos[order_nsu].status = status;
@@ -57,16 +54,13 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
-    // --------- STATUS ----------
-    else if (url.includes("/status") && req.method === "GET") {
-      const order_nsu = req.query.order_nsu;
-      if (!order_nsu || !pedidos[order_nsu])
-        return res.status(404).json({ error: "Pedido não encontrado" });
-
+    // ---------------- #status ----------------
+    else if (action === "#status") {
+      if (!order_nsu || !pedidos[order_nsu]) return res.status(404).json({ error: "Pedido não encontrado" });
       return res.status(200).json({ status: pedidos[order_nsu].status });
     }
 
-    else return res.status(404).json({ error: "Endpoint não encontrado" });
+    else return res.status(400).json({ error: "Ação inválida" });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Erro interno", details: err.message });
