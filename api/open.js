@@ -2,7 +2,7 @@ const OpenAI = require("openai");
 const fetch = require("node-fetch"); // se estiver usando Node 18+ pode usar fetch nativo
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.GPT
 });
 
 module.exports = async (req, res) => {
