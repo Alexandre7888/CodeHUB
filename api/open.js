@@ -1,29 +1,22 @@
 module.exports = async (req, res) => {
-  const { url } = req.query;
+  const { codigo } = req.query;
 
-  if (!url) {
-    return res.status(400).json({
-      success: false,
-      error: "Parâmetro ?url= é obrigatório"
-    });
+  if (!codigo) {
+    return res.status(400).json({ success: false, error: "Parâmetro ?codigo= é obrigatório" });
   }
 
   try {
-    /* 1️⃣ Buscar HTML da página de rastreio */
-    const pageRes = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
-        "Accept": "text/html"
-      }
-    });
+    // 1️⃣ Pega os dados do rastreio diretamente da API pública
+    const apiRes = await fetch(`https://seurastreio.com.br/api/public/rastreio/${codigo}`);
+    const trackingData = await apiRes.json();
 
-    const html = await pageRes.text();
+    if (!trackingData.success) {
+      return res.status(404).json({ success: false, error: "Rastreio não encontrado" });
+    }
 
-    /* 2️⃣ Prompt para o GPT */
+    // 2️⃣ Cria prompt para GPT
     const prompt = `
-Extraia informações de rastreio do HTML abaixo.
-Responda SOMENTE em JSON neste formato:
+Você é um assistente que recebe dados de rastreio de encomendas em JSON e precisa formatar para o seguinte padrão:
 
 {
   "codigo": "...",
@@ -38,11 +31,11 @@ Responda SOMENTE em JSON neste formato:
   ]
 }
 
-HTML:
-${html}
+JSON de entrada:
+${JSON.stringify(trackingData, null, 2)}
 `;
 
-    /* 3️⃣ Chamada DIRETA à API do GPT (sem SDK) */
+    // 3️⃣ Chamada direta para GPT oficial via REST
     const gptRes = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -58,26 +51,12 @@ ${html}
 
     const gptData = await gptRes.json();
 
-    if (!gptData.choices) {
-      return res.status(500).json({
-        success: false,
-        error: "Resposta inválida do GPT",
-        raw: gptData
-      });
-    }
-
-    /* 4️⃣ Retorno JSON limpo */
+    // 4️⃣ Retorna JSON limpo
     const result = JSON.parse(gptData.choices[0].message.content);
 
-    res.status(200).json({
-      success: true,
-      result
-    });
+    res.status(200).json({ success: true, result });
 
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      error: err.message
-    });
+    res.status(500).json({ success: false, error: err.message });
   }
 };
