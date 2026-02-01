@@ -1,23 +1,20 @@
-import fetch from "node-fetch";
+const fetch = require("node-fetch"); // CommonJS style
 
-export async function handler(event, context) {
-  const url = event.queryStringParameters.url;
+module.exports = async (req, res) => {
+  const url = req.query.url;
   if (!url) {
-    return { statusCode: 400, body: "Falta URL" };
+    res.status(400).send("Missing url");
+    return;
   }
 
   try {
-    const res = await fetch(url);
-    const html = await res.text();
+    const response = await fetch(url);
+    const html = await response.text();
 
-    return {
-      statusCode: 200,
-      headers: {
-        "Content-Type": "text/html",
-      },
-      body: html,
-    };
-  } catch (e) {
-    return { statusCode: 500, body: e.toString() };
+    res.setHeader("Content-Type", "text/html");
+    res.status(200).send(html);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error fetching URL: " + err.message);
   }
-}
+};
