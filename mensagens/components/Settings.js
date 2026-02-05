@@ -3,9 +3,12 @@ function Settings({ user, onClose, chats }) {
         publicId: true,
         showOnline: true,
         readReceipts: true,
-        readReceiptExceptions: {} // { userId: true }
+        readReceiptExceptions: {}, // { userId: true }
+        groupPrivacy: 'everyone', // 'everyone', 'contacts', 'blacklist', 'nobody'
+        groupBlacklist: {} // { userId: true }
     });
     const [showExceptionModal, setShowExceptionModal] = React.useState(false);
+    const [showGroupBlacklistModal, setShowGroupBlacklistModal] = React.useState(false);
 
     React.useEffect(() => {
         window.firebaseDB.ref(`users/${user.id}/settings`).once('value').then(snapshot => {
@@ -30,6 +33,16 @@ function Settings({ user, onClose, chats }) {
             newExceptions[contactId] = true;
         }
         updateSetting('readReceiptExceptions', newExceptions);
+    };
+
+    const toggleGroupBlacklist = (contactId) => {
+        const newBlacklist = { ...settings.groupBlacklist };
+        if (newBlacklist[contactId]) {
+            delete newBlacklist[contactId];
+        } else {
+            newBlacklist[contactId] = true;
+        }
+        updateSetting('groupBlacklist', newBlacklist);
     };
 
     const contacts = chats ? chats.filter(c => c.type !== 'group') : [];
@@ -148,6 +161,38 @@ function Settings({ user, onClose, chats }) {
                                 <div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform ${settings.publicId ? 'translate-x-6' : ''}`}></div>
                             </button>
                         </div>
+
+                        {/* Group Privacy */}
+                        <div className="p-3 bg-gray-50 rounded-lg">
+                            <h4 className="font-medium text-gray-800 mb-2">Quem pode me adicionar a grupos?</h4>
+                            <div className="flex flex-col gap-2">
+                                {[
+                                    { value: 'everyone', label: 'Todos' },
+                                    { value: 'contacts', label: 'Meus Contatos' },
+                                    { value: 'blacklist', label: 'Meus Contatos, exceto...' },
+                                    { value: 'nobody', label: 'Ninguém' }
+                                ].map(option => (
+                                    <label key={option.value} className="flex items-center gap-2 cursor-pointer">
+                                        <input 
+                                            type="radio" 
+                                            name="groupPrivacy"
+                                            checked={settings.groupPrivacy === option.value}
+                                            onChange={() => updateSetting('groupPrivacy', option.value)}
+                                            className="accent-[#00a884]"
+                                        />
+                                        <span className="text-sm text-gray-700">{option.label}</span>
+                                    </label>
+                                ))}
+                            </div>
+                            {settings.groupPrivacy === 'blacklist' && (
+                                <button 
+                                    onClick={() => setShowGroupBlacklistModal(true)}
+                                    className="text-xs text-[#00a884] font-semibold mt-2 hover:underline block"
+                                >
+                                    Selecionar Contatos Bloqueados ({Object.keys(settings.groupBlacklist || {}).length})
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
                 
@@ -155,7 +200,7 @@ function Settings({ user, onClose, chats }) {
                     MensagensHUB v2.1 • Privacidade Protegida
                 </div>
 
-                {/* Exception Modal */}
+                {/* Exception Modal (Read Receipts) */}
                 {showExceptionModal && (
                     <div className="absolute inset-0 bg-white z-20 flex flex-col animate-slide-in-right">
                          <div className="p-4 border-b border-gray-200 flex items-center gap-4 bg-gray-50">
@@ -178,6 +223,33 @@ function Settings({ user, onClose, chats }) {
                                     </div>
                                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${settings.readReceiptExceptions && settings.readReceiptExceptions[contact.id] ? 'bg-red-500 border-red-500' : 'border-gray-300'}`}>
                                         {settings.readReceiptExceptions && settings.readReceiptExceptions[contact.id] && <div className="icon-check text-white text-xs"></div>}
+                                    </div>
+                                </div>
+                            ))}
+                            {contacts.length === 0 && <p className="text-center text-gray-400 mt-10">Nenhum contato privado encontrado.</p>}
+                        </div>
+                    </div>
+                )}
+
+                {/* Group Blacklist Modal */}
+                {showGroupBlacklistModal && (
+                    <div className="absolute inset-0 bg-white z-20 flex flex-col animate-slide-in-right">
+                         <div className="p-4 border-b border-gray-200 flex items-center gap-4 bg-gray-50">
+                            <button onClick={() => setShowGroupBlacklistModal(false)} className="icon-arrow-left text-gray-600"></button>
+                            <div>
+                                <h3 className="font-bold text-gray-800">Bloquear de Grupos</h3>
+                                <p className="text-xs text-gray-500">Selecione quem NÃO pode te adicionar:</p>
+                            </div>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4">
+                            {contacts.map(contact => (
+                                <div key={contact.id} className="flex items-center justify-between p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer" onClick={() => toggleGroupBlacklist(contact.id)}>
+                                    <div className="flex items-center gap-3">
+                                        <img src={contact.avatar} className="w-10 h-10 rounded-full" />
+                                        <span className="font-medium">{contact.name}</span>
+                                    </div>
+                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${settings.groupBlacklist && settings.groupBlacklist[contact.id] ? 'bg-red-500 border-red-500' : 'border-gray-300'}`}>
+                                        {settings.groupBlacklist && settings.groupBlacklist[contact.id] && <div className="icon-check text-white text-xs"></div>}
                                     </div>
                                 </div>
                             ))}
