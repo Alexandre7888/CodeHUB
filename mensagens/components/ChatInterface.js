@@ -15,6 +15,7 @@ function ChatInterface({ user, onLogout }) {
     const [incomingCall, setIncomingCall] = React.useState(null);
     const [callStatus, setCallStatus] = React.useState(null); // 'calling', 'connected', 'ended'
     const [isVideoCall, setIsVideoCall] = React.useState(false);
+    const [activeGroupCall, setActiveGroupCall] = React.useState(false);
     const [peer, setPeer] = React.useState(null);
     const [activeCalls, setActiveCalls] = React.useState({}); // Map of calls for group
     const [remoteStreams, setRemoteStreams] = React.useState({}); // Map of streams
@@ -52,7 +53,7 @@ function ChatInterface({ user, onLogout }) {
     const toggleBackgroundMode = () => {
         if (!backgroundAudioRef.current) {
             // Create a silent audio element
-            const audio = new Audio("data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq");
+            const audio = new Audio("data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq");
             audio.loop = true;
             audio.volume = 0.01; // Almost silent but active
             backgroundAudioRef.current = audio;
@@ -108,6 +109,27 @@ function ChatInterface({ user, onLogout }) {
             userStatusRef.set({ state: 'offline', lastChanged: window.firebase.database.ServerValue.TIMESTAMP });
         };
     }, [user.id]);
+
+    // --- Group Call Status Listener ---
+    React.useEffect(() => {
+        if (!activeChat || activeChat.type !== 'group') return;
+
+        const callStatusRef = db.ref(`groups/${activeChat.id}/callStatus`);
+        
+        const handleStatus = (snap) => {
+            const status = snap.val();
+            if (status && status.state === 'ended' && (Date.now() - status.timestamp < 5000)) {
+                // If call ended recently and I am in it, hang up
+                if (callStatus === 'connected' || callStatus === 'calling') {
+                    endCall(true); 
+                    alert("A chamada foi encerrada por um administrador.");
+                }
+            }
+        };
+
+        callStatusRef.on('value', handleStatus);
+        return () => callStatusRef.off();
+    }, [activeChat, callStatus]);
 
     // --- Global Message Listener (Notifications) ---
     React.useEffect(() => {
@@ -233,6 +255,63 @@ function ChatInterface({ user, onLogout }) {
 
     // --- Call Handlers ---
 
+    // New: Handle incoming signal to join a multi-user call
+    React.useEffect(() => {
+        const signalRef = db.ref(`users/${user.id}/call_signal`);
+        signalRef.on('child_added', snapshot => {
+            const signal = snapshot.val();
+            if (signal && signal.type === 'connect_peer' && signal.targetPeer && callStatus === 'connected') {
+                // We are in a call, and requested to connect to a new peer
+                // Check if already connected
+                if (!activeCalls[signal.targetPeer]) {
+                    console.log("Sinal recebido para conectar com:", signal.targetPeer);
+                    connectToNewPeer(signal.targetPeer, isVideoCall);
+                    // Remove signal
+                    snapshot.ref.remove();
+                }
+            }
+        });
+        return () => signalRef.off();
+    }, [callStatus, activeCalls, isVideoCall]);
+
+    const connectToNewPeer = async (peerId, video) => {
+        try {
+            const stream = localVideoRef.current?.srcObject 
+                || await navigator.mediaDevices.getUserMedia({ audio: true, video: video });
+            
+            const call = peer.call(peerId, stream, { 
+                metadata: { isVideo: video, isGroup: true, inviterId: user.id } 
+            });
+            handleCallStream(call, video);
+            setActiveCalls(prev => ({ ...prev, [peerId]: call }));
+        } catch(e) {
+            console.error("Erro ao conectar novo peer:", e);
+        }
+    };
+
+    const handleAddParticipantToCall = async (newId) => {
+        if (!newId) return;
+        
+        // 1. Call the new person myself
+        await connectToNewPeer(newId, isVideoCall);
+
+        // 2. Tell all CURRENTLY connected peers to call the new person too
+        Object.keys(activeCalls).forEach(connectedPeerId => {
+            db.ref(`users/${connectedPeerId}/call_signal`).push({
+                type: 'connect_peer',
+                targetPeer: newId,
+                timestamp: Date.now()
+            });
+        });
+
+        // 3. Tell the NEW person to call everyone else? 
+        // Actually, if everyone else calls him, it's fine. 
+        // He will receive 'call' events from everyone.
+        
+        alert(`Convidando ${newId} para a chamada...`);
+        setShowAddContact(false); // Reuse this modal state if needed or separate
+    };
+
     const togglePiP = async () => {
         try {
             if (document.pictureInPictureElement) {
@@ -318,7 +397,15 @@ function ChatInterface({ user, onLogout }) {
 
         setCallStatus('connected'); // Immediately show UI
         setIsVideoCall(video);
+        setActiveGroupCall(true);
         
+        // Set Group Call Status to active
+        db.ref(`groups/${activeChat.id}/callStatus`).set({
+            state: 'active',
+            startedBy: user.id,
+            timestamp: Date.now()
+        });
+
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: video });
             if (video && localVideoRef.current) localVideoRef.current.srcObject = stream;
@@ -334,6 +421,18 @@ function ChatInterface({ user, onLogout }) {
         } catch (err) {
             console.error("Erro grupo:", err);
         }
+    };
+
+    const endGroupCallForEveryone = () => {
+        if (!activeChat || activeChat.type !== 'group') return;
+        if (!confirm("Isso encerrará a chamada para TODOS os participantes. Tem certeza?")) return;
+
+        db.ref(`groups/${activeChat.id}/callStatus`).set({
+            state: 'ended',
+            endedBy: user.id,
+            timestamp: Date.now()
+        });
+        endCall();
     };
 
     const handleCallStream = (call, isVideo) => {
@@ -401,6 +500,7 @@ function ChatInterface({ user, onLogout }) {
         setCallStatus(null);
         setIncomingCall(null);
         setIsVideoCall(false);
+        setActiveGroupCall(false);
         setIsCallMinimized(false);
         if (document.pictureInPictureElement) document.exitPictureInPicture();
         
@@ -659,8 +759,25 @@ function ChatInterface({ user, onLogout }) {
             
             {showAddContact && (
                 <div className="absolute inset-0 z-50 bg-black/50 flex items-center justify-center">
-                    <div className="bg-white p-6 rounded-lg w-80 shadow-xl animate-fade-in">
-                        <h3 className="text-lg font-semibold mb-4 text-gray-800">Adicionar / Entrar</h3>
+                    <div className="bg-white p-6 rounded-lg w-80 shadow-xl animate-fade-in flex flex-col max-h-[80vh]">
+                        <h3 className="text-lg font-semibold mb-4 text-gray-800">
+                            {callStatus ? 'Adicionar à Chamada' : 'Adicionar / Entrar'}
+                        </h3>
+                        
+                        {/* Tab or simple switch if in call */}
+                        {callStatus ? (
+                            <div className="flex-1 overflow-y-auto mb-4">
+                                <p className="text-sm text-gray-500 mb-2">Escolha dos seus contatos:</p>
+                                {chats.filter(c => c.type !== 'group').map(c => (
+                                    <div key={c.id} onClick={() => handleAddParticipantToCall(c.id)} className="flex items-center p-2 hover:bg-gray-100 cursor-pointer rounded">
+                                        <img src={c.avatar} className="w-8 h-8 rounded-full mr-2" />
+                                        <span>{c.name}</span>
+                                        <div className="ml-auto icon-plus-circle text-green-500"></div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : null}
+
                         <p className="text-sm text-gray-500 mb-2">Digite ID do Usuário ou Grupo</p>
                         <input 
                             type="text" 
@@ -670,7 +787,13 @@ function ChatInterface({ user, onLogout }) {
                         />
                         <div className="flex justify-end gap-2">
                             <button onClick={() => setShowAddContact(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancelar</button>
-                            <button onClick={() => handleAddContact(document.getElementById('newContactId').value)} className="px-4 py-2 bg-[#00a884] text-white rounded hover:bg-[#008f6f]">Ir</button>
+                            <button onClick={() => {
+                                const val = document.getElementById('newContactId').value;
+                                if (callStatus) handleAddParticipantToCall(val);
+                                else handleAddContact(val);
+                            }} className="px-4 py-2 bg-[#00a884] text-white rounded hover:bg-[#008f6f]">
+                                {callStatus ? 'Convidar' : 'Ir'}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -733,7 +856,7 @@ function ChatInterface({ user, onLogout }) {
                          
                          {/* Header Controls (Minimize/PiP) - Only in Fullscreen */}
                          {!isCallMinimized && !incomingCall && (
-                             <div className="absolute top-8 left-8 flex gap-4">
+                             <div className="absolute top-8 left-8 flex gap-4 z-20">
                                 <button onClick={() => setIsCallMinimized(true)} className="p-3 bg-white/10 rounded-full hover:bg-white/20 text-white" title="Minimizar">
                                     <div className="icon-minimize-2 text-xl"></div>
                                 </button>
@@ -742,6 +865,16 @@ function ChatInterface({ user, onLogout }) {
                                         <div className="icon-monitor-play text-xl"></div>
                                     </button>
                                 )}
+                                <button onClick={() => {
+                                    const id = prompt("Digite o ID do usuário para adicionar à chamada:");
+                                    if(id) handleAddParticipantToCall(id);
+                                }} className="p-3 bg-[#00a884] rounded-full hover:bg-[#008f6f] text-white shadow-lg flex items-center gap-2" title="Adicionar Pessoa">
+                                    <div className="icon-user-plus text-xl"></div>
+                                    <span className="text-sm font-semibold hidden md:inline">Adicionar</span>
+                                </button>
+                                <button onClick={() => setShowAddContact(true)} className="p-3 bg-white/10 rounded-full hover:bg-white/20 text-white" title="Escolher dos Contatos">
+                                    <div className="icon-book-user text-xl"></div>
+                                </button>
                              </div>
                          )}
 
@@ -779,9 +912,18 @@ function ChatInterface({ user, onLogout }) {
                                      </>
                                  )
                              ) : (
-                                 <button onClick={endCall} className={`${isCallMinimized ? 'p-3' : 'p-5'} bg-red-600 rounded-full hover:bg-red-700 shadow-lg`}>
-                                    <div className={`icon-phone-off ${isCallMinimized ? 'text-xl' : 'text-3xl'}`}></div>
-                                 </button>
+                                <div className="flex items-center gap-4">
+                                     <button onClick={() => endCall(false)} className={`${isCallMinimized ? 'p-3' : 'p-5'} bg-red-600 rounded-full hover:bg-red-700 shadow-lg`} title="Sair da Chamada">
+                                        <div className={`icon-phone-off ${isCallMinimized ? 'text-xl' : 'text-3xl'}`}></div>
+                                     </button>
+                                     
+                                     {/* Force End Button for Admins/Permitted Roles */}
+                                     {!isCallMinimized && activeGroupCall && (groupPermissions?.manageCalls || activeChat?.members?.[user.id] === 'admin') && (
+                                        <button onClick={endGroupCallForEveryone} className="p-5 bg-orange-600 rounded-full hover:bg-orange-700 shadow-lg" title="Encerrar para Todos">
+                                            <div className="icon-trash-2 text-3xl"></div>
+                                        </button>
+                                     )}
+                                </div>
                              )}
                          </div>
 
