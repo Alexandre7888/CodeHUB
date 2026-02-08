@@ -13,7 +13,7 @@ function SystemStatus() {
                     <p className="text-sm text-yellow-700">
                         <span className="font-bold">Aviso do Desenvolvedor:</span> As notificações Push já estão funcionando é só instalar o aplicativo, ele está só funcionando em apk (android) mas já vamos colocar para iPhone (ios). 
                         <br/>
-                        <span className="italic text-xs mt-1 block">notificações voltarem agora que a gente percebemos que você tem que instalar o app para funcionar as notificações é só você instalar pelo link <a href="https://code.codehub.ct.ws/mensagens/install.apk" target="_top">baixar para Android</a> </span>
+                        <span className="italic text-xs mt-1 block">notificações voltarem agora que a gente percebemos que você tem que instalar o app para funcionar as notificações é só você instalar pelo link https://code.codehub.ct.ws/mensagens/install.apk <a href="https://code.codehub.ct.ws/mensagens/install.apk" target="_top">baixar para Android</a> </span>
                     </p>
                 </div>
             </div>
