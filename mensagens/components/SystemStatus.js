@@ -1,28 +1,50 @@
-function SystemStatus() {
-    const [visible, setVisible] = React.useState(true);
+// Só mostrar se o usuário não tiver clicado "Não mostrar novamente"
+if (!localStorage.getItem('hidePushAlert')) {
 
-    if (!visible) return null;
+  // Cria o container do alerta
+  const alertDiv = document.createElement('div');
+  alertDiv.id = 'pushAlert';
+  alertDiv.style.position = 'fixed';
+  alertDiv.style.top = '20%';
+  alertDiv.style.left = '50%';
+  alertDiv.style.transform = 'translateX(-50%)';
+  alertDiv.style.background = '#fff';
+  alertDiv.style.border = '2px solid #333';
+  alertDiv.style.borderRadius = '10px';
+  alertDiv.style.padding = '20px';
+  alertDiv.style.width = '300px';
+  alertDiv.style.boxShadow = '0 4px 10px rgba(0,0,0,0.2)';
+  alertDiv.style.zIndex = '9999';
+  alertDiv.style.textAlign = 'center';
 
-    return (
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 m-4 relative shadow-sm rounded-r">
-            <div className="flex">
-                <div className="flex-shrink-0">
-                    <div className="icon-triangle-alert text-yellow-400"></div>
-                </div>
-                <div className="ml-3">
-                    <p className="text-sm text-yellow-700">
-                        <span className="font-bold">Aviso do Desenvolvedor:</span> As notificações Push já estão funcionando é só instalar o aplicativo, ele está só funcionando em apk (android) mas já vamos colocar para iPhone (ios). 
-                        <br/>
-                        <span className="italic text-xs mt-1 block">notificações voltarem agora que a gente percebemos que você tem que instalar o app para funcionar as notificações é só você instalar pelo link https://code.codehub.ct.ws/mensagens/install.apk <a href="https://code.codehub.ct.ws/mensagens/install.apk" target="_top">baixar para Android</a> </span>
-                    </p>
-                </div>
-            </div>
-            <button 
-                onClick={() => setVisible(false)}
-                className="absolute top-2 right-2 text-yellow-500 hover:text-yellow-700"
-            >
-                <div className="icon-x text-sm"></div>
-            </button>
-        </div>
-    );
+  // Conteúdo
+  alertDiv.innerHTML = `
+    <p>Para ativar notificações em segundo plano, você precisa instalar o aplicativo.</p>
+    <button id="cancel">Cancelar</button>
+    <button id="installAPK">Instalar APK (Android)</button>
+    <button id="installIOS">Instalar iOS</button>
+    <br>
+    <button id="dontShow">Não mostrar novamente</button>
+  `;
+
+  // Adiciona ao body
+  document.body.appendChild(alertDiv);
+
+  // Funções dos botões
+  document.getElementById('cancel').onclick = function() {
+    alertDiv.remove();
+  }
+
+  document.getElementById('installAPK').onclick = function() {
+    window.location.href = 'https://code.codehub.ct.ws/mensagens/install.apk';
+  }
+
+  document.getElementById('installIOS').onclick = function() {
+    alert('Ainda não está disponível para iOS.');
+  }
+
+  document.getElementById('dontShow').onclick = function() {
+    localStorage.setItem('hidePushAlert', 'true');
+    alertDiv.remove();
+  }
 }
