@@ -3,6 +3,7 @@ class NotificationManager {
         this.permission = null;
         this.audio = new Audio('https://resource.trickle.so/upload/users/1384073373539827712/audios/1738676900000-notification.mp3'); // Generic pleasant sound
         this.checkPermission();
+        this.ringtoneInterval = null;
     }
 
     async checkPermission() {
@@ -19,8 +20,6 @@ class NotificationManager {
     }
 
     playIncomingMessageSound() {
-        // Simple beep or use a hosted resource if available. 
-        // Using a data URI for a soft 'pop' sound to ensure it works without external deps issues
         // Short beep
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = ctx.createOscillator();
@@ -65,25 +64,56 @@ class NotificationManager {
 
     show(title, body, icon = null, tag = null) {
         if (this.permission === "granted") {
-            // Play sound
-            this.playIncomingMessageSound();
+            // Check visibility state to determine if sound should play loudly or just alert
+            const isHidden = document.hidden;
 
-            // Show system notification
-            try {
-                const notif = new Notification(title, {
-                    body: body,
-                    icon: icon || 'https://resource.trickle.so/coding_trickle/trickle_avatar.png',
-                    tag: tag, // Tag lets us replace existing notifications (e.g. "5 new messages")
-                    silent: true // We play our own sound
-                });
-                
-                notif.onclick = function() {
-                    window.focus();
-                    notif.close();
-                };
-            } catch (e) {
-                console.error("Erro ao exibir notificação:", e);
+            if (isHidden) {
+                this.playIncomingMessageSound();
+            } else {
+                 this.playIncomingMessageSound();
             }
+
+            // Trigger Real Notification via Service Worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(registration => {
+                    try {
+                        registration.showNotification(title, {
+                            body: body,
+                            icon: icon || 'https://resource.trickle.so/coding_trickle/trickle_avatar.png',
+                            badge: 'https://resource.trickle.so/coding_trickle/trickle_avatar.png',
+                            vibrate: [200, 100, 200],
+                            tag: tag || 'chat-msg',
+                            renotify: true,
+                            data: {
+                                url: window.location.href
+                            }
+                        });
+                    } catch (e) {
+                        console.error("Erro no SW Notification:", e);
+                        // Fallback
+                        this.fallbackNotification(title, body, icon, tag);
+                    }
+                });
+            } else {
+                this.fallbackNotification(title, body, icon, tag);
+            }
+        }
+    }
+
+    fallbackNotification(title, body, icon, tag) {
+        try {
+            const notif = new Notification(title, {
+                body: body,
+                icon: icon || 'https://resource.trickle.so/coding_trickle/trickle_avatar.png',
+                tag: tag,
+                silent: false
+            });
+            notif.onclick = function() {
+                window.focus();
+                notif.close();
+            };
+        } catch (e) {
+            console.error("Erro no Fallback Notification:", e);
         }
     }
 }
