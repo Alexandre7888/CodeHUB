@@ -7,12 +7,12 @@
   "theme_color": "#00a884",
   "icons": [
     {
-      "src": "https://resource.trickle.so/coding_trickle/trickle_avatar.png",
+      "src": "icon.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "https://resource.trickle.so/coding_trickle/trickle_avatar.png",
+      "src": "icon.png",
       "sizes": "512x512",
       "type": "image/png"
     }
