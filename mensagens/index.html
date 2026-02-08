@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MensagensHUB</title>
-    <meta name="description" content="Aplicativo de mensagens real com CodeHUB">
+    <meta name="description" content="Aplicativo de mensagens real com CodeHUB e Firebase">
+    <link rel="manifest" href="manifest.json">
 
     <!-- React Dependencies -->
     <script src="https://resource.trickle.so/vendor_lib/unpkg/react@18/umd/react.production.min.js"></script>
@@ -75,11 +76,28 @@
     <script type="text/babel" src="utils/helpers.js"></script>
     <script type="text/babel" src="components/AudioRecorder.js"></script>
     <script type="text/babel" src="components/Settings.js"></script>
+    <script type="text/babel" src="utils/scriptEngine.js"></script>
+    <script type="text/babel" src="components/RuleEditor.js"></script>
     <script type="text/babel" src="components/GroupInfo.js"></script>
+    <script type="text/babel" src="components/SystemStatus.js"></script>
+    <script type="text/babel" src="components/JoinRequestModal.js"></script>
     <script type="text/babel" src="components/Login.js"></script>
     <script type="text/babel" src="components/ChatInterface.js"></script>
     <script type="text/babel" src="app.js"></script>
 
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                .then(registration => {
+                    console.log('SW registrado com sucesso:', registration.scope);
+                })
+                .catch(err => {
+                    console.log('Falha ao registrar SW:', err);
+                });
+            });
+        }
+    </script>
 </body>
 
 </html>

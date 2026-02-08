@@ -38,6 +38,7 @@ class ErrorBoundary extends React.Component {
 function App() {
   const [user, setUser] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
+  const [joinGroupId, setJoinGroupId] = React.useState(null);
 
   React.useEffect(() => {
     // Check localStorage for existing session
@@ -45,6 +46,16 @@ function App() {
     if (storedUser) {
         setUser(JSON.parse(storedUser));
     }
+    
+    // Check URL for join link
+    const params = new URLSearchParams(window.location.search);
+    const joinId = params.get('join');
+    if (joinId) {
+        setJoinGroupId(joinId);
+        // Clean URL without refresh
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     setLoading(false);
   }, []);
 
@@ -71,7 +82,12 @@ function App() {
         
         <div className="relative z-10 h-screen w-full md:w-[1400px] md:h-[95vh] md:m-auto md:top-[2.5vh] shadow-lg overflow-hidden bg-white">
             {user ? (
-                <ChatInterface user={user} onLogout={handleLogout} />
+                <ChatInterface 
+                    user={user} 
+                    onLogout={handleLogout} 
+                    pendingJoinGroupId={joinGroupId}
+                    onClearJoin={() => setJoinGroupId(null)}
+                />
             ) : (
                 <Login onLogin={handleLogin} />
             )}
