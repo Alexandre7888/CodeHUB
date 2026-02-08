@@ -1,6 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Continuar Login com Usuário</title>
+<style>
+    :root {
+      --primary-color: #4361ee;
+      --secondary-color: #3f37c9;
+      --accent-color: #4895ef;
+      --danger-color: #f72585;
+      --success-color: #4cc9f0;
+      --light-color: #f8f9fa;
+      --dark-color: #212529;
+      --gray-color: #6c757d;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .auth-container {
+      width: 100%;
+      max-width: 420px;
+      background-color: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .auth-header {
+      background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+      color: white;
+      padding: 25px;
+      text-align: center;
+    }
+
+    .auth-header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .auth-header p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .auth-content {
+      padding: 30px;
+      text-align: center;
+    }
+
+    #status {
+      margin: 20px 0;
+      font-weight: bold;
+      color: var(--dark-color);
+      font-size: 16px;
+    }
+
+    #username {
+      font-size: 1.2rem;
+      margin: 15px 0;
+      color: var(--dark-color);
+    }
+
+    #continueBtn {
+      width: 100%;
+      padding: 14px;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 20px;
+    }
+
+    #continueBtn:hover {
+      background-color: var(--secondary-color);
+      transform: translateY(-2px);
+    }
+
+    #continueBtn:disabled {
+      background-color: var(--gray-color);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .error-message {
+      color: var(--danger-color);
+      font-size: 13px;
+      margin-top: 15px;
+    }
+
+    /* Responsividade */
+    @media (max-width: 480px) {
+      .auth-container {
+        border-radius: 12px;
+      }
+
+      .auth-header {
+        padding: 20px;
+      }
+
+      .auth-content {
+        padding: 20px;
+      }
+    }
+</style>
+</head>
+<body>
+
+<div class="auth-container">
+  <div class="auth-header">
+    <h1>Continuar Login</h1>
+    <p>Complete o processo de autenticação</p>
+  </div>
+
+  <div class="auth-content">
+    <p id="status">Carregando informações...</p>
+    <p id="username"></p>
+    <button id="continueBtn">Continuar</button>
+    <p id="error" class="error-message"></p>
+  </div>
+</div>
+
+<!-- Adicione o SDK do EmailJS -->
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+  import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+  import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
@@ -9,27 +160,171 @@
     projectId: "html-15e80",
     storageBucket: "html-15e80.appspot.com",
     messagingSenderId: "1068148640439",
-    appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32"
+    appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32",
+    measurementId: "G-V57KRZ02HJ"
   };
+
+  // Inicialize o EmailJS com seu User ID
+  (function() {
+    emailjs.init("YOUR_EMAILJS_USER_ID"); // Substitua pelo seu User ID do EmailJS
+  })();
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
+  const db = getDatabase(app);
 
+  const statusEl = document.getElementById('status');
+  const usernameEl = document.getElementById('username');
+  const continueBtn = document.getElementById('continueBtn');
+  const errorEl = document.getElementById('error');
+
+  // Pega token da URL
   const urlParams = new URLSearchParams(window.location.search);
   const appToken = urlParams.get('token');
 
-  if (!appToken) {
-    console.error('Token is missing!');
-    window.location.href = "auth.html";
+  function disableContinue() {
+    continueBtn.disabled = true;
+    errorEl.textContent = 'Não é possível continuar no momento.';
   }
 
-  onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      // Redirect to auth.html with token when user isn't logged in
-      window.location.href = `auth.html?token=${appToken}`;
-    } else {
-      // Ensure the token redirects back to continuar-conta.html
-      window.location.href = `continuar-conta.html?token=${appToken}`;
+  async function sendConfirmationEmail(userName, userEmail) {
+    if (!userEmail) {
+      console.log('Usuário não tem e-mail cadastrado, não será enviado e-mail de confirmação');
+      return;
     }
-  });
+
+    try {
+      const templateParams = {
+        to_name: userName,
+        to_email: userEmail,
+        date: new Date().toLocaleDateString('pt-BR'),
+        app_name: 'Sistema de Autenticação'
+      };
+
+      // Envie o email usando EmailJS
+      await emailjs.send(
+        'service_op9fbwk', // ID do serviço EmailJS
+        'template_sd9wuh9', // ID do template EmailJS
+        templateParams
+      );
+
+      console.log('Email de confirmação enviado com sucesso para:', userEmail);
+    } catch (error) {
+      console.error('Erro ao enviar email de confirmação:', error);
+    }
+  }
+
+  if (!appToken) {
+    statusEl.textContent = 'Token da aplicação não informado na URL.';
+    disableContinue();
+  } else {
+    const tokenRef = ref(db, `tokens/${appToken}`);
+
+    get(tokenRef).then(snapshot => {
+      if (!snapshot.exists()) {
+        statusEl.textContent = 'Token da aplicação inválido.';
+        disableContinue();
+        return;
+      }
+
+      const tokenData = snapshot.val();
+      const redirectURL = tokenData.redirectURL;
+
+      if (!redirectURL) {
+        statusEl.textContent = 'Link de redirecionamento não encontrado.';
+        disableContinue();
+        return;
+      }
+
+      statusEl.textContent = 'Buscando informações do usuário...';
+
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          // Verifica se o usuário tem e-mail (não anônimo)
+          const hasEmail = user.email && !user.isAnonymous;
+          const nome = hasEmail ? user.email.split('@')[0] : `Usuário-${user.uid.substring(0,6)}`;
+          const userEmail = hasEmail ? user.email : null;
+          
+          usernameEl.textContent = `Olá, ${nome}!`;
+          continueBtn.style.display = 'block';
+          statusEl.textContent = 'Pronto para continuar';
+          errorEl.textContent = '';
+
+          continueBtn.onclick = async () => {
+            continueBtn.disabled = true;
+            statusEl.textContent = 'Preparando sua sessão...';
+
+            try {
+              const userKeyRef = ref(db, `userKeys/${user.uid}/${appToken}`);
+              let userKeySnap = await get(userKeyRef);
+              let userKey;
+
+              if (userKeySnap.exists()) {
+                userKey = userKeySnap.val();
+              } else {
+                userKey = user.uid + '-' + Date.now() + '-' + Math.random().toString(36).slice(2,8);
+                await set(userKeyRef, userKey);
+              }
+
+              const userKeyDataRef = ref(db, `userKeysData/${userKey}`);
+              await set(userKeyDataRef, {
+                nome,
+                uid: user.uid,
+                email: userEmail,
+                criadoEm: Date.now()
+              });
+
+              // Envia email de confirmação apenas se o usuário tiver e-mail
+              if (userEmail) {
+                statusEl.textContent = 'Enviando confirmação por e-mail...';
+                await sendConfirmationEmail(nome, userEmail);
+              }
+
+              statusEl.textContent = 'Redirecionando...';
+              usernameEl.textContent = `Bem-vindo, ${nome}!`;
+
+              // Redireciona com userKey E userName na URL
+              const sep = redirectURL.includes('?') ? '&' : '?';
+              const urlFinal = redirectURL + sep + 
+                `userKey=${encodeURIComponent(userKey)}` + 
+                `&userName=${encodeURIComponent(nome)}`;
+              window.location.href = urlFinal;
+
+            } catch (err) {
+              statusEl.textContent = 'Erro ao preparar sua sessão';
+              errorEl.textContent = err.message;
+              continueBtn.disabled = false;
+            }
+          };
+
+        } else {
+          usernameEl.textContent = 'Nenhum usuário logado';
+          continueBtn.style.display = 'block';
+          statusEl.textContent = 'Clique para continuar';
+          errorEl.textContent = '';
+
+          continueBtn.onclick = async () => {
+            continueBtn.disabled = true;
+            statusEl.textContent = 'Criando sessão temporária...';
+            try {
+              await signInAnonymously(auth);
+              statusEl.textContent = 'Sessão criada! Atualizando...';
+              setTimeout(() => location.reload(), 1500);
+            } catch (err) {
+              statusEl.textContent = 'Erro ao criar sessão';
+              errorEl.textContent = err.message;
+              continueBtn.disabled = false;
+            }
+          };
+        }
+      });
+    }).catch(error => {
+      statusEl.textContent = 'Erro ao buscar informações';
+      errorEl.textContent = error.message;
+      disableContinue();
+    });
+  }
 </script>
+
+</body>
+</html>
