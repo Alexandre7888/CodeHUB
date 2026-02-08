@@ -54,7 +54,7 @@ function RuleEditor({ activeChat, onClose }) {
                     <button onClick={onClose}><div className="icon-arrow-left"></div></button>
                     <h2 className="font-mono font-bold text-green-400">{'<Editor de Regras />'}</h2>
                 </div>
-                <button onClick={() => window.open('https://github.com/trickle/docs', '_blank')} className="text-xs bg-gray-700 px-2 py-1 rounded hover:bg-gray-600">
+                <button onClick={() => window.open('https://github.com/Alexandre7888/CodeHUB/blob/main/mensagens/api.md', '_blank')} className="text-xs bg-gray-700 px-2 py-1 rounded hover:bg-gray-600">
                     Docs da API
                 </button>
             </div>
