@@ -195,6 +195,14 @@
       display: block;
     }
 
+    .success-message {
+      color: var(--success-color);
+      font-size: 14px;
+      margin-top: 15px;
+      text-align: center;
+      font-weight: 600;
+    }
+
     .footer-text {
       text-align: center;
       margin-top: 20px;
@@ -208,22 +216,20 @@
       font-weight: 600;
     }
 
-    /* Ícones */
     .icon {
       width: 18px;
       height: 18px;
     }
 
-    /* Responsividade */
     @media (max-width: 480px) {
       .auth-container {
         border-radius: 12px;
       }
-      
+
       .auth-header {
         padding: 20px;
       }
-      
+
       .tab-content {
         padding: 20px;
       }
@@ -236,12 +242,12 @@
       <h1>Bem-vindo ao CodeHub</h1>
       <p>Seu editor de código online favorito</p>
     </div>
-    
+
     <div class="tabs">
       <div class="tab active" onclick="switchTab('login')">Entrar</div>
       <div class="tab" onclick="switchTab('register')">Criar Conta</div>
     </div>
-    
+
     <div id="login-tab" class="tab-content active">
       <form id="login-form">
         <div class="form-group">
@@ -249,22 +255,22 @@
           <input type="email" id="login-email" class="form-control" placeholder="digite seu email" required>
           <div id="login-email-error" class="error-message"></div>
         </div>
-        
+
         <div class="form-group">
           <label for="login-password">Senha</label>
           <input type="password" id="login-password" class="form-control" placeholder="digite sua senha" required>
           <div id="login-password-error" class="error-message"></div>
         </div>
-        
+
         <button type="button" class="btn btn-primary" onclick="login()">
           <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
           </svg>
           Entrar
         </button>
-        
+
         <div class="divider">ou</div>
-        
+
         <button type="button" class="btn btn-google" onclick="loginWithGoogle()">
           <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -274,13 +280,14 @@
           </svg>
           Continuar com Google
         </button>
-        
+
         <div class="footer-text">
           Não tem uma conta? <a href="#" onclick="switchTab('register'); return false;">Cadastre-se</a>
         </div>
+        <div id="login-success" class="success-message"></div>
       </form>
     </div>
-    
+
     <div id="register-tab" class="tab-content">
       <form id="register-form">
         <div class="form-group">
@@ -288,41 +295,41 @@
           <input type="text" id="register-username" class="form-control" placeholder="ex: dev123" required>
           <div id="register-username-error" class="error-message"></div>
         </div>
-        
+
         <div class="form-group">
           <label for="register-email">Email</label>
           <input type="email" id="register-email" class="form-control" placeholder="digite seu email" required>
           <div id="register-email-error" class="error-message"></div>
         </div>
-        
+
         <div class="form-group">
           <label for="register-password">Senha</label>
           <input type="password" id="register-password" class="form-control" placeholder="crie uma senha (mín. 6 caracteres)" required>
           <div id="register-password-error" class="error-message"></div>
         </div>
-        
+
         <div class="form-group">
           <label for="register-confirm-password">Confirmar Senha</label>
           <input type="password" id="register-confirm-password" class="form-control" placeholder="confirme sua senha" required>
           <div id="register-confirm-error" class="error-message"></div>
         </div>
-        
+
         <button type="button" class="btn btn-primary" onclick="register()">
           <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
           </svg>
           Criar Conta
         </button>
-        
+
         <div class="footer-text">
           Já tem uma conta? <a href="#" onclick="switchTab('login'); return false;">Faça login</a>
         </div>
+        <div id="register-success" class="success-message"></div>
       </form>
     </div>
   </div>
 
   <script type="module">
-    // Configuração do Firebase (use sua configuração)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
     import { 
       getAuth, 
@@ -344,38 +351,42 @@
       measurementId: "G-V57KRZ02HJ"
     };
 
-    // Inicializar Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const database = getDatabase(app);
     const provider = new GoogleAuthProvider();
 
-    // Funções globais
+    // Pega token da URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const appToken = urlParams.get('token');
+
     window.switchTab = (tabId) => {
-      // Alternar abas
       document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-      
+
       document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`).classList.add('active');
       document.getElementById(`${tabId}-tab`).classList.add('active');
-      
-      // Limpar erros
+
       document.querySelectorAll('.error-message').forEach(el => el.classList.remove('show'));
+      document.querySelectorAll('.success-message').forEach(el => el.textContent = '');
     };
 
-    // Função para exibir erro
     function showError(fieldId, message) {
       const errorElement = document.getElementById(`${fieldId}-error`);
       errorElement.textContent = message;
       errorElement.classList.add('show');
     }
 
-    // Função para limpar erros
     function clearErrors() {
       document.querySelectorAll('.error-message').forEach(el => {
         el.textContent = '';
         el.classList.remove('show');
       });
+    }
+
+    function showSuccess(formType, message) {
+      const successElement = document.getElementById(`${formType}-success`);
+      successElement.textContent = message;
     }
 
     // Função de registro
@@ -389,12 +400,17 @@
 
       // Validações
       if (!username) {
-        showError('register-username', 'Por favor, informe um nome de usuário');
+        showError('register-username', 'Nome de usuário é obrigatório');
         return;
       }
       
       if (!email) {
-        showError('register-email', 'Por favor, informe um email');
+        showError('register-email', 'Email é obrigatório');
+        return;
+      }
+      
+      if (!password) {
+        showError('register-password', 'Senha é obrigatória');
         return;
       }
       
@@ -409,27 +425,48 @@
       }
 
       try {
+        // Criar usuário no Firebase Authentication
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
-        
-        // Salvar informações adicionais do usuário
-        await set(ref(database, `users/${user.uid}`), {
+
+        // Salvar dados adicionais no Realtime Database
+        await set(ref(database, 'users/' + user.uid), {
           username: username,
           email: email,
-          createdAt: new Date().toISOString()
+          createdAt: Date.now(),
+          lastLogin: Date.now()
         });
 
-        // Salvar no localStorage
-        localStorage.setItem('user', JSON.stringify({
-          uid: user.uid,
-          username: username,
-          email: email
-        }));
+        showSuccess('register', 'Conta criada com sucesso! Redirecionando...');
 
-        // Redirecionar para o painel
-        window.location.href = 'index.html';
+        // Redirecionar para continuar-conta.html com o token após registro
+        if (appToken) {
+          setTimeout(() => {
+            window.location.href = `API/continuar-conta.html?token=${appToken}`;
+          }, 2000);
+        } else {
+          setTimeout(() => {
+            window.location.href = 'API/continuar-conta.html';
+          }, 2000);
+        }
+
       } catch (error) {
-        handleAuthError(error, 'register');
+        console.error('Erro no registro:', error);
+        
+        // Tratamento de erros específicos do Firebase
+        switch(error.code) {
+          case 'auth/email-already-in-use':
+            showError('register-email', 'Este email já está em uso');
+            break;
+          case 'auth/invalid-email':
+            showError('register-email', 'Email inválido');
+            break;
+          case 'auth/weak-password':
+            showError('register-password', 'Senha muito fraca');
+            break;
+          default:
+            showError('register-email', 'Erro ao criar conta. Tente novamente.');
+        }
       }
     };
 
@@ -441,34 +478,54 @@
       const password = document.getElementById('login-password').value;
 
       if (!email) {
-        showError('login-email', 'Por favor, informe seu email');
+        showError('login-email', 'Email é obrigatório');
         return;
       }
       
       if (!password) {
-        showError('login-password', 'Por favor, informe sua senha');
+        showError('login-password', 'Senha é obrigatória');
         return;
       }
 
       try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
-        
-        // Buscar informações adicionais do usuário
-        const userSnapshot = await get(ref(database, `users/${user.uid}`));
-        const userData = userSnapshot.val();
 
-        // Salvar no localStorage
-        localStorage.setItem('user', JSON.stringify({
-          uid: user.uid,
-          username: userData.username,
-          email: user.email
-        }));
+        // Atualizar último login no database
+        await set(ref(database, 'users/' + user.uid + '/lastLogin'), Date.now());
 
-        // Redirecionar para o painel
-        window.location.href = 'index.html';
+        showSuccess('login', 'Login realizado com sucesso! Redirecionando...');
+
+        // Redirecionar para continuar-conta.html com o token após login
+        if (appToken) {
+          setTimeout(() => {
+            window.location.href = `API/continuar-conta.html?token=${appToken}`;
+          }, 1500);
+        } else {
+          setTimeout(() => {
+            window.location.href = 'API/continuar-conta.html';
+          }, 1500);
+        }
+
       } catch (error) {
-        handleAuthError(error, 'login');
+        console.error('Erro no login:', error);
+        
+        switch(error.code) {
+          case 'auth/user-not-found':
+            showError('login-email', 'Usuário não encontrado');
+            break;
+          case 'auth/wrong-password':
+            showError('login-password', 'Senha incorreta');
+            break;
+          case 'auth/invalid-email':
+            showError('login-email', 'Email inválido');
+            break;
+          case 'auth/user-disabled':
+            showError('login-email', 'Esta conta foi desativada');
+            break;
+          default:
+            showError('login-email', 'Erro ao fazer login. Verifique suas credenciais.');
+        }
       }
     };
 
@@ -477,61 +534,42 @@
       try {
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
-        
-        // Salvar informações do usuário
-        await set(ref(database, `users/${user.uid}`), {
+
+        // Salvar/atualizar dados do usuário no database
+        await set(ref(database, 'users/' + user.uid), {
           username: user.displayName || user.email.split('@')[0],
           email: user.email,
-          createdAt: new Date().toISOString(),
-          isGoogleAccount: true
+          createdAt: Date.now(),
+          lastLogin: Date.now(),
+          provider: 'google'
         });
 
-        localStorage.setItem('user', JSON.stringify({
-          uid: user.uid,
-          username: user.displayName || user.email.split('@')[0],
-          email: user.email
-        }));
+        showSuccess('login', 'Login com Google realizado! Redirecionando...');
 
-        window.location.href = 'index.html';
+        // Redirecionar para continuar-conta.html com o token
+        if (appToken) {
+          setTimeout(() => {
+            window.location.href = `API/continuar-conta.html?token=${appToken}`;
+          }, 1500);
+        } else {
+          setTimeout(() => {
+            window.location.href = 'API/continuar-conta.html';
+          }, 1500);
+        }
+
       } catch (error) {
-        handleAuthError(error, 'login');
+        console.error('Erro no login com Google:', error);
+        showError('login-email', 'Erro ao fazer login com Google');
       }
     };
 
-    // Tratamento de erros
-    function handleAuthError(error, formType) {
-      let errorMessage = 'Ocorreu um erro. Tente novamente.';
-      
-      switch(error.code) {
-        case 'auth/email-already-in-use':
-          errorMessage = 'Este email já está em uso.';
-          showError(`${formType}-email`, errorMessage);
-          break;
-        case 'auth/invalid-email':
-          errorMessage = 'Email inválido.';
-          showError(`${formType}-email`, errorMessage);
-          break;
-        case 'auth/weak-password':
-          errorMessage = 'Senha muito fraca (mínimo 6 caracteres).';
-          showError(`${formType}-password`, errorMessage);
-          break;
-        case 'auth/user-not-found':
-          errorMessage = 'Usuário não encontrado.';
-          showError(`${formType}-email`, errorMessage);
-          break;
-        case 'auth/wrong-password':
-          errorMessage = 'Senha incorreta.';
-          showError(`${formType}-password`, errorMessage);
-          break;
-        default:
-          showError(`${formType}-email`, errorMessage);
-      }
-    }
-
     // Verificar se o usuário já está logado
     auth.onAuthStateChanged((user) => {
-      if (user) {
-        window.location.href = 'index.html';
+      if (user && appToken) {
+        // Se já estiver logado e tiver token, redirecionar automaticamente
+        setTimeout(() => {
+          window.location.href = `API/continuar-conta.html?token=${appToken}`;
+        }, 1000);
       }
     });
   </script>
