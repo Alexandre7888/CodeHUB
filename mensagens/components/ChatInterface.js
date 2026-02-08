@@ -1,15 +1,43 @@
-function ChatInterface({ user, onLogout }) {
+function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
     const [activeChat, setActiveChat] = React.useState(null);
     const [messageInput, setMessageInput] = React.useState("");
     const [chats, setChats] = React.useState([]); // Contacts
     const [messages, setMessages] = React.useState([]);
     const [showAudioRecorder, setShowAudioRecorder] = React.useState(false);
+    
+    // Modal States with History Management
     const [showAddContact, setShowAddContact] = React.useState(false);
     const [showGroupInfo, setShowGroupInfo] = React.useState(false);
     const [showSettings, setShowSettings] = React.useState(false);
     
     // Permissions (Group)
     const [groupPermissions, setGroupPermissions] = React.useState(null);
+
+    // --- Navigation History Fix ---
+    React.useEffect(() => {
+        const handlePopState = (event) => {
+            // If any modal is open, close it and prevent browser back
+            if (showSettings || showGroupInfo || showAddContact || activeChat) {
+                if (showSettings) setShowSettings(false);
+                else if (showGroupInfo) setShowGroupInfo(false);
+                else if (showAddContact) setShowAddContact(false);
+                else if (activeChat) setActiveChat(null);
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [showSettings, showGroupInfo, showAddContact, activeChat]);
+
+    const pushHistoryState = (view) => {
+        window.history.pushState({ view }, '', window.location.pathname);
+    };
+
+    // Helper wrappers to set state AND push history
+    const openSettings = () => { pushHistoryState('settings'); setShowSettings(true); };
+    const openGroupInfo = () => { pushHistoryState('groupInfo'); setShowGroupInfo(true); };
+    const openAddContact = () => { pushHistoryState('addContact'); setShowAddContact(true); };
+    const openChat = (chat) => { pushHistoryState('chat'); setActiveChat(chat); };
 
     // Call States
     const [incomingCall, setIncomingCall] = React.useState(null);
@@ -111,25 +139,42 @@ function ChatInterface({ user, onLogout }) {
     }, [user.id]);
 
     // --- Group Call Status Listener ---
+    const [ongoingGroupCall, setOngoingGroupCall] = React.useState(null);
+
     React.useEffect(() => {
-        if (!activeChat || activeChat.type !== 'group') return;
+        if (!activeChat || activeChat.type !== 'group') {
+            setOngoingGroupCall(null);
+            return;
+        }
 
         const callStatusRef = db.ref(`groups/${activeChat.id}/callStatus`);
         
         const handleStatus = (snap) => {
             const status = snap.val();
-            if (status && status.state === 'ended' && (Date.now() - status.timestamp < 5000)) {
-                // If call ended recently and I am in it, hang up
-                if (callStatus === 'connected' || callStatus === 'calling') {
-                    endCall(true); 
-                    alert("A chamada foi encerrada por um administrador.");
+            if (status) {
+                // Check if active
+                if (status.state === 'active') {
+                    // Check if I am already in it?
+                    if (!activeGroupCall) {
+                        setOngoingGroupCall(status);
+                    } else {
+                        setOngoingGroupCall(null);
+                    }
+                } else if (status.state === 'ended') {
+                    setOngoingGroupCall(null);
+                    if ((Date.now() - status.timestamp < 5000) && (callStatus === 'connected' || callStatus === 'calling')) {
+                        endCall(true); 
+                        alert("A chamada foi encerrada por um administrador.");
+                    }
                 }
+            } else {
+                setOngoingGroupCall(null);
             }
         };
 
         callStatusRef.on('value', handleStatus);
         return () => callStatusRef.off();
-    }, [activeChat, callStatus]);
+    }, [activeChat, callStatus, activeGroupCall]);
 
     // --- Global Message Listener (Notifications) ---
     React.useEffect(() => {
@@ -251,6 +296,13 @@ function ChatInterface({ user, onLogout }) {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    // --- Join Request Handling ---
+    const handleJoinSuccess = (groupData) => {
+        alert(`Você entrou no grupo ${groupData.name}!`);
+        setActiveChat({ ...groupData, id: pendingJoinGroupId, type: 'group' });
+        onClearJoin();
     };
 
     // --- Call Handlers ---
@@ -382,6 +434,12 @@ function ChatInterface({ user, onLogout }) {
     };
 
     const startGroupCall = async (video) => {
+        // Permission Check
+        if (groupPermissions) {
+            if (video && !groupPermissions.sendVideo) { alert("Vídeo chamadas desativadas neste grupo."); return; }
+            if (!video && !groupPermissions.sendAudio) { alert("Chamadas de áudio desativadas neste grupo."); return; }
+        }
+
         // Fetch all group members
         const groupRef = db.ref(`groups/${activeChat.id}/members`);
         const snapshot = await groupRef.once('value');
@@ -398,6 +456,7 @@ function ChatInterface({ user, onLogout }) {
         setCallStatus('connected'); // Immediately show UI
         setIsVideoCall(video);
         setActiveGroupCall(true);
+        setOngoingGroupCall(null); // Clear banner
         
         // Set Group Call Status to active
         db.ref(`groups/${activeChat.id}/callStatus`).set({
@@ -420,6 +479,45 @@ function ChatInterface({ user, onLogout }) {
 
         } catch (err) {
             console.error("Erro grupo:", err);
+            endCall();
+            alert("Erro ao acessar dispositivos.");
+        }
+    };
+
+    const joinGroupCall = async () => {
+        if (!ongoingGroupCall) return;
+        
+        const video = false; // Default to audio when joining, user can toggle later (if we implement toggle)
+        setIsVideoCall(video);
+        setCallStatus('connected');
+        setActiveGroupCall(true);
+        setOngoingGroupCall(null);
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: video });
+            if (video && localVideoRef.current) localVideoRef.current.srcObject = stream;
+            addToMix(stream);
+
+            // Signal to everyone in the group that I am joining
+            // We can iterate members again or just rely on them calling me?
+            // Better: I call the person who STARTED it, and maybe others?
+            // Mesh strategy: I need to connect to everyone. 
+            // Let's call everyone in the group.
+            
+            const groupRef = db.ref(`groups/${activeChat.id}/members`);
+            const snapshot = await groupRef.once('value');
+            const members = snapshot.val();
+            if (members) {
+                 const memberIds = Object.keys(members).filter(id => id !== user.id);
+                 memberIds.forEach(id => {
+                    const call = peer.call(id, stream, { metadata: { isVideo: video, isGroup: true, groupId: activeChat.id } });
+                    handleCallStream(call, video);
+                    setActiveCalls(prev => ({ ...prev, [id]: call }));
+                });
+            }
+
+        } catch (e) {
+            console.error("Erro ao entrar:", e);
         }
     };
 
@@ -648,6 +746,44 @@ function ChatInterface({ user, onLogout }) {
              setMessages(prev => prev.map(m => m.key === snapshot.key ? { ...val, key: snapshot.key } : m));
         });
 
+        // --- SCRIPT ENGINE EXECUTION ---
+        // Listen for NEW messages to run scripts (Only for Group Admins or everyone? 
+        // Usually bots run on server, but here we run on client. 
+        // To prevent duplicate execution, let's say only the Current User runs scripts 
+        // IF they are an Admin, OR we rely on everyone running it but only one effect taking place?
+        // Simpler: Each client runs scripts. Scripts like 'deleteMessage' will work if user has permission.
+        if (activeChat.type === 'group') {
+            const scriptsRef = db.ref(`groups/${activeChat.id}/scripts`);
+            scriptsRef.once('value').then(scriptsSnap => {
+                const scripts = scriptsSnap.val();
+                if (scripts) {
+                    messagesRef.limitToLast(1).on('child_added', (snapshot) => {
+                        const msg = snapshot.val();
+                        // Run only for new messages (timestamp check)
+                        if (Date.now() - msg.timestamp < 2000) {
+                            const engine = new window.ScriptEngine(activeChat.id, {
+                                deleteMessage: (msgId) => db.ref(`groups/${activeChat.id}/messages/${msgId}`).remove(),
+                                sendMessage: (text) => handleSendMessage(text, 'text'), // Bots speak as the user running them in this architecture
+                                kickMember: (uid) => db.ref(`groups/${activeChat.id}/members/${uid}`).remove(),
+                                alert: (txt) => alert(`[BOT]: ${txt}`)
+                            });
+                            
+                            // Get Member Info
+                            const senderId = msg.senderId;
+                            // We need member role. Simplified here:
+                            const memberContext = { id: senderId, name: msg.senderName };
+
+                            Object.values(scripts).forEach(script => {
+                                if (script.active) {
+                                    engine.execute(script.code, { message: { ...msg, id: snapshot.key }, member: memberContext });
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
         return () => {
             messagesRef.off();
             setMessages([]);
@@ -754,6 +890,21 @@ function ChatInterface({ user, onLogout }) {
     return (
         <div className="flex h-screen bg-gray-100 overflow-hidden relative">
             
+            {/* System Status Banner */}
+            {user && <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[60] w-full max-w-lg pointer-events-auto">
+                 <SystemStatus />
+            </div>}
+
+            {/* Join Request Modal */}
+            {pendingJoinGroupId && (
+                <JoinRequestModal 
+                    groupId={pendingJoinGroupId} 
+                    user={user} 
+                    onClose={onClearJoin}
+                    onJoinSuccess={handleJoinSuccess}
+                />
+            )}
+
             {/* Modal Layer */}
             {showSettings && <Settings user={user} onClose={() => setShowSettings(false)} chats={chats} />}
             
@@ -946,7 +1097,7 @@ function ChatInterface({ user, onLogout }) {
             <div className={`bg-white w-full md:w-[400px] border-r border-gray-200 flex flex-col ${activeChat ? 'hidden md:flex' : 'flex'}`}>
                 {/* Header Sidebar */}
                 <div className="bg-[#f0f2f5] p-3 px-4 flex justify-between items-center h-16 border-b border-gray-300">
-                    <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowSettings(true)}>
+                    <div className="flex items-center gap-3 cursor-pointer" onClick={openSettings}>
                         <img src={user.avatar} className="w-10 h-10 rounded-full border border-gray-300" />
                         <span className="font-semibold text-gray-700 text-sm">{user.name}</span>
                     </div>
@@ -957,8 +1108,8 @@ function ChatInterface({ user, onLogout }) {
                             onClick={toggleBackgroundMode}
                         ></div>
                         <div className="icon-users cursor-pointer hover:bg-gray-200 p-1.5 rounded-full transition" title="Criar Grupo" onClick={handleCreateGroup}></div>
-                        <div className="icon-message-square-plus cursor-pointer hover:bg-gray-200 p-1.5 rounded-full transition" title="Novo Contato" onClick={() => setShowAddContact(true)}></div>
-                        <div className="icon-settings cursor-pointer hover:bg-gray-200 p-1.5 rounded-full transition" onClick={() => setShowSettings(true)}></div>
+                        <div className="icon-message-square-plus cursor-pointer hover:bg-gray-200 p-1.5 rounded-full transition" title="Novo Contato" onClick={openAddContact}></div>
+                        <div className="icon-settings cursor-pointer hover:bg-gray-200 p-1.5 rounded-full transition" onClick={openSettings}></div>
                         <div className="icon-log-out cursor-pointer text-red-500 hover:bg-red-50 p-1.5 rounded-full transition" onClick={onLogout}></div>
                     </div>
                 </div>
@@ -974,7 +1125,7 @@ function ChatInterface({ user, onLogout }) {
                 {/* Chat List (Contacts Only) */}
                 <div className="flex-1 overflow-y-auto">
                     {chats.map(chat => (
-                        <div key={chat.id} onClick={() => setActiveChat(chat)} className={`flex items-center p-3 cursor-pointer hover:bg-[#f5f6f6] ${activeChat?.id === chat.id ? 'bg-[#f0f2f5]' : ''}`}>
+                        <div key={chat.id} onClick={() => openChat(chat)} className={`flex items-center p-3 cursor-pointer hover:bg-[#f5f6f6] ${activeChat?.id === chat.id ? 'bg-[#f0f2f5]' : ''}`}>
                             <img src={chat.avatar} className="w-12 h-12 rounded-full mr-3" />
                             <div className="flex-1 border-b border-gray-100 pb-3 h-full flex flex-col justify-center">
                                 <div className="flex justify-between items-baseline">
@@ -1000,7 +1151,7 @@ function ChatInterface({ user, onLogout }) {
                     
                     {/* Chat Header */}
                     <div className="bg-[#f0f2f5] p-3 px-4 flex justify-between items-center h-16 border-b border-gray-300 cursor-pointer" 
-                         onClick={() => activeChat.type === 'group' && setShowGroupInfo(true)}>
+                         onClick={() => activeChat.type === 'group' && openGroupInfo()}>
                         <div className="flex items-center gap-4">
                             <button onClick={() => setActiveChat(null)} className="md:hidden text-gray-600"><div className="icon-arrow-left"></div></button>
                             <img src={activeChat.avatar} className="w-10 h-10 rounded-full" />
@@ -1015,16 +1166,32 @@ function ChatInterface({ user, onLogout }) {
                             </div>
                         </div>
                         <div className="flex items-center gap-5 text-gray-600" onClick={(e) => e.stopPropagation()}>
-                            {activeChat.type !== 'group' && (
-                                <>
-                                    <div className="icon-video cursor-pointer hover:bg-gray-200 p-2 rounded-full" onClick={() => startCall(true)} title="Vídeo Chamada"></div>
-                                    <div className="icon-phone cursor-pointer hover:bg-gray-200 p-2 rounded-full" onClick={() => startCall(false)} title="Voz"></div>
-                                </>
-                            )}
+                            {/* Call Buttons for Everyone (Private & Group) */}
+                            <div className="icon-video cursor-pointer hover:bg-gray-200 p-2 rounded-full" onClick={() => startCall(true)} title={activeChat.type === 'group' ? "Chamada de Vídeo em Grupo" : "Vídeo Chamada"}></div>
+                            <div className="icon-phone cursor-pointer hover:bg-gray-200 p-2 rounded-full" onClick={() => startCall(false)} title={activeChat.type === 'group' ? "Chamada de Voz em Grupo" : "Voz"}></div>
+                            
                             <div className="icon-search cursor-pointer"></div>
                             <div className="icon-more-vertical cursor-pointer"></div>
                         </div>
                     </div>
+                    
+                    {/* Ongoing Call Banner */}
+                    {ongoingGroupCall && !activeGroupCall && (
+                        <div className="bg-green-100 p-3 flex justify-between items-center px-6 animate-slide-in-right cursor-pointer shadow-inner" onClick={joinGroupCall}>
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-green-500 rounded-full text-white animate-pulse">
+                                    <div className="icon-phone-incoming text-xl"></div>
+                                </div>
+                                <div>
+                                    <p className="font-bold text-green-800">Chamada em andamento</p>
+                                    <p className="text-xs text-green-600">Toque para participar</p>
+                                </div>
+                            </div>
+                            <button className="bg-green-600 text-white px-4 py-1.5 rounded-full font-semibold text-sm hover:bg-green-700 shadow">
+                                Entrar
+                            </button>
+                        </div>
+                    )}
 
                     {/* Messages Area */}
                     <div className="flex-1 overflow-y-auto p-4 bg-chat-pattern relative">
