@@ -13,7 +13,7 @@ function SystemStatus() {
                     <p className="text-sm text-yellow-700">
                         <span className="font-bold">Aviso do Desenvolvedor:</span> As notificações Push (segundo plano) estão em desenvolvimento e podem demorar um pouco para funcionarem 100%. 
                         <br/>
-                        <span className="italic text-xs mt-1 block">Motivo: Erro de servidor e orçamento limitado (salário zeradão 😅). Agradecemos a paciência!</span>
+                        <span className="italic text-xs mt-1 block">notificações voltarem agora que a gente percebemos que você tem que instalar o app para funcionar as notificações é só você instalar pelo link </span>
                     </p>
                 </div>
             </div>
