@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autenticação</title>
+</head>
+<body>
+    <h1>Autenticação</h1>
+    <script>
+        // Função para obter o token da URL
+        function getTokenFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('token');
+        }
+
+        // Função para realizar a autenticação usando o token
+        async function authenticate() {
+            const token = getTokenFromUrl();
+            if (!token) {
+                alert('Token não encontrado na URL!');
+                return;
+            }
+
+            // Exemplo de requisição para a API de autenticação
+            try {
+                const response = await fetch('https://sua-api.com/autenticar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ /* dados adicionais se necessário */ })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erro na autenticação');
+                }
+
+                const data = await response.json();
+                console.log('Autenticado com sucesso:', data);
+                alert('Autenticação bem-sucedida!');
+            } catch (error) {
+                console.error(error);
+                alert('Falha na autenticação.');
+            }
+        }
+
+        // Executa a autenticação ao carregar a página
+        window.onload = authenticate;
+    </script>
+</body>
+</html>
