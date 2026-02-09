@@ -203,6 +203,16 @@
       font-weight: 600;
     }
 
+    .info-message {
+      background-color: #e7f3ff;
+      border-left: 4px solid var(--accent-color);
+      padding: 12px 15px;
+      margin: 15px 0;
+      border-radius: 6px;
+      font-size: 14px;
+      color: var(--dark-color);
+    }
+
     .footer-text {
       text-align: center;
       margin-top: 20px;
@@ -221,6 +231,30 @@
       height: 18px;
     }
 
+    .header-actions {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+    }
+
+    .home-btn {
+      background-color: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .home-btn:hover {
+      background-color: rgba(255, 255, 255, 0.3);
+    }
+
     @media (max-width: 480px) {
       .auth-container {
         border-radius: 12px;
@@ -233,14 +267,33 @@
       .tab-content {
         padding: 20px;
       }
+      
+      .header-actions {
+        top: 10px;
+        right: 10px;
+      }
     }
   </style>
 </head>
 <body>
+  <div class="header-actions">
+    <button class="home-btn" onclick="goToIndex()">
+      <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+      </svg>
+      Voltar ao Início
+    </button>
+  </div>
+
   <div class="auth-container">
     <div class="auth-header">
       <h1>Bem-vindo ao CodeHub</h1>
       <p>Seu editor de código online favorito</p>
+    </div>
+
+    <div id="no-token-info" class="info-message" style="display: none;">
+      <strong>Modo Direto:</strong> Você acessou diretamente a página de login. 
+      Após o login, você será redirecionado para a página inicial.
     </div>
 
     <div class="tabs">
@@ -360,6 +413,41 @@
     const urlParams = new URLSearchParams(window.location.search);
     const appToken = urlParams.get('token');
 
+    // Função para ir para index.html
+    window.goToIndex = function() {
+      window.location.href = 'index.html';
+    };
+
+    // Verifica se há token na URL
+    if (!appToken) {
+      // Mostra mensagem informativa
+      const infoElement = document.getElementById('no-token-info');
+      infoElement.style.display = 'block';
+      
+      // Adiciona botão de voltar ao início no header
+      const authHeader = document.querySelector('.auth-header');
+      authHeader.innerHTML += `
+        <div style="margin-top: 10px; font-size: 12px; opacity: 0.8;">
+          <a href="index.html" style="color: white; text-decoration: underline;">Voltar para a página inicial</a>
+        </div>
+      `;
+    }
+
+    // Função para redirecionar após login/registro
+    function redirectAfterAuth() {
+      if (appToken) {
+        // Se tiver token, redireciona para continuar-conta.html
+        setTimeout(() => {
+          window.location.href = `API/continuar-conta.html?token=${appToken}`;
+        }, 1500);
+      } else {
+        // Se não tiver token, redireciona para index.html
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 1500);
+      }
+    }
+
     window.switchTab = (tabId) => {
       document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
@@ -437,18 +525,12 @@
           lastLogin: Date.now()
         });
 
-        showSuccess('register', 'Conta criada com sucesso! Redirecionando...');
-
-        // Redirecionar para continuar-conta.html com o token após registro
-        if (appToken) {
-          setTimeout(() => {
-            window.location.href = `API/continuar-conta.html?token=${appToken}`;
-          }, 2000);
-        } else {
-          setTimeout(() => {
-            window.location.href = 'API/continuar-conta.html';
-          }, 2000);
-        }
+        const successMessage = appToken 
+          ? 'Conta criada com sucesso! Redirecionando...' 
+          : 'Conta criada com sucesso! Redirecionando para a página inicial...';
+        
+        showSuccess('register', successMessage);
+        redirectAfterAuth();
 
       } catch (error) {
         console.error('Erro no registro:', error);
@@ -494,18 +576,12 @@
         // Atualizar último login no database
         await set(ref(database, 'users/' + user.uid + '/lastLogin'), Date.now());
 
-        showSuccess('login', 'Login realizado com sucesso! Redirecionando...');
-
-        // Redirecionar para continuar-conta.html com o token após login
-        if (appToken) {
-          setTimeout(() => {
-            window.location.href = `API/continuar-conta.html?token=${appToken}`;
-          }, 1500);
-        } else {
-          setTimeout(() => {
-            window.location.href = 'API/continuar-conta.html';
-          }, 1500);
-        }
+        const successMessage = appToken 
+          ? 'Login realizado com sucesso! Redirecionando...' 
+          : 'Login realizado com sucesso! Redirecionando para a página inicial...';
+        
+        showSuccess('login', successMessage);
+        redirectAfterAuth();
 
       } catch (error) {
         console.error('Erro no login:', error);
@@ -544,18 +620,12 @@
           provider: 'google'
         });
 
-        showSuccess('login', 'Login com Google realizado! Redirecionando...');
-
-        // Redirecionar para continuar-conta.html com o token
-        if (appToken) {
-          setTimeout(() => {
-            window.location.href = `API/continuar-conta.html?token=${appToken}`;
-          }, 1500);
-        } else {
-          setTimeout(() => {
-            window.location.href = 'API/continuar-conta.html';
-          }, 1500);
-        }
+        const successMessage = appToken 
+          ? 'Login com Google realizado! Redirecionando...' 
+          : 'Login com Google realizado! Redirecionando para a página inicial...';
+        
+        showSuccess('login', successMessage);
+        redirectAfterAuth();
 
       } catch (error) {
         console.error('Erro no login com Google:', error);
@@ -565,11 +635,20 @@
 
     // Verificar se o usuário já está logado
     auth.onAuthStateChanged((user) => {
-      if (user && appToken) {
+      if (user) {
         // Se já estiver logado e tiver token, redirecionar automaticamente
-        setTimeout(() => {
-          window.location.href = `API/continuar-conta.html?token=${appToken}`;
-        }, 1000);
+        if (appToken) {
+          showSuccess('login', 'Você já está logado! Redirecionando...');
+          setTimeout(() => {
+            window.location.href = `API/continuar-conta.html?token=${appToken}`;
+          }, 1000);
+        } else {
+          // Se já estiver logado mas não tiver token, redirecionar para index
+          showSuccess('login', 'Você já está logado! Redirecionando para a página inicial...');
+          setTimeout(() => {
+            window.location.href = 'index.html';
+          }, 1000);
+        }
       }
     });
   </script>
