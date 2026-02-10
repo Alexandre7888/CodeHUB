@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Painel Admin</title>
+<style>
+body{background:#111;color:#fff;font-family:Arial}
+.user{border:1px solid #444;padding:10px;margin:10px}
+.online{color:lime}
+.offline{color:red}
+button{margin:4px}
+pre{background:#000;padding:10px;overflow:auto}
+</style>
+</head>
+<body>
+
+<h1>Painel Administrador</h1>
+<div id="users"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+  getAuth,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import {
+  getDatabase,
+  ref,
+  onValue,
+  update
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+const ADMIN_EMAIL = "administrador1@codehub.ct.ws";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
+  authDomain: "html-15e80.firebaseapp.com",
+  databaseURL: "https://html-15e80-default-rtdb.firebaseio.com",
+  projectId: "html-15e80",
+  storageBucket: "html-15e80.firebasestorage.app",
+  appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+onAuthStateChanged(auth, user => {
+  if (!user || user.email !== ADMIN_EMAIL) {
+    document.body.innerHTML = "<h2>Acesso negado</h2>";
+    return;
+  }
+
+  onValue(ref(db,"users"), snap => {
+    const users = snap.val() || {};
+    usersDiv.innerHTML = "";
+
+    Object.entries(users).forEach(([uid,u]) => {
+      const div = document.createElement("div");
+      div.className = "user";
+      div.innerHTML = `
+        <b>${u.email}</b><br>
+        ${u.online ? "🟢 Online":"🔴 Offline"}<br>
+        Banido: ${u.ban?.active ? "SIM":"NÃO"}<br>
+
+        <button onclick="ban('${uid}',1)">Ban 1 dia</button>
+        <button onclick="ban('${uid}',7)">Ban 7 dias</button>
+        <button onclick="unban('${uid}')">Desbanir</button>
+
+        <details>
+          <summary>Storage</summary>
+          <pre>${JSON.stringify(u.storage,null,2)}</pre>
+        </details>
+      `;
+      usersDiv.appendChild(div);
+    });
+  });
+});
+
+window.ban = (uid,days)=>{
+  update(ref(db,"users/"+uid+"/ban"),{
+    active:true,
+    until: Date.now()+days*86400000
+  });
+};
+
+window.unban = uid =>{
+  update(ref(db,"users/"+uid+"/ban"),{
+    active:false,
+    until:null
+  });
+};
+</script>
+
+</body>
+</html>
