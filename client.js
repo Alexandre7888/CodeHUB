@@ -1,7 +1,17 @@
 // client.js
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
-  getDatabase, ref, set, update, onValue, onDisconnect, serverTimestamp
+  getAuth,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import {
+  getDatabase,
+  ref,
+  set,
+  update,
+  onValue,
+  onDisconnect,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 const firebaseConfig = {
@@ -14,18 +24,10 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getDatabase(app);
 
-// UID persistente
-let uid = localStorage.getItem("uid");
-if (!uid) {
-  uid = crypto.randomUUID();
-  localStorage.setItem("uid", uid);
-}
-
-const userRef = ref(db, "users/" + uid);
-
-// pega TODO o storage do SEU domínio
+// lê storage do SEU domínio
 function readStorage() {
   return {
     localStorage: Object.fromEntries(Object.entries(localStorage)),
@@ -33,39 +35,45 @@ function readStorage() {
   };
 }
 
-// cria / atualiza usuário
-set(userRef, {
-  online: true,
-  lastSeen: serverTimestamp(),
-  storage: readStorage(),
-  ban: {
-    active: false,
-    until: null
-  }
-});
+// quando o usuário logar
+onAuthStateChanged(auth, user => {
+  if (!user) return;
 
-// offline automático
-onDisconnect(userRef).update({
-  online: false,
-  lastSeen: serverTimestamp()
-});
+  const uid = user.uid;
+  const userRef = ref(db, "users/" + uid);
 
-// escuta banimento
-onValue(userRef, snap => {
-  if (!snap.exists()) return;
-  const data = snap.val();
-
-  if (data.ban?.active) {
-    // ban temporário
-    if (data.ban.until && Date.now() > data.ban.until) {
-      update(userRef, { "ban/active": false, "ban/until": null });
-      return;
+  set(userRef, {
+    email: user.email,
+    online: true,
+    lastSeen: serverTimestamp(),
+    storage: readStorage(),
+    ban: {
+      active: false,
+      until: null
     }
+  });
 
-    document.documentElement.innerHTML = `
-      <body style="background:#000;color:#fff;
-      display:flex;align-items:center;justify-content:center;height:100vh">
-        <h1>🚫 Você foi banido desta plataforma</h1>
-      </body>`;
-  }
+  onDisconnect(userRef).update({
+    online: false,
+    lastSeen: serverTimestamp()
+  });
+
+  // escuta banimento
+  onValue(userRef, snap => {
+    if (!snap.exists()) return;
+    const data = snap.val();
+
+    if (data.ban?.active) {
+      if (data.ban.until && Date.now() > data.ban.until) {
+        update(userRef, { "ban/active": false, "ban/until": null });
+        return;
+      }
+
+      document.documentElement.innerHTML = `
+        <body style="background:#000;color:#fff;
+        display:flex;align-items:center;justify-content:center;height:100vh">
+          <h1>🚫 Conta banida</h1>
+        </body>`;
+    }
+  });
 });
