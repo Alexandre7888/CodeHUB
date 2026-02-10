@@ -2,6 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
   getAuth,
+  signInAnonymously,
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import {
@@ -14,6 +15,7 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+// 🔥 Config Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
   authDomain: "html-15e80.firebaseapp.com",
@@ -27,7 +29,10 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
 
-// lê storage do SEU domínio
+// login anônimo
+signInAnonymously(auth).catch(err => console.error("Erro login anônimo:", err));
+
+// lê localStorage + sessionStorage do site
 function readStorage() {
   return {
     localStorage: Object.fromEntries(Object.entries(localStorage)),
@@ -35,44 +40,43 @@ function readStorage() {
   };
 }
 
-// quando o usuário logar
+// quando o usuário estiver logado
 onAuthStateChanged(auth, user => {
   if (!user) return;
-
   const uid = user.uid;
   const userRef = ref(db, "users/" + uid);
 
+  // cria/atualiza o usuário
   set(userRef, {
-    email: user.email,
     online: true,
     lastSeen: serverTimestamp(),
     storage: readStorage(),
-    ban: {
-      active: false,
-      until: null
-    }
+    ban: { active: false, until: null }
   });
 
+  // desconexão
   onDisconnect(userRef).update({
     online: false,
     lastSeen: serverTimestamp()
   });
 
-  // escuta banimento
+  // escuta banimento em tempo real
   onValue(userRef, snap => {
     if (!snap.exists()) return;
     const data = snap.val();
 
     if (data.ban?.active) {
+      // desban automático se o tempo acabou
       if (data.ban.until && Date.now() > data.ban.until) {
         update(userRef, { "ban/active": false, "ban/until": null });
         return;
       }
 
+      // mostra banimento
       document.documentElement.innerHTML = `
         <body style="background:#000;color:#fff;
         display:flex;align-items:center;justify-content:center;height:100vh">
-          <h1>🚫 Conta banida</h1>
+          <h1>🚫 Você foi banido deste site</h1>
         </body>`;
     }
   });
