@@ -108,7 +108,6 @@ button:hover { opacity: 0.9; }
 
 .status-online { background: #4caf50; }
 .status-offline { background: #f44336; }
-.status-24h { background: #ff9800; }
 
 .messages { 
   max-height: 280px; 
@@ -129,27 +128,9 @@ button:hover { opacity: 0.9; }
 .msg.own { 
   background: #1f4a5c; 
 }
-
-.executor-status {
-  position: fixed;
-  bottom: 10px;
-  right: 10px;
-  background: rgba(0,0,0,0.8);
-  color: #0f0;
-  padding: 8px 15px;
-  border-radius: 30px;
-  font-size: 12px;
-  border-left: 3px solid #0f0;
-  z-index: 9999;
-  display: none;
-}
-
-.executor-ativo .executor-status {
-  display: block;
-}
 </style>
 </head>
-<body id="mainBody">
+<body>
 
 <header>
   <h1>🤖 Painel de Bots</h1>
@@ -190,14 +171,11 @@ button:hover { opacity: 0.9; }
     </div>
     
     <p>🆔 ID: <span id="botID"></span></p>
-    <p>⏰ Status: <span id="botStatus247">Offline</span> <span class="bot-status" id="statusIndicator"></span></p>
     <p>📨 Msgs Enviadas: <span id="messageCount">0</span></p>
 
     <h4>➕ Entrar em Grupo</h4>
     <input id="groupId" placeholder="ID do grupo">
-    <button onclick="joinGroup()">Entrar</button>
-    <button onclick="ativarBot247()" style="background:#ffaa00; color:#000; margin-top:10px;">⭐ ATIVAR 24/7</button>
-    <button onclick="desativarBot247()" style="background:#c0392b; margin-top:10px;">🛑 DESATIVAR 24/7</button>
+    <button onclick="joinGroup()">Entrar no Grupo</button>
 
     <h4>👥 Grupos do Bot</h4>
     <ul id="groupList"></ul>
@@ -243,119 +221,6 @@ let bots = JSON.parse(localStorage.getItem("bots")||"[]");
 let bot = null;
 let currentGroup = null;
 let commands = [];
-let intervalo247 = null;
-
-// ============================================
-// SISTEMA 24/7 - URL SECRETA
-// ============================================
-const urlParams = new URLSearchParams(window.location.search);
-const executar247 = urlParams.get('executar');
-
-if(executar247 === 'online') {
-  document.body.classList.add('executor-ativo');
-  
-  const statusDiv = document.createElement('div');
-  statusDiv.className = 'executor-status';
-  statusDiv.id = 'executorStatusIndicator';
-  statusDiv.innerHTML = '⚡ 24/7 ATIVO • 0 bots • ' + new Date().toLocaleTimeString();
-  document.body.appendChild(statusDiv);
-  
-  iniciarSistema247();
-}
-
-// ============================================
-// SISTEMA 24/7 - APENAS BOTS ATIVADOS
-// ============================================
-function iniciarSistema247() {
-  if(intervalo247) clearInterval(intervalo247);
-  
-  manterBotsOnline();
-  intervalo247 = setInterval(manterBotsOnline, 30000);
-}
-
-function manterBotsOnline() {
-  db.ref("bots247").orderByChild("status").equalTo("24h").once("value", (snap) => {
-    const botsAtivados = snap.val() || {};
-    let count = 0;
-    
-    for(let id in botsAtivados) {
-      count++;
-      const botData = botsAtivados[id];
-      
-      db.ref("bots247/" + id + "/lastPing").set(Date.now());
-      db.ref("bots247/" + id + "/online").set(true);
-      
-      if(botData.groups) {
-        for(let groupId in botData.groups) {
-          if((botData.pingCount || 0) % 4 === 0) {
-            enviarMensagem(id, botData.name, groupId, 
-              "🤖 " + botData.name + " - Online 24/7");
-          }
-        }
-      }
-      
-      db.ref("bots247/" + id + "/pingCount").transaction(v => (v||0)+1);
-    }
-    
-    const statusEl = document.getElementById('executorStatusIndicator');
-    if(statusEl) {
-      statusEl.innerHTML = `⚡ 24/7 ATIVO • ${count} bots • ${new Date().toLocaleTimeString()}`;
-    }
-  });
-}
-
-function enviarMensagem(botId, botName, groupId, texto) {
-  db.ref(`groups/${groupId}/messages`).push({
-    senderId: botId,
-    senderName: botName,
-    text: texto,
-    timestamp: Date.now(),
-    automated: true
-  });
-  
-  db.ref("bots247/" + botId + "/messageCount").transaction(v => (v||0)+1);
-}
-
-// ============================================
-// ATIVAR/DESATIVAR BOT 24/7
-// ============================================
-function ativarBot247() {
-  if(!bot) return alert("Selecione um bot");
-  
-  db.ref("bots247/" + bot.id).once("value", (snap) => {
-    const existente = snap.val() || {};
-    
-    db.ref("bots247/" + bot.id).set({
-      id: bot.id,
-      name: bot.name,
-      avatar: bot.avatar,
-      status: "24h",
-      activatedAt: existente.activatedAt || Date.now(),
-      lastPing: Date.now(),
-      messageCount: existente.messageCount || 0,
-      pingCount: existente.pingCount || 0,
-      groups: existente.groups || {}
-    });
-    
-    bot.status = "24h";
-    localStorage.setItem("bots", JSON.stringify(bots));
-    loadBots();
-    selectBot(bot);
-    alert("Bot ativado 24/7");
-  });
-}
-
-function desativarBot247() {
-  if(!bot) return alert("Selecione um bot");
-  
-  db.ref("bots247/" + bot.id + "/status").set("offline");
-  db.ref("bots247/" + bot.id + "/online").set(false);
-  bot.status = "offline";
-  localStorage.setItem("bots", JSON.stringify(bots));
-  loadBots();
-  selectBot(bot);
-  alert("Bot desativado");
-}
 
 // ============================================
 // BOTS
@@ -372,7 +237,6 @@ function createBot() {
     const botData = {
       id, name,
       avatar: reader.result,
-      status: "offline",
       createdAt: Date.now()
     };
     
@@ -381,8 +245,7 @@ function createBot() {
     
     db.ref("users/" + id).set({
       id, name,
-      avatar: reader.result,
-      status: { state: "offline" }
+      avatar: reader.result
     });
     
     loadBots();
@@ -407,21 +270,8 @@ function loadBots() {
     const span = document.createElement("span");
     span.textContent = b.name;
     
-    const status = document.createElement("span");
-    status.className = "bot-status";
-    
-    db.ref("bots247/" + b.id).once("value", (snap) => {
-      if(snap.val()?.status === "24h") {
-        status.className = "bot-status status-24h";
-        span.innerHTML += ' <span style="color:#ffaa00">⭐ 24h</span>';
-      } else {
-        status.className = "bot-status status-offline";
-      }
-    });
-    
     div.appendChild(img);
     div.appendChild(span);
-    div.appendChild(status);
     div.onclick = () => selectBot(b);
     list.appendChild(div);
   });
@@ -434,17 +284,8 @@ function selectBot(b) {
   document.getElementById("editName").value = b.name;
   document.getElementById("botID").textContent = b.id;
   
-  db.ref("bots247/" + b.id).once("value", (snap) => {
-    const data = snap.val();
-    if(data?.status === "24h") {
-      document.getElementById("botStatus247").innerHTML = '<span style="color:#ffaa00">⭐ ONLINE 24/7</span>';
-      document.getElementById("statusIndicator").className = "bot-status status-24h";
-      document.getElementById("messageCount").textContent = data.messageCount || 0;
-    } else {
-      document.getElementById("botStatus247").textContent = "Offline";
-      document.getElementById("statusIndicator").className = "bot-status status-offline";
-      document.getElementById("messageCount").textContent = "0";
-    }
+  db.ref("bots/" + b.id + "/messageCount").once("value", (snap) => {
+    document.getElementById("messageCount").textContent = snap.val() || 0;
   });
   
   loadGroups();
@@ -454,7 +295,7 @@ function saveBot() {
   bot.name = document.getElementById("editName").value;
   localStorage.setItem("bots", JSON.stringify(bots));
   db.ref("users/" + bot.id + "/name").set(bot.name);
-  db.ref("bots247/" + bot.id + "/name").set(bot.name);
+  db.ref("bots/" + bot.id + "/name").set(bot.name);
   loadBots();
 }
 
@@ -470,18 +311,17 @@ function joinGroup() {
     joinedAt: Date.now()
   });
   
-  db.ref("bots247/" + bot.id + "/groups/" + groupId).set(Date.now());
+  db.ref("bots/" + bot.id + "/groups/" + groupId).set(Date.now());
   
   listenMessages();
   loadGroups();
-  alert("Entrou no grupo");
 }
 
 function loadGroups() {
   const list = document.getElementById("groupList");
   list.innerHTML = "";
   
-  db.ref("bots247/" + bot.id + "/groups").once("value", (snap) => {
+  db.ref("bots/" + bot.id + "/groups").once("value", (snap) => {
     const groups = snap.val() || {};
     for(let id in groups) {
       const li = document.createElement("li");
@@ -507,6 +347,10 @@ function sendMsg() {
     text: text,
     timestamp: Date.now()
   });
+  
+  // Contar mensagem
+  db.ref("bots/" + bot.id + "/messageCount").transaction(v => (v||0)+1);
+  document.getElementById("messageCount").textContent = parseInt(document.getElementById("messageCount").textContent) + 1;
   
   document.getElementById("msgText").value = "";
 }
@@ -594,6 +438,9 @@ function executarComandos(msg) {
               timestamp: Date.now(),
               automated: true
             });
+            
+            // Contar mensagem automática
+            db.ref("bots/" + bot.id + "/messageCount").transaction(v => (v||0)+1);
           }
         };
         
@@ -625,22 +472,6 @@ document.getElementById("usernameDisplay").textContent = "Usuário: " + user.nam
 loadBots();
 loadCommands();
 db.ref("comandos").on("value", loadCommands);
-
-// ============================================
-// CONSOLE
-// ============================================
-window.ativarAgora = function() {
-  iniciarSistema247();
-  alert("24/7 ATIVADO");
-};
-
-window.desativarAgora = function() {
-  if(intervalo247) clearInterval(intervalo247);
-  document.body.classList.remove("executor-ativo");
-  const el = document.getElementById("executorStatusIndicator");
-  if(el) el.remove();
-  alert("24/7 DESATIVADO");
-};
 </script>
 </body>
 </html>
