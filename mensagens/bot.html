@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🤖 Painel de Bots</title>
+<style>
+* { box-sizing: border-box; }
+body { 
+  font-family: 'Segoe UI', Arial, sans-serif; 
+  background: #0a0c10; 
+  color: #e6e9f0; 
+  margin: 0; 
+  padding: 0;
+}
+
+header { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  background: #1a1e24;
+  padding: 15px 30px; 
+  border-bottom: 2px solid #2d9cdb;
+}
+
+header h1 { margin: 0; font-size: 24px; }
+
+.status-badge {
+  background: #1e2a36;
+  padding: 6px 14px;
+  border-radius: 30px;
+  font-size: 13px;
+}
+
+nav { 
+  display: flex; 
+  background: #14181c; 
+  padding: 0 20px;
+}
+
+nav a { 
+  padding: 14px 20px; 
+  text-decoration: none; 
+  color: #b0b9c4; 
+  border-right: 1px solid #252c32; 
+}
+
+nav a:hover { background: #1e262c; }
+nav a.active { background: #1e2a36; color: #2d9cdb; border-bottom: 3px solid #2d9cdb; }
+
+section { display: none; padding: 30px; }
+section.active { display: block; }
+
+.panel {
+  background: #151a1f;
+  border-radius: 16px;
+  padding: 25px;
+  margin-bottom: 30px;
+  border: 1px solid #2a323a;
+}
+
+.panel h3 { margin-top: 0; color: #a0d6ff; border-bottom: 1px solid #2d3a44; padding-bottom: 12px; }
+
+button, input, textarea {
+  margin: 8px 0; 
+  padding: 12px 16px; 
+  width: 100%; 
+  border-radius: 12px; 
+  border: none; 
+  font-size: 15px;
+  background: #1e262c;
+  color: #fff;
+  border: 1px solid #36424a;
+}
+
+button {
+  background: #2d9cdb;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:hover { opacity: 0.9; }
+
+.bot, .codeItem {
+  padding: 14px 18px; 
+  border: 1px solid #2a323a; 
+  margin: 8px 0; 
+  cursor: pointer; 
+  border-radius: 12px;
+  background: #1a1f24;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.bot:hover, .codeItem:hover { background: #242c34; }
+
+.bot-avatar { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid #2d9cdb; }
+
+.bot-status {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-left: 8px;
+}
+
+.status-online { background: #4caf50; }
+.status-offline { background: #f44336; }
+.status-24h { background: #ff9800; }
+
+.messages { 
+  max-height: 280px; 
+  overflow-y: auto; 
+  background: #0e1217; 
+  padding: 18px; 
+  border-radius: 16px; 
+  border: 1px solid #2a323a;
+}
+
+.msg { 
+  padding: 10px 16px; 
+  background: #1e262e; 
+  border-radius: 20px; 
+  margin: 4px 0;
+}
+
+.msg.own { 
+  background: #1f4a5c; 
+}
+
+.executor-status {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(0,0,0,0.8);
+  color: #0f0;
+  padding: 8px 15px;
+  border-radius: 30px;
+  font-size: 12px;
+  border-left: 3px solid #0f0;
+  z-index: 9999;
+  display: none;
+}
+
+.executor-ativo .executor-status {
+  display: block;
+}
+</style>
+</head>
+<body id="mainBody">
+
+<header>
+  <h1>🤖 Painel de Bots</h1>
+  <div>
+    <span class="status-badge" id="usernameDisplay">Usuário: --</span>
+  </div>
+</header>
+
+<nav>
+  <a href="#dashboard" id="navDashboard" class="active">📊 Dashboard</a>
+  <a href="#editor" id="navEditor">📝 Comandos</a>
+</nav>
+
+<!-- DASHBOARD -->
+<section id="dashboard" class="active">
+  <h2>📊 Meus Bots</h2>
+  
+  <div class="panel">
+    <h3>➕ Criar Bot</h3>
+    <input id="botName" placeholder="Nome do bot">
+    <input type="file" id="botAvatar" accept="image/*">
+    <button onclick="createBot()">Criar Bot</button>
+  </div>
+
+  <div class="panel">
+    <h3>📋 Seus Bots</h3>
+    <div id="botList"></div>
+  </div>
+
+  <div class="panel" id="botPanel" style="display:none">
+    <h3>🤖 Bot Selecionado</h3>
+    <div style="display: flex; align-items: center; gap: 20px;">
+      <img id="botImg" style="width:80px; height:80px; border-radius:50%; border:3px solid #2d9cdb;">
+      <div style="flex:1">
+        <input id="editName" placeholder="Nome do bot">
+        <button onclick="saveBot()">Salvar</button>
+      </div>
+    </div>
+    
+    <p>🆔 ID: <span id="botID"></span></p>
+    <p>⏰ Status: <span id="botStatus247">Offline</span> <span class="bot-status" id="statusIndicator"></span></p>
+    <p>📨 Msgs Enviadas: <span id="messageCount">0</span></p>
+
+    <h4>➕ Entrar em Grupo</h4>
+    <input id="groupId" placeholder="ID do grupo">
+    <button onclick="joinGroup()">Entrar</button>
+    <button onclick="ativarBot247()" style="background:#ffaa00; color:#000; margin-top:10px;">⭐ ATIVAR 24/7</button>
+    <button onclick="desativarBot247()" style="background:#c0392b; margin-top:10px;">🛑 DESATIVAR 24/7</button>
+
+    <h4>👥 Grupos do Bot</h4>
+    <ul id="groupList"></ul>
+
+    <h4>💬 Mensagens</h4>
+    <div class="messages" id="messages"></div>
+    <input id="msgText" placeholder="Digite sua mensagem...">
+    <button onclick="sendMsg()">Enviar</button>
+  </div>
+</section>
+
+<!-- EDITOR -->
+<section id="editor">
+  <h2>📝 Comandos</h2>
+  <div class="panel">
+    <input id="codeName" placeholder="Nome do comando (ex: !oi)">
+    <textarea id="codeText" rows="8" placeholder="// Exemplo: 
+if(msg.text === '!oi') {
+  reply('Olá, ' + msg.senderName + '!');
+}"></textarea>
+    <button onclick="addCommand()">Salvar Comando</button>
+    <div id="codeList"></div>
+  </div>
+</section>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script>
+// ============================================
+// CONFIGURAÇÃO
+// ============================================
+const firebaseConfig = {
+  apiKey: "AIzaSyBzRLpZJDMeFASIjje4SJBfTInIEO-GKVI",
+  databaseURL: "https://html-785e3-default-rtdb.firebaseio.com"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ============================================
+// DADOS
+// ============================================
+let bots = JSON.parse(localStorage.getItem("bots")||"[]");
+let bot = null;
+let currentGroup = null;
+let commands = [];
+let intervalo247 = null;
+
+// ============================================
+// SISTEMA 24/7 - URL SECRETA
+// ============================================
+const urlParams = new URLSearchParams(window.location.search);
+const executar247 = urlParams.get('executar');
+
+if(executar247 === 'online') {
+  document.body.classList.add('executor-ativo');
+  
+  const statusDiv = document.createElement('div');
+  statusDiv.className = 'executor-status';
+  statusDiv.id = 'executorStatusIndicator';
+  statusDiv.innerHTML = '⚡ 24/7 ATIVO • 0 bots • ' + new Date().toLocaleTimeString();
+  document.body.appendChild(statusDiv);
+  
+  iniciarSistema247();
+}
+
+// ============================================
+// SISTEMA 24/7 - APENAS BOTS ATIVADOS
+// ============================================
+function iniciarSistema247() {
+  if(intervalo247) clearInterval(intervalo247);
+  
+  manterBotsOnline();
+  intervalo247 = setInterval(manterBotsOnline, 30000);
+}
+
+function manterBotsOnline() {
+  db.ref("bots247").orderByChild("status").equalTo("24h").once("value", (snap) => {
+    const botsAtivados = snap.val() || {};
+    let count = 0;
+    
+    for(let id in botsAtivados) {
+      count++;
+      const botData = botsAtivados[id];
+      
+      db.ref("bots247/" + id + "/lastPing").set(Date.now());
+      db.ref("bots247/" + id + "/online").set(true);
+      
+      if(botData.groups) {
+        for(let groupId in botData.groups) {
+          if((botData.pingCount || 0) % 4 === 0) {
+            enviarMensagem(id, botData.name, groupId, 
+              "🤖 " + botData.name + " - Online 24/7");
+          }
+        }
+      }
+      
+      db.ref("bots247/" + id + "/pingCount").transaction(v => (v||0)+1);
+    }
+    
+    const statusEl = document.getElementById('executorStatusIndicator');
+    if(statusEl) {
+      statusEl.innerHTML = `⚡ 24/7 ATIVO • ${count} bots • ${new Date().toLocaleTimeString()}`;
+    }
+  });
+}
+
+function enviarMensagem(botId, botName, groupId, texto) {
+  db.ref(`groups/${groupId}/messages`).push({
+    senderId: botId,
+    senderName: botName,
+    text: texto,
+    timestamp: Date.now(),
+    automated: true
+  });
+  
+  db.ref("bots247/" + botId + "/messageCount").transaction(v => (v||0)+1);
+}
+
+// ============================================
+// ATIVAR/DESATIVAR BOT 24/7
+// ============================================
+function ativarBot247() {
+  if(!bot) return alert("Selecione um bot");
+  
+  db.ref("bots247/" + bot.id).once("value", (snap) => {
+    const existente = snap.val() || {};
+    
+    db.ref("bots247/" + bot.id).set({
+      id: bot.id,
+      name: bot.name,
+      avatar: bot.avatar,
+      status: "24h",
+      activatedAt: existente.activatedAt || Date.now(),
+      lastPing: Date.now(),
+      messageCount: existente.messageCount || 0,
+      pingCount: existente.pingCount || 0,
+      groups: existente.groups || {}
+    });
+    
+    bot.status = "24h";
+    localStorage.setItem("bots", JSON.stringify(bots));
+    loadBots();
+    selectBot(bot);
+    alert("Bot ativado 24/7");
+  });
+}
+
+function desativarBot247() {
+  if(!bot) return alert("Selecione um bot");
+  
+  db.ref("bots247/" + bot.id + "/status").set("offline");
+  db.ref("bots247/" + bot.id + "/online").set(false);
+  bot.status = "offline";
+  localStorage.setItem("bots", JSON.stringify(bots));
+  loadBots();
+  selectBot(bot);
+  alert("Bot desativado");
+}
+
+// ============================================
+// BOTS
+// ============================================
+function createBot() {
+  const id = "bot_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4);
+  const name = document.getElementById("botName").value || id;
+  const file = document.getElementById("botAvatar").files[0];
+  
+  if(!file) return alert("Escolha um avatar");
+  
+  const reader = new FileReader();
+  reader.onload = () => {
+    const botData = {
+      id, name,
+      avatar: reader.result,
+      status: "offline",
+      createdAt: Date.now()
+    };
+    
+    bots.push(botData);
+    localStorage.setItem("bots", JSON.stringify(bots));
+    
+    db.ref("users/" + id).set({
+      id, name,
+      avatar: reader.result,
+      status: { state: "offline" }
+    });
+    
+    loadBots();
+    document.getElementById("botName").value = "";
+    document.getElementById("botAvatar").value = "";
+  };
+  reader.readAsDataURL(file);
+}
+
+function loadBots() {
+  const list = document.getElementById("botList");
+  list.innerHTML = "";
+  
+  bots.forEach(b => {
+    const div = document.createElement("div");
+    div.className = "bot";
+    
+    const img = document.createElement("img");
+    img.src = b.avatar;
+    img.className = "bot-avatar";
+    
+    const span = document.createElement("span");
+    span.textContent = b.name;
+    
+    const status = document.createElement("span");
+    status.className = "bot-status";
+    
+    db.ref("bots247/" + b.id).once("value", (snap) => {
+      if(snap.val()?.status === "24h") {
+        status.className = "bot-status status-24h";
+        span.innerHTML += ' <span style="color:#ffaa00">⭐ 24h</span>';
+      } else {
+        status.className = "bot-status status-offline";
+      }
+    });
+    
+    div.appendChild(img);
+    div.appendChild(span);
+    div.appendChild(status);
+    div.onclick = () => selectBot(b);
+    list.appendChild(div);
+  });
+}
+
+function selectBot(b) {
+  bot = b;
+  document.getElementById("botPanel").style.display = "block";
+  document.getElementById("botImg").src = b.avatar;
+  document.getElementById("editName").value = b.name;
+  document.getElementById("botID").textContent = b.id;
+  
+  db.ref("bots247/" + b.id).once("value", (snap) => {
+    const data = snap.val();
+    if(data?.status === "24h") {
+      document.getElementById("botStatus247").innerHTML = '<span style="color:#ffaa00">⭐ ONLINE 24/7</span>';
+      document.getElementById("statusIndicator").className = "bot-status status-24h";
+      document.getElementById("messageCount").textContent = data.messageCount || 0;
+    } else {
+      document.getElementById("botStatus247").textContent = "Offline";
+      document.getElementById("statusIndicator").className = "bot-status status-offline";
+      document.getElementById("messageCount").textContent = "0";
+    }
+  });
+  
+  loadGroups();
+}
+
+function saveBot() {
+  bot.name = document.getElementById("editName").value;
+  localStorage.setItem("bots", JSON.stringify(bots));
+  db.ref("users/" + bot.id + "/name").set(bot.name);
+  db.ref("bots247/" + bot.id + "/name").set(bot.name);
+  loadBots();
+}
+
+function joinGroup() {
+  const groupId = document.getElementById("groupId").value;
+  if(!groupId) return alert("Digite o ID do grupo");
+  
+  currentGroup = groupId;
+  
+  db.ref(`groups/${groupId}/members/${bot.id}`).set({
+    id: bot.id,
+    name: bot.name,
+    joinedAt: Date.now()
+  });
+  
+  db.ref("bots247/" + bot.id + "/groups/" + groupId).set(Date.now());
+  
+  listenMessages();
+  loadGroups();
+  alert("Entrou no grupo");
+}
+
+function loadGroups() {
+  const list = document.getElementById("groupList");
+  list.innerHTML = "";
+  
+  db.ref("bots247/" + bot.id + "/groups").once("value", (snap) => {
+    const groups = snap.val() || {};
+    for(let id in groups) {
+      const li = document.createElement("li");
+      li.textContent = id;
+      li.style.cursor = "pointer";
+      li.onclick = () => {
+        currentGroup = id;
+        listenMessages();
+      };
+      list.appendChild(li);
+    }
+  });
+}
+
+function sendMsg() {
+  const text = document.getElementById("msgText").value;
+  if(!currentGroup) return alert("Selecione um grupo");
+  if(!text) return alert("Digite uma mensagem");
+  
+  db.ref(`groups/${currentGroup}/messages`).push({
+    senderId: bot.id,
+    senderName: bot.name,
+    text: text,
+    timestamp: Date.now()
+  });
+  
+  document.getElementById("msgText").value = "";
+}
+
+function listenMessages() {
+  const el = document.getElementById("messages");
+  el.innerHTML = "";
+  
+  if(!currentGroup) return;
+  
+  db.ref(`groups/${currentGroup}/messages`).off();
+  db.ref(`groups/${currentGroup}/messages`).on("child_added", (s) => {
+    const msg = s.val();
+    const div = document.createElement("div");
+    div.className = "msg" + (msg.senderId === bot?.id ? " own" : "");
+    div.textContent = msg.senderName + ": " + (msg.text || "");
+    el.appendChild(div);
+    executarComandos(msg);
+  });
+}
+
+// ============================================
+// COMANDOS
+// ============================================
+function addCommand() {
+  const name = document.getElementById("codeName").value;
+  const code = document.getElementById("codeText").value;
+  if(!name || !code) return alert("Preencha tudo");
+  
+  db.ref("comandos/" + name).set({
+    nome: name,
+    codigo: code
+  });
+  
+  document.getElementById("codeName").value = "";
+  document.getElementById("codeText").value = "";
+  loadCommands();
+}
+
+function loadCommands() {
+  db.ref("comandos").once("value", (snap) => {
+    const cmds = snap.val() || {};
+    const list = document.getElementById("codeList");
+    list.innerHTML = "";
+    
+    for(let nome in cmds) {
+      const div = document.createElement("div");
+      div.className = "codeItem";
+      div.textContent = nome;
+      
+      div.onclick = () => {
+        document.getElementById("codeName").value = nome;
+        document.getElementById("codeText").value = cmds[nome].codigo;
+      };
+      
+      const del = document.createElement("span");
+      del.textContent = " [Excluir]";
+      del.style.color = "#f55";
+      del.onclick = (e) => {
+        e.stopPropagation();
+        db.ref("comandos/" + nome).remove();
+        loadCommands();
+      };
+      
+      div.appendChild(del);
+      list.appendChild(div);
+    }
+  });
+}
+
+function executarComandos(msg) {
+  if(!msg?.text || msg.senderId === bot?.id) return;
+  
+  db.ref("comandos").once("value", (snap) => {
+    const cmds = snap.val() || {};
+    
+    for(let nome in cmds) {
+      try {
+        const reply = (texto) => {
+          if(currentGroup) {
+            db.ref(`groups/${currentGroup}/messages`).push({
+              senderId: bot.id,
+              senderName: bot.name,
+              text: texto,
+              timestamp: Date.now(),
+              automated: true
+            });
+          }
+        };
+        
+        eval(cmds[nome].codigo);
+      } catch(e) {}
+    }
+  });
+}
+
+// ============================================
+// NAVEGAÇÃO
+// ============================================
+function showSection(hash) {
+  document.querySelectorAll("section").forEach(s => s.classList.remove("active"));
+  document.querySelector(hash).classList.add("active");
+  document.querySelectorAll("nav a").forEach(a => a.classList.remove("active"));
+  document.querySelector(`nav a[href="${hash}"]`).classList.add("active");
+}
+
+window.addEventListener("hashchange", () => showSection(location.hash));
+if(location.hash) showSection(location.hash);
+
+// ============================================
+// INICIALIZAÇÃO
+// ============================================
+const user = JSON.parse(localStorage.getItem("chat_user")) || { name: "Visitante" };
+document.getElementById("usernameDisplay").textContent = "Usuário: " + user.name;
+
+loadBots();
+loadCommands();
+db.ref("comandos").on("value", loadCommands);
+
+// ============================================
+// CONSOLE
+// ============================================
+window.ativarAgora = function() {
+  iniciarSistema247();
+  alert("24/7 ATIVADO");
+};
+
+window.desativarAgora = function() {
+  if(intervalo247) clearInterval(intervalo247);
+  document.body.classList.remove("executor-ativo");
+  const el = document.getElementById("executorStatusIndicator");
+  if(el) el.remove();
+  alert("24/7 DESATIVADO");
+};
+</script>
+</body>
+</html>
