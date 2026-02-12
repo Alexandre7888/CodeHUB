@@ -267,6 +267,28 @@ function GroupInfo({ activeChat, user, onClose }) {
                         <div className="text-sm bg-gray-200 px-2 py-0.5 rounded text-gray-600 font-normal">ID: {activeChat.id}</div>
                     </h1>
                     <p className="text-gray-500">Grupo • {members.length} participantes</p>
+                    
+                    {/* Call Buttons */}
+                    <div className="flex gap-4 mt-6 w-full max-w-xs justify-center">
+                        <button 
+                            onClick={() => { onClose(); window.ChatAppAPI.startGroupCall(activeChat.id, false); }}
+                            className="flex-1 flex flex-col items-center gap-2 p-3 rounded-xl bg-green-50 text-[#00a884] hover:bg-green-100 transition shadow-sm"
+                        >
+                            <div className="p-2 bg-white rounded-full shadow-sm">
+                                <div className="icon-phone text-xl"></div>
+                            </div>
+                            <span className="text-sm font-semibold">Voz</span>
+                        </button>
+                        <button 
+                            onClick={() => { onClose(); window.ChatAppAPI.startGroupCall(activeChat.id, true); }}
+                            className="flex-1 flex flex-col items-center gap-2 p-3 rounded-xl bg-green-50 text-[#00a884] hover:bg-green-100 transition shadow-sm"
+                        >
+                            <div className="p-2 bg-white rounded-full shadow-sm">
+                                <div className="icon-video text-xl"></div>
+                            </div>
+                            <span className="text-sm font-semibold">Vídeo</span>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Invite Link & Settings Section */}
@@ -365,11 +387,12 @@ function GroupInfo({ activeChat, user, onClose }) {
                             <span>Permissões do Grupo</span>
                         </div>
                         {isAdmin && (
-                            <div className="flex gap-3">
-                                <button onClick={() => setShowRuleEditor(true)} className="text-xs bg-gray-800 text-green-400 px-2 py-1 rounded hover:bg-black font-mono flex items-center gap-1">
-                                    <div className="icon-code w-3 h-3"></div> JS Editor
+                            <div className="flex gap-3 items-center">
+                                <button onClick={() => setShowRuleEditor(true)} className="text-xs bg-gray-900 text-[#00ff9d] px-3 py-1.5 rounded hover:bg-black font-mono flex items-center gap-2 shadow-sm border border-gray-700 transition-all hover:scale-105">
+                                    <div className="icon-code w-3 h-3"></div> 
+                                    <span className="font-bold">EDITOR DE REGRAS (JS)</span>
                                 </button>
-                                <button onClick={addCustomPermission} className="text-xs text-blue-600 hover:underline">
+                                <button onClick={addCustomPermission} className="text-xs text-blue-600 hover:underline bg-blue-50 px-2 py-1 rounded">
                                     + Permissão
                                 </button>
                             </div>
@@ -479,8 +502,15 @@ function GroupInfo({ activeChat, user, onClose }) {
                                                         <button className="text-gray-400 hover:text-gray-600 p-1"><div className="icon-more-vertical"></div></button>
                                                         <div className="absolute right-0 top-8 hidden group-hover/menu:block bg-white shadow-xl border rounded z-10 w-48 py-1">
                                                             <div className="px-3 py-1 text-xs text-gray-400 uppercase font-bold tracking-wider">Mudar Cargo</div>
-                                                            {roleKey !== 'admin' && <button onClick={() => assignRole(m.id, 'admin')} className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">Promover a Admin</button>}
-                                                            {roleKey !== 'member' && <button onClick={() => assignRole(m.id, 'member')} className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">Rebaixar a Membro</button>}
+                                                            {roleKey !== 'admin' && <button onClick={() => assignRole(m.id, 'admin')} className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm font-bold text-green-600">Promover a Admin</button>}
+                                                            {roleKey === 'admin' && m.id !== user.id && <button onClick={() => { if(confirm("Remover cargo de Admin deste usuário?")) assignRole(m.id, 'member'); }} className="block w-full text-left px-4 py-2 hover:bg-red-50 text-sm text-red-600 font-bold">Remover de Admin</button>}
+                                                            
+                                                            {roleKey !== 'member' && roleKey !== 'admin' && <button onClick={() => assignRole(m.id, 'member')} className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">Rebaixar a Membro</button>}
+                                                            
+                                                            <div className="border-t my-1"></div>
+                                                            <button onClick={() => alert("Função Silenciar (Mute) disponível via Bot ou API.")} className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-orange-600">Silenciar Usuário</button>
+                                                            <div className="border-t my-1"></div>
+
                                                             {Object.entries(customRoles).map(([rId, rData]) => (
                                                                 rId !== roleKey && (
                                                                     <button key={rId} onClick={() => assignRole(m.id, rId)} className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-blue-600 truncate flex items-center gap-2">
