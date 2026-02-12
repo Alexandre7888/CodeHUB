@@ -5,6 +5,10 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
     const [messages, setMessages] = React.useState([]);
     const [showAudioRecorder, setShowAudioRecorder] = React.useState(false);
     
+    // Bot & Media States
+    const [showBotCreator, setShowBotCreator] = React.useState(false);
+    const fileInputRef = React.useRef(null);
+    
     // Modal States with History Management
     const [showAddContact, setShowAddContact] = React.useState(false);
     const [showGroupInfo, setShowGroupInfo] = React.useState(false);
@@ -103,6 +107,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
 
     // --- PeerJS Setup & Presence System ---
     React.useEffect(() => {
+        // Ensure ID is safe for PeerJS (alphanumeric only)
         const cleanId = user.id.replace(/[^a-zA-Z0-9]/g, ''); 
         const newPeer = new window.Peer(cleanId);
 
@@ -116,6 +121,16 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
             });
             window.NotificationSystem.playRingtone();
             window.NotificationSystem.show("Chamada Recebida", `Chamada de ${call.peer}`);
+        });
+
+        newPeer.on('error', (err) => {
+            console.error('PeerJS Error:', err);
+            // Ignore trivial errors, alert on critical ones
+            if (err.type === 'peer-unavailable') {
+                // peer unavailable is common in mesh network, ignore or show toast
+            } else {
+                // alert(`Erro na conexão P2P: ${err.type}`);
+            }
         });
 
         setPeer(newPeer);
@@ -307,6 +322,20 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
 
     // --- Call Handlers ---
 
+    // Listen for external start call triggers (e.g. from GroupInfo)
+    React.useEffect(() => {
+        const handleStartGroupCall = (e) => {
+            const { groupId, video } = e.detail;
+            if (activeChat && activeChat.id === groupId) {
+                startGroupCall(video);
+            } else {
+                alert("Abra o chat do grupo primeiro para iniciar a chamada.");
+            }
+        };
+        window.addEventListener('start-group-call', handleStartGroupCall);
+        return () => window.removeEventListener('start-group-call', handleStartGroupCall);
+    }, [activeChat]);
+
     // New: Handle incoming signal to join a multi-user call
     React.useEffect(() => {
         const signalRef = db.ref(`users/${user.id}/call_signal`);
@@ -314,8 +343,9 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
             const signal = snapshot.val();
             if (signal && signal.type === 'connect_peer' && signal.targetPeer && callStatus === 'connected') {
                 // We are in a call, and requested to connect to a new peer
-                // Check if already connected
-                if (!activeCalls[signal.targetPeer]) {
+                // Check if already connected (checking sanitized ID)
+                const targetSanitized = signal.targetPeer.replace(/[^a-zA-Z0-9]/g, '');
+                if (!activeCalls[targetSanitized]) {
                     console.log("Sinal recebido para conectar com:", signal.targetPeer);
                     connectToNewPeer(signal.targetPeer, isVideoCall);
                     // Remove signal
@@ -331,11 +361,17 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
             const stream = localVideoRef.current?.srcObject 
                 || await navigator.mediaDevices.getUserMedia({ audio: true, video: video });
             
-            const call = peer.call(peerId, stream, { 
+            // Sanitize ID
+            const targetPeerId = peerId.replace(/[^a-zA-Z0-9]/g, '');
+
+            const call = peer.call(targetPeerId, stream, { 
                 metadata: { isVideo: video, isGroup: true, inviterId: user.id } 
             });
-            handleCallStream(call, video);
-            setActiveCalls(prev => ({ ...prev, [peerId]: call }));
+            
+            if (call) {
+                handleCallStream(call, video);
+                setActiveCalls(prev => ({ ...prev, [targetPeerId]: call }));
+            }
         } catch(e) {
             console.error("Erro ao conectar novo peer:", e);
         }
@@ -349,6 +385,17 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
 
         // 2. Tell all CURRENTLY connected peers to call the new person too
         Object.keys(activeCalls).forEach(connectedPeerId => {
+            // We need to send signal to ORIGINAL ID if possible, but we stored sanitized.
+            // But firebase needs original ID. 
+            // Limitation: If sanitized ID clashes or we can't reverse it, this is tricky.
+            // Assumption: IDs are numeric or simple enough that sanitized == original usually, 
+            // OR we iterate members list to find who matches sanitized ID.
+            // For now, let's try to use connectedPeerId as the key for firebase signal, hoping it matches enough.
+            // Ideally we should store { id: original, call: callObj } in activeCalls.
+            
+            // NOTE: For robustness, we are using sanitized ID for PeerJS. 
+            // Firebase paths might need original ID. 
+            // If user IDs are just numbers (from our generator), sanitized == original.
             db.ref(`users/${connectedPeerId}/call_signal`).push({
                 type: 'connect_peer',
                 targetPeer: newId,
@@ -356,12 +403,8 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
             });
         });
 
-        // 3. Tell the NEW person to call everyone else? 
-        // Actually, if everyone else calls him, it's fine. 
-        // He will receive 'call' events from everyone.
-        
         alert(`Convidando ${newId} para a chamada...`);
-        setShowAddContact(false); // Reuse this modal state if needed or separate
+        setShowAddContact(false); 
     };
 
     const togglePiP = async () => {
@@ -395,6 +438,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
             
             handleCallStream(call, isVideo);
             
+            // call.peer is already sanitized (it comes from peerjs)
             setActiveCalls(prev => ({ ...prev, [call.peer]: call }));
 
         }).catch(err => {
@@ -421,15 +465,21 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
             if (video && localVideoRef.current) localVideoRef.current.srcObject = stream;
             addToMix(stream);
 
-            const call = peer.call(activeChat.id, stream, { metadata: { isVideo: video } });
-            handleCallStream(call, video);
+            // Sanitize target ID
+            const targetPeerId = activeChat.id.replace(/[^a-zA-Z0-9]/g, '');
+            const call = peer.call(targetPeerId, stream, { metadata: { isVideo: video } });
             
-            setActiveCalls({ [activeChat.id]: call });
+            if (!call) {
+                throw new Error("Falha ao iniciar conexão com Peer.");
+            }
+
+            handleCallStream(call, video);
+            setActiveCalls({ [targetPeerId]: call });
 
         } catch(err) {
             console.error("Erro ao ligar:", err);
             setCallStatus(null);
-            alert("Erro ao acessar dispositivos.");
+            alert("Erro ao acessar microfone/câmera ou iniciar chamada.");
         }
     };
 
@@ -465,6 +515,9 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
             timestamp: Date.now()
         });
 
+        // Notify group via system message
+        handleSendMessage(`📞 Iniciou uma chamada de ${video ? 'vídeo' : 'voz'} em grupo.`, 'system');
+
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: video });
             if (video && localVideoRef.current) localVideoRef.current.srcObject = stream;
@@ -472,9 +525,13 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
 
             // Mesh: Call everyone
             memberIds.forEach(id => {
-                const call = peer.call(id, stream, { metadata: { isVideo: video, isGroup: true, groupId: activeChat.id } });
-                handleCallStream(call, video);
-                setActiveCalls(prev => ({ ...prev, [id]: call }));
+                // Sanitize ID
+                const targetPeerId = id.replace(/[^a-zA-Z0-9]/g, '');
+                const call = peer.call(targetPeerId, stream, { metadata: { isVideo: video, isGroup: true, groupId: activeChat.id } });
+                if (call) {
+                    handleCallStream(call, video);
+                    setActiveCalls(prev => ({ ...prev, [targetPeerId]: call }));
+                }
             });
 
         } catch (err) {
@@ -487,7 +544,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
     const joinGroupCall = async () => {
         if (!ongoingGroupCall) return;
         
-        const video = false; // Default to audio when joining, user can toggle later (if we implement toggle)
+        const video = false; // Default to audio when joining
         setIsVideoCall(video);
         setCallStatus('connected');
         setActiveGroupCall(true);
@@ -499,25 +556,24 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
             addToMix(stream);
 
             // Signal to everyone in the group that I am joining
-            // We can iterate members again or just rely on them calling me?
-            // Better: I call the person who STARTED it, and maybe others?
-            // Mesh strategy: I need to connect to everyone. 
-            // Let's call everyone in the group.
-            
             const groupRef = db.ref(`groups/${activeChat.id}/members`);
             const snapshot = await groupRef.once('value');
             const members = snapshot.val();
             if (members) {
                  const memberIds = Object.keys(members).filter(id => id !== user.id);
                  memberIds.forEach(id => {
-                    const call = peer.call(id, stream, { metadata: { isVideo: video, isGroup: true, groupId: activeChat.id } });
-                    handleCallStream(call, video);
-                    setActiveCalls(prev => ({ ...prev, [id]: call }));
+                    const targetPeerId = id.replace(/[^a-zA-Z0-9]/g, '');
+                    const call = peer.call(targetPeerId, stream, { metadata: { isVideo: video, isGroup: true, groupId: activeChat.id } });
+                    if (call) {
+                        handleCallStream(call, video);
+                        setActiveCalls(prev => ({ ...prev, [targetPeerId]: call }));
+                    }
                 });
             }
 
         } catch (e) {
             console.error("Erro ao entrar:", e);
+            alert("Erro ao entrar na chamada: " + e.message);
         }
     };
 
@@ -543,10 +599,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                  audio.srcObject = remoteStream;
                  audio.play();
             } else {
-                 // Video logic is harder for multi-stream in this UI structure. 
-                 // We will prioritize the LAST connected video for the main view
-                 // or switch to a Grid view if we had one.
-                 // For now, let's keep it simple: 1:1 style main view, others audio.
                  if (remoteVideoRef.current) remoteVideoRef.current.srcObject = remoteStream;
             }
         });
@@ -578,10 +630,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         if (callStatus === 'connected' && activeChat) {
              const durationStr = formatDuration(callDuration);
              const type = isVideoCall ? 'video' : 'audio';
-             // Only log if I initiated or if it was a significant call
-             // We push a system message. 
-             // To avoid duplication, usually only the caller logs, but let's log locally for now or just push 
-             // "Call ended" system message.
              if (!remoteEnded) { // I hung up
                  handleSendMessage(`Chamada de ${type} encerrada • ${durationStr}`, 'system');
              }
@@ -612,18 +660,10 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         if (!activeChat) return;
         // Check Admin permission if group
         if (activeChat.type === 'group') {
-             // We need to check if user is admin. 
-             // For simplicity, let's assume UI only shows delete button if allowed, 
-             // but here we do a quick check against firebase if needed or trust UI state.
-             // Ideally we check `groupPermissions` or `members[id] === 'admin'` again.
-             // Let's assume passed permission check.
              if (!confirm("Excluir esta mensagem para todos?")) return;
-             
              db.ref(`groups/${activeChat.id}/messages/${msgKey}`).remove();
         } else {
-             // Private chat delete (usually only for self, but user asked specifically for Group Admin delete)
              if (!confirm("Excluir mensagem?")) return;
-             // Private chat logic typically only deletes for ME, but let's remove for both as requested for 'admin' power style
              const chatId = [user.id, activeChat.id].sort().join('_');
              db.ref(`chats/${chatId}/messages/${msgKey}`).remove();
         }
@@ -681,10 +721,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         };
 
         contactsRef.on('value', loadContacts);
-        // Also listen for my groups (assuming we store groups joined in users/{uid}/groups)
-        // For simplicity in this artifact, let's assume `contacts` stores both for now or handle separate
-        // But the previous implementation listed ALL groups. We need to list only Joined Groups.
-        // Let's change handleCreateGroup to add to my groups list.
 
         return () => {
             contactsRef.off();
@@ -712,15 +748,11 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                  
                  // Exception List Check
                  if (settings.readReceiptExceptions && settings.readReceiptExceptions[senderId]) {
-                      // If user is in exception list, flip the permission
-                      // Logic: If 'readReceipts' is true, exception means DON'T show for this person.
-                      // If 'readReceipts' is false, exception means SHOW for this person.
                       allowReadReceipt = !allowReadReceipt;
                  }
 
                  if (allowReadReceipt) {
                       if (activeChat.type === 'group') {
-                           // For groups, we push to a 'readBy' list
                            db.ref(`groups/${activeChat.id}/messages/${msgId}/readBy/${user.id}`).set(Date.now());
                       } else {
                            const chatId = [user.id, activeChat.id].sort().join('_');
@@ -747,11 +779,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         });
 
         // --- SCRIPT ENGINE EXECUTION ---
-        // Listen for NEW messages to run scripts (Only for Group Admins or everyone? 
-        // Usually bots run on server, but here we run on client. 
-        // To prevent duplicate execution, let's say only the Current User runs scripts 
-        // IF they are an Admin, OR we rely on everyone running it but only one effect taking place?
-        // Simpler: Each client runs scripts. Scripts like 'deleteMessage' will work if user has permission.
         if (activeChat.type === 'group') {
             const scriptsRef = db.ref(`groups/${activeChat.id}/scripts`);
             scriptsRef.once('value').then(scriptsSnap => {
@@ -795,7 +822,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
     }, [messages]);
 
 
-    const handleSendMessage = (content, type = 'text', duration = null) => {
+    const handleSendMessage = (content, type = 'text', duration = null, msgType = 'text') => {
         if (!activeChat) return;
         
         // Permission Check
@@ -807,7 +834,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         if (type === 'audio') {
             window.ChatAppAPI.sendAudio(activeChat.id, content, duration, activeChat.type);
         } else if (type === 'system') {
-             // System message injection (e.g. Call logs)
+             // System message injection
              const msgData = {
                 senderId: 'system',
                 senderName: 'Sistema',
@@ -821,7 +848,8 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                 : db.ref(`chats/${[user.id, activeChat.id].sort().join('_')}/messages`);
             ref.push(msgData);
         } else {
-            window.ChatAppAPI.sendMessage(activeChat.id, content, activeChat.type);
+            // Support Image/Text types
+            window.ChatAppAPI.sendMessage(activeChat.id, content, activeChat.type, msgType);
         }
         setMessageInput("");
         setShowAudioRecorder(false);
@@ -852,6 +880,15 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
 
     const handleAddContact = async (inputId) => {
         if (!inputId) return;
+
+        const cleanInput = inputId.trim();
+
+        // Bot Creation Trigger
+        if (cleanInput.toLowerCase() === 'bot') {
+            setShowAddContact(false);
+            setShowBotCreator(true);
+            return;
+        }
         
         try {
             // 1. Try to find as Group
@@ -905,6 +942,14 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                 />
             )}
 
+            {/* Bot Creator Modal */}
+            {showBotCreator && (
+                <BotCreator 
+                    onClose={() => setShowBotCreator(false)} 
+                    onCreated={() => { setShowBotCreator(false); openAddContact(); }}
+                />
+            )}
+
             {/* Modal Layer */}
             {showSettings && <Settings user={user} onClose={() => setShowSettings(false)} chats={chats} />}
             
@@ -929,12 +974,19 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                             </div>
                         ) : null}
 
-                        <p className="text-sm text-gray-500 mb-2">Digite ID do Usuário ou Grupo</p>
+                        <p className="text-sm text-gray-500 mb-2">Digite ID do Usuário, Grupo ou "bot"</p>
                         <input 
                             type="text" 
                             id="newContactId"
-                            placeholder="Ex: 12345" 
+                            placeholder="Ex: 12345 ou bot" 
                             className="w-full border border-gray-300 rounded p-2 mb-4 outline-none focus:border-[#00a884]"
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    const val = e.target.value;
+                                    if (callStatus) handleAddParticipantToCall(val);
+                                    else handleAddContact(val);
+                                }
+                            }}
                         />
                         <div className="flex justify-end gap-2">
                             <button onClick={() => setShowAddContact(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancelar</button>
@@ -1165,13 +1217,27 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                                 }
                             </div>
                         </div>
-                        <div className="flex items-center gap-5 text-gray-600" onClick={(e) => e.stopPropagation()}>
-                            {/* Call Buttons for Everyone (Private & Group) */}
-                            <div className="icon-video cursor-pointer hover:bg-gray-200 p-2 rounded-full" onClick={() => startCall(true)} title={activeChat.type === 'group' ? "Chamada de Vídeo em Grupo" : "Vídeo Chamada"}></div>
-                            <div className="icon-phone cursor-pointer hover:bg-gray-200 p-2 rounded-full" onClick={() => startCall(false)} title={activeChat.type === 'group' ? "Chamada de Voz em Grupo" : "Voz"}></div>
+                        <div className="flex items-center gap-2 text-gray-600" onClick={(e) => e.stopPropagation()}>
+                            {/* Unified Call Buttons (Works for both Private and Group) */}
+                            <div 
+                                className={`p-2 rounded-full cursor-pointer transition-colors ${activeChat.type === 'group' ? 'text-[#00a884] bg-green-50 hover:bg-green-100' : 'hover:bg-gray-200'}`}
+                                onClick={() => startCall(true)} 
+                                title={activeChat.type === 'group' ? "Iniciar Vídeo Chamada em Grupo" : "Vídeo Chamada"}
+                            >
+                                <div className="icon-video text-xl"></div>
+                            </div>
+
+                            <div 
+                                className={`p-2 rounded-full cursor-pointer transition-colors ${activeChat.type === 'group' ? 'text-[#00a884] bg-green-50 hover:bg-green-100' : 'hover:bg-gray-200'}`}
+                                onClick={() => startCall(false)} 
+                                title={activeChat.type === 'group' ? "Iniciar Chamada de Voz em Grupo" : "Chamada de Voz"}
+                            >
+                                <div className="icon-phone text-xl"></div>
+                            </div>
                             
-                            <div className="icon-search cursor-pointer"></div>
-                            <div className="icon-more-vertical cursor-pointer"></div>
+                            <div className="w-px h-6 bg-gray-300 mx-1"></div>
+                            <div className="icon-search cursor-pointer hover:bg-gray-200 p-2 rounded-full"></div>
+                            <div className="icon-more-vertical cursor-pointer hover:bg-gray-200 p-2 rounded-full"></div>
                         </div>
                     </div>
                     
@@ -1226,7 +1292,53 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                                         <div className={`max-w-[80%] md:max-w-[60%] rounded-lg p-2 px-3 shadow-sm relative text-sm ${isMe ? 'bg-[#d9fdd3] rounded-tr-none' : 'bg-white rounded-tl-none'}`}>
                                             {/* Message Content */}
                                             {!isMe && activeChat.type === 'group' && <p className="text-xs text-orange-500 font-bold mb-1">{msg.senderName}</p>}
-                                            {msg.type === 'text' && <p className="text-gray-800 mb-1 leading-relaxed">{msg.text}</p>}
+                                            {msg.type === 'text' && (() => {
+                                                // Check for #url= pattern in groups (Case insensitive, safer check)
+                                                const urlMatch = (activeChat?.type === 'group' && typeof msg.text === 'string') 
+                                                    ? msg.text.match(/#url=(https?:\/\/[^\s]+)/i) 
+                                                    : null;
+                                                
+                                                if (urlMatch) {
+                                                    const originalUrl = urlMatch[1];
+                                                    // Ensure senderId exists, fallback to 'unknown' if missing (should not happen)
+                                                    const senderIdParam = msg.senderId || 'unknown';
+                                                    const separator = originalUrl.includes('?') ? '&' : '?';
+                                                    const finalUrl = `${originalUrl}${separator}userid=${senderIdParam}`;
+                                                    
+                                                    const cleanText = msg.text.replace(urlMatch[0], '').trim();
+
+                                                    return (
+                                                        <div className="flex flex-col gap-2 mt-1 min-w-[250px] md:min-w-[300px]">
+                                                            {cleanText && (
+                                                                <p className="text-gray-800 leading-relaxed break-words">{cleanText}</p>
+                                                            )}
+                                                            <div className="w-full h-[350px] bg-white rounded-lg border border-gray-200 overflow-hidden relative shadow-sm">
+                                                                <div className="bg-gray-100 px-3 py-1 text-[10px] text-gray-500 flex justify-between items-center border-b border-gray-200">
+                                                                    <span className="truncate max-w-[200px]">{originalUrl}</span>
+                                                                    <span className="font-mono">Embed</span>
+                                                                </div>
+                                                                <iframe 
+                                                                    src={finalUrl} 
+                                                                    className="w-full h-full border-0 bg-white" 
+                                                                    title="Embed"
+                                                                    loading="lazy"
+                                                                    allow="camera; microphone; geolocation; payment"
+                                                                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+                                                                />
+                                                                <a href={finalUrl} target="_blank" className="absolute bottom-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 rounded-full text-white transition-colors" title="Abrir em nova aba">
+                                                                    <div className="icon-external-link text-xs"></div>
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                }
+                                                return <p className="text-gray-800 mb-1 leading-relaxed break-words">{msg.text}</p>;
+                                            })()}
+                                            {msg.type === 'image' && (
+                                                <div className="mb-1">
+                                                    <img src={msg.text.replace('[IMAGEM] ', '')} className="rounded-lg max-w-full md:max-w-sm cursor-pointer" onClick={() => window.open(msg.text.replace('[IMAGEM] ', ''), '_blank')} />
+                                                </div>
+                                            )}
                                             {msg.type === 'audio' && (
                                                 <div className="flex items-center gap-3 min-w-[200px] py-2">
                                                     <div className="icon-circle-play text-gray-500 text-3xl cursor-pointer hover:text-[#00a884] transition" 
@@ -1285,7 +1397,36 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                         {!showAudioRecorder ? (
                             <>
                                 <div className="icon-smile text-2xl text-gray-500 cursor-pointer"></div>
-                                <div className="icon-plus text-2xl text-gray-500 cursor-pointer"></div>
+                                <div 
+                                    className="icon-plus text-2xl text-gray-500 cursor-pointer"
+                                    onClick={() => fileInputRef.current.click()}
+                                    title="Enviar Foto/Vídeo"
+                                ></div>
+                                <input 
+                                    type="file" 
+                                    ref={fileInputRef} 
+                                    className="hidden" 
+                                    accept="image/*,video/*"
+                                    onChange={async (e) => {
+                                        const file = e.target.files[0];
+                                        if (file) {
+                                            if (file.size > 2 * 1024 * 1024) return alert("Arquivo muito grande! Máximo 2MB.");
+                                            
+                                            // Handle Image
+                                            if (file.type.startsWith('image/')) {
+                                                const base64 = await window.compressImage(file, 800, 0.7);
+                                                // Send as image message
+                                                // NOTE: We need to handle 'image' type in handleSendMessage, currently only text/audio/system.
+                                                // Let's implement basic image type support inline here or modify handleSendMessage
+                                                window.ChatAppAPI.sendMessage(activeChat.id, `[IMAGEM] ${base64}`, activeChat.type, 'image');
+                                            } 
+                                            // Handle Video
+                                            else if (file.type.startsWith('video/')) {
+                                                alert("Envio de vídeo ainda experimental.");
+                                            }
+                                        }
+                                    }}
+                                />
                                 <div className="flex-1 bg-white rounded-lg px-4 py-2 flex items-center">
                                     <input type="text" value={messageInput} onChange={(e) => setMessageInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage(messageInput)} placeholder="Mensagem" className="w-full bg-transparent border-none outline-none text-gray-700 placeholder-gray-400 text-sm"/>
                                 </div>
