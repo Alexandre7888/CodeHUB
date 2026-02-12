@@ -55,7 +55,7 @@ function Settings({ user, onClose, chats }) {
     };
 
     const openDeveloperPage = () => {
-        window.open('bot.html', '_blank');
+        window.open('bot/bot.html', '_blank');
     };
 
     return (
@@ -239,7 +239,7 @@ function Settings({ user, onClose, chats }) {
                                     </div>
                                 </div>
                             ))}
-                            {contacts.length === 0 && <p className="text-center text-gray-400 mt-10">Nenhum contato privado encontrado.</p>}
+                            {contacts.length === 0 && <p className="text-center text-gray-400 mt-10">Nenhum contatpo privado encontrado.</p>}
                         </div>
                     </div>
                 )}
