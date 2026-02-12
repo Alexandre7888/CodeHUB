@@ -111,4 +111,4 @@ class ChatAPI {
 }
 
 // Exporta para o escopo global
-window.ChatAppAPI = new ChatAPI();console.log("🚀 ChatAPI v2.0 carregada com ScriptEngine e CommandSystem!");
+window.ChatAppAPI = new ChatAPI();
