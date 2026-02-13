@@ -57,8 +57,8 @@ function Login({ onLogin }) {
     const handleCodeHubLogin = () => {
         setLoading(true);
         setStatus("Redirecionando para CodeHUB...");
-        // Redirecionamento real usando o token fornecido: 5EsCci5szHJLCX7Lkgie
-        window.location.href = "https://code.codehub.ct.ws/API/continuar-conta?token=5EsCci5szHJLCX7Lkgie"; 
+        // Redirecionamento real usando o token fornecido: jeQgPoh4LYHl260Fu51E
+        window.location.href = "https://code.codehub.ct.ws/API/continuar-conta?token=jeQgPoh4LYHl260Fu51E"; 
     };
 
     return (
