@@ -8,15 +8,14 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Método não permitido" });
 
   try {
-    const { filename, folder, fileBase64 } = req.body;
+    const { filename, fileBase64 } = req.body;
     if (!filename || !fileBase64) return res.status(400).json({ error: "Faltam dados" });
 
     const storeId = "store_Z8GA3U7wxbRsRhsc";
     const token = "vercel_blob_rw_Z8GA3U7wxbRsRhsc_YAxTwqsec4E063E8FrRqGY4aI2AvM4";
 
-    // Cria o path correto dentro da store (pasta + nome do arquivo)
-    const path = folder ? `${folder}/${filename}` : filename;
-    const url = `https://api.vercel.com/v1/blob/${storeId}/${encodeURIComponent(path)}`;
+    // Endpoint PUT do Vercel Storage (o blob vai gerar ID interno)
+    const url = `https://api.vercel.com/v1/blob/${storeId}/${encodeURIComponent(filename)}`;
 
     const buffer = Buffer.from(fileBase64, "base64");
 
@@ -34,7 +33,10 @@ export default async function handler(req, res) {
       throw new Error(`Erro no upload: ${response.status} ${text}`);
     }
 
-    return res.status(200).json({ ok: true, url: `https://z8ga3u7wxbrsrhsc.public.blob.vercel-storage.com/${encodeURIComponent(path)}` });
+    // URL pública final (Vercel vai gerar ID interno, mas você retorna para o frontend)
+    const publicUrl = `https://z8ga3u7wxbrsrhsc.public.blob.vercel-storage.com/${encodeURIComponent(filename)}`;
+
+    return res.status(200).json({ ok: true, url: publicUrl, name: filename });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
