@@ -1,5 +1,5 @@
 export default async function handler(req, res) {
-  // Permitir CORS
+  // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -11,18 +11,21 @@ export default async function handler(req, res) {
     const { filename, fileBase64 } = req.body;
     if (!filename || !fileBase64) return res.status(400).json({ error: "Faltam dados" });
 
-    // Token do Vercel Storage oficial
+    // Store ID e Token de escrita
+    const storeId = "store_Z8GA3U7wxbRsRhsc";
     const token = "vercel_blob_rw_Z8GA3U7wxbRsRhsc_YAxTwqsec4E063E8FrRqGY4aI2AvM4";
 
-    // Endpoint oficial da API do Vercel Storage (funciona para PUT)
-    const blobUrl = `https://api.vercel.com/v1/blob/storage/${filename}?token=${token}`;
+    const url = `https://api.vercel.com/v1/blob/${storeId}/${filename}`;
 
     const buffer = Buffer.from(fileBase64, "base64");
 
-    const response = await fetch(blobUrl, {
+    const response = await fetch(url, {
       method: "PUT",
-      headers: { "Content-Type": "application/octet-stream" },
-      body: buffer,
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/octet-stream"
+      },
+      body: buffer
     });
 
     if (!response.ok) {
@@ -30,7 +33,7 @@ export default async function handler(req, res) {
       throw new Error(`Erro no upload: ${response.status} ${text}`);
     }
 
-    return res.status(200).json({ ok: true, url: blobUrl });
+    return res.status(200).json({ ok: true, url: `https://z8ga3u7wxbrsrhsc.public.blob.vercel-storage.com/${filename}` });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
