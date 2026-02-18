@@ -5,266 +5,42 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Perfil do Usuário</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-
-    body {
-      min-height: 100vh;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    /* Efeito de bolhas no fundo */
-    body::before {
-      content: '';
-      position: absolute;
-      width: 400px;
-      height: 400px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 50%;
-      top: -100px;
-      right: -100px;
-      animation: float 6s ease-in-out infinite;
-    }
-
-    body::after {
-      content: '';
-      position: absolute;
-      width: 300px;
-      height: 300px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 50%;
-      bottom: -50px;
-      left: -50px;
-      animation: float 8s ease-in-out infinite reverse;
-    }
-
-    @keyframes float {
-      0%, 100% { transform: translate(0, 0) rotate(0deg); }
-      33% { transform: translate(30px, -30px) rotate(120deg); }
-      66% { transform: translate(-20px, 20px) rotate(240deg); }
-    }
-
-    .profile-card {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      border-radius: 30px;
-      padding: 40px;
-      width: 100%;
-      max-width: 450px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-      position: relative;
-      z-index: 10;
-      animation: slideUp 0.6s ease-out;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    @keyframes slideUp {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .avatar {
-      width: 120px;
-      height: 120px;
-      margin: 0 auto 25px;
-      position: relative;
-    }
-
-    .avatar-inner {
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 48px;
-      font-weight: bold;
-      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-      border: 4px solid white;
-      transition: transform 0.3s ease;
-    }
-
-    .avatar-inner:hover {
-      transform: scale(1.05);
-    }
-
-    .username {
-      text-align: center;
-      font-size: 32px;
-      font-weight: 700;
-      color: #2d3748;
-      margin-bottom: 10px;
-      word-break: break-word;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .badge {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-
-    .badge span {
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white;
-      padding: 8px 20px;
-      border-radius: 50px;
-      font-size: 14px;
-      font-weight: 500;
-      letter-spacing: 0.5px;
-      box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
-    }
-
-    .info-container {
-      background: #f7fafc;
-      border-radius: 20px;
-      padding: 20px;
-      margin-top: 20px;
-    }
-
-    .info-item {
-      display: flex;
-      align-items: center;
-      padding: 12px 0;
-      border-bottom: 1px solid #e2e8f0;
-    }
-
-    .info-item:last-child {
-      border-bottom: none;
-    }
-
-    .info-icon {
-      width: 40px;
-      height: 40px;
-      background: white;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-right: 15px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    }
-
-    .info-icon svg {
-      width: 20px;
-      height: 20px;
-      stroke: #667eea;
-      stroke-width: 2;
-      fill: none;
-    }
-
-    .info-content {
-      flex: 1;
-    }
-
-    .info-label {
-      font-size: 12px;
-      color: #718096;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 2px;
-    }
-
-    .info-value {
-      font-size: 16px;
-      color: #2d3748;
-      font-weight: 600;
-      word-break: break-word;
-    }
-
-    .status {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-top: 25px;
-      gap: 10px;
-    }
-
-    .status-dot {
-      width: 10px;
-      height: 10px;
-      background: #48bb78;
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(1.2); }
-    }
-
-    .status-text {
-      color: #48bb78;
-      font-weight: 600;
-      font-size: 14px;
-    }
-
-    .loading {
-      text-align: center;
-      padding: 40px;
-    }
-
-    .loading-spinner {
-      width: 50px;
-      height: 50px;
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #667eea;
-      border-radius: 50%;
-      margin: 0 auto 20px;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .loading p {
-      color: white;
-      font-size: 16px;
-      opacity: 0.9;
-    }
-
-    .error {
-      text-align: center;
-      color: white;
-      padding: 20px;
-      background: rgba(245, 101, 101, 0.2);
-      border-radius: 15px;
-      backdrop-filter: blur(10px);
-    }
+    /* Seu CSS já existente para o perfil */
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { min-height:100vh; background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); display:flex; justify-content:center; align-items:center; padding:20px; position:relative; overflow:hidden; }
+    body::before, body::after { content:''; position:absolute; border-radius:50%; background:rgba(255,255,255,0.1); animation:float 6s ease-in-out infinite; }
+    body::before { width:400px; height:400px; top:-100px; right:-100px; }
+    body::after { width:300px; height:300px; bottom:-50px; left:-50px; animation-duration:8s; animation-direction:reverse; }
+    @keyframes float { 0%,100%{transform:translate(0,0) rotate(0deg);} 33%{transform:translate(30px,-30px) rotate(120deg);} 66%{transform:translate(-20px,20px) rotate(240deg);} }
+    .profile-card { background:rgba(255,255,255,0.95); backdrop-filter:blur(10px); border-radius:30px; padding:40px; width:100%; max-width:450px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5); position:relative; z-index:10; animation:slideUp 0.6s ease-out; border:1px solid rgba(255,255,255,0.2); }
+    @keyframes slideUp { from {opacity:0; transform:translateY(30px);} to{opacity:1; transform:translateY(0);} }
+    .avatar { width:120px; height:120px; margin:0 auto 25px; position:relative; }
+    .avatar-inner { width:100%; height:100%; background:linear-gradient(135deg,#667eea,#764ba2); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:48px; font-weight:bold; box-shadow:0 10px 20px rgba(102,126,234,0.3); border:4px solid white; transition: transform 0.3s ease; }
+    .avatar-inner:hover { transform:scale(1.05); }
+    .username { text-align:center; font-size:32px; font-weight:700; color:#2d3748; margin-bottom:10px; word-break:break-word; background:linear-gradient(135deg,#667eea,#764ba2); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .badge { text-align:center; margin-bottom:30px; }
+    .badge span { background:linear-gradient(135deg,#667eea,#764ba2); color:white; padding:8px 20px; border-radius:50px; font-size:14px; font-weight:500; letter-spacing:0.5px; box-shadow:0 4px 10px rgba(102,126,234,0.3); }
+    .info-container { background:#f7fafc; border-radius:20px; padding:20px; margin-top:20px; }
+    .info-item { display:flex; align-items:center; padding:12px 0; border-bottom:1px solid #e2e8f0; }
+    .info-item:last-child { border-bottom:none; }
+    .info-icon { width:40px; height:40px; background:white; border-radius:12px; display:flex; align-items:center; justify-content:center; margin-right:15px; box-shadow:0 2px 5px rgba(0,0,0,0.05); }
+    .info-icon svg { width:20px; height:20px; stroke:#667eea; stroke-width:2; fill:none; }
+    .info-content { flex:1; }
+    .info-label { font-size:12px; color:#718096; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px; }
+    .info-value { font-size:16px; color:#2d3748; font-weight:600; word-break:break-word; }
+    .status { display:flex; align-items:center; justify-content:center; margin-top:25px; gap:10px; }
+    .status-dot { width:10px; height:10px; background:#48bb78; border-radius:50%; animation:pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.5;transform:scale(1.2);} }
+    .status-text { color:#48bb78; font-weight:600; font-size:14px; }
   </style>
 </head>
 <body>
-  <div id="profile-container">
-    <!-- Conteúdo será inserido via JavaScript -->
-  </div>
+  <div id="profile-container"></div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    // Configuração do Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
       authDomain: "html-15e80.firebaseapp.com",
@@ -276,160 +52,55 @@
       measurementId: "G-V57KRZ02HJ"
     };
 
-    // Inicializar Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-
     const container = document.getElementById('profile-container');
 
-    // Função para extrair a primeira letra para o avatar
-    function getInitial(name) {
-      if (!name) return '?';
-      return name.charAt(0).toUpperCase();
-    }
+    function getInitial(name) { return name ? name.charAt(0).toUpperCase() : '?'; }
+    function getDisplayName(user) { return user.displayName || (user.email ? user.email.split('@')[0] : `Usuário ${user.uid.substring(0,4)}`); }
 
-    // Função para obter nome de exibição
-    function getDisplayName(user) {
-      if (user.displayName) return user.displayName;
-      if (user.email) return user.email.split('@')[0];
-      return `Usuário ${user.uid.substring(0, 4)}`;
-    }
-
-    // Função para enviar dados para a página pai (se estiver incorporado)
     function sendDataToParent(userData) {
-      // Verifica se está em um iframe
-      if (window.self !== window.top) {
-        // Envia mensagem para o pai
-        window.parent.postMessage({
-          type: 'USER_DATA',
-          data: userData
-        }, '*'); // Em produção, substitua '*' pela origem específica
-        
-        console.log('📤 Dados enviados para a página pai:', userData);
-      } else {
-        console.log('📌 Não está incorporado. Dados disponíveis:', userData);
-      }
+      if(window.self !== window.top) {
+        window.parent.postMessage({ type:'USER_DATA', data:userData }, '*');
+        console.log('📤 Dados enviados:', userData);
+      } else { console.log('📌 Não incorporado. Dados disponíveis:', userData); }
     }
 
-    // Monitorar estado de autenticação
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        // Usuário está logado
+    onAuthStateChanged(auth, (user)=>{
+      if(user){
         const displayName = getDisplayName(user);
         const email = user.email || 'Email não disponível';
         const uid = user.uid;
         const initial = getInitial(displayName);
         const isAnonymous = user.isAnonymous;
 
-        // Preparar dados do usuário para enviar
-        const userData = {
-          uid: uid,
-          name: displayName,
-          email: email,
-          isAnonymous: isAnonymous,
-          timestamp: Date.now()
-        };
-
-        // Enviar dados para a página pai
+        const userData = { uid, name:displayName, email, isAnonymous, timestamp:Date.now() };
         sendDataToParent(userData);
 
-        // Montar HTML do perfil
         container.innerHTML = `
           <div class="profile-card">
-            <div class="avatar">
-              <div class="avatar-inner">
-                ${initial}
-              </div>
-            </div>
-            
+            <div class="avatar"><div class="avatar-inner">${initial}</div></div>
             <h1 class="username">${displayName}</h1>
-            
-            <div class="badge">
-              <span>${isAnonymous ? '🎭 Sessão Anônima' : '✅ Conta Verificada'}</span>
-            </div>
-
+            <div class="badge"><span>${isAnonymous?'🎭 Sessão Anônima':'✅ Conta Verificada'}</span></div>
             <div class="info-container">
               <div class="info-item">
-                <div class="info-icon">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="12" cy="7" r="4"></circle>
-                  </svg>
-                </div>
-                <div class="info-content">
-                  <div class="info-label">Nome de Usuário</div>
-                  <div class="info-value">${displayName}</div>
-                </div>
+                <div class="info-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>
+                <div class="info-content"><div class="info-label">Nome</div><div class="info-value">${displayName}</div></div>
               </div>
-
               <div class="info-item">
-                <div class="info-icon">
-                  <svg viewBox="0 0 24 24">
-                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-                    <path d="m22 7-10 7L2 7"></path>
-                  </svg>
-                </div>
-                <div class="info-content">
-                  <div class="info-label">Email</div>
-                  <div class="info-value">${email}</div>
-                </div>
+                <div class="info-icon"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-10 7L2 7"></path></svg></div>
+                <div class="info-content"><div class="info-label">Email</div><div class="info-value">${email}</div></div>
               </div>
-
               <div class="info-item">
-                <div class="info-icon">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M4 4v16h16V4H4zm2 4h12v10H6V8z"/>
-                    <circle cx="12" cy="14" r="2"/>
-                  </svg>
-                </div>
-                <div class="info-content">
-                  <div class="info-label">ID do Usuário</div>
-                  <div class="info-value">${uid.substring(0, 8)}...${uid.substring(uid.length - 4)}</div>
-                </div>
+                <div class="info-icon"><svg viewBox="0 0 24 24"><path d="M4 4v16h16V4H4zm2 4h12v10H6V8z"/><circle cx="12" cy="14" r="2"/></svg></div>
+                <div class="info-content"><div class="info-label">ID do Usuário</div><div class="info-value">${uid.substring(0,8)}...${uid.substring(uid.length-4)}</div></div>
               </div>
             </div>
-
-            <div class="status">
-              <div class="status-dot"></div>
-              <div class="status-text">Sessão ativa</div>
-            </div>
+            <div class="status"><div class="status-dot"></div><div class="status-text">Sessão ativa</div></div>
           </div>
         `;
-
       } else {
-        // Usuário não está logado
-        container.innerHTML = `
-          <div class="profile-card">
-            <div class="avatar">
-              <div class="avatar-inner" style="font-size: 24px; background: #718096;">
-                ⚠️
-              </div>
-            </div>
-            
-            <h1 class="username" style="font-size: 24px;">Nenhum usuário logado</h1>
-            
-            <div class="badge">
-              <span style="background: #f56565;">🔒 Não autenticado</span>
-            </div>
-
-            <div class="info-container" style="text-align: center;">
-              <p style="color: #718096; margin: 20px 0;">
-                Faça login para ver suas informações
-              </p>
-              <button onclick="window.location.href='auth.html'" style="
-                background: linear-gradient(135deg, #667eea, #764ba2);
-                color: white;
-                border: none;
-                padding: 12px 30px;
-                border-radius: 50px;
-                font-size: 16px;
-                font-weight: 600;
-                cursor: pointer;
-                transition: transform 0.2s;
-              ">Fazer Login</button>
-            </div>
-          </div>
-        `;
+        container.innerHTML = `<div class="profile-card"><div style="text-align:center; color:#718096;">Nenhum usuário logado</div></div>`;
       }
     });
   </script>
