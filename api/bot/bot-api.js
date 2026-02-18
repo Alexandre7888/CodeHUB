@@ -1,24 +1,23 @@
-// ============================================
-// Node.js - API Bot para Vercel
-// ============================================
-
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+// api/bot.js
+export const config = {
+  runtime: 'edge', // roda como função edge na Vercel
+};
 
 const URL = "https://html-785e3-default-rtdb.firebaseio.com";
 
-// ==================== Funções ====================
+// Função para pegar o nome do bot ou usuário
 async function pegarNomeBot(botId) {
   try {
-    let res = await fetch(`${URL}/users/${botId}.json`);
-    let user = await res.json();
+    const res1 = await fetch(`${URL}/users/${botId}.json`);
+    const user = await res1.json();
     if (user && (user.nome || user.name)) return user.nome || user.name;
 
-    res = await fetch(`${URL}/bots/${botId}.json`);
-    let bot = await res.json();
+    const res2 = await fetch(`${URL}/bots/${botId}.json`);
+    const bot = await res2.json();
     if (bot && (bot.nome || bot.name)) return bot.nome || bot.name;
 
-    res = await fetch(`${URL}/groups.json`);
-    let groups = await res.json();
+    const res3 = await fetch(`${URL}/groups.json`);
+    const groups = await res3.json();
     if (groups) {
       for (let gid in groups) {
         if (groups[gid]?.members?.[botId]) {
@@ -27,12 +26,13 @@ async function pegarNomeBot(botId) {
         }
       }
     }
-  } catch(e) {
+  } catch (e) {
     console.error(e);
   }
   return botId;
 }
 
+// Formata timestamp para HH:MM
 function formatarHora(timestamp) {
   const date = new Date(timestamp);
   const horas = date.getHours().toString().padStart(2, '0');
@@ -40,8 +40,10 @@ function formatarHora(timestamp) {
   return `${horas}:${minutos}`;
 }
 
+// Envia mensagem para um grupo
 async function enviarMensagem(botId, botNome, grupoId, texto, leitores = {}) {
   const timestamp = Date.now();
+
   const msg = {
     senderId: botId,
     senderName: botNome || botId,
@@ -49,35 +51,64 @@ async function enviarMensagem(botId, botNome, grupoId, texto, leitores = {}) {
     timestamp,
     time: formatarHora(timestamp),
     type: "text",
-    readBy: { [botId]: timestamp, ...leitores }
+    readBy: {
+      [botId]: timestamp,
+      ...leitores
+    }
   };
 
-  const res = await fetch(`${URL}/groups/${grupoId}/messages.json`, {
+  const response = await fetch(`${URL}/groups/${grupoId}/messages.json`, {
     method: 'POST',
     body: JSON.stringify(msg),
     headers: { 'Content-Type': 'application/json' }
   });
 
-  return await res.json(); // retorna { name: "mensagemId" }
+  return await response.json();
 }
 
-// ============================================
-// Webhook Vercel (Serverless Function)
-// ============================================
-// Crie um arquivo api/sendMessage.js na Vercel
+// Função principal da API (POST via webhook)
+export default async function handler(req) {
+  // Habilita CORS para todos os domínios
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type'
+  };
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido' });
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers });
+  }
 
-  const { botId, grupoId, texto } = req.body;
-  if (!botId || !grupoId || !texto) return res.status(400).json({ error: 'Faltando botId, grupoId ou texto' });
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Método não permitido' }), {
+      status: 405,
+      headers
+    });
+  }
 
   try {
+    const data = await req.json();
+    const { botId, grupoId, texto, leitores = {} } = data;
+
+    if (!botId || !grupoId || !texto) {
+      return new Response(JSON.stringify({ error: 'Dados incompletos' }), {
+        status: 400,
+        headers
+      });
+    }
+
     const botNome = await pegarNomeBot(botId);
-    const resultado = await enviarMensagem(botId, botNome, grupoId, texto);
-    res.status(200).json({ success: true, mensagemId: resultado.name });
+    const resultado = await enviarMensagem(botId, botNome, grupoId, texto, leitores);
+
+    return new Response(JSON.stringify({ success: true, resultado }), {
+      status: 200,
+      headers
+    });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ success: false, error: e.message });
+    return new Response(JSON.stringify({ error: e.message }), {
+      status: 500,
+      headers
+    });
   }
 }
