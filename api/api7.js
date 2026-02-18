@@ -9,11 +9,11 @@ export default async function handler(req, res) {
   try {
     const buffer = Buffer.from(base64Data, 'base64');
 
-    // Exemplo: usando fetch nativo do Node 18+ (Vercel já suporta)
+    // Troque pelo seu endpoint real de blob storage
     const blobUrl = 'https://your-blob-storage.com/upload/file.png';
 
     const response = await fetch(blobUrl, {
-      method: 'PUT',
+      method: 'PUT', // ou POST dependendo do storage
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/octet-stream'
