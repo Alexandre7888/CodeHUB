@@ -1,11 +1,17 @@
 // api/bot.js
 export const config = {
-  runtime: 'edge', // roda como função edge na Vercel
+  runtime: 'edge',
 };
 
 const URL = "https://html-785e3-default-rtdb.firebaseio.com";
 
-// Função para pegar o nome do bot ou usuário
+function formatarHora(timestamp) {
+  const date = new Date(timestamp);
+  const horas = date.getHours().toString().padStart(2, '0');
+  const minutos = date.getMinutes().toString().padStart(2, '0');
+  return `${horas}:${minutos}`;
+}
+
 async function pegarNomeBot(botId) {
   try {
     const res1 = await fetch(`${URL}/users/${botId}.json`);
@@ -32,52 +38,40 @@ async function pegarNomeBot(botId) {
   return botId;
 }
 
-// Formata timestamp para HH:MM
-function formatarHora(timestamp) {
-  const date = new Date(timestamp);
-  const horas = date.getHours().toString().padStart(2, '0');
-  const minutos = date.getMinutes().toString().padStart(2, '0');
-  return `${horas}:${minutos}`;
-}
-
-// Envia mensagem para um grupo
-async function enviarMensagem(botId, botNome, grupoId, texto, leitores = {}) {
+// Envia mensagem replicando fielmente o JSON que você mostrou
+async function enviarMensagem(botId, botNome, grupoId, texto, options = {}) {
   const timestamp = Date.now();
+  const time = formatarHora(timestamp);
 
   const msg = {
     senderId: botId,
     senderName: botNome || botId,
     text: texto,
     timestamp,
-    time: formatarHora(timestamp),
+    time,
     type: "text",
-    readBy: {
-      [botId]: timestamp,
-      ...leitores
-    }
+    automated: options.automated || false,
+    sistema247: options.sistema247 || false,
+    readBy: options.readBy || { [botId]: timestamp }
   };
 
-  const response = await fetch(`${URL}/groups/${grupoId}/messages.json`, {
+  const res = await fetch(`${URL}/groups/${grupoId}/messages.json`, {
     method: 'POST',
     body: JSON.stringify(msg),
     headers: { 'Content-Type': 'application/json' }
   });
 
-  return await response.json();
+  return await res.json(); // retorna o ID da mensagem gerado pelo Firebase
 }
 
-// Função principal da API (POST via webhook)
 export default async function handler(req) {
-  // Habilita CORS para todos os domínios
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type'
   };
 
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers });
-  }
+  if (req.method === 'OPTIONS') return new Response(null, { headers });
 
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Método não permitido' }), {
@@ -88,7 +82,7 @@ export default async function handler(req) {
 
   try {
     const data = await req.json();
-    const { botId, grupoId, texto, leitores = {} } = data;
+    const { botId, grupoId, texto, automated, sistema247, readBy } = data;
 
     if (!botId || !grupoId || !texto) {
       return new Response(JSON.stringify({ error: 'Dados incompletos' }), {
@@ -98,17 +92,11 @@ export default async function handler(req) {
     }
 
     const botNome = await pegarNomeBot(botId);
-    const resultado = await enviarMensagem(botId, botNome, grupoId, texto, leitores);
+    const resultado = await enviarMensagem(botId, botNome, grupoId, texto, { automated, sistema247, readBy });
 
-    return new Response(JSON.stringify({ success: true, resultado }), {
-      status: 200,
-      headers
-    });
+    return new Response(JSON.stringify({ success: true, resultado }), { status: 200, headers });
   } catch (e) {
     console.error(e);
-    return new Response(JSON.stringify({ error: e.message }), {
-      status: 500,
-      headers
-    });
+    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers });
   }
 }
