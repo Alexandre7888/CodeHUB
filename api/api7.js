@@ -14,13 +14,14 @@ export default async function handler(req, res) {
     const storeId = "store_Z8GA3U7wxbRsRhsc";
     const token = "vercel_blob_rw_Z8GA3U7wxbRsRhsc_YAxTwqsec4E063E8FrRqGY4aI2AvM4";
 
-    // Define o caminho dentro da store (pasta opcional)
+    // Path dentro da store (pasta opcional)
     const path = folder ? `${folder}/${filename}` : filename;
+    const urlPut = `https://api.vercel.com/v1/blob/${storeId}/${encodeURIComponent(path)}`;
 
     const buffer = Buffer.from(fileBase64, "base64");
 
-    // Faz PUT no endpoint oficial do Vercel Storage
-    const response = await fetch(`https://api.vercel.com/v1/blob/${storeId}/${encodeURIComponent(path)}`, {
+    // PUT no endpoint oficial do Vercel Storage
+    const response = await fetch(urlPut, {
       method: "PUT",
       headers: {
         "Authorization": `Bearer ${token}`,
@@ -34,10 +35,9 @@ export default async function handler(req, res) {
       throw new Error(`Erro no upload: ${response.status} ${text}`);
     }
 
-    // A resposta do Vercel contém a URL final oficial com ID interno
+    // A resposta oficial do Vercel inclui a URL final com ID interno
     const data = await response.json();
-    // data.publicUrl é a URL completa oficial gerada pelo Vercel
-    const publicUrl = data.publicUrl;
+    const publicUrl = data.publicUrl; // URL oficial completa com ID
 
     return res.status(200).json({ ok: true, url: publicUrl, name: filename, folder: folder || "" });
   } catch (err) {
