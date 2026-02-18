@@ -1,21 +1,41 @@
-// api/upload.js
-import fetch from "node-fetch";
-
 export default async function handler(req, res) {
-  if (req.method === "POST") {
-    const { filename, fileContentBase64 } = req.body;
+  // Permitir CORS para qualquer domínio
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  // Responder OPTIONS (preflight)
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Método não permitido" });
+  }
+
+  try {
+    const { filename, fileBase64 } = req.body;
+
+    if (!filename || !fileBase64) {
+      return res.status(400).json({ error: "Faltam dados" });
+    }
+
     const blobUrl = `https://z8ga3u7wxbrsrhsc.public.blob.vercel-storage.com/${filename}`;
-    
-    const buffer = Buffer.from(fileContentBase64, "base64");
-    
+    const buffer = Buffer.from(fileBase64, "base64");
+
+    // Node 18+ do Vercel já tem fetch nativo
     const response = await fetch(blobUrl, {
       method: "PUT",
       headers: { "Content-Type": "application/octet-stream" },
       body: buffer
     });
-    
-    res.status(response.ok ? 200 : 500).json({ ok: response.ok });
-  } else {
-    res.status(405).json({ error: "Método não permitido" });
+
+    if (!response.ok) {
+      throw new Error(`Erro no upload: ${response.statusText}`);
+    }
+
+    return res.status(200).json({ ok: true, url: blobUrl });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
   }
 }
