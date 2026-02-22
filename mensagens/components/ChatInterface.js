@@ -53,6 +53,11 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
     const [remoteStreams, setRemoteStreams] = React.useState({}); // Map of streams
     const [isCallMinimized, setIsCallMinimized] = React.useState(false);
     
+    // Call Controls
+    const [isMicMuted, setIsMicMuted] = React.useState(false);
+    const [isCamMuted, setIsCamMuted] = React.useState(false);
+    const [showSoundBoard, setShowSoundBoard] = React.useState(false);
+    
     // Recording
     const [isRecordingCall, setIsRecordingCall] = React.useState(false);
     const [callDuration, setCallDuration] = React.useState(0);
@@ -60,6 +65,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
     const audioContextRef = React.useRef(null);
     const mixedDestRef = React.useRef(null);
     const callTimerRef = React.useRef(null);
+    const localStreamRef = React.useRef(null); // Keep track of local stream
     
     // Status & Presence
     const [onlineUsers, setOnlineUsers] = React.useState({});
@@ -85,7 +91,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
     const toggleBackgroundMode = () => {
         if (!backgroundAudioRef.current) {
             // Create a silent audio element
-            const audio = new Audio("data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq");
+            const audio = new Audio("data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq");
             audio.loop = true;
             audio.volume = 0.01; // Almost silent but active
             backgroundAudioRef.current = audio;
@@ -102,6 +108,27 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                 console.error("Erro ao ativar background:", e);
                 alert("Toque na página primeiro para ativar o áudio.");
             });
+        }
+    };
+
+    // --- Media Controls ---
+    const toggleMic = () => {
+        if (localStreamRef.current) {
+            const audioTrack = localStreamRef.current.getAudioTracks()[0];
+            if (audioTrack) {
+                audioTrack.enabled = !audioTrack.enabled;
+                setIsMicMuted(!audioTrack.enabled);
+            }
+        }
+    };
+
+    const toggleCam = () => {
+        if (localStreamRef.current) {
+            const videoTrack = localStreamRef.current.getVideoTracks()[0];
+            if (videoTrack) {
+                videoTrack.enabled = !videoTrack.enabled;
+                setIsCamMuted(!videoTrack.enabled);
+            }
         }
     };
 
@@ -358,9 +385,12 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
 
     const connectToNewPeer = async (peerId, video) => {
         try {
-            const stream = localVideoRef.current?.srcObject 
+            const stream = localStreamRef.current 
+                || localVideoRef.current?.srcObject 
                 || await navigator.mediaDevices.getUserMedia({ audio: true, video: video });
             
+            if (!localStreamRef.current) localStreamRef.current = stream;
+
             // Sanitize ID
             const targetPeerId = peerId.replace(/[^a-zA-Z0-9]/g, '');
 
@@ -427,9 +457,12 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         setIsVideoCall(isVideo);
         setIncomingCall(null);
         setCallStatus('connected');
+        setIsMicMuted(false);
+        setIsCamMuted(false);
 
         navigator.mediaDevices.getUserMedia({ audio: true, video: isVideo }).then((stream) => {
             // Local Stream
+            localStreamRef.current = stream;
             if (isVideo && localVideoRef.current) localVideoRef.current.srcObject = stream;
             addToMix(stream); // Record my voice
 
@@ -459,9 +492,12 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         // Private Logic
         setCallStatus('calling');
         setIsVideoCall(video);
+        setIsMicMuted(false);
+        setIsCamMuted(false);
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: video });
+            localStreamRef.current = stream;
             if (video && localVideoRef.current) localVideoRef.current.srcObject = stream;
             addToMix(stream);
 
@@ -505,6 +541,8 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
 
         setCallStatus('connected'); // Immediately show UI
         setIsVideoCall(video);
+        setIsMicMuted(false);
+        setIsCamMuted(false);
         setActiveGroupCall(true);
         setOngoingGroupCall(null); // Clear banner
         
@@ -520,6 +558,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: video });
+            localStreamRef.current = stream;
             if (video && localVideoRef.current) localVideoRef.current.srcObject = stream;
             addToMix(stream);
 
@@ -547,11 +586,14 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         const video = false; // Default to audio when joining
         setIsVideoCall(video);
         setCallStatus('connected');
+        setIsMicMuted(false);
+        setIsCamMuted(false);
         setActiveGroupCall(true);
         setOngoingGroupCall(null);
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: video });
+            localStreamRef.current = stream;
             if (video && localVideoRef.current) localVideoRef.current.srcObject = stream;
             addToMix(stream);
 
@@ -640,6 +682,12 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         if (localVideoRef.current?.srcObject) {
             localVideoRef.current.srcObject.getTracks().forEach(t => t.stop());
         }
+        
+        // Also stop tracks in localStreamRef if distinct
+        if (localStreamRef.current) {
+            localStreamRef.current.getTracks().forEach(t => t.stop());
+            localStreamRef.current = null;
+        }
 
         setActiveCalls({});
         setRemoteStreams({});
@@ -648,6 +696,8 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         setIsVideoCall(false);
         setActiveGroupCall(false);
         setIsCallMinimized(false);
+        setIsMicMuted(false);
+        setIsCamMuted(false);
         if (document.pictureInPictureElement) document.exitPictureInPicture();
         
         if (audioContextRef.current) {
@@ -1090,6 +1140,38 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                          
                          {/* Main Action Buttons */}
                          <div className={`flex items-center ${isCallMinimized ? 'gap-2' : 'gap-6'}`}>
+                             
+                             {/* Mic/Cam Controls (Only when connected/calling) */}
+                             {!incomingCall && !isCallMinimized && (
+                                 <>
+                                     <button 
+                                        onClick={toggleMic}
+                                        className={`p-3 rounded-full shadow-lg transition-colors ${isMicMuted ? 'bg-red-500 text-white' : 'bg-white/20 text-white hover:bg-white/30'}`}
+                                        title={isMicMuted ? "Ativar Microfone" : "Silenciar"}
+                                     >
+                                         <div className={isMicMuted ? "icon-mic-off text-xl" : "icon-mic text-xl"}></div>
+                                     </button>
+
+                                     {isVideoCall && (
+                                         <button 
+                                            onClick={toggleCam}
+                                            className={`p-3 rounded-full shadow-lg transition-colors ${isCamMuted ? 'bg-red-500 text-white' : 'bg-white/20 text-white hover:bg-white/30'}`}
+                                            title={isCamMuted ? "Ativar Câmera" : "Desativar Câmera"}
+                                         >
+                                             <div className={isCamMuted ? "icon-video-off text-xl" : "icon-video text-xl"}></div>
+                                         </button>
+                                     )}
+
+                                    <button 
+                                        onClick={() => setShowSoundBoard(!showSoundBoard)}
+                                        className={`p-3 rounded-full shadow-lg transition-colors ${showSoundBoard ? 'bg-purple-500 text-white' : 'bg-white/20 text-white hover:bg-white/30'}`}
+                                        title="Efeitos Sonoros"
+                                    >
+                                        <div className="icon-music text-xl"></div>
+                                    </button>
+                                 </>
+                             )}
+
                              {/* Recording Button */}
                              {!incomingCall && !isCallMinimized && (
                                  <button 
@@ -1142,6 +1224,70 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                             </div>
                          )}
                     </div>
+
+                    {/* SoundBoard Overlay */}
+                    {showSoundBoard && !isCallMinimized && (
+                        <div className="absolute bottom-28 left-1/2 transform -translate-x-1/2 bg-black/80 p-4 rounded-xl border border-gray-700 w-64 animate-slide-in-right z-30">
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="text-white text-sm font-bold">Efeitos Sonoros</span>
+                                <button onClick={() => setShowSoundBoard(false)} className="text-gray-400 hover:text-white"><div className="icon-x text-sm"></div></button>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+                                {JSON.parse(localStorage.getItem("user_sounds") || "[]").length > 0 ? (
+                                    JSON.parse(localStorage.getItem("user_sounds") || "[]").map(sound => (
+                                        <button 
+                                            key={sound.id}
+                                            onClick={() => {
+                                                const audio = new Audio(sound.src);
+                                                audio.play();
+                                            }}
+                                            className="flex flex-col items-center justify-center p-2 bg-white/10 hover:bg-purple-600 rounded-lg transition"
+                                            title={sound.name}
+                                        >
+                                            <div className="icon-volume-2 text-white mb-1"></div>
+                                            <span className="text-[10px] text-gray-300 truncate w-full text-center">{sound.name}</span>
+                                        </button>
+                                    ))
+                                ) : (
+                                    <div className="col-span-3 text-center text-gray-500 text-xs py-2">
+                                        Vá na Loja para adicionar sons.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* SoundBoard Overlay */}
+                    {showSoundBoard && !isCallMinimized && (
+                        <div className="absolute bottom-28 left-1/2 transform -translate-x-1/2 bg-black/80 p-4 rounded-xl border border-gray-700 w-64 animate-slide-in-right z-30">
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="text-white text-sm font-bold">Efeitos Sonoros</span>
+                                <button onClick={() => setShowSoundBoard(false)} className="text-gray-400 hover:text-white"><div className="icon-x text-sm"></div></button>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+                                {JSON.parse(localStorage.getItem("user_sounds") || "[]").length > 0 ? (
+                                    JSON.parse(localStorage.getItem("user_sounds") || "[]").map(sound => (
+                                        <button 
+                                            key={sound.id}
+                                            onClick={() => {
+                                                const audio = new Audio(sound.src);
+                                                audio.play();
+                                            }}
+                                            className="flex flex-col items-center justify-center p-2 bg-white/10 hover:bg-purple-600 rounded-lg transition"
+                                            title={sound.name}
+                                        >
+                                            <div className="icon-volume-2 text-white mb-1"></div>
+                                            <span className="text-[10px] text-gray-300 truncate w-full text-center">{sound.name}</span>
+                                        </button>
+                                    ))
+                                ) : (
+                                    <div className="col-span-3 text-center text-gray-500 text-xs py-2">
+                                        Vá na Loja para adicionar sons.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -1265,19 +1411,63 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                             {messages.map((msg, idx) => {
                                 const isMe = msg.senderId === user.id;
                                 const isSystem = msg.type === 'system';
+
+                                // Common Embed Logic
+                                const renderEmbedIfMatch = (text, senderId) => {
+                                    // Removed restriction: works in groups AND private chats now
+                                    const urlMatch = (typeof text === 'string') 
+                                        ? text.match(/#url=(https?:\/\/[^\s]+)/i) 
+                                        : null;
+                                    
+                                    if (urlMatch) {
+                                        const originalUrl = urlMatch[1];
+                                        const senderIdParam = senderId || 'unknown';
+                                        const separator = originalUrl.includes('?') ? '&' : '?';
+                                        const finalUrl = `${originalUrl}${separator}userid=${senderIdParam}`;
+                                        const cleanText = text.replace(urlMatch[0], '').trim();
+
+                                        return (
+                                            <div className="flex flex-col gap-2 mt-2 w-full">
+                                                {cleanText && <p className="leading-relaxed break-words">{cleanText}</p>}
+                                                <div className="w-full h-[350px] bg-white rounded-lg border border-gray-200 overflow-hidden relative shadow-sm mx-auto max-w-md">
+                                                    <div className="bg-gray-100 px-3 py-1 text-[10px] text-gray-500 flex justify-between items-center border-b border-gray-200">
+                                                        <span className="truncate max-w-[200px]">{originalUrl}</span>
+                                                        <span className="font-mono">Embed</span>
+                                                    </div>
+                                                    <iframe 
+                                                        src={finalUrl} 
+                                                        className="w-full h-full border-0 bg-white" 
+                                                        title="Embed"
+                                                        loading="lazy"
+                                                        allow="camera; microphone; geolocation; payment"
+                                                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+                                                    />
+                                                    <a href={finalUrl} target="_blank" className="absolute bottom-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 rounded-full text-white transition-colors" title="Abrir em nova aba">
+                                                        <div className="icon-external-link text-xs"></div>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                };
                                 
                                 if (isSystem) {
+                                    const embedContent = renderEmbedIfMatch(msg.text, msg.senderId);
                                     return (
-                                        <div key={idx} className="flex justify-center my-2 group relative">
-                                            <div className="bg-[#e1f3fb] text-gray-600 text-xs px-3 py-1 rounded-full shadow-sm flex items-center gap-2">
-                                                <div className="icon-info"></div>
+                                        <div key={idx} className="flex flex-col items-center my-2 group relative w-full">
+                                            <div className="bg-[#e1f3fb] text-gray-600 text-xs px-3 py-1 rounded-full shadow-sm flex items-center gap-2 max-w-[90%] break-words text-center">
+                                                <div className="icon-info shrink-0"></div>
                                                 {msg.text}
                                             </div>
+                                            {/* Render Embed below system pill if present */}
+                                            {embedContent && <div className="w-full px-4">{embedContent}</div>}
+
                                             {/* Admin Delete Button for System Msgs */}
                                             {activeChat.type === 'group' && (
                                                 <button 
                                                     onClick={() => deleteMessage(msg.key)}
-                                                    className="hidden group-hover:block absolute right-4 text-red-400 hover:text-red-600"
+                                                    className="hidden group-hover:block absolute right-4 top-0 text-red-400 hover:text-red-600"
                                                     title="Apagar Log"
                                                 >
                                                     <div className="icon-trash text-xs"></div>
@@ -1293,45 +1483,8 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                                             {/* Message Content */}
                                             {!isMe && activeChat.type === 'group' && <p className="text-xs text-orange-500 font-bold mb-1">{msg.senderName}</p>}
                                             {msg.type === 'text' && (() => {
-                                                // Check for #url= pattern in groups (Case insensitive, safer check)
-                                                const urlMatch = (activeChat?.type === 'group' && typeof msg.text === 'string') 
-                                                    ? msg.text.match(/#url=(https?:\/\/[^\s]+)/i) 
-                                                    : null;
-                                                
-                                                if (urlMatch) {
-                                                    const originalUrl = urlMatch[1];
-                                                    // Ensure senderId exists, fallback to 'unknown' if missing (should not happen)
-                                                    const senderIdParam = msg.senderId || 'unknown';
-                                                    const separator = originalUrl.includes('?') ? '&' : '?';
-                                                    const finalUrl = `${originalUrl}${separator}userid=${senderIdParam}`;
-                                                    
-                                                    const cleanText = msg.text.replace(urlMatch[0], '').trim();
-
-                                                    return (
-                                                        <div className="flex flex-col gap-2 mt-1 min-w-[250px] md:min-w-[300px]">
-                                                            {cleanText && (
-                                                                <p className="text-gray-800 leading-relaxed break-words">{cleanText}</p>
-                                                            )}
-                                                            <div className="w-full h-[350px] bg-white rounded-lg border border-gray-200 overflow-hidden relative shadow-sm">
-                                                                <div className="bg-gray-100 px-3 py-1 text-[10px] text-gray-500 flex justify-between items-center border-b border-gray-200">
-                                                                    <span className="truncate max-w-[200px]">{originalUrl}</span>
-                                                                    <span className="font-mono">Embed</span>
-                                                                </div>
-                                                                <iframe 
-                                                                    src={finalUrl} 
-                                                                    className="w-full h-full border-0 bg-white" 
-                                                                    title="Embed"
-                                                                    loading="lazy"
-                                                                    allow="camera; microphone; geolocation; payment"
-                                                                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
-                                                                />
-                                                                <a href={finalUrl} target="_blank" className="absolute bottom-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 rounded-full text-white transition-colors" title="Abrir em nova aba">
-                                                                    <div className="icon-external-link text-xs"></div>
-                                                                </a>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                }
+                                                const embed = renderEmbedIfMatch(msg.text, msg.senderId);
+                                                if (embed) return embed;
                                                 return <p className="text-gray-800 mb-1 leading-relaxed break-words">{msg.text}</p>;
                                             })()}
                                             {msg.type === 'image' && (

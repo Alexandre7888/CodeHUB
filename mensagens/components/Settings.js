@@ -3,9 +3,9 @@ function Settings({ user, onClose, chats }) {
         publicId: true,
         showOnline: true,
         readReceipts: true,
-        readReceiptExceptions: {},
-        groupPrivacy: 'everyone',
-        groupBlacklist: {}
+        readReceiptExceptions: {}, // { userId: true }
+        groupPrivacy: 'everyone', // 'everyone', 'contacts', 'blacklist', 'nobody'
+        groupBlacklist: {} // { userId: true }
     });
     const [showExceptionModal, setShowExceptionModal] = React.useState(false);
     const [showGroupBlacklistModal, setShowGroupBlacklistModal] = React.useState(false);
@@ -13,7 +13,9 @@ function Settings({ user, onClose, chats }) {
     React.useEffect(() => {
         window.firebaseDB.ref(`users/${user.id}/settings`).once('value').then(snapshot => {
             const data = snapshot.val();
-            if (data) setSettings({ ...settings, ...data });
+            if (data) {
+                setSettings({ ...settings, ...data });
+            }
         });
     }, [user.id]);
 
@@ -25,15 +27,21 @@ function Settings({ user, onClose, chats }) {
 
     const toggleException = (contactId) => {
         const newExceptions = { ...settings.readReceiptExceptions };
-        if (newExceptions[contactId]) delete newExceptions[contactId];
-        else newExceptions[contactId] = true;
+        if (newExceptions[contactId]) {
+            delete newExceptions[contactId];
+        } else {
+            newExceptions[contactId] = true;
+        }
         updateSetting('readReceiptExceptions', newExceptions);
     };
 
     const toggleGroupBlacklist = (contactId) => {
         const newBlacklist = { ...settings.groupBlacklist };
-        if (newBlacklist[contactId]) delete newBlacklist[contactId];
-        else newBlacklist[contactId] = true;
+        if (newBlacklist[contactId]) {
+            delete newBlacklist[contactId];
+        } else {
+            newBlacklist[contactId] = true;
+        }
         updateSetting('groupBlacklist', newBlacklist);
     };
 
@@ -41,41 +49,45 @@ function Settings({ user, onClose, chats }) {
 
     const handleAvatarChange = async (e) => {
         if (!e.target.files[0]) return;
+        
         try {
             const file = e.target.files[0];
             const base64 = await window.compressImage(file, 300, 0.7);
+            
+            // Update Firebase
             window.firebaseDB.ref(`users/${user.id}/avatar`).set(base64);
+            
+            // Update Local Storage
             const updatedUser = { ...user, avatar: base64 };
             localStorage.setItem("chat_user", JSON.stringify(updatedUser));
-            window.location.reload();
+            
+            // Update state (Settings is controlled by props mostly, but we can try to force update or rely on parent re-render if it listened to firebase, 
+            // but for immediate feedback in this modal which uses props.user, we might need to reload or just trust Firebase listener in parent will propagate)
+            // Ideally, App.js listens to user changes or we update the parent. 
+            // Since we are just editing DB, let's assume real-time listener in App/ChatInterface will pick it up? 
+            // Actually ChatInterface passes `user` prop from App.js state which comes from localStorage initially.
+            // We should notify user to reload or handle it better.
+            // BUT, let's update the image src directly in DOM for instant feedback if we want, or just wait.
+            // Let's reload page for simplicity to ensure all states sync, OR dispatch event.
+            // Actually, best way in this architecture: Update DB, and update LocalStorage. App.js won't re-render automatically from LocalStorage change.
+            // Let's use window.location.reload() for a hard sync as requested "funciona de verdade" often implies consistency.
+            // Or better: trigger a callback if we had one.
+            window.location.reload(); 
+            
         } catch (error) {
             console.error("Erro ao trocar foto:", error);
             alert("Erro ao carregar a imagem.");
         }
     };
 
-    const openDeveloperPage = () => {
-        window.open('bot/bot.html', '_blank');
-    };
-
     return (
         <div className="absolute inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
             <div className="bg-white rounded-lg w-full max-w-md shadow-xl animate-fade-in overflow-hidden h-[80vh] flex flex-col">
-                {/* Cabeçalho */}
                 <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-[#00a884] text-white shrink-0">
                     <h2 className="text-lg font-semibold">Configurações & Privacidade</h2>
-                    <div className="flex gap-2">
-                        <button 
-                            onClick={openDeveloperPage} 
-                            className="bg-yellow-400 text-black font-bold px-3 py-1 rounded hover:bg-yellow-500 transition"
-                        >
-                            Developer
-                        </button>
-                        <button onClick={onClose}><div className="icon-x text-xl"></div></button>
-                    </div>
+                    <button onClick={onClose}><div className="icon-x text-xl"></div></button>
                 </div>
-
-                {/* Conteúdo */}
+                
                 <div className="p-6 overflow-y-auto flex-1">
                     <div className="flex flex-col items-center gap-4 mb-8">
                         <div className="relative group cursor-pointer">
@@ -99,7 +111,7 @@ function Settings({ user, onClose, chats }) {
 
                     <div className="space-y-4">
                         <h4 className="text-sm font-bold text-gray-500 uppercase">Privacidade</h4>
-
+                        
                         {/* Show Online */}
                         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div>
@@ -136,8 +148,8 @@ function Settings({ user, onClose, chats }) {
                             </button>
                         </div>
 
-                        {/* Public ID */}
-                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                         {/* Public ID */}
+                         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div>
                                 <h4 className="font-medium text-gray-800">ID Público</h4>
                                 <p className="text-xs text-gray-500">Permitir ser encontrado pelo ID</p>
@@ -148,6 +160,24 @@ function Settings({ user, onClose, chats }) {
                             >
                                 <div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform ${settings.publicId ? 'translate-x-6' : ''}`}></div>
                             </button>
+                        </div>
+
+                        {/* Wallet / Credits Section */}
+                        <div className="p-3 bg-gradient-to-r from-gray-800 to-gray-900 rounded-lg text-white shadow-md relative overflow-hidden group cursor-pointer" onClick={() => window.location.href = 'store.html'}>
+                            <div className="relative z-10 flex justify-between items-center">
+                                <div>
+                                    <h4 className="font-bold text-yellow-400 flex items-center gap-2">
+                                        <div className="icon-coins"></div> Carteira
+                                    </h4>
+                                    <p className="text-xs text-gray-300 mt-1">Saldo: <span className="font-mono text-white text-lg font-bold ml-1">{localStorage.getItem("saldo_creditos") || 0}</span></p>
+                                </div>
+                                <div className="bg-white/20 p-2 rounded-full">
+                                    <div className="icon-shopping-bag text-white"></div>
+                                </div>
+                            </div>
+                            <div className="mt-3 text-xs text-center bg-white/10 py-1.5 rounded hover:bg-white/20 transition">
+                                Acessar Loja & Stickers
+                            </div>
                         </div>
 
                         {/* Group Privacy */}
@@ -183,20 +213,22 @@ function Settings({ user, onClose, chats }) {
                         </div>
                     </div>
                 </div>
-
+                
                 <div className="p-4 bg-gray-50 text-center text-xs text-gray-400 shrink-0">
                     MensagensHUB v2.1 • Privacidade Protegida
                 </div>
 
-                {/* Exception Modal */}
+                {/* Exception Modal (Read Receipts) */}
                 {showExceptionModal && (
                     <div className="absolute inset-0 bg-white z-20 flex flex-col animate-slide-in-right">
-                        <div className="p-4 border-b border-gray-200 flex items-center gap-4 bg-gray-50">
+                         <div className="p-4 border-b border-gray-200 flex items-center gap-4 bg-gray-50">
                             <button onClick={() => setShowExceptionModal(false)} className="icon-arrow-left text-gray-600"></button>
                             <div>
                                 <h3 className="font-bold text-gray-800">Exceções de Leitura</h3>
                                 <p className="text-xs text-gray-500">
-                                    {settings.readReceipts ? "Ocultar visto para estes contatos:" : "Mostrar visto para estes contatos:"}
+                                    {settings.readReceipts 
+                                        ? "Ocultar visto para estes contatos:" 
+                                        : "Mostrar visto para estes contatos:"}
                                 </p>
                             </div>
                         </div>
@@ -220,7 +252,7 @@ function Settings({ user, onClose, chats }) {
                 {/* Group Blacklist Modal */}
                 {showGroupBlacklistModal && (
                     <div className="absolute inset-0 bg-white z-20 flex flex-col animate-slide-in-right">
-                        <div className="p-4 border-b border-gray-200 flex items-center gap-4 bg-gray-50">
+                         <div className="p-4 border-b border-gray-200 flex items-center gap-4 bg-gray-50">
                             <button onClick={() => setShowGroupBlacklistModal(false)} className="icon-arrow-left text-gray-600"></button>
                             <div>
                                 <h3 className="font-bold text-gray-800">Bloquear de Grupos</h3>
@@ -239,7 +271,7 @@ function Settings({ user, onClose, chats }) {
                                     </div>
                                 </div>
                             ))}
-                            {contacts.length === 0 && <p className="text-center text-gray-400 mt-10">Nenhum contatpo privado encontrado.</p>}
+                            {contacts.length === 0 && <p className="text-center text-gray-400 mt-10">Nenhum contato privado encontrado.</p>}
                         </div>
                     </div>
                 )}
