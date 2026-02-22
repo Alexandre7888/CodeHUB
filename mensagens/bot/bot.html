@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>🤖 Painel de Bots - Segundo Plano 24/7</title>
+<title>ligação com bote</title>
 <style>
 * { box-sizing: border-box; }
 body { 
@@ -111,57 +111,7 @@ button:hover { opacity: 0.9; }
   border: 2px solid #2d9cdb; 
 }
 
-.messages { 
-  max-height: 280px; 
-  overflow-y: auto; 
-  background: #0e1217; 
-  padding: 18px; 
-  border-radius: 16px; 
-  border: 1px solid #2a323a;
-}
-
-.msg { 
-  padding: 10px 16px; 
-  background: #1e262e; 
-  border-radius: 20px; 
-  margin: 4px 0;
-  word-break: break-word;
-}
-
-.msg.own { 
-  background: #1f4a5c; 
-}
-
-.msg-time {
-  float: right;
-  color: #888;
-  font-size: 11px;
-  margin-left: 10px;
-}
-
-.msg-readby {
-  font-size: 10px;
-  color: #2d9cdb;
-  margin-top: 4px;
-}
-
-img { 
-  border-radius: 50%; 
-  max-width: 50px; 
-  vertical-align: middle; 
-  margin-right: 5px; 
-}
-
-.copyBtn { 
-  cursor: pointer; 
-  color: #2d9cdb; 
-  margin-left: 5px; 
-  padding: 2px 6px;
-  background: #1e2a36;
-  border-radius: 6px;
-}
-
-.asset-item, .group-item {
+.group-item {
   padding: 12px 16px;
   background: #1a1f24;
   border: 1px solid #2a323a;
@@ -170,60 +120,200 @@ img {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  cursor: pointer;
 }
 
-.group-item { cursor: pointer; }
 .group-item:hover { background: #242c34; }
 
-.delete-btn {
-  color: #ff6b6b;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 6px;
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
 }
 
-.delete-btn:hover { background: #3a1e1e; }
-
-.background-status {
-  margin-top: 10px;
-  padding: 15px;
+.video-container {
+  position: relative;
   background: #1a1f24;
   border-radius: 8px;
-  border-left: 4px solid #27ae60;
+  overflow: hidden;
+  aspect-ratio: 16/9;
+  border: 2px solid #2d9cdb;
 }
 
-.bg-active {
-  border-left-color: #27ae60;
+.video-container video, .video-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.bg-inactive {
-  border-left-color: #e67e22;
+.video-label {
+  position: absolute;
+  bottom: 5px;
+  left: 5px;
+  background: rgba(0,0,0,0.7);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.media-preview {
+  max-width: 100%;
+  max-height: 300px;
+  margin: 10px 0;
+  border-radius: 8px;
+}
+
+.call-controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 15px 0;
+}
+
+.call-btn {
+  flex: 1;
+  min-width: 100px;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.call-btn.audio { background: #27ae60; }
+.call-btn.video { background: #3498db; }
+.call-btn.end { background: #c0392b; }
+
+.media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 5px;
+}
+
+.media-card {
+  background: #1e262c;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.media-card:hover {
+  border-color: #2d9cdb;
+  transform: scale(1.02);
+}
+
+.media-card.selected {
+  border-color: #27ae60;
+  background: #1e3a3a;
+}
+
+.media-icon {
+  font-size: 48px;
+  text-align: center;
+  margin: 10px 0;
+}
+
+.media-card p {
+  margin: 5px 0;
+  font-size: 12px;
+  text-align: center;
+  word-break: break-word;
+}
+
+.media-badge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: #2d9cdb;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+}
+
+.local-video {
+  width: 100%;
+  height: 200px;
+  background: #000;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  overflow: hidden;
+}
+
+.local-video video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.current-media-indicator {
+  background: #1e3a3a;
+  padding: 8px;
+  border-radius: 8px;
+  margin: 10px 0;
+  font-size: 13px;
+  border-left: 3px solid #27ae60;
+}
+
+.url-input-group {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.url-input-group input {
+  flex: 1;
+}
+
+.test-urls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 15px 0;
+}
+
+.test-btn {
+  background: #3498db;
+  padding: 8px 12px;
+  font-size: 12px;
+  width: auto;
+  flex: 1;
 }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>🤖 Painel de Bots - 24/7</h1>
+  <h1>fazer ligação usando os bots</h1>
   <div>
     <span class="status-badge" id="usernameDisplay">Usuário: --</span>
-    <a href="#" onclick="registrarServiceWorker()" style="background:#1e2a36; color:#2d9cdb; padding:6px 14px; border-radius:30px; text-decoration:none; margin-left:10px;">📱 Ativar SW</a>
   </div>
 </header>
 
 <nav>
   <a href="#dashboard" id="navDashboard" class="active">📊 Dashboard</a>
-  <a href="#editor" id="navEditor">📝 Editor de Comandos</a>
-  <a href="#assets" id="navAssets">🎨 Assets</a>
+  <a href="#media" id="navMedia">🎨 Mídias</a>
+  <a href="#calls" id="navCalls">📞 Chamadas</a>
 </nav>
 
 <!-- DASHBOARD -->
 <section id="dashboard" class="active">
   <h2>📊 Meus Bots</h2>
-  
+
   <div class="panel">
     <h3>➕ Criar Bot</h3>
-    <input id="botName" placeholder="Nome do bot">
+    <input id="botName" placeholder="Nome do bot" value="Bot_Teste">
     <input type="file" id="botAvatar" accept="image/*">
     <button onclick="createBot()">Criar Bot</button>
   </div>
@@ -242,71 +332,84 @@ img {
         <button onclick="saveBot()">Salvar</button>
       </div>
     </div>
-    
+
     <p>🆔 ID: <span id="botID"></span> <span class="copyBtn" onclick="copyBotID()">[Copiar]</span></p>
-    <p>👑 Role: <span id="botRoleDisplay">--</span></p>
-    <p>📨 Msgs Enviadas: <span id="messageCount">0</span></p>
 
     <h4>➕ Entrar em Grupo</h4>
-    <input id="groupId" placeholder="ID do grupo">
+    <input id="groupId" placeholder="ID do grupo" value="grupo_teste">
     <button onclick="joinGroup()">Entrar no Grupo</button>
 
     <h4>👥 Grupos do Bot</h4>
     <div id="groupList"></div>
-
-    <h4 style="color: #2d9cdb; margin-top: 20px;">🔄 MODO SEGUNDO PLANO (24/7)</h4>
-    <div style="display: flex; gap: 10px;">
-      <button onclick="ativarBotBackground()" style="background: #27ae60; flex: 2;">
-        ✅ ATIVAR 24/7
-      </button>
-      <button onclick="desativarBotBackground()" style="background: #e67e22; flex: 1;">
-        ❌ DESATIVAR
-      </button>
+    
+    <div class="debug-panel" id="debugInfo">
+      <strong>🔍 Status:</strong> <span id="peerStatus">Peer não inicializado</span><br>
+      <strong>🔗 Conexões:</strong> <span id="connectionCount">0</span>
     </div>
-    <button onclick="executarBotAgora()" style="background: #3498db; margin-top: 5px;">
-      ⚡ EXECUTAR AGORA
-    </button>
-
-    <div id="backgroundStatus" class="background-status bg-inactive">
-      <span>⏳ Status: <span id="bgStatusText">Inativo</span></span><br>
-      <span style="font-size: 12px; color: #888;">O bot responde mesmo com o navegador fechado</span>
-    </div>
-
-    <h4 style="margin-top: 20px;">💬 Mensagens</h4>
-    <div class="messages" id="messages"></div>
-    <input id="msgText" placeholder="Digite sua mensagem...">
-    <button onclick="sendMsg()">📤 Enviar (formato novo)</button>
-    <button onclick="deleteAllMessages()" id="deleteBtn" style="background:#c0392b;">🗑️ Apagar Todas (só admin)</button>
   </div>
 </section>
 
-<!-- EDITOR -->
-<section id="editor">
-  <h2>📝 Editor de Comandos</h2>
+<!-- MÍDIAS -->
+<section id="media">
+  <h2>🎨 Mídias para Transmitir</h2>
+  
   <div class="panel">
-    <input id="codeName" placeholder="Nome do comando (ex: !oi)">
-    <textarea id="codeText" rows="8" placeholder="// Exemplo: 
-if(msg.text === '!oi') {
-  reply('Olá, ' + msg.senderName + '!');
-}"></textarea>
-    <button onclick="addCommand()">Adicionar/Salvar Comando</button>
-    <div id="codeList"></div>
+    <h3>📤 Upload de Arquivo</h3>
+    <input type="file" id="assetFile" accept="image/*,audio/*,video/*">
+    <button onclick="addAsset()">Adicionar Arquivo</button>
+    
+    <h3 style="margin-top: 20px;">🔗 URLs de Teste</h3>
+    <div class="test-urls">
+      <button class="test-btn" onclick="addTestImage()">🖼️ Imagem</button>
+      <button class="test-btn" onclick="addTestVideo()">🎬 Vídeo</button>
+      <button class="test-btn" onclick="addTestAudio()">🎵 Áudio</button>
+      <button class="test-btn" onclick="resetToCamera()" style="background: #e67e22;">📷 Voltar para Câmera</button>
+    </div>
+    
+    <div id="currentMediaIndicator" class="current-media-indicator" style="display:none;">
+      <strong>📡 Transmitindo:</strong> <span id="currentMediaName">Câmera</span>
+    </div>
+    
+    <h3 style="margin-top: 20px;">📋 Clique em qualquer mídia para transmitir</h3>
+    <div id="mediaGrid" class="media-grid"></div>
   </div>
 </section>
 
-<!-- ASSETS -->
-<section id="assets">
-  <h2>🎨 Assets</h2>
+<!-- CHAMADAS -->
+<section id="calls">
+  <h2>📞 Chamadas em Grupo</h2>
+  
   <div class="panel">
-    <p>Você pode enviar áudios, PDFs ou agendar mensagens aqui.</p>
-    <input type="file" id="assetFile">
-    <button onclick="addAsset()">Adicionar Asset</button>
-    <div id="assetList"></div>
+    <h3>🤖 Bot na Chamada</h3>
+    <div id="callBotInfo" style="margin-bottom: 15px;">
+      Nenhum bot selecionado
+    </div>
+
+    <div class="local-video">
+      <video id="localVideo" autoplay muted playsinline></video>
+    </div>
+
+    <div class="call-controls">
+      <button class="call-btn audio" onclick="startBotCall('audio')">🎤 Chamada de Áudio</button>
+      <button class="call-btn video" onclick="startBotCall('video')">📹 Chamada de Vídeo</button>
+      <button class="call-btn end" onclick="endBotCall()">📴 Encerrar</button>
+    </div>
+
+    <div id="callActiveInfo" style="display:none; background: #1e3a3a; padding: 10px; border-radius: 8px; margin: 10px 0;">
+      <strong>📢 Chamada Ativa!</strong> - Conectado a <span id="activeConnectionCount">0</span> participante(s)
+    </div>
+
+    <h4 style="margin-top: 20px;">🎥 Streams Recebidos</h4>
+    <div id="callParticipants" class="video-grid">
+      <div class="text-center">Nenhuma chamada ativa</div>
+    </div>
   </div>
 </section>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
 <script>
 // ============================================
 // CONFIG FIREBASE
@@ -319,83 +422,112 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 // ============================================
-// DADOS GLOBAIS
+// VARIÁVEIS GLOBAIS
 // ============================================
-let bots = JSON.parse(localStorage.getItem("bots")||"[]");
+let bots = JSON.parse(localStorage.getItem("bots") || "[]");
 let bot = null;
 let currentGroup = null;
-let commands = JSON.parse(localStorage.getItem("commands")||"[]");
-let assets = JSON.parse(localStorage.getItem("assets")||"[]");
+let mediaItems = JSON.parse(localStorage.getItem("mediaItems") || "[]");
+let peer = null;
+let localStream = null;
+let activeCalls = {};
+let receivedStreams = {};
+let currentMediaSource = 'camera'; // 'camera' ou id da mídia
+let mediaElements = {}; // Para armazenar elementos de mídia
 
 // Mostra nome do usuário
 const userData = JSON.parse(localStorage.getItem("chat_user"));
 if(userData && userData.name){
     document.getElementById("usernameDisplay").textContent = "Usuário: " + userData.name;
-} else {
-    document.getElementById("usernameDisplay").textContent = "Usuário: Visitante";
 }
 
 // ============================================
-// FUNÇÃO UTILITÁRIA - FORMATAR HORA
+// FUNÇÕES UTILITÁRIAS
 // ============================================
-function formatarHora(timestamp) {
-  const date = new Date(timestamp);
-  const horas = date.getHours().toString().padStart(2, '0');
-  const minutos = date.getMinutes().toString().padStart(2, '0');
-  return `${horas}:${minutos}`;
+function updateDebugInfo(text) {
+  document.getElementById('peerStatus').textContent = text;
+}
+
+function updateConnectionCount() {
+  const count = Object.keys(activeCalls).length;
+  document.getElementById('connectionCount').textContent = count;
+  document.getElementById('activeConnectionCount').textContent = count;
+}
+
+function updateCurrentMediaIndicator(name) {
+  const indicator = document.getElementById('currentMediaIndicator');
+  const span = document.getElementById('currentMediaName');
+  
+  if (name && name !== 'camera') {
+    indicator.style.display = 'block';
+    span.textContent = name;
+  } else {
+    indicator.style.display = 'none';
+    span.textContent = 'Câmera';
+  }
 }
 
 // ============================================
 // NAVEGAÇÃO
 // ============================================
 function showSection(hash){
-    document.querySelectorAll("section").forEach(sec=>sec.classList.remove("active"));
+    document.querySelectorAll("section").forEach(sec => sec.classList.remove("active"));
     document.querySelector(hash).classList.add("active");
-    document.querySelectorAll("nav a").forEach(a=>a.classList.remove("active"));
+    document.querySelectorAll("nav a").forEach(a => a.classList.remove("active"));
     document.querySelector('nav a[href="'+hash+'"]').classList.add("active");
 }
-window.addEventListener("hashchange",()=>showSection(location.hash));
+window.addEventListener("hashchange", () => showSection(location.hash));
 if(location.hash) showSection(location.hash);
 
 // ============================================
 // FUNÇÕES BOTS
 // ============================================
-function saveStorage(){localStorage.setItem("bots",JSON.stringify(bots));}
+function saveStorage(){ localStorage.setItem("bots", JSON.stringify(bots)); }
 
 function createBot(){
   const id = "bot_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4);
   const name = document.getElementById("botName").value || id;
   const file = document.getElementById("botAvatar").files[0];
-  if(!file){ alert("Escolha avatar"); return; }
-  const reader=new FileReader();
-  reader.onload=()=>{
-    const botData={id, name, avatar:reader.result, status:"offline"};
+  
+  let avatar = "https://api.dicebear.com/7.x/bottts/svg?seed=" + name;
+  
+  if(file){
+    const reader = new FileReader();
+    reader.onload = () => {
+      const botData = { id, name, avatar: reader.result };
+      bots.push(botData);
+      saveStorage();
+      db.ref("users/" + id).set({ id, name, avatar: reader.result });
+      loadBots();
+    };
+    reader.readAsDataURL(file);
+  } else {
+    const botData = { id, name, avatar };
     bots.push(botData);
     saveStorage();
-    db.ref("users/"+id).set({id, name, avatar:reader.result, status:{state:"offline",lastChanged:Date.now()}});
-    db.ref("bots/"+id+"/messageCount").set(0);
+    db.ref("users/" + id).set({ id, name, avatar });
     loadBots();
-    document.getElementById("botName").value = "";
-    document.getElementById("botAvatar").value = "";
-  };
-  reader.readAsDataURL(file);
+  }
+  
+  document.getElementById("botName").value = "";
+  document.getElementById("botAvatar").value = "";
 }
 
 function loadBots(){
   const botListEl = document.getElementById("botList");
   botListEl.innerHTML = "";
-  
-  bots.forEach(b=>{
+
+  bots.forEach(b => {
     const d = document.createElement("div");
     d.className = "bot";
-    
+
     const img = document.createElement("img");
     img.src = b.avatar;
     img.className = "bot-avatar";
-    
+
     const span = document.createElement("span");
     span.textContent = b.name;
-    
+
     d.appendChild(img);
     d.appendChild(span);
     d.onclick = () => selectBot(b);
@@ -411,47 +543,49 @@ function selectBot(b){
   document.getElementById("editName").value = b.name;
   document.getElementById("botID").textContent = b.id;
   
-  db.ref("bots/" + b.id + "/messageCount").once("value", (snap) => {
-    document.getElementById("messageCount").textContent = snap.val() || 0;
-  });
-  
+  document.getElementById("callBotInfo").innerHTML = `
+    <img src="${b.avatar}" style="width:50px; height:50px; border-radius:50%; vertical-align:middle; margin-right:10px;">
+    <strong>${b.name}</strong> (${b.id})
+  `;
+
   loadGroups();
-  verificarStatusBackground();
+  initializePeer();
 }
 
 function saveBot(){
   bot.name = document.getElementById("editName").value;
   saveStorage();
-  db.ref("users/"+bot.id+"/name").set(bot.name);
-  db.ref("bots/"+bot.id+"/name").set(bot.name);
+  db.ref("users/" + bot.id + "/name").set(bot.name);
   loadBots();
 }
 
 function copyBotID(){
-  navigator.clipboard.writeText(bot.id).then(()=>alert("ID copiado!"));
+  navigator.clipboard.writeText(bot.id).then(() => alert("ID copiado!"));
 }
 
 function joinGroup(){
   currentGroup = document.getElementById("groupId").value;
   if(!currentGroup) return alert("Digite ID do grupo");
-  
-  db.ref(`groups/${currentGroup}/members/${bot.id}`).once("value", snap=>{
+
+  db.ref(`groups/${currentGroup}/members/${bot.id}`).once("value", snap => {
     if(!snap.exists()){
       db.ref(`groups/${currentGroup}/members/${bot.id}`).set({
-        id:bot.id, name:bot.name, role:"member", joinedAt:Date.now()
+        id: bot.id, 
+        name: bot.name, 
+        role: "member", 
+        joinedAt: Date.now()
       });
     }
     db.ref("bots/" + bot.id + "/groups/" + currentGroup).set(Date.now());
-    checkRole();
-    listenMessages();
     loadGroups();
+    alert(`✅ Bot entrou no grupo: ${currentGroup}`);
   });
 }
 
 function loadGroups(){
   const groupListEl = document.getElementById("groupList");
   groupListEl.innerHTML = "";
-  
+
   db.ref("bots/" + bot.id + "/groups").once("value", (snap) => {
     const groups = snap.val() || {};
     for(let id in groups) {
@@ -460,369 +594,548 @@ function loadGroups(){
       div.textContent = "👥 " + id;
       div.onclick = () => { 
         currentGroup = id; 
-        checkRole(); 
-        listenMessages(); 
+        alert(`Grupo selecionado: ${id}`);
       };
       groupListEl.appendChild(div);
     }
   });
 }
 
-function checkRole(){
-  if(!bot || !currentGroup) return;
-  db.ref(`groups/${currentGroup}/members/${bot.id}`).once("value", snap=>{
-    const data = snap.val();
-    if(data){
-      document.getElementById("botRoleDisplay").textContent = data.role;
-      document.getElementById("deleteBtn").disabled = data.role !== "admin";
+// ============================================
+// PEERJS - CHAMADAS P2P
+// ============================================
+function initializePeer() {
+  if (!bot) return;
+  
+  const peerId = bot.id.replace(/[^a-zA-Z0-9]/g, '');
+  
+  if (peer) peer.destroy();
+  
+  peer = new Peer(peerId, {
+    debug: 2,
+    config: {
+      'iceServers': [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+      ]
     }
   });
-}
 
-// ============================================
-// FUNÇÃO ENVIAR MENSAGEM - FORMATO NOVO
-// ============================================
-function sendMsg(){
-  const text = document.getElementById("msgText").value;
-  if(!currentGroup) return alert("Selecione grupo");
-  if(!text) return alert("Digite uma mensagem");
-  if(!bot) return alert("Selecione um bot");
-  
-  const timestamp = Date.now();
-  const horaFormatada = formatarHora(timestamp);
-  
-  const mensagem = {
-    senderId: bot.id,
-    senderName: bot.name,
-    text: text,
-    timestamp: timestamp,
-    time: horaFormatada,
-    type: "text",
-    readBy: {
-      [bot.id]: timestamp
-    }
-  };
-  
-  db.ref(`groups/${currentGroup}/messages`).push(mensagem);
-  
-  db.ref("bots/" + bot.id + "/messageCount").transaction(v => (v||0)+1);
-  document.getElementById("messageCount").textContent = parseInt(document.getElementById("messageCount").textContent) + 1;
-  
-  document.getElementById("msgText").value = "";
-}
-
-// ============================================
-// OUVIR MENSAGENS
-// ============================================
-function listenMessages(){
-  const messagesEl = document.getElementById("messages");
-  messagesEl.innerHTML = "";
-  if(!currentGroup) return;
-  
-  db.ref(`groups/${currentGroup}/messages`).off();
-  db.ref(`groups/${currentGroup}/messages`).on("child_added", s=>{
-    const msg = s.val();
-    
-    const div = document.createElement("div");
-    div.className = "msg" + (msg.senderId === bot?.id ? " own" : "");
-    
-    const timeSpan = document.createElement("span");
-    timeSpan.className = "msg-time";
-    timeSpan.textContent = msg.time || formatarHora(msg.timestamp);
-    
-    const contentSpan = document.createElement("span");
-    contentSpan.textContent = msg.senderName + ": " + (msg.text || "[imagem]");
-    
-    const readBySpan = document.createElement("div");
-    readBySpan.className = "msg-readby";
-    if(msg.readBy) {
-      const leitores = Object.keys(msg.readBy).length;
-      readBySpan.textContent = `👁️ ${leitores} leitura(s)`;
-    }
-    
-    div.appendChild(timeSpan);
-    div.appendChild(contentSpan);
-    div.appendChild(readBySpan);
-    messagesEl.appendChild(div);
-    
-    runBotCommands(msg);
+  peer.on('open', (id) => {
+    console.log('✅ Peer conectado:', id);
+    updateDebugInfo(`✅ Conectado: ${id}`);
+    db.ref(`bots/${bot.id}/peer`).set(id);
   });
-}
 
-// ============================================
-// EXECUTAR COMANDOS
-// ============================================
-function runBotCommands(msg){
-  if(!msg?.text || msg.senderId === bot?.id) return;
-  
-  commands.forEach(cmd => {
-    try {
-      const reply = (texto) => {
-        if(currentGroup) {
-          const timestamp = Date.now();
-          const horaFormatada = formatarHora(timestamp);
-          
-          const mensagem = {
-            senderId: bot.id,
-            senderName: bot.name,
-            text: texto,
-            timestamp: timestamp,
-            time: horaFormatada,
-            type: "text",
-            readBy: {
-              [bot.id]: timestamp
-            }
-          };
-          
-          db.ref(`groups/${currentGroup}/messages`).push(mensagem);
-          db.ref("bots/" + bot.id + "/messageCount").transaction(v => (v || 0) + 1);
-        }
-      };
-      
-      eval(cmd.code);
-    } catch(e) {
-      console.error('Erro no comando:', e);
-    }
-  });
-}
-
-function deleteAllMessages(){
-  if(!currentGroup) return;
-  db.ref(`groups/${currentGroup}/members/${bot.id}`).once("value", snap=>{
-    const role = snap.val()?.role;
-    if(role==="admin"){
-      db.ref(`groups/${currentGroup}/messages`).remove().then(()=>alert("Mensagens apagadas!"));
+  peer.on('call', (call) => {
+    console.log('📞 Recebendo chamada de:', call.peer);
+    
+    if (!localStream) {
+      createCameraStream().then(() => {
+        answerCall(call);
+      });
     } else {
-      alert("Apenas admins podem apagar mensagens!");
+      answerCall(call);
     }
+  });
+
+  peer.on('error', (err) => {
+    console.error('Erro Peer:', err);
+    updateDebugInfo(`❌ Erro: ${err.type}`);
   });
 }
 
-// ============================================
-// FUNÇÕES COMANDOS
-// ============================================
-function saveCommands(){localStorage.setItem("commands",JSON.stringify(commands));}
-
-function addCommand(){
-  const name = document.getElementById("codeName").value;
-  const text = document.getElementById("codeText").value;
-  if(!name || !text) return alert("Preencha nome e código");
-  const existing = commands.find(c=>c.name===name);
-  if(existing){ existing.code = text; } 
-  else { commands.push({name, code:text}); }
-  saveCommands(); 
-  loadCommands();
-  document.getElementById("codeName").value = "";
-  document.getElementById("codeText").value = "";
+async function createCameraStream() {
+  try {
+    if (localStream) {
+      localStream.getTracks().forEach(t => t.stop());
+    }
+    
+    localStream = await navigator.mediaDevices.getUserMedia({ 
+      audio: true, 
+      video: true 
+    });
+    document.getElementById('localVideo').srcObject = localStream;
+    currentMediaSource = 'camera';
+    updateCurrentMediaIndicator('camera');
+    return localStream;
+  } catch (err) {
+    console.error('Erro ao criar stream:', err);
+    return null;
+  }
 }
 
-function loadCommands(){
-  const list = document.getElementById("codeList");
-  list.innerHTML = "";
-  commands.forEach(c=>{
-    const div = document.createElement("div");
-    div.className = "codeItem";
-    div.textContent = c.name;
-    div.onclick = ()=>{
-      document.getElementById("codeName").value = c.name; 
-      document.getElementById("codeText").value = c.code;
-    }
-    const del = document.createElement("span");
-    del.textContent = " [Excluir]";
-    del.style.color = "#ff6b6b"; 
-    del.style.cursor = "pointer";
-    del.onclick = (e)=>{ 
-      e.stopPropagation(); 
-      commands = commands.filter(x=>x!==c); 
-      saveCommands(); 
-      loadCommands(); 
-    }
-    div.appendChild(del);
-    list.appendChild(div);
+function answerCall(call) {
+  call.answer(localStream);
+  
+  call.on('stream', (remoteStream) => {
+    addParticipantStream(call.peer, remoteStream);
   });
+
+  call.on('close', () => {
+    removeParticipantStream(call.peer);
+  });
+
+  activeCalls[call.peer] = call;
+  updateConnectionCount();
 }
-loadCommands();
+
+async function startBotCall(mode) {
+  if (!bot) return alert('Selecione um bot');
+  if (!currentGroup) return alert('Selecione um grupo');
+
+  document.getElementById('callActiveInfo').style.display = 'block';
+  
+  if (!localStream) {
+    await createCameraStream();
+  }
+  
+  await db.ref(`groups/${currentGroup}/callStatus`).set({
+    state: 'active',
+    startedBy: bot.id,
+    timestamp: Date.now()
+  });
+
+  const membersSnap = await db.ref(`groups/${currentGroup}/members`).once('value');
+  const members = membersSnap.val() || {};
+
+  Object.keys(members).forEach(memberId => {
+    if (memberId !== bot.id) {
+      const targetId = memberId.replace(/[^a-zA-Z0-9]/g, '');
+      setTimeout(() => {
+        callParticipant(targetId, mode);
+      }, 500);
+    }
+  });
+
+  showSection('#calls');
+  updateMediaGrid('mediaGrid');
+}
+
+function callParticipant(targetId, mode) {
+  if (!peer || !localStream) return false;
+  
+  try {
+    const call = peer.call(targetId, localStream, {
+      metadata: {
+        isVideo: mode === 'video',
+        botId: bot.id,
+        botName: bot.name
+      }
+    });
+
+    if (call) {
+      call.on('stream', (remoteStream) => {
+        addParticipantStream(targetId, remoteStream);
+      });
+
+      call.on('close', () => {
+        removeParticipantStream(targetId);
+      });
+
+      activeCalls[targetId] = call;
+      updateConnectionCount();
+      return true;
+    }
+  } catch (err) {
+    console.error('Erro ao chamar', targetId, err);
+  }
+  return false;
+}
+
+function addParticipantStream(peerId, stream) {
+  receivedStreams[peerId] = stream;
+  
+  const container = document.getElementById('callParticipants');
+  
+  if (container.children.length === 1 && container.children[0].textContent.includes('Nenhuma')) {
+    container.innerHTML = '';
+  }
+
+  let existing = document.getElementById(`stream-${peerId}`);
+  if (existing) existing.remove();
+
+  const videoDiv = document.createElement('div');
+  videoDiv.id = `stream-${peerId}`;
+  videoDiv.className = 'video-container';
+
+  const video = document.createElement('video');
+  video.autoplay = true;
+  video.playsinline = true;
+  video.srcObject = stream;
+
+  const label = document.createElement('div');
+  label.className = 'video-label';
+  label.textContent = peerId.substring(0, 12) + '...';
+
+  videoDiv.appendChild(video);
+  videoDiv.appendChild(label);
+  container.appendChild(videoDiv);
+}
+
+function removeParticipantStream(peerId) {
+  const el = document.getElementById(`stream-${peerId}`);
+  if (el) el.remove();
+  delete receivedStreams[peerId];
+}
+
+function endBotCall() {
+  Object.values(activeCalls).forEach(call => call.close());
+  
+  activeCalls = {};
+  receivedStreams = {};
+  
+  if (localStream) {
+    localStream.getTracks().forEach(t => t.stop());
+    localStream = null;
+  }
+
+  // Limpar elementos de mídia
+  Object.values(mediaElements).forEach(el => {
+    if (el) {
+      if (el.pause) el.pause();
+      if (el.src) URL.revokeObjectURL(el.src);
+    }
+  });
+  mediaElements = {};
+
+  if (currentGroup) {
+    db.ref(`groups/${currentGroup}/callStatus`).set({
+      state: 'ended',
+      endedBy: bot?.id,
+      timestamp: Date.now()
+    });
+  }
+
+  document.getElementById('callParticipants').innerHTML = 
+    '<div class="text-center">Nenhuma chamada ativa</div>';
+  document.getElementById('callActiveInfo').style.display = 'none';
+  document.getElementById('localVideo').srcObject = null;
+  updateConnectionCount();
+  updateCurrentMediaIndicator('camera');
+}
 
 // ============================================
-// FUNÇÕES ASSETS
+// MÍDIAS - VERSÃO CORRIGIDA
 // ============================================
-function saveAssets(){localStorage.setItem("assets",JSON.stringify(assets));}
+function saveMedia() { 
+  localStorage.setItem("mediaItems", JSON.stringify(mediaItems));
+  updateMediaGrid('mediaGrid');
+}
 
-function addAsset(){
+function addAsset() {
   const file = document.getElementById("assetFile").files[0];
-  if(!file) return alert("Escolha arquivo");
+  if (!file) return alert("Escolha um arquivo");
+  
   const reader = new FileReader();
-  reader.onload = ()=>{
-    const asset = {name: file.name, data: reader.result, type: file.type, added: Date.now()};
-    assets.push(asset); 
-    saveAssets(); 
-    loadAssets();
+  reader.onload = () => {
+    const media = {
+      id: 'media_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8),
+      name: file.name,
+      fileType: file.type,
+      data: reader.result,
+      added: Date.now()
+    };
+    mediaItems.push(media);
+    saveMedia();
+    document.getElementById("assetFile").value = "";
+    alert('✅ Arquivo adicionado! Clique nele para transmitir');
   };
   reader.readAsDataURL(file);
 }
 
-function loadAssets(){
-  const list = document.getElementById("assetList");
-  list.innerHTML = "";
-  assets.forEach((a, index)=>{
-    const div = document.createElement("div");
-    div.className = "asset-item";
-    
-    const nameSpan = document.createElement("span");
-    nameSpan.textContent = "📎 " + a.name;
-    
-    const del = document.createElement("span");
-    del.textContent = "🗑️";
-    del.className = "delete-btn";
-    del.onclick = (e) => {
-      e.stopPropagation();
-      assets.splice(index, 1);
-      saveAssets();
-      loadAssets();
-    };
-    
-    div.appendChild(nameSpan);
-    div.appendChild(del);
-    list.appendChild(div);
-  });
-}
-loadAssets();
-
-// ============================================
-// SERVICE WORKER - SEGUNDO PLANO 24/7
-// ============================================
-
-async function registrarServiceWorker() {
-  if ('serviceWorker' in navigator) {
-    try {
-      const registration = await navigator.serviceWorker.register('sw.js', {
-        scope: './'
-      });
-      
-      console.log('✅ Service Worker registrado!');
-      await navigator.serviceWorker.ready;
-      
-      if (Notification.permission === 'default') {
-        await Notification.requestPermission();
-      }
-      
-      alert('✅ Service Worker ativado! Bot pode rodar 24/7');
-      return registration;
-    } catch (error) {
-      console.error('❌ Erro ao registrar:', error);
-      alert('❌ Erro ao ativar modo segundo plano');
-    }
-  } else {
-    alert('❌ Service Worker não suportado neste navegador');
-  }
+function addTestImage() {
+  const media = {
+    id: 'img_' + Date.now(),
+    name: 'Imagem de Teste',
+    fileType: 'image/jpeg',
+    data: 'https://picsum.photos/640/480?random=' + Date.now(),
+    added: Date.now()
+  };
+  mediaItems.push(media);
+  saveMedia();
+  alert('✅ Imagem adicionada! Clique nela para transmitir');
 }
 
-async function ativarBotBackground() {
-  if (!bot) return alert('Selecione um bot primeiro');
-  if (!currentGroup) return alert('Selecione um grupo');
-  
-  await registrarServiceWorker();
-  
-  const registration = await navigator.serviceWorker.ready;
-  
-  registration.active.postMessage({
-    type: 'ATIVAR_BOT',
-    botId: bot.id,
-    botNome: bot.name,
-    botAvatar: bot.avatar,
-    grupoId: currentGroup,
-    comandos: commands
-  });
-  
-  if (Notification.permission === 'granted') {
-    new Notification('🤖 Bot ativado!', {
-      body: `${bot.name} está rodando 24/7 em segundo plano`,
-      icon: bot.avatar
+function addTestVideo() {
+  const media = {
+    id: 'video_' + Date.now(),
+    name: 'Vídeo de Teste',
+    fileType: 'video/mp4',
+    data: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    added: Date.now()
+  };
+  mediaItems.push(media);
+  saveMedia();
+  alert('✅ Vídeo adicionado! Clique nele para transmitir');
+}
+
+function addTestAudio() {
+  const media = {
+    id: 'audio_' + Date.now(),
+    name: 'Áudio de Teste',
+    fileType: 'audio/mp3',
+    data: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+    added: Date.now()
+  };
+  mediaItems.push(media);
+  saveMedia();
+  alert('✅ Áudio adicionado! Clique nele para transmitir');
+}
+
+function resetToCamera() {
+  if (Object.keys(activeCalls).length > 0) {
+    createCameraStream().then(() => {
+      replaceTracksInAllCalls();
+      alert('📷 Voltou para a câmera');
     });
+  } else {
+    createCameraStream();
+  }
+}
+
+function replaceTracksInAllCalls() {
+  Object.values(activeCalls).forEach(call => {
+    if (call.peerConnection) {
+      const senders = call.peerConnection.getSenders();
+      
+      localStream.getTracks().forEach(track => {
+        const sender = senders.find(s => s.track?.kind === track.kind);
+        if (sender) {
+          sender.replaceTrack(track);
+        }
+      });
+    }
+  });
+}
+
+function updateMediaGrid(gridId) {
+  const grid = document.getElementById(gridId);
+  if (!grid) return;
+  
+  grid.innerHTML = "";
+  
+  if (mediaItems.length === 0) {
+    grid.innerHTML = '<div class="text-center" style="grid-column:span 3; padding:20px;">📭 Nenhuma mídia. Adicione uma acima.</div>';
+    return;
   }
   
-  document.getElementById('backgroundStatus').className = 'background-status bg-active';
-  document.getElementById('bgStatusText').innerHTML = `✅ ATIVO - ${bot.name}`;
-  
-  alert(`✅ Bot ${bot.name} ativado em segundo plano!\nEle vai responder mesmo com o navegador fechado.`);
-}
-
-async function desativarBotBackground() {
-  if (!bot) return;
-  
-  if (!('serviceWorker' in navigator)) return;
-  
-  const registration = await navigator.serviceWorker.ready;
-  
-  registration.active.postMessage({
-    type: 'DESATIVAR_BOT',
-    botId: bot.id
+  mediaItems.forEach((media) => {
+    const card = document.createElement('div');
+    card.className = 'media-card';
+    if (currentMediaSource === media.id) {
+      card.classList.add('selected');
+    }
+    
+    let icon = '📄';
+    if (media.fileType?.startsWith('image/')) icon = '🖼️';
+    else if (media.fileType?.startsWith('audio/')) icon = '🎵';
+    else if (media.fileType?.startsWith('video/')) icon = '🎬';
+    
+    const shortName = media.name.length > 20 ? media.name.substring(0, 17) + '...' : media.name;
+    
+    card.innerHTML = `
+      <div class="media-icon">${icon}</div>
+      <p title="${media.name}">${shortName}</p>
+      ${currentMediaSource === media.id ? '<div class="media-badge">🔴 TRANSMITINDO</div>' : ''}
+    `;
+    
+    card.onclick = () => transmitMedia(media);
+    
+    grid.appendChild(card);
   });
-  
-  document.getElementById('backgroundStatus').className = 'background-status bg-inactive';
-  document.getElementById('bgStatusText').innerHTML = '⭕ Inativo';
-  
-  alert(`❌ Bot ${bot.name} desativado`);
 }
 
-async function executarBotAgora() {
-  if (!bot || !currentGroup) return;
-  
-  await registrarServiceWorker();
-  
-  const registration = await navigator.serviceWorker.ready;
-  
-  registration.active.postMessage({
-    type: 'EXECUTAR_AGORA',
-    botId: bot.id,
-    botNome: bot.name,
-    grupoId: currentGroup,
-    comandos: commands
-  });
-  
-  alert('⚡ Executando bot agora!');
-}
-
-async function verificarStatusBackground() {
-  if (!bot) return;
-  if (!('serviceWorker' in navigator)) return;
+async function transmitMedia(media) {
+  if (Object.keys(activeCalls).length === 0) {
+    alert('❌ Inicie uma chamada primeiro!');
+    return;
+  }
   
   try {
-    const registration = await navigator.serviceWorker.getRegistration();
-    if (registration && registration.active) {
-      const channel = new MessageChannel();
+    // Parar stream atual
+    if (localStream) {
+      localStream.getTracks().forEach(t => t.stop());
+      localStream = null;
+    }
+
+    let newStream = null;
+    
+    if (media.fileType?.startsWith('video/')) {
+      // Criar elemento de vídeo
+      const videoEl = document.createElement('video');
+      videoEl.crossOrigin = 'anonymous';
+      videoEl.loop = true;
+      videoEl.muted = true;
+      videoEl.playsinline = true;
       
-      channel.port1.onmessage = (e) => {
-        const botsAtivos = e.data || {};
-        if (botsAtivos[bot.id]) {
-          document.getElementById('backgroundStatus').className = 'background-status bg-active';
-          document.getElementById('bgStatusText').innerHTML = `✅ ATIVO - ${bot.name}`;
-        } else {
-          document.getElementById('backgroundStatus').className = 'background-status bg-inactive';
-          document.getElementById('bgStatusText').innerHTML = '⭕ Inativo';
+      // Carregar o vídeo
+      if (media.data.startsWith('data:')) {
+        videoEl.src = media.data;
+      } else {
+        videoEl.src = media.data;
+      }
+      
+      // Aguardar o vídeo carregar
+      await new Promise((resolve, reject) => {
+        videoEl.onloadeddata = resolve;
+        videoEl.onerror = reject;
+        videoEl.load();
+      });
+      
+      await videoEl.play();
+      
+      // Capturar stream do vídeo
+      // @ts-ignore - captureStream existe em elementos de vídeo
+      newStream = videoEl.captureStream(30);
+      
+      // Guardar referência para parar depois
+      mediaElements[media.id] = videoEl;
+      
+    } else if (media.fileType?.startsWith('audio/')) {
+      // Criar elemento de áudio
+      const audioEl = document.createElement('audio');
+      audioEl.crossOrigin = 'anonymous';
+      audioEl.loop = true;
+      
+      if (media.data.startsWith('data:')) {
+        audioEl.src = media.data;
+      } else {
+        audioEl.src = media.data;
+      }
+      
+      await new Promise((resolve, reject) => {
+        audioEl.onloadeddata = resolve;
+        audioEl.onerror = reject;
+        audioEl.load();
+      });
+      
+      await audioEl.play();
+      
+      // Para áudio, precisamos de um canvas para ter vídeo também
+      const canvas = document.createElement('canvas');
+      canvas.width = 640;
+      canvas.height = 480;
+      const ctx = canvas.getContext('2d');
+      
+      // Desenhar um visualizador de áudio simples
+      ctx.fillStyle = '#1a1f24';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#2d9cdb';
+      ctx.font = '24px Arial';
+      ctx.fillText('🎵 Transmitindo Áudio', 50, 240);
+      
+      // Animação simples
+      const animate = () => {
+        if (newStream && currentMediaSource === media.id) {
+          ctx.fillStyle = '#1a1f24';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = '#2d9cdb';
+          ctx.font = '24px Arial';
+          ctx.fillText('🎵 ' + media.name, 50, 240);
+          
+          // Adicionar onda sonora simples
+          const time = Date.now() / 500;
+          for (let i = 0; i < 20; i++) {
+            const height = 30 + Math.sin(time + i * 0.5) * 20;
+            ctx.fillRect(100 + i * 25, 300 - height/2, 15, height);
+          }
+          
+          requestAnimationFrame(animate);
         }
       };
+      animate();
       
-      registration.active.postMessage({
-        type: 'GET_STATUS'
-      }, [channel.port2]);
+      // @ts-ignore
+      newStream = canvas.captureStream(30);
+      
+      // Adicionar track de áudio do elemento de áudio
+      // @ts-ignore
+      const audioTrack = audioEl.captureStream().getAudioTracks()[0];
+      if (audioTrack) {
+        newStream.addTrack(audioTrack);
+      }
+      
+      mediaElements[media.id] = audioEl;
+      
+    } else if (media.fileType?.startsWith('image/')) {
+      // Para imagem
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = media.data;
+      });
+      
+      canvas.width = img.width || 640;
+      canvas.height = img.height || 480;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      
+      // Animação para manter o canvas atualizado
+      const animate = () => {
+        if (newStream && currentMediaSource === media.id) {
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          requestAnimationFrame(animate);
+        }
+      };
+      animate();
+      
+      // @ts-ignore
+      newStream = canvas.captureStream(30);
     }
-  } catch (e) {
-    console.error(e);
+    
+    if (newStream) {
+      localStream = newStream;
+      document.getElementById('localVideo').srcObject = localStream;
+      currentMediaSource = media.id;
+      updateCurrentMediaIndicator(media.name);
+      
+      // Substituir tracks em todas as chamadas ativas
+      replaceTracksInAllCalls();
+      
+      updateMediaGrid('mediaGrid');
+      console.log(`✅ Transmitindo: ${media.name}`);
+    }
+    
+  } catch (err) {
+    console.error('Erro ao transmitir:', err);
+    alert('❌ Erro ao carregar mídia. Voltando para a câmera.');
+    
+    // Voltar para a câmera
+    await createCameraStream();
+    replaceTracksInAllCalls();
   }
 }
 
-// Registrar SW ao carregar
+// ============================================
+// INICIALIZAÇÃO
+// ============================================
 window.addEventListener('load', () => {
-  registrarServiceWorker();
-  setInterval(verificarStatusBackground, 3000);
+  updateMediaGrid('mediaGrid');
+  
+  db.ref('groups/grupo_teste').once('value', snap => {
+    if (!snap.exists()) {
+      db.ref('groups/grupo_teste').set({
+        name: 'Grupo de Teste',
+        created: Date.now(),
+        members: {}
+      });
+    }
+  });
 });
 
 // Exportar funções
-window.registrarServiceWorker = registrarServiceWorker;
-window.ativarBotBackground = ativarBotBackground;
-window.desativarBotBackground = desativarBotBackground;
-window.executarBotAgora = executarBotAgora;
+window.startBotCall = startBotCall;
+window.endBotCall = endBotCall;
+window.addAsset = addAsset;
+window.addTestImage = addTestImage;
+window.addTestVideo = addTestVideo;
+window.addTestAudio = addTestAudio;
+window.resetToCamera = resetToCamera;
 </script>
 </body>
 </html>
