@@ -3,7 +3,7 @@ function StoreApp() {
     const [credits, setCredits] = React.useState(0);
     const [history, setHistory] = React.useState([]);
     const [activeTab, setActiveTab] = React.useState('stickers'); // stickers, sounds, credits
-    
+
     // Sticker Creation
     const [stickerUrl, setStickerUrl] = React.useState("");
     const [myStickers, setMyStickers] = React.useState([]);
@@ -38,27 +38,11 @@ function StoreApp() {
 
     }, []);
 
-    const addCredits = (amount) => {
-        const newBalance = credits + amount;
-        setCredits(newBalance);
-        localStorage.setItem("saldo_creditos", newBalance);
-
-        const newEntry = {
-            id: Date.now(),
-            amount: amount,
-            date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString(),
-            desc: "Recarga Manual"
-        };
-        const newHistory = [newEntry, ...history];
-        setHistory(newHistory);
-        localStorage.setItem("historico_recargas", JSON.stringify(newHistory));
-        
-        alert(`Recarga de ${amount} realizada com sucesso!`);
-    };
+    // Função de adicionar créditos removida - sem botões de recarga grátis
 
     const handleCreateSticker = () => {
         if (!stickerUrl) return alert("Insira uma URL de imagem/gif");
-        
+
         const cost = 10;
         if (credits < cost) return alert("Saldo insuficiente (Custo: 10)");
 
@@ -77,7 +61,7 @@ function StoreApp() {
 
     const handleAddSound = async () => {
         if (!soundName || !soundFile) return alert("Preencha nome e arquivo");
-        
+
         const cost = 50;
         if (credits < cost) return alert("Saldo insuficiente (Custo: 50)");
 
@@ -148,7 +132,7 @@ function StoreApp() {
 
                 {/* Content */}
                 <div className="flex-1 p-4 overflow-y-auto bg-gray-50">
-                    
+
                     {/* STICKERS TAB */}
                     {activeTab === 'stickers' && (
                         <div className="space-y-6">
@@ -157,7 +141,7 @@ function StoreApp() {
                                     <div className="icon-sticker text-purple-500"></div> Criar Sticker
                                 </h3>
                                 <p className="text-xs text-gray-500 mb-3">Transforme qualquer URL de GIF/Imagem em Sticker.</p>
-                                
+
                                 <input 
                                     type="text" 
                                     placeholder="Cole a URL da imagem aqui..." 
@@ -166,7 +150,7 @@ function StoreApp() {
                                     onChange={e => setStickerUrl(e.target.value)}
                                 />
                                 {stickerUrl && <img src={stickerUrl} className="w-20 h-20 object-contain mx-auto mb-2 border rounded" />}
-                                
+
                                 <button onClick={handleCreateSticker} className="w-full bg-purple-600 text-white py-2 rounded text-sm font-bold hover:bg-purple-700">
                                     Criar (10 Créditos)
                                 </button>
@@ -203,7 +187,7 @@ function StoreApp() {
                                     <div className="icon-music text-blue-500"></div> Adicionar Efeito Sonoro
                                 </h3>
                                 <p className="text-xs text-gray-500 mb-3">Envie um arquivo de áudio curto (MP3/WAV) para usar nas chamadas.</p>
-                                
+
                                 <input 
                                     type="text" 
                                     placeholder="Nome do Efeito (ex: Aplausos)" 
@@ -217,7 +201,7 @@ function StoreApp() {
                                     className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 mb-3"
                                     onChange={e => setSoundFile(e.target.files[0])}
                                 />
-                                
+
                                 <button onClick={handleAddSound} className="w-full bg-blue-600 text-white py-2 rounded text-sm font-bold hover:bg-blue-700">
                                     Adicionar (50 Créditos)
                                 </button>
@@ -262,20 +246,14 @@ function StoreApp() {
                             <div className="bg-gradient-to-r from-green-500 to-teal-600 rounded-xl p-6 text-white text-center shadow-lg">
                                 <p className="text-sm opacity-80 mb-1">Saldo Atual</p>
                                 <h2 className="text-4xl font-bold mb-4">{credits}</h2>
-                                <div className="flex gap-3 justify-center">
-                                    <button onClick={() => addCredits(100)} className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm transition">
-                                        +100 Grátis
-                                    </button>
-                                    <button onClick={() => addCredits(500)} className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm transition">
-                                        +500 Grátis
-                                    </button>
-                                </div>
+                                {/* Botões de crédito grátis removidos */}
+                                <p className="text-sm opacity-75">Créditos são adquiridos apenas através de recargas oficiais</p>
                             </div>
 
                             <div>
                                 <h4 className="font-bold text-gray-600 mb-3 text-sm">Histórico de Recargas</h4>
                                 <div className="space-y-2">
-                                    {history.length === 0 && <p className="text-center text-gray-400 text-sm py-4">Nenhum histórico.</p>}
+                                    {history.length === 0 && <p className="text-center text-gray-400 text-sm py-4">Nenhum histórico de recarga.</p>}
                                     {history.map(h => (
                                         <div key={h.id} className="bg-white p-3 rounded-lg border border-gray-100 flex justify-between items-center">
                                             <div>
