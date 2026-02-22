@@ -1,7 +1,7 @@
 const { initializeApp, cert } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
 
-// Inicializa Firebase (uma única vez)
+// Inicializa Firebase
 if (!global.firebaseApp) {
   try {
     global.firebaseApp = initializeApp({
@@ -18,14 +18,12 @@ if (!global.firebaseApp) {
 
 const auth = getAuth();
 
-// Gerar nome aleatório
 function generateRandomUsername() {
   const adj = ['Bravo', 'Rapido', 'Forte', 'Sábio'][Math.floor(Math.random() * 4)];
   const noun = ['Tigre', 'Leao', 'Lobo', 'Fenix'][Math.floor(Math.random() * 4)];
   return adj + noun + (Math.floor(Math.random() * 999) + 1);
 }
 
-// Gerar senha aleatória
 function generateRandomPassword() {
   const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let pwd = '';
@@ -34,18 +32,22 @@ function generateRandomPassword() {
 }
 
 module.exports = async (req, res) => {
-  // CORS básico
+  // Headers específicos para funcionar com Google Apps Script
   res.setHeader('Access-Control-Allow-Origin', '*');
-  
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Content-Type', 'application/json');
+
+  // Responde preflight rapidamente
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    return res.status(204).end();
   }
 
+  // Aceita tanto GET quanto POST
   const action = req.query.action || req.body?.action;
 
   try {
     if (action === 'newaccount') {
-      // CRIA CONTA
       const username = generateRandomUsername();
       const password = generateRandomPassword();
       const email = `${username.toLowerCase()}@temp.local`;
@@ -56,18 +58,21 @@ module.exports = async (req, res) => {
         displayName: username
       });
 
-      return res.json({
+      return res.status(200).json({
+        success: true,
         uid: user.uid,
         username: username,
         password: password
       });
 
     } else if (action === 'newpassword') {
-      // TROCA SENHA
       const uid = req.query.uid || req.body?.uid;
 
       if (!uid) {
-        return res.status(400).json({ erro: 'UID obrigatório' });
+        return res.status(400).json({ 
+          success: false, 
+          error: 'UID obrigatório' 
+        });
       }
 
       const user = await auth.getUser(uid);
@@ -75,17 +80,27 @@ module.exports = async (req, res) => {
 
       await auth.updateUser(uid, { password: newPassword });
 
-      return res.json({
+      return res.status(200).json({
+        success: true,
         uid: uid,
         username: user.displayName || user.email?.split('@')[0],
         newPassword: newPassword
       });
 
     } else {
-      return res.status(400).json({ erro: 'Ação inválida' });
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Ação inválida. Use ?action=newaccount ou ?action=newpassword' 
+      });
     }
 
   } catch (error) {
-    return res.status(500).json({ erro: error.message });
+    // Log do erro no servidor
+    console.error('Erro:', error);
+    
+    return res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 };
