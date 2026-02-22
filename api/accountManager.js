@@ -1,7 +1,7 @@
 const { initializeApp, cert } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
 
-// Inicializa Firebase (sem try-catch pois o firebase-admin já deve estar disponível)
+// Inicializa Firebase (uma única vez)
 if (!global.firebaseApp) {
   try {
     global.firebaseApp = initializeApp({
@@ -20,8 +20,8 @@ const auth = getAuth();
 
 // Funções auxiliares
 function generateRandomUsername() {
-  const adjectives = ['Rapido', 'Bravo', 'Calmo', 'Esperto', 'Forte'];
-  const nouns = ['Tigre', 'Leao', 'Lobo', 'Fenix', 'Dragao'];
+  const adjectives = ['Rapido', 'Bravo', 'Calmo', 'Esperto', 'Forte', 'Veloz', 'Sábio', 'Leal'];
+  const nouns = ['Tigre', 'Leao', 'Lobo', 'Fenix', 'Dragao', 'Águia', 'Pantera', 'Falcao'];
   const numbers = Math.floor(Math.random() * 999) + 1;
   
   const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
@@ -39,9 +39,9 @@ function generateRandomPassword() {
   return password;
 }
 
-// Handler principal
+// Handler principal - gerencia todas as rotas/acoes
 module.exports = async (req, res) => {
-  // Configura CORS básico
+  // Configura CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -51,21 +51,47 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
-  // Pega a ação
+  // Pega a ação da query string ou body
   const action = req.query.action || req.body?.action;
 
   try {
     switch (action) {
+      // Ações de autenticação
       case 'newaccount':
         return await handleNewAccount(res);
       
       case 'newpassword':
         return await handleNewPassword(req, res);
       
+      // Você pode adicionar mais casos aqui para outras funcionalidades
+      case 'webhook':
+        return await handleWebhook(req, res);
+      
+      case 'whatsapp':
+        return await handleWhatsApp(req, res);
+      
+      case 'audio':
+        return await handleAudio(req, res);
+      
+      case 'check':
+        return await handleCheck(req, res);
+      
+      case 'bot':
+        return await handleBot(req, res);
+      
+      case 'api7':
+        return await handleApi7(req, res);
+      
+      case 'apicall':
+        return await handleApiCall(req, res);
+      
       default:
         return res.status(400).json({
           error: 'Ação inválida',
-            actions: ['newaccount', 'newpassword']
+          availableActions: [
+            'newaccount', 'newpassword', 'webhook', 'whatsapp', 
+            'audio', 'check', 'bot', 'api7', 'apicall'
+          ]
         });
     }
   } catch (error) {
@@ -76,7 +102,9 @@ module.exports = async (req, res) => {
   }
 };
 
-// Criar nova conta
+// ========== HANDLERS DAS AÇÕES ==========
+
+// Criar nova conta (Firebase)
 async function handleNewAccount(res) {
   try {
     const username = generateRandomUsername();
@@ -107,7 +135,7 @@ async function handleNewAccount(res) {
   }
 }
 
-// Gerar nova senha
+// Gerar nova senha (Firebase)
 async function handleNewPassword(req, res) {
   try {
     const uid = req.query.uid || req.body?.uid;
@@ -120,13 +148,9 @@ async function handleNewPassword(req, res) {
       });
     }
 
-    // Busca usuário
     const user = await auth.getUser(uid);
-    
-    // Gera nova senha
     const newPassword = generateRandomPassword();
 
-    // Atualiza senha
     await auth.updateUser(uid, {
       password: newPassword
     });
@@ -147,4 +171,64 @@ async function handleNewPassword(req, res) {
       error: error.message
     });
   }
+}
+
+// Handlers placeholders para suas outras APIs
+async function handleWebhook(req, res) {
+  return res.json({
+    success: true,
+    action: 'webhook',
+    message: 'Webhook funcionando',
+    method: req.method,
+    data: req.body || req.query
+  });
+}
+
+async function handleWhatsApp(req, res) {
+  return res.json({
+    success: true,
+    action: 'whatsapp',
+    message: 'API WhatsApp funcionando'
+  });
+}
+
+async function handleAudio(req, res) {
+  return res.json({
+    success: true,
+    action: 'audio',
+    message: 'API Áudio funcionando'
+  });
+}
+
+async function handleCheck(req, res) {
+  return res.json({
+    success: true,
+    action: 'check',
+    message: 'Health check OK',
+    timestamp: new Date().toISOString()
+  });
+}
+
+async function handleBot(req, res) {
+  return res.json({
+    success: true,
+    action: 'bot',
+    message: 'Bot funcionando'
+  });
+}
+
+async function handleApi7(req, res) {
+  return res.json({
+    success: true,
+    action: 'api7',
+    message: 'API7 funcionando'
+  });
+}
+
+async function handleApiCall(req, res) {
+  return res.json({
+    success: true,
+    action: 'apicall',
+    message: 'APICall funcionando'
+  });
 }
