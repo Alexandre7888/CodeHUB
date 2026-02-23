@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodeHub - Autenticação</title>
+  <style>
+    :root {
+      --primary-color: #4361ee;
+      --secondary-color: #3f37c9;
+      --accent-color: #4895ef;
+      --danger-color: #f72585;
+      --success-color: #4cc9f0;
+      --light-color: #f8f9fa;
+      --dark-color: #212529;
+      --gray-color: #6c757d;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .auth-container {
+      width: 100%;
+      max-width: 420px;
+      background-color: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .auth-header {
+      background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+      color: white;
+      padding: 25px;
+      text-align: center;
+    }
+
+    .auth-header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .auth-header p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .tabs {
+      display: flex;
+      background-color: #f1f3f5;
+    }
+
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 15px;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--gray-color);
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .tab.active {
+      color: var(--primary-color);
+      background-color: white;
+    }
+
+    .tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background-color: var(--primary-color);
+    }
+
+    .tab-content {
+      padding: 30px;
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: var(--dark-color);
+      font-size: 14px;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      font-size: 15px;
+      transition: all 0.3s;
+    }
+
+    .form-control:focus {
+      border-color: var(--accent-color);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--secondary-color);
+      transform: translateY(-2px);
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 20px 0;
+      color: var(--gray-color);
+      font-size: 14px;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background-color: #e9ecef;
+      margin: 0 10px;
+    }
+
+    .error-message {
+      color: var(--danger-color);
+      font-size: 13px;
+      margin-top: 5px;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    .success-message {
+      color: var(--success-color);
+      font-size: 14px;
+      margin-top: 15px;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .info-message {
+      background-color: #e7f3ff;
+      border-left: 4px solid var(--accent-color);
+      padding: 12px 15px;
+      margin: 15px 0;
+      border-radius: 6px;
+      font-size: 14px;
+      color: var(--dark-color);
+    }
+
+    .footer-text {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 14px;
+      color: var(--gray-color);
+    }
+
+    .footer-text a {
+      color: var(--primary-color);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    .header-actions {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+    }
+
+    .home-btn {
+      background-color: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .home-btn:hover {
+      background-color: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Estilo para o painel admin */
+    .admin-panel {
+      margin-top: 20px;
+      border-top: 2px dashed var(--accent-color);
+      padding-top: 20px;
+    }
+
+    .admin-panel h3 {
+      color: var(--dark-color);
+      margin-bottom: 15px;
+      font-size: 16px;
+      text-align: center;
+    }
+
+    .small-text {
+      font-size: 12px;
+      color: var(--gray-color);
+      margin-top: 5px;
+    }
+
+    @media (max-width: 480px) {
+      .auth-container {
+        border-radius: 12px;
+      }
+
+      .auth-header {
+        padding: 20px;
+      }
+
+      .tab-content {
+        padding: 20px;
+      }
+
+      .header-actions {
+        top: 10px;
+        right: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header-actions">
+    <button class="home-btn" onclick="goToIndex()">
+      <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+      </svg>
+      Voltar ao Início
+    </button>
+  </div>
+
+  <div class="auth-container">
+    <div class="auth-header">
+      <h1>Bem-vindo ao CodeHub</h1>
+      <p>Seu editor de código online favorito</p>
+    </div>
+
+    <div id="no-token-info" class="info-message" style="display: none;">
+      <strong>Modo Direto:</strong> Você acessou diretamente a página de login. 
+      Após o login, você será redirecionado para a página inicial.
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('login')">Entrar</div>
+      <div class="tab" onclick="switchTab('register')">Criar Conta</div>
+      <div class="tab" onclick="switchTab('admin')">Admin</div>
+    </div>
+
+    <div id="login-tab" class="tab-content active">
+      <form id="login-form">
+        <div class="form-group">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" class="form-control" placeholder="digite seu email" required>
+          <div id="login-email-error" class="error-message"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="login-password">Senha</label>
+          <input type="password" id="login-password" class="form-control" placeholder="digite sua senha" required>
+          <div id="login-password-error" class="error-message"></div>
+        </div>
+
+        <button type="button" class="btn btn-primary" onclick="login()">
+          <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+          </svg>
+          Entrar
+        </button>
+
+        <div class="footer-text">
+          Não tem uma conta? <a href="#" onclick="switchTab('register'); return false;">Cadastre-se</a>
+        </div>
+        <div id="login-success" class="success-message"></div>
+      </form>
+    </div>
+
+    <div id="register-tab" class="tab-content">
+      <form id="register-form">
+        <div class="form-group">
+          <label for="register-username">Nome de Usuário</label>
+          <input type="text" id="register-username" class="form-control" placeholder="ex: dev123" required>
+          <div id="register-username-error" class="error-message"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="register-email">Email</label>
+          <input type="email" id="register-email" class="form-control" placeholder="digite seu email" required>
+          <div id="register-email-error" class="error-message"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="register-password">Senha</label>
+          <input type="password" id="register-password" class="form-control" placeholder="crie uma senha (mín. 6 caracteres)" required>
+          <div id="register-password-error" class="error-message"></div>
+        </div>
+
+        <div class="form-group">
+          <label for="register-confirm-password">Confirmar Senha</label>
+          <input type="password" id="register-confirm-password" class="form-control" placeholder="confirme sua senha" required>
+          <div id="register-confirm-error" class="error-message"></div>
+        </div>
+
+        <button type="button" class="btn btn-primary" onclick="register()">
+          <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+          </svg>
+          Criar Conta
+        </button>
+
+        <div class="footer-text">
+          Já tem uma conta? <a href="#" onclick="switchTab('login'); return false;">Faça login</a>
+        </div>
+        <div id="register-success" class="success-message"></div>
+      </form>
+    </div>
+
+    <div id="admin-tab" class="tab-content">
+      <form id="admin-form">
+        <div class="info-message">
+          <strong>Acesso via UID:</strong> Cole o UID do usuário para acessar a conta diretamente.
+        </div>
+
+        <div class="form-group">
+          <label for="admin-uid">UID do Usuário</label>
+          <input type="text" id="admin-uid" class="form-control" placeholder="ex: abc123def456ghi789" required>
+          <div id="admin-uid-error" class="error-message"></div>
+        </div>
+
+        <button type="button" class="btn btn-primary" onclick="accessByUID()">
+          <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+          </svg>
+          Acessar Conta via UID
+        </button>
+
+        <div class="small-text">
+          * Use apenas para fins administrativos ou de suporte.
+        </div>
+
+        <div id="admin-success" class="success-message"></div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
+    import { 
+      getAuth, 
+      createUserWithEmailAndPassword, 
+      signInWithEmailAndPassword
+    } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
+    import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
+      authDomain: "html-15e80.firebaseapp.com",
+      databaseURL: "https://html-15e80-default-rtdb.firebaseio.com",
+      projectId: "html-15e80",
+      storageBucket: "html-15e80.firebasestorage.app",
+      messagingSenderId: "1068148640439",
+      appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32",
+      measurementId: "G-V57KRZ02HJ"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const database = getDatabase(app);
+
+    // Pega token da URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const appToken = urlParams.get('token');
+    const urlUid = urlParams.get('uid');
+
+    // Função para ir para index.html
+    window.goToIndex = function() {
+      window.location.href = 'index.html';
+    };
+
+    // Verifica se há UID na URL para acesso direto
+    if (urlUid) {
+      setTimeout(() => {
+        accessByUID(urlUid);
+      }, 500);
+    }
+
+    // Verifica se há token na URL
+    if (!appToken && !urlUid) {
+      // Mostra mensagem informativa
+      const infoElement = document.getElementById('no-token-info');
+      infoElement.style.display = 'block';
+
+      // Adiciona botão de voltar ao início no header
+      const authHeader = document.querySelector('.auth-header');
+      authHeader.innerHTML += `
+        <div style="margin-top: 10px; font-size: 12px; opacity: 0.8;">
+          <a href="index.html" style="color: white; text-decoration: underline;">Voltar para a página inicial</a>
+        </div>
+      `;
+    }
+
+    // Função para redirecionar após login/registro
+    function redirectAfterAuth(uid = null) {
+      if (appToken) {
+        // Se tiver token, redireciona para continuar-conta.html
+        setTimeout(() => {
+          window.location.href = `API/continuar-conta.html?token=${appToken}`;
+        }, 1500);
+      } else {
+        // Se não tiver token, redireciona para index.html
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 1500);
+      }
+    }
+
+    window.switchTab = (tabId) => {
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+      document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`).classList.add('active');
+      document.getElementById(`${tabId}-tab`).classList.add('active');
+
+      document.querySelectorAll('.error-message').forEach(el => el.classList.remove('show'));
+      document.querySelectorAll('.success-message').forEach(el => el.textContent = '');
+    };
+
+    function showError(fieldId, message) {
+      const errorElement = document.getElementById(`${fieldId}-error`);
+      if (errorElement) {
+        errorElement.textContent = message;
+        errorElement.classList.add('show');
+      }
+    }
+
+    function clearErrors() {
+      document.querySelectorAll('.error-message').forEach(el => {
+        el.textContent = '';
+        el.classList.remove('show');
+      });
+    }
+
+    function showSuccess(formType, message) {
+      const successElement = document.getElementById(`${formType}-success`);
+      if (successElement) {
+        successElement.textContent = message;
+      }
+    }
+
+    // Função para acessar conta via UID
+    window.accessByUID = async (uid = null) => {
+      clearErrors();
+      
+      const targetUid = uid || document.getElementById('admin-uid')?.value.trim();
+      
+      if (!targetUid) {
+        showError('admin-uid', 'Por favor, insira um UID válido');
+        return;
+      }
+
+      try {
+        showSuccess('admin', 'Verificando UID...');
+
+        // Buscar dados do usuário no Realtime Database
+        const dbRef = ref(database);
+        const snapshot = await get(child(dbRef, `users/${targetUid}`));
+        
+        if (snapshot.exists()) {
+          const userData = snapshot.val();
+          
+          showSuccess('admin', `Acesso concedido! Bem-vindo, ${userData.username || 'usuário'}. Redirecionando...`);
+          
+          // Salvar no localStorage que o acesso foi via UID
+          localStorage.setItem('adminAccess', 'true');
+          localStorage.setItem('accessedUid', targetUid);
+          localStorage.setItem('accessedUser', JSON.stringify(userData));
+          
+          // Redirecionar para a página inicial com o UID
+          setTimeout(() => {
+            if (appToken) {
+              window.location.href = `API/continuar-conta.html?token=${appToken}&uid=${targetUid}`;
+            } else {
+              window.location.href = `index.html?uid=${targetUid}`;
+            }
+          }, 2000);
+          
+        } else {
+          showError('admin-uid', 'UID não encontrado no banco de dados');
+        }
+      } catch (error) {
+        console.error('Erro ao acessar via UID:', error);
+        showError('admin-uid', 'Erro ao verificar UID. Tente novamente.');
+      }
+    };
+
+    // Função de registro
+    window.register = async () => {
+      clearErrors();
+
+      const username = document.getElementById('register-username').value.trim();
+      const email = document.getElementById('register-email').value.trim();
+      const password = document.getElementById('register-password').value;
+      const confirmPassword = document.getElementById('register-confirm-password').value;
+
+      // Validações
+      if (!username) {
+        showError('register-username', 'Nome de usuário é obrigatório');
+        return;
+      }
+
+      if (!email) {
+        showError('register-email', 'Email é obrigatório');
+        return;
+      }
+
+      if (!password) {
+        showError('register-password', 'Senha é obrigatória');
+        return;
+      }
+
+      if (password.length < 6) {
+        showError('register-password', 'A senha deve ter pelo menos 6 caracteres');
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        showError('register-confirm', 'As senhas não coincidem');
+        return;
+      }
+
+      try {
+        // Criar usuário no Firebase Authentication
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // Salvar dados adicionais no Realtime Database
+        await set(ref(database, 'users/' + user.uid), {
+          username: username,
+          email: email,
+          createdAt: Date.now(),
+          lastLogin: Date.now(),
+          uid: user.uid
+        });
+
+        const successMessage = appToken 
+          ? 'Conta criada com sucesso! Redirecionando...' 
+          : 'Conta criada com sucesso! Redirecionando para a página inicial...';
+
+        showSuccess('register', successMessage);
+        redirectAfterAuth();
+
+      } catch (error) {
+        console.error('Erro no registro:', error);
+
+        // Tratamento de erros específicos do Firebase
+        switch(error.code) {
+          case 'auth/email-already-in-use':
+            showError('register-email', 'Este email já está em uso');
+            break;
+          case 'auth/invalid-email':
+            showError('register-email', 'Email inválido');
+            break;
+          case 'auth/weak-password':
+            showError('register-password', 'Senha muito fraca');
+            break;
+          default:
+            showError('register-email', 'Erro ao criar conta. Tente novamente.');
+        }
+      }
+    };
+
+    // Função de login
+    window.login = async () => {
+      clearErrors();
+
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+
+      if (!email) {
+        showError('login-email', 'Email é obrigatório');
+        return;
+      }
+
+      if (!password) {
+        showError('login-password', 'Senha é obrigatória');
+        return;
+      }
+
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // Atualizar último login no database
+        await set(ref(database, 'users/' + user.uid + '/lastLogin'), Date.now());
+
+        const successMessage = appToken 
+          ? 'Login realizado com sucesso! Redirecionando...' 
+          : 'Login realizado com sucesso! Redirecionando para a página inicial...';
+
+        showSuccess('login', successMessage);
+        redirectAfterAuth();
+
+      } catch (error) {
+        console.error('Erro no login:', error);
+
+        switch(error.code) {
+          case 'auth/user-not-found':
+            showError('login-email', 'Usuário não encontrado');
+            break;
+          case 'auth/wrong-password':
+            showError('login-password', 'Senha incorreta');
+            break;
+          case 'auth/invalid-email':
+            showError('login-email', 'Email inválido');
+            break;
+          case 'auth/user-disabled':
+            showError('login-email', 'Esta conta foi desativada');
+            break;
+          default:
+            showError('login-email', 'Erro ao fazer login. Verifique suas credenciais.');
+        }
+      }
+    };
+
+    // Verificar se o usuário já está logado
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        // Se já estiver logado e tiver token, redirecionar automaticamente
+        if (appToken) {
+          showSuccess('login', 'Você já está logado! Redirecionando...');
+          setTimeout(() => {
+            window.location.href = `API/continuar-conta.html?token=${appToken}`;
+          }, 1000);
+        } else if (urlUid) {
+          // Se tiver UID na URL, ignora redirecionamento automático
+          return;
+        } else {
+          // Se já estiver logado mas não tiver token, redirecionar para index
+          showSuccess('login', 'Você já está logado! Redirecionando para a página inicial...');
+          setTimeout(() => {
+            window.location.href = 'index.html';
+          }, 1000);
+        }
+      }
+    });
+
+    // Se tiver UID na URL, automaticamente muda para a aba admin
+    if (urlUid) {
+      setTimeout(() => {
+        switchTab('admin');
+      }, 300);
+    }
+  </script>
+</body>
+</html>
