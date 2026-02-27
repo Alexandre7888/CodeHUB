@@ -1,0 +1,12 @@
+When developing mapsHUB:
+- Ensure navigation calculation only happens once per destination, not on every GPS update.
+- Do NOT use internal `navigator.geolocation.watchPosition` inside the Navigation component if the parent App already passes a live user location prop.
+- Use **Service Worker Cache API** for "downloading" map areas (Offline Mode).
+- **Offline Strategy**: 
+    - Download ACTUAL map tiles (`tile.openstreetmap.org`) for the visible viewport. 
+    - Cache all UI assets including **Icon Fonts** (`.woff2`) to ensure icons appear offline.
+    - **Routing Fallback**: If offline and no cached route exists, use "Direct Navigation" (Point-to-Point/Compass Mode) instead of failing.
+- Use **Google Traffic Tiles** (`mt0.google.com/vt?lyrs=h,traffic`) for real-time traffic visualization overlaid on the map.
+- Present Traffic data as **Real-Time**, never as "Simulated" in the UI.
+- When Navigation starts, **automatically hide** 360° Tour Points to reduce clutter, but keep "Places/Locations" visible.
+- Ensure `manifest.json` is correctly linked and the Service Worker caches it to allow PWA installation prompts.
