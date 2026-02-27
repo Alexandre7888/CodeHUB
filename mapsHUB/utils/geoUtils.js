@@ -1,237 +1,183 @@
-// Utilities for Geocoding and Map operations
+function PlaceDetail({ place, onClose, onDirections }) {
+    const [photos, setPhotos] = React.useState([]);
+    const [showPano, setShowPano] = React.useState(null);
+    const [isUploading, setIsUploading] = React.useState(false);
+    const [isExpanded, setIsExpanded] = React.useState(false);
 
-const NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org/search';
-const NOMINATIM_REVERSE_URL = 'https://nominatim.openstreetmap.org/reverse';
-const OSRM_BASE_URL = 'https://router.project-osrm.org/route/v1';
-const PROXY_BASE_URL = 'https://proxy-api.trickle-app.host/?url=';
+    React.useEffect(() => {
+        if (place && place.id) {
+            loadPhotos();
+            setIsExpanded(false); // Reset to collapsed view initially
+        }
+    }, [place]);
 
-async function searchPlaces(query) {
-    if (!query || query.length < 3) return [];
-    
-    // Offline fallback for search? 
-    // Difficult without local DB, but we could search saved markers.
-    if (!navigator.onLine) {
-        return [];
-    }
-
-    try {
-        const params = new URLSearchParams({
-            q: query,
-            format: 'json',
-            addressdetails: 1,
-            limit: 5,
-            'accept-language': 'pt-BR,pt;q=0.9,en;q=0.8'
-        });
+    const loadPhotos = async () => {
+        if (!place.id) return;
+        // Mock checking if it's a real backend ID or temp
+        if (place.id.toString().startsWith('temp_')) {
+            setPhotos([]); // Temp places usually don't have photos yet unless from API
+            return;
+        }
         
-        const response = await fetch(`${NOMINATIM_BASE_URL}?${params.toString()}`);
-        if (!response.ok) throw new Error('Network response was not ok');
-        
-        return await response.json();
-    } catch (error) {
-        console.warn("Search error (likely offline or blocked):", error);
-        return [];
-    }
-}
-
-async function reverseGeocode(lat, lon) {
-    if (!navigator.onLine) return { display_name: "Local Offline", address: { road: "Desconhecido" } };
-
-    try {
-        const params = new URLSearchParams({
-            lat: lat,
-            lon: lon,
-            format: 'json',
-            addressdetails: 1,
-            'accept-language': 'pt-BR,pt;q=0.9,en;q=0.8'
-        });
-        
-        const response = await fetch(`${NOMINATIM_REVERSE_URL}?${params.toString()}`);
-        if (!response.ok) throw new Error('Network response was not ok');
-        
-        return await response.json();
-    } catch (error) {
-        console.warn("Reverse geocode error:", error);
-        return null;
-    }
-}
-
-// Format address for display
-function formatAddress(item) {
-    const address = item.address || {};
-    const parts = [];
-    
-    if (address.road) parts.push(address.road);
-    if (address.house_number) parts.push(address.house_number);
-    if (address.suburb) parts.push(address.suburb);
-    if (address.city || address.town || address.village) parts.push(address.city || address.town || address.village);
-    if (address.state) parts.push(address.state);
-    
-    return parts.join(', ');
-}
-
-function getPlaceIconType(type, category) {
-    if (category === 'amenity') {
-        if (type === 'restaurant' || type === 'cafe') return 'utensils';
-        if (type === 'fuel') return 'fuel';
-        if (type === 'parking') return 'circle-parking';
-        if (type === 'school' || type === 'university') return 'graduation-cap';
-        if (type === 'hospital' || type === 'clinic') return 'activity';
-    }
-    if (category === 'shop') return 'shopping-bag';
-    if (category === 'tourism') return 'camera';
-    if (category === 'leisure' && type === 'park') return 'trees';
-    
-    return 'map-pin';
-}
-
-// Create a Direct/Compass Route (Fallback for Offline)
-function getDirectRoute(startCoords, endCoords) {
-    const dist = calculateDistance(startCoords.lat, startCoords.lon, endCoords.lat, endCoords.lon);
-    
-    return {
-        code: 'Ok',
-        routes: [{
-            distance: dist * 1000,
-            duration: (dist / 40) * 3600, // Assume 40km/h avg speed
-            geometry: {
-                coordinates: [
-                    [startCoords.lon, startCoords.lat],
-                    [endCoords.lon, endCoords.lat]
-                ],
-                type: 'LineString'
-            },
-            legs: [{
-                steps: [{
-                    maneuver: { type: 'depart', modifier: 'straight', location: [startCoords.lon, startCoords.lat] },
-                    name: 'Direção Direta',
-                    distance: dist * 1000,
-                    duration: (dist / 40) * 3600,
-                    mode: 'direct'
-                }],
-                distance: dist * 1000,
-                duration: (dist / 40) * 3600
-            }]
-        }],
-        isDirect: true // Flag to indicate this is a fallback
+        const photosData = await fetchPlacePhotos(place.id);
+        const photosList = photosData ? Object.values(photosData) : [];
+        setPhotos(photosList);
     };
-}
 
-// Get Route between two points with Offline Fallback
-async function getRoute(startCoords, endCoords, profile = 'driving') {
-    const cacheKey = `cached_route_${startCoords.lat}_${startCoords.lon}_to_${endCoords.lat}_${endCoords.lon}`;
+    const handlePhotoUpload = async (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
 
-    // 1. Check Offline Mode Explicitly
-    if (!navigator.onLine) {
-        console.log("Network status: Offline. Checking cache...");
-        const cached = localStorage.getItem(cacheKey);
-        if (cached) {
-            console.log("Route found in cache.");
-            return JSON.parse(cached);
-        }
-        console.log("No cache found. Switching to Direct Mode.");
-        const direct = getDirectRoute(startCoords, endCoords);
-        return direct.routes[0];
-    }
-
-    // 2. Try Online Fetch via Proxy
-    try {
-        const start = `${startCoords.lon},${startCoords.lat}`;
-        const end = `${endCoords.lon},${endCoords.lat}`;
-        
-        const targetUrl = `${OSRM_BASE_URL}/${profile}/${start};${end}?overview=full&geometries=geojson&steps=true&annotations=distance,duration`;
-        // Use proxy to avoid CORS and mixed content issues
-        const proxyUrl = `${PROXY_BASE_URL}${encodeURIComponent(targetUrl)}`;
-        
-        console.log("Fetching route...");
-        const response = await fetch(proxyUrl);
-        
-        if (!response.ok) throw new Error(`API Error: ${response.status}`);
-        
-        const data = await response.json();
-        if (data.code !== 'Ok' || !data.routes || data.routes.length === 0) throw new Error('No Route found in API response');
-        
-        // Cache successful route
+        setIsUploading(true);
         try {
-            localStorage.setItem('last_active_route', JSON.stringify(data.routes[0]));
-            localStorage.setItem(cacheKey, JSON.stringify(data.routes[0]));
-        } catch (e) {
-            console.warn("Cache quota exceeded for route, clearing old routes...");
-            // Simple cleanup: remove all cached routes to make space for the new one
-            Object.keys(localStorage).forEach(key => {
-                if(key.startsWith('cached_route_')) localStorage.removeItem(key);
+            const uploadPromises = files.map(async (file) => {
+                const base64 = await compressImage(file, 800, 0.6);
+                return addPhotoToPlace(place.id, {
+                    image: base64,
+                    type: 'normal',
+                    date: new Date().toISOString(),
+                    author: 'User'
+                });
             });
-            try {
-                localStorage.setItem(cacheKey, JSON.stringify(data.routes[0]));
-            } catch(e2) {}
+
+            await Promise.all(uploadPromises);
+            await loadPhotos();
+            alert(`${files.length} foto(s) adicionada(s) com sucesso!`);
+        } catch (error) {
+            console.error(error);
+            alert("Erro ao enviar fotos.");
+        } finally {
+            setIsUploading(false);
         }
-        
-        return data.routes[0];
-    } catch (error) {
-        // 3. Fallback on Error
-        console.warn("Routing API failed, using Direct Mode fallback.", error.message);
-        
-        // Try cache one last time even if we thought we were online
-        const cached = localStorage.getItem(cacheKey);
-        if (cached) return JSON.parse(cached);
+    };
 
-        const direct = getDirectRoute(startCoords, endCoords);
-        return direct.routes[0];
-    }
-}
+    if (!place) return null;
 
-// Calculate distance between two coords in km
-function calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371; // Radius of the earth in km
-    const dLat = deg2rad(lat2 - lat1);
-    const dLon = deg2rad(lon2 - lon1);
-    const a = 
-        Math.sin(dLat/2) * Math.sin(dLat/2) +
-        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
-        Math.sin(dLon/2) * Math.sin(dLon/2)
-    ; 
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-    const d = R * c; // Distance in km
-    return d;
-}
-
-function deg2rad(deg) {
-  return deg * (Math.PI/180);
-}
-
-// Calculate bearing between two points
-function calculateBearing(lat1, lon1, lat2, lon2) {
-    const y = Math.sin(deg2rad(lon2 - lon1)) * Math.cos(deg2rad(lat2));
-    const x = Math.cos(deg2rad(lat1)) * Math.sin(deg2rad(lat2)) -
-              Math.sin(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.cos(deg2rad(lon2 - lon1));
-    const brng = Math.atan2(y, x);
-    return (brng * 180 / Math.PI + 360) % 360; // Degrees
-}
-
-// Text to Speech (Offline Optimized)
-function speak(text) {
-    if (!window.speechSynthesis) return;
+    const formattedAddress = place.address ? formatAddress(place) : (place.subtitle || '');
+    const type = place.type || 'Local';
+    const title = place.title || (place.display_name ? place.display_name.split(',')[0] : 'Local Selecionado');
     
-    // Simple debounce/cancel to avoid stacking
-    window.speechSynthesis.cancel(); 
+    const panoramas = photos.filter(p => p.type === '360');
+    const normalPhotos = photos.filter(p => p.type !== '360');
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'pt-BR';
-    utterance.rate = 1.1; 
-    
-    // Explicitly try to find an OFFLINE/LOCAL voice
-    // This helps significantly with responsiveness and offline usage
-    const voices = window.speechSynthesis.getVoices();
-    
-    // Priority: Local PT-BR -> Any PT-BR -> Any PT -> First Local
-    const bestVoice = 
-        voices.find(v => v.lang.includes('pt-BR') && v.localService === true) || 
-        voices.find(v => v.lang.includes('pt-BR')) ||
-        voices.find(v => v.lang.includes('pt')) ||
-        voices.find(v => v.localService === true); 
+    // Drag / Click handler to expand
+    const toggleExpand = () => setIsExpanded(!isExpanded);
 
-    if (bestVoice) {
-        utterance.voice = bestVoice;
-    }
-    
-    window.speechSynthesis.speak(utterance);
+    return (
+        <>
+            {showPano && (
+                <PanoramaViewer 
+                    imageSrc={showPano} 
+                    onClose={() => setShowPano(null)} 
+                />
+            )}
+
+            {/* Bottom Sheet Container */}
+            <div 
+                className={`absolute left-0 right-0 bottom-0 z-[1100] bg-white shadow-[0_-5px_20px_rgba(0,0,0,0.1)] transition-all duration-300 ease-in-out flex flex-col ${isExpanded ? 'h-[80vh] rounded-t-2xl' : 'h-[250px] md:h-[200px] rounded-t-2xl'}`}
+            >
+                {/* Drag Handle */}
+                <div 
+                    className="w-full h-8 flex items-center justify-center cursor-pointer shrink-0"
+                    onClick={toggleExpand}
+                >
+                    <div className="w-12 h-1.5 bg-gray-300 rounded-full"></div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto px-4 pb-4">
+                    <div className="flex justify-between items-start mb-2">
+                        <div>
+                            <h2 className="text-xl font-bold text-gray-900 leading-tight">{title}</h2>
+                            <p className="text-sm text-gray-500 capitalize">{type} • {formattedAddress}</p>
+                        </div>
+                        <button onClick={onClose} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200">
+                            <div className="icon-x text-gray-600"></div>
+                        </button>
+                    </div>
+
+                    <div className="flex gap-3 my-4">
+                        <button 
+                            onClick={onDirections}
+                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-full flex items-center justify-center gap-2 font-bold shadow-md transform active:scale-95 transition-all"
+                        >
+                            <div className="icon-navigation text-xl"></div>
+                            <span>Iniciar Rota</span>
+                        </button>
+                        
+                        <button 
+                            className="w-12 h-12 rounded-full border border-gray-300 flex items-center justify-center text-blue-600 hover:bg-blue-50"
+                            title="Compartilhar"
+                        >
+                            <div className="icon-share-2"></div>
+                        </button>
+                         <label className="w-12 h-12 rounded-full border border-gray-300 flex items-center justify-center text-blue-600 hover:bg-blue-50 cursor-pointer">
+                             {isUploading ? <div className="icon-loader animate-spin"></div> : <div className="icon-camera"></div>}
+                             <input type="file" className="hidden" accept="image/*" multiple onChange={handlePhotoUpload} disabled={isUploading} />
+                        </label>
+                    </div>
+
+                    {/* Photos Section */}
+                    <div className="mt-6">
+                        <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                             <div className="icon-image"></div>
+                             Fotos do Local
+                        </h3>
+                        
+                        <div className="flex gap-3 overflow-x-auto pb-4 snap-x">
+                            {/* 360 Preview Card */}
+                            {panoramas.length > 0 ? (
+                                panoramas.map((pano, idx) => (
+                                    <div 
+                                        key={'pano'+idx}
+                                        className="min-w-[140px] h-24 rounded-lg overflow-hidden relative cursor-pointer snap-start border border-gray-200"
+                                        onClick={() => setShowPano(pano.image)}
+                                    >
+                                        <img src={pano.image} className="w-full h-full object-cover" />
+                                        <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
+                                            <div className="icon-rotate-3d text-white text-2xl"></div>
+                                        </div>
+                                        <div className="absolute bottom-1 left-1 bg-blue-600 text-white text-[10px] px-1.5 rounded">360°</div>
+                                    </div>
+                                ))
+                            ) : null}
+
+                            {/* Normal Photos */}
+                            {normalPhotos.map((photo, idx) => (
+                                <div 
+                                    key={'norm'+idx}
+                                    className="min-w-[140px] h-24 rounded-lg overflow-hidden relative cursor-pointer snap-start border border-gray-200"
+                                >
+                                    <img src={photo.image} className="w-full h-full object-cover" />
+                                </div>
+                            ))}
+
+                            {/* Placeholder / Add more */}
+                            <div className="min-w-[100px] h-24 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 bg-gray-50 snap-start">
+                                <div className="icon-plus mb-1"></div>
+                                <span className="text-xs">Adicionar</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Additional Info Section (Only visible when expanded) */}
+                    {isExpanded && (
+                        <div className="mt-6 space-y-4 border-t pt-4 border-gray-100">
+                             <div className="flex items-center gap-3 text-gray-600">
+                                <div className="icon-clock text-gray-400"></div>
+                                <span>Aberto 24 horas (Previsão)</span>
+                             </div>
+                             <div className="flex items-center gap-3 text-gray-600">
+                                <div className="icon-phone text-gray-400"></div>
+                                <span>(11) 99999-9999</span>
+                             </div>
+                             <div className="flex items-center gap-3 text-gray-600">
+                                <div className="icon-globe text-gray-400"></div>
+                                <span>www.website.com</span>
+                             </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </>
+    );
 }
