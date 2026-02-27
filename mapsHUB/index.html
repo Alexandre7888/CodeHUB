@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mapsHUB - Navegação Imersiva</title>
+    <meta name="description" content="mapsHUB - Explore o mundo com fotos 360 e contribuições da comunidade.">
+    <meta name="theme-color" content="#3b82f6">
+    
+    <!-- PWA Manifest & Icons -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="https://app.trickle.so/storage/tasks/storage/generated_images/1772032931878.png">
+    <link rel="apple-touch-icon" href="https://app.trickle.so/storage/tasks/storage/generated_images/1772032931878.png">
+
+    <!-- React & Babel -->
+    <script src="https://resource.trickle.so/vendor_lib/unpkg/react@18/umd/react.production.min.js"></script>
+    <script src="https://resource.trickle.so/vendor_lib/unpkg/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://resource.trickle.so/vendor_lib/unpkg/@babel/standalone/babel.min.js"></script>
+    
+    <!-- TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <link href="https://resource.trickle.so/vendor_lib/unpkg/lucide-static@0.516.0/font/lucide.css" rel="stylesheet">
+
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- Pannellum (360 Viewer) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+
+    <style type="text/tailwindcss">
+    @layer theme {
+        :root {
+            --primary-color: #3b82f6; /* Blue 500 */
+            --secondary-color: #ffffff;
+            --sidebar-width: 380px;
+        }
+    }
+
+    @layer base {
+        body {
+            @apply m-0 p-0 overflow-hidden font-sans text-gray-800;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            @apply bg-gray-300 rounded-full;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            @apply bg-gray-400;
+        }
+    }
+
+    @layer components {
+        .glass-panel {
+            @apply bg-white bg-opacity-95 backdrop-blur-sm shadow-lg border border-gray-200;
+        }
+        .btn-icon {
+            @apply p-2 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors cursor-pointer flex items-center justify-center text-gray-600;
+        }
+        .custom-popup .leaflet-popup-content-wrapper {
+            @apply rounded-lg shadow-xl p-0 overflow-hidden;
+        }
+        .custom-popup .leaflet-popup-content {
+            @apply m-0;
+        }
+    }
+    
+    /* Leaflet Overrides */
+    .leaflet-container {
+        font-family: inherit;
+        background-color: #e5e7eb; /* Fallback gray while tiles load */
+    }
+    .custom-div-icon {
+        background: transparent;
+        border: none;
+    }
+    .map-pin {
+        filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+        transition: transform 0.2s;
+    }
+    .map-pin:hover {
+        transform: scale(1.1) translateY(-5px);
+    }
+
+    /* 3D Navigation Mode Styles - MAXIMIZED */
+    .map-container-3d {
+        perspective: 1200px;
+        overflow: hidden;
+        height: 100%;
+        width: 100%;
+    }
+    
+    .map-3d-mode .leaflet-map-pane {
+        transform: rotateX(60deg) scale(1.3) translateY(-100px) !important;
+        transform-origin: center 80%; /* Pivot near bottom for better dashboard view */
+        transition: transform 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    /* Preserve marker verticality in 3D mode */
+    .map-3d-mode .leaflet-marker-pane,
+    .map-3d-mode .leaflet-tooltip-pane {
+        /* transform: rotateX(-60deg); We can't easily counter-rotate individually without JS for every marker, 
+           so we accept the flat look or use specific markers that look good flat (like the car) */
+    }
+    
+    /* Hide some controls in 3D mode to reduce clutter */
+    .map-3d-mode .leaflet-control-container .leaflet-top {
+        display: none;
+    }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <!-- Application Scripts -->
+    <script type="text/babel" src="utils/geoUtils.js"></script>
+    <script type="text/babel" src="utils/imageUtils.js"></script>
+    <script type="text/babel" src="utils/firebase.js"></script>
+    <script type="text/babel" src="components/Icons.js"></script>
+    <script type="text/babel" src="components/Map.js"></script>
+    <script type="text/babel" src="components/SearchBox.js"></script>
+    <script type="text/babel" src="components/Sidebar.js"></script>
+    <script type="text/babel" src="components/PanoramaViewer.js"></script>
+    <script type="text/babel" src="components/PlaceDetail.js"></script>
+    <script type="text/babel" src="components/Controls.js"></script>
+    <script type="text/babel" src="components/LayerControl.js"></script>
+    <script type="text/babel" src="components/OfflineManager.js"></script>
+    <script type="text/babel" src="components/NearbyPreview.js"></script>
+    <script type="text/babel" src="components/Navigation.js"></script>
+    <script type="text/babel" src="components/UserPlaces.js"></script>
+    <script type="text/babel" src="app.js"></script>
+    
+    <script>
+        // Register SW at root level as backup
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed: ', err));
+            });
+        }
+    </script>
+</body>
+</html>

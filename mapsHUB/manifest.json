@@ -1,0 +1,16 @@
+{
+  "name": "mapsHUB",
+  "short_name": "mapsHUB",
+  "description": "Navegação imersiva com mapas offline e visualização 360°",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#e5e7eb",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "https://app.trickle.so/storage/tasks/storage/generated_images/1772032931878.png",
+      "sizes": "1024x1024",
+      "type": "image/png"
+    }
+  ]
+}

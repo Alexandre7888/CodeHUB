@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mapsHUB Admin - Gerenciar 360</title>
+    
+    <!-- React & Babel -->
+    <script src="https://resource.trickle.so/vendor_lib/unpkg/react@18/umd/react.production.min.js"></script>
+    <script src="https://resource.trickle.so/vendor_lib/unpkg/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://resource.trickle.so/vendor_lib/unpkg/@babel/standalone/babel.min.js"></script>
+    
+    <!-- TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <link href="https://resource.trickle.so/vendor_lib/unpkg/lucide-static@0.516.0/font/lucide.css" rel="stylesheet">
+
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <style type="text/tailwindcss">
+        @layer components {
+            .btn-tool {
+                @apply p-2 rounded-lg border border-gray-200 hover:bg-gray-50 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-all;
+            }
+            .btn-tool.active {
+                @apply bg-blue-50 border-blue-500 text-blue-600;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+    <div id="root"></div>
+    
+    <!-- Scripts -->
+    <script type="text/babel" src="utils/imageUtils.js"></script>
+    <script type="text/babel" src="utils/firebase.js"></script>
+    <script type="text/babel" src="components/TourEditor.js"></script>
+    <script type="text/babel" src="admin.js"></script>
+</body>
+</html>
