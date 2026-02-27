@@ -307,6 +307,40 @@ function App() {
         }
     };
 
+    const handleSaveRoute = async (place) => {
+        if (!userLocation) {
+            alert("Precisamos da sua localização para traçar a rota.");
+            handleLocateMe();
+            return;
+        }
+        
+        if (!navigator.onLine) {
+            alert("Você precisa estar online para baixar uma nova rota.");
+            return;
+        }
+
+        const confirmSave = confirm(`Deseja baixar a rota até "${place.title}"? \nIsso permitirá navegação detalhada mesmo sem internet.`);
+        if (!confirmSave) return;
+
+        try {
+            // Fetch route data
+            const route = await getRoute(userLocation, place);
+            if (route) {
+                const success = await saveRouteForOffline(route, userLocation, place);
+                if (success) {
+                    alert("Rota salva com sucesso! \nAgora você pode navegar para este local mesmo offline.");
+                } else {
+                    alert("Erro ao salvar rota (Armazenamento cheio?).");
+                }
+            } else {
+                alert("Não foi possível calcular a rota para salvar.");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao baixar rota.");
+        }
+    };
+
     const startNavigation = (destination) => {
         const dest = destination || selectedPlace;
         if (!dest) return;
@@ -511,7 +545,7 @@ function App() {
             )}
 
             <PlaceDetail 
-                place={selectedPlace} 
+                place={selectedPlace ? { ...selectedPlace, onSaveOffline: () => handleSaveRoute(selectedPlace) } : null}
                 onClose={() => setSelectedPlace(null)}
                 onDirections={() => startNavigation(selectedPlace)}
             />
