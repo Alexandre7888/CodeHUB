@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <title>Criador de Aplicativos com Token - 1GB por Token</title>
+  <title>Criador de Aplicativos com Token</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -93,38 +93,6 @@
       display: block;
       margin-bottom: 4px;
       color: #81c784;
-    }
-    .storage-info {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 10px;
-      border-radius: 5px;
-      margin: 10px 0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .storage-bar {
-      height: 20px;
-      background: rgba(0,0,0,0.3);
-      border-radius: 10px;
-      overflow: hidden;
-      margin-top: 5px;
-    }
-    .storage-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #4caf50, #8bc34a);
-      transition: width 0.5s ease;
-    }
-    .storage-text {
-      font-size: 14px;
-      font-weight: bold;
-      color: white;
-    }
-    .storage-size {
-      font-size: 24px;
-      font-weight: bold;
-      color: white;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
     }
     .api-url {
       color: #64b5f6;
@@ -274,7 +242,7 @@
   </style>
 </head>
 <body>
-  <h1>Criador de Aplicativos - 1GB por Token</h1>
+  <h1>Criador de Aplicativos com Token</h1>
   <a href="https://alexandre7888.github.io/CodeHUB/documentacao.html"
      class="btn"
      target="_blank"
@@ -296,7 +264,7 @@
       <div class="form-group">
         <input type="url" id="redirectURL" placeholder="URL do Redirecionador (ex: dashboard.html)" required />
       </div>
-      <button type="submit">Gerar Token e Salvar (1GB de Armazenamento)</button>
+      <button type="submit">Gerar Token e Salvar</button>
     </form>
   </div>
 
@@ -307,7 +275,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-    import { getDatabase, ref, set, get, child, onValue, update, remove } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+    import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -331,7 +299,6 @@
     const tokensContainer = document.getElementById('tokensContainer');
 
     let userUID = null;
-    let currentTokens = [];
 
     // Gera token aleatório
     function generateToken(length = 20) {
@@ -373,46 +340,6 @@
       }
     }
 
-    // Calcular uso de armazenamento
-    async function calculateStorageUsage(token) {
-      try {
-        const filesRef = ref(db, `files/${token}`);
-        const snapshot = await get(filesRef);
-        const data = snapshot.val();
-        
-        let totalSize = 0;
-        if (data) {
-          Object.values(data).forEach(file => {
-            if (file.size && typeof file.size === 'number') {
-              totalSize += file.size;
-            } else if (file.content) {
-              // Estimar tamanho do base64
-              totalSize += Math.floor(file.content.length * 0.75);
-            }
-          });
-        }
-        
-        return {
-          used: totalSize,
-          total: 1073741824, // 1GB em bytes
-          percent: (totalSize / 1073741824) * 100
-        };
-      } catch (error) {
-        console.error('Erro ao calcular armazenamento:', error);
-        return { used: 0, total: 1073741824, percent: 0 };
-      }
-    }
-
-    // Formatar bytes para tamanho legível
-    function formatBytes(bytes, decimals = 2) {
-      if (bytes === 0) return '0 Bytes';
-      const k = 1024;
-      const dm = decimals < 0 ? 0 : decimals;
-      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-    }
-
     // Verifica login
     onAuthStateChanged(auth, user => {
       if (!user) {
@@ -431,15 +358,13 @@
           appName,
           redirectURL,
           ownerUID: userUID,
-          createdAt: new Date().toISOString(),
-          storageLimit: 1073741824, // 1GB em bytes
-          storageUsed: 0
+          createdAt: new Date().toISOString()
         };
 
         await set(ref(db, `tokens/${token}`), tokenData);
 
         saveTokenToLocalStorage(token, appName, redirectURL);
-        alert('Token criado com sucesso! (1GB de armazenamento disponível)');
+        alert('Token criado com sucesso!');
         loadTokens();
         return true;
       } catch(e) {
@@ -461,7 +386,6 @@
         }
 
         const tokens = Object.entries(data).filter(([token, val]) => val.ownerUID === userUID);
-        currentTokens = tokens;
 
         if (tokens.length === 0) {
           tokensContainer.textContent = 'Nenhum token criado ainda.';
@@ -473,9 +397,6 @@
           const div = document.createElement('div');
           div.className = 'token-item';
 
-          // Calcular uso de armazenamento
-          const storageInfo = await calculateStorageUsage(token);
-          
           // URLs
           const baseURL = "https://code.codehub2025.ct.ws/API/continuar-conta";
           const apiDownloadURL = `https://script.google.com/macros/s/AKfycbzxZ4H1DeRbcZiaT9KiUPRQu2ajayUSabYY-NxLcdda9teZF60v0KwIqAhG-BlOem2EQg/exec?token=${token}`;
@@ -484,7 +405,7 @@
           const hasConfig = val.apiKey || val.rules || val.allowedDomains;
           const decryptedApiKey = val.apiKey ? atob(val.apiKey) : null;
           const rulesDisplay = val.rules ? JSON.stringify(val.rules, null, 2) : 'Nenhuma regra definida';
-          
+
           let domainsDisplay = 'Nenhum domínio restrito';
           if (val.allowedDomains && val.allowedDomains.length > 0) {
             domainsDisplay = val.allowedDomains.map(domain => `<span class="domain-tag">${domain}</span>`).join('');
@@ -495,16 +416,6 @@
             <strong>Token:</strong> ${token}<br/>
             <strong>Redirecionador:</strong> ${val.redirectURL}<br/>
             <strong>Criado em:</strong> ${new Date(val.createdAt).toLocaleString()}<br/>
-            
-            <div class="storage-info">
-              <div>
-                <div class="storage-text">Armazenamento: ${formatBytes(storageInfo.used)} / ${formatBytes(storageInfo.total)}</div>
-                <div class="storage-bar">
-                  <div class="storage-fill" style="width: ${Math.min(storageInfo.percent, 100)}%"></div>
-                </div>
-              </div>
-              <div class="storage-size">1 GB</div>
-            </div>
                 
             <div class="url-container">
               <div class="url-type">URL para Continuar Conta:</div>
@@ -565,12 +476,12 @@
           const configBtn = document.createElement('button');
           configBtn.className = 'settings-btn';
           configBtn.textContent = hasConfig ? 'Editar Configurações' : 'Configurar API';
-          configBtn.onclick = () => showConfigForm(token, val, hasConfig);
+          configBtn.onclick = () => alert('Função de configuração será implementada em breve!');
 
           const deleteBtn = document.createElement('button');
           deleteBtn.className = 'delete-btn';
           deleteBtn.textContent = 'Excluir Aplicativo';
-          deleteBtn.onclick = () => deleteToken(token, val.appName);
+          deleteBtn.onclick = () => alert('Função de exclusão será implementada em breve!');
 
           actionsDiv.appendChild(copyUrlBtn);
           actionsDiv.appendChild(fileManagerBtn);
