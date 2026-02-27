@@ -1,183 +1,279 @@
-function PlaceDetail({ place, onClose, onDirections }) {
-    const [photos, setPhotos] = React.useState([]);
-    const [showPano, setShowPano] = React.useState(null);
-    const [isUploading, setIsUploading] = React.useState(false);
-    const [isExpanded, setIsExpanded] = React.useState(false);
+// Utilities for Geocoding and Map operations
 
-    React.useEffect(() => {
-        if (place && place.id) {
-            loadPhotos();
-            setIsExpanded(false); // Reset to collapsed view initially
-        }
-    }, [place]);
+const NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org/search';
+const NOMINATIM_REVERSE_URL = 'https://nominatim.openstreetmap.org/reverse';
+const OSRM_BASE_URL = 'https://router.project-osrm.org/route/v1';
+const PROXY_BASE_URL = 'https://proxy-api.trickle-app.host/?url=';
 
-    const loadPhotos = async () => {
-        if (!place.id) return;
-        // Mock checking if it's a real backend ID or temp
-        if (place.id.toString().startsWith('temp_')) {
-            setPhotos([]); // Temp places usually don't have photos yet unless from API
-            return;
-        }
-        
-        const photosData = await fetchPlacePhotos(place.id);
-        const photosList = photosData ? Object.values(photosData) : [];
-        setPhotos(photosList);
-    };
-
-    const handlePhotoUpload = async (e) => {
-        const files = Array.from(e.target.files);
-        if (files.length === 0) return;
-
-        setIsUploading(true);
-        try {
-            const uploadPromises = files.map(async (file) => {
-                const base64 = await compressImage(file, 800, 0.6);
-                return addPhotoToPlace(place.id, {
-                    image: base64,
-                    type: 'normal',
-                    date: new Date().toISOString(),
-                    author: 'User'
-                });
-            });
-
-            await Promise.all(uploadPromises);
-            await loadPhotos();
-            alert(`${files.length} foto(s) adicionada(s) com sucesso!`);
-        } catch (error) {
-            console.error(error);
-            alert("Erro ao enviar fotos.");
-        } finally {
-            setIsUploading(false);
-        }
-    };
-
-    if (!place) return null;
-
-    const formattedAddress = place.address ? formatAddress(place) : (place.subtitle || '');
-    const type = place.type || 'Local';
-    const title = place.title || (place.display_name ? place.display_name.split(',')[0] : 'Local Selecionado');
+async function searchPlaces(query) {
+    if (!query || query.length < 3) return [];
     
-    const panoramas = photos.filter(p => p.type === '360');
-    const normalPhotos = photos.filter(p => p.type !== '360');
+    // Offline fallback: Search in saved places (UserPlaces) or cached history
+    if (!navigator.onLine) {
+        // Mock offline search in localStorage
+        try {
+            const savedPlaces = JSON.parse(localStorage.getItem('userPlaces') || '{}');
+            const results = [];
+            if (savedPlaces.home && savedPlaces.home.title.toLowerCase().includes(query.toLowerCase())) results.push(savedPlaces.home);
+            if (savedPlaces.car && savedPlaces.car.title.toLowerCase().includes(query.toLowerCase())) results.push(savedPlaces.car);
+            return results;
+        } catch (e) {
+            return [];
+        }
+    }
 
-    // Drag / Click handler to expand
-    const toggleExpand = () => setIsExpanded(!isExpanded);
+    try {
+        const params = new URLSearchParams({
+            q: query,
+            format: 'json',
+            addressdetails: 1,
+            limit: 5,
+            'accept-language': 'pt-BR,pt;q=0.9,en;q=0.8'
+        });
+        
+        const response = await fetch(`${NOMINATIM_BASE_URL}?${params.toString()}`);
+        if (!response.ok) throw new Error('Network response was not ok');
+        
+        return await response.json();
+    } catch (error) {
+        console.warn("Search error (likely offline or blocked):", error);
+        return [];
+    }
+}
 
-    return (
-        <>
-            {showPano && (
-                <PanoramaViewer 
-                    imageSrc={showPano} 
-                    onClose={() => setShowPano(null)} 
-                />
-            )}
+async function reverseGeocode(lat, lon) {
+    if (!navigator.onLine) return { display_name: "Local Offline", address: { road: "Desconhecido" } };
 
-            {/* Bottom Sheet Container */}
-            <div 
-                className={`absolute left-0 right-0 bottom-0 z-[1100] bg-white shadow-[0_-5px_20px_rgba(0,0,0,0.1)] transition-all duration-300 ease-in-out flex flex-col ${isExpanded ? 'h-[80vh] rounded-t-2xl' : 'h-[250px] md:h-[200px] rounded-t-2xl'}`}
-            >
-                {/* Drag Handle */}
-                <div 
-                    className="w-full h-8 flex items-center justify-center cursor-pointer shrink-0"
-                    onClick={toggleExpand}
-                >
-                    <div className="w-12 h-1.5 bg-gray-300 rounded-full"></div>
-                </div>
+    try {
+        const params = new URLSearchParams({
+            lat: lat,
+            lon: lon,
+            format: 'json',
+            addressdetails: 1,
+            'accept-language': 'pt-BR,pt;q=0.9,en;q=0.8'
+        });
+        
+        const response = await fetch(`${NOMINATIM_REVERSE_URL}?${params.toString()}`);
+        if (!response.ok) throw new Error('Network response was not ok');
+        
+        return await response.json();
+    } catch (error) {
+        console.warn("Reverse geocode error:", error);
+        return null;
+    }
+}
 
-                <div className="flex-1 overflow-y-auto px-4 pb-4">
-                    <div className="flex justify-between items-start mb-2">
-                        <div>
-                            <h2 className="text-xl font-bold text-gray-900 leading-tight">{title}</h2>
-                            <p className="text-sm text-gray-500 capitalize">{type} • {formattedAddress}</p>
-                        </div>
-                        <button onClick={onClose} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200">
-                            <div className="icon-x text-gray-600"></div>
-                        </button>
-                    </div>
+function formatAddress(item) {
+    const address = item.address || {};
+    const parts = [];
+    
+    if (address.road) parts.push(address.road);
+    if (address.house_number) parts.push(address.house_number);
+    if (address.suburb) parts.push(address.suburb);
+    if (address.city || address.town || address.village) parts.push(address.city || address.town || address.village);
+    if (address.state) parts.push(address.state);
+    
+    return parts.join(', ');
+}
 
-                    <div className="flex gap-3 my-4">
-                        <button 
-                            onClick={onDirections}
-                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-full flex items-center justify-center gap-2 font-bold shadow-md transform active:scale-95 transition-all"
-                        >
-                            <div className="icon-navigation text-xl"></div>
-                            <span>Iniciar Rota</span>
-                        </button>
-                        
-                        <button 
-                            className="w-12 h-12 rounded-full border border-gray-300 flex items-center justify-center text-blue-600 hover:bg-blue-50"
-                            title="Compartilhar"
-                        >
-                            <div className="icon-share-2"></div>
-                        </button>
-                         <label className="w-12 h-12 rounded-full border border-gray-300 flex items-center justify-center text-blue-600 hover:bg-blue-50 cursor-pointer">
-                             {isUploading ? <div className="icon-loader animate-spin"></div> : <div className="icon-camera"></div>}
-                             <input type="file" className="hidden" accept="image/*" multiple onChange={handlePhotoUpload} disabled={isUploading} />
-                        </label>
-                    </div>
+// Create a Direct/Compass Route (Fallback for Offline)
+function getDirectRoute(startCoords, endCoords) {
+    const dist = calculateDistance(startCoords.lat, startCoords.lon, endCoords.lat, endCoords.lon);
+    
+    return {
+        code: 'Ok',
+        routes: [{
+            distance: dist * 1000,
+            duration: (dist / 40) * 3600, // Assume 40km/h avg speed
+            geometry: {
+                coordinates: [
+                    [startCoords.lon, startCoords.lat],
+                    [endCoords.lon, endCoords.lat]
+                ],
+                type: 'LineString'
+            },
+            legs: [{
+                steps: [{
+                    maneuver: { type: 'depart', modifier: 'straight', location: [startCoords.lon, startCoords.lat] },
+                    name: 'Direção Direta (Offline)',
+                    distance: dist * 1000,
+                    duration: (dist / 40) * 3600,
+                    mode: 'direct'
+                }],
+                distance: dist * 1000,
+                duration: (dist / 40) * 3600
+            }]
+        }],
+        isDirect: true
+    };
+}
 
-                    {/* Photos Section */}
-                    <div className="mt-6">
-                        <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                             <div className="icon-image"></div>
-                             Fotos do Local
-                        </h3>
-                        
-                        <div className="flex gap-3 overflow-x-auto pb-4 snap-x">
-                            {/* 360 Preview Card */}
-                            {panoramas.length > 0 ? (
-                                panoramas.map((pano, idx) => (
-                                    <div 
-                                        key={'pano'+idx}
-                                        className="min-w-[140px] h-24 rounded-lg overflow-hidden relative cursor-pointer snap-start border border-gray-200"
-                                        onClick={() => setShowPano(pano.image)}
-                                    >
-                                        <img src={pano.image} className="w-full h-full object-cover" />
-                                        <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
-                                            <div className="icon-rotate-3d text-white text-2xl"></div>
-                                        </div>
-                                        <div className="absolute bottom-1 left-1 bg-blue-600 text-white text-[10px] px-1.5 rounded">360°</div>
-                                    </div>
-                                ))
-                            ) : null}
+// Helper: Save a specific route to offline storage
+async function saveRouteForOffline(routeData, startCoords, endPlace) {
+    const routeId = endPlace.id || `route_${Date.now()}`;
+    const storageItem = {
+        id: routeId,
+        destinationName: endPlace.title || endPlace.display_name,
+        destinationCoords: { lat: endPlace.lat, lon: endPlace.lon },
+        startCoords: startCoords,
+        route: routeData,
+        timestamp: Date.now()
+    };
+    
+    // Save to a dedicated list of saved routes
+    try {
+        const savedRoutes = JSON.parse(localStorage.getItem('offline_routes') || '[]');
+        // Remove old route to same destination if exists
+        const filtered = savedRoutes.filter(r => {
+            const d = calculateDistance(r.destinationCoords.lat, r.destinationCoords.lon, endPlace.lat, endPlace.lon);
+            return d > 0.1; // Keep if distance > 100m
+        });
+        filtered.push(storageItem);
+        localStorage.setItem('offline_routes', JSON.stringify(filtered));
+        return true;
+    } catch (e) {
+        console.warn("Storage full", e);
+        return false;
+    }
+}
 
-                            {/* Normal Photos */}
-                            {normalPhotos.map((photo, idx) => (
-                                <div 
-                                    key={'norm'+idx}
-                                    className="min-w-[140px] h-24 rounded-lg overflow-hidden relative cursor-pointer snap-start border border-gray-200"
-                                >
-                                    <img src={photo.image} className="w-full h-full object-cover" />
-                                </div>
-                            ))}
+// Helper: Find a saved route that matches destination
+function findSavedRoute(startCoords, endCoords) {
+    try {
+        const savedRoutes = JSON.parse(localStorage.getItem('offline_routes') || '[]');
+        
+        // Find route with matching destination (approx 100m radius)
+        const match = savedRoutes.find(r => {
+            const distDest = calculateDistance(r.destinationCoords.lat, r.destinationCoords.lon, endCoords.lat, endCoords.lon);
+            return distDest < 0.1; 
+        });
 
-                            {/* Placeholder / Add more */}
-                            <div className="min-w-[100px] h-24 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 bg-gray-50 snap-start">
-                                <div className="icon-plus mb-1"></div>
-                                <span className="text-xs">Adicionar</span>
-                            </div>
-                        </div>
-                    </div>
+        if (match) {
+            // We found a route to this destination!
+            // But does it start near where we are?
+            const distStart = calculateDistance(r.startCoords.lat, r.startCoords.lon, startCoords.lat, startCoords.lon);
+            
+            if (distStart < 0.5) {
+                // If we are within 500m of the saved start point, use the route directly
+                return match.route;
+            } else {
+                // If we are far from start, we can't fully reuse the geometry perfectly, 
+                // BUT it's better than a straight line if we are "on the way".
+                // For simplicity in this version, we return it anyway, 
+                // the user might see a "jump" line from current pos to start of route.
+                // We add a "connector" step.
+                
+                const route = JSON.parse(JSON.stringify(match.route)); // Deep copy
+                
+                // Prepend a "Navigate to start" segment logic visually? 
+                // Actually, let's just use it. The map component draws a line from user to route start automatically if needed by Leaflet logic, 
+                // or we can patch the geometry.
+                
+                // Let's patch geometry: Add current pos as first point
+                if (route.geometry && route.geometry.coordinates) {
+                    route.geometry.coordinates.unshift([startCoords.lon, startCoords.lat]);
+                }
+                
+                return route;
+            }
+        }
+    } catch (e) {
+        console.error(e);
+    }
+    return null;
+}
 
-                    {/* Additional Info Section (Only visible when expanded) */}
-                    {isExpanded && (
-                        <div className="mt-6 space-y-4 border-t pt-4 border-gray-100">
-                             <div className="flex items-center gap-3 text-gray-600">
-                                <div className="icon-clock text-gray-400"></div>
-                                <span>Aberto 24 horas (Previsão)</span>
-                             </div>
-                             <div className="flex items-center gap-3 text-gray-600">
-                                <div className="icon-phone text-gray-400"></div>
-                                <span>(11) 99999-9999</span>
-                             </div>
-                             <div className="flex items-center gap-3 text-gray-600">
-                                <div className="icon-globe text-gray-400"></div>
-                                <span>www.website.com</span>
-                             </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </>
-    );
+async function getRoute(startCoords, endCoords, profile = 'driving') {
+    const cacheKey = `cached_route_${startCoords.lat}_${startCoords.lon}_to_${endCoords.lat}_${endCoords.lon}`;
+
+    // 1. OFFLINE MODE CHECK
+    if (!navigator.onLine) {
+        console.log("Offline: Checking for smart saved routes...");
+        
+        // A. Strict Cache
+        const cachedStrict = localStorage.getItem(cacheKey);
+        if (cachedStrict) return JSON.parse(cachedStrict);
+
+        // B. Smart/Fuzzy Saved Routes (The "Save Route" feature)
+        const smartRoute = findSavedRoute(startCoords, endCoords);
+        if (smartRoute) {
+            console.log("Offline: Found saved route to destination.");
+            return smartRoute;
+        }
+
+        // C. Fallback
+        console.log("Offline: No saved route found. Using Direct Mode.");
+        const direct = getDirectRoute(startCoords, endCoords);
+        return direct.routes[0];
+    }
+
+    // 2. ONLINE FETCH
+    try {
+        const start = `${startCoords.lon},${startCoords.lat}`;
+        const end = `${endCoords.lon},${endCoords.lat}`;
+        
+        const targetUrl = `${OSRM_BASE_URL}/${profile}/${start};${end}?overview=full&geometries=geojson&steps=true&annotations=distance,duration`;
+        const proxyUrl = `${PROXY_BASE_URL}${encodeURIComponent(targetUrl)}`;
+        
+        const response = await fetch(proxyUrl);
+        if (!response.ok) throw new Error(`API Error: ${response.status}`);
+        
+        const data = await response.json();
+        if (data.code !== 'Ok' || !data.routes || data.routes.length === 0) throw new Error('No Route found');
+        
+        // Cache strictly
+        try {
+            localStorage.setItem(cacheKey, JSON.stringify(data.routes[0]));
+        } catch (e) {}
+        
+        return data.routes[0];
+    } catch (error) {
+        // Fallback if API fails but we might have something saved
+        const smartRoute = findSavedRoute(startCoords, endCoords);
+        if (smartRoute) return smartRoute;
+
+        const direct = getDirectRoute(startCoords, endCoords);
+        return direct.routes[0];
+    }
+}
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; 
+    const dLat = deg2rad(lat2 - lat1);
+    const dLon = deg2rad(lon2 - lon1);
+    const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2); 
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    const d = R * c; 
+    return d;
+}
+
+function deg2rad(deg) {
+  return deg * (Math.PI/180);
+}
+
+function calculateBearing(lat1, lon1, lat2, lon2) {
+    const y = Math.sin(deg2rad(lon2 - lon1)) * Math.cos(deg2rad(lat2));
+    const x = Math.cos(deg2rad(lat1)) * Math.sin(deg2rad(lat2)) -
+              Math.sin(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.cos(deg2rad(lon2 - lon1));
+    const brng = Math.atan2(y, x);
+    return (brng * 180 / Math.PI + 360) % 360; 
+}
+
+function speak(text) {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel(); 
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'pt-BR';
+    utterance.rate = 1.1; 
+    const voices = window.speechSynthesis.getVoices();
+    const bestVoice = 
+        voices.find(v => v.lang.includes('pt-BR') && v.localService === true) || 
+        voices.find(v => v.lang.includes('pt-BR')) ||
+        voices.find(v => v.lang.includes('pt')) ||
+        voices.find(v => v.localService === true); 
+    if (bestVoice) { utterance.voice = bestVoice; }
+    window.speechSynthesis.speak(utterance);
 }
