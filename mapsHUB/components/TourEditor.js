@@ -263,7 +263,7 @@ function TourEditor({ currentUser }) {
             canvas.width = targetWidth;
             canvas.height = targetWidth / aspect;
 
-            for (let i = 0; i < framesToExtract; i++) {
+            for (let i = 0; i < count; i++) {
                 const time = Math.min(i * interval, duration - 0.1);
                 
                 video.currentTime = time;
@@ -273,6 +273,11 @@ function TourEditor({ currentUser }) {
                         r();
                     };
                     video.addEventListener('seeked', seekHandler);
+                    // Fallback to avoid hanging
+                    setTimeout(() => {
+                        video.removeEventListener('seeked', seekHandler);
+                        r();
+                    }, 500);
                 });
                 
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -817,9 +822,22 @@ function TourEditor({ currentUser }) {
                             </div>
                         ) : (
                             <div>
-                                <div className="mb-2 text-xs text-gray-500">
-                                    <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase mr-2">Auto</span>
-                                    O cálculo de frames será feito automaticamente.
+                                <div className="mb-3 flex items-center justify-between">
+                                    <div className="text-xs text-gray-500 flex items-center gap-2">
+                                        <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Config</span>
+                                        <span>Captura:</span>
+                                    </div>
+                                    <select 
+                                        value={framesToExtract} 
+                                        onChange={(e) => setFramesToExtract(Number(e.target.value))}
+                                        className="text-xs border border-gray-300 rounded p-1 bg-white"
+                                    >
+                                        <option value="0">Automático (Inteligente)</option>
+                                        <option value="5">5 Frames</option>
+                                        <option value="10">10 Frames</option>
+                                        <option value="20">20 Frames</option>
+                                        <option value="30">30 Frames</option>
+                                    </select>
                                 </div>
                                 <label className="block w-full border-2 border-dashed border-purple-200 bg-purple-50 rounded-lg p-4 text-center cursor-pointer hover:bg-purple-100 transition-colors">
                                     <div className="icon-cloud-upload text-purple-400 mb-1 mx-auto"></div>
