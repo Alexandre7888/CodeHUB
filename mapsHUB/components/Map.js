@@ -35,6 +35,7 @@ function LeafletMap({ center, zoom, markers = [], connections = [], routePath = 
         L.control.attribution({ position: 'bottomright' }).addTo(map);
 
         mapInstanceRef.current = map;
+        window.mapInstanceGlobal = map; // Expose for PiP resizing
         
         // Layer Groups
         linesLayerRef.current = L.layerGroup().addTo(map); // Connections (360)
