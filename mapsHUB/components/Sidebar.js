@@ -1,4 +1,4 @@
-function Sidebar({ isOpen, onClose, onOpenStudio, onAddPlace, onOpenAdmin }) {
+function Sidebar({ isOpen, onClose, onAddPlace, currentUser, onLogin, onLogout }) {
     if (!isOpen) return null;
 
     return (
@@ -28,6 +28,34 @@ function Sidebar({ isOpen, onClose, onOpenStudio, onAddPlace, onOpenAdmin }) {
                              <p className="text-xs text-blue-200 mt-1">Navegação Colaborativa</p>
                          </div>
                     </div>
+                </div>
+
+                {/* User Info / Login Section */}
+                <div className="p-4 bg-gray-50 border-b border-gray-100">
+                    {currentUser ? (
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold shadow-sm">
+                                {currentUser.name.charAt(0)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold text-gray-800 truncate">{currentUser.name}</p>
+                                <button 
+                                    onClick={onLogout}
+                                    className="text-xs text-red-500 hover:text-red-700 font-medium flex items-center gap-1"
+                                >
+                                    <div className="icon-log-out w-3 h-3"></div> Sair
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <button 
+                            onClick={onLogin}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-sm"
+                        >
+                            <div className="icon-log-in"></div>
+                            Entrar com CodeHub
+                        </button>
+                    )}
                 </div>
 
                 {/* Menu Items */}

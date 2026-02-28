@@ -1,4 +1,4 @@
-function TourEditor() {
+function TourEditor({ currentUser }) {
     // State for Map & Points
     const [startCoords, setStartCoords] = React.useState({ lat: -23.5505, lon: -46.6333 });
     const [isMapReady, setIsMapReady] = React.useState(false);
@@ -199,7 +199,7 @@ function TourEditor() {
                 blurs: [],
                 links: [],
                 status: isStudio ? 'pending' : 'approved', 
-                author: isStudio ? 'User' : 'Admin'
+                author: currentUser ? currentUser.name : (isStudio ? 'User' : 'Admin')
             };
             
             setPoints(prev => {
@@ -225,7 +225,7 @@ function TourEditor() {
             blurs: [],
             links: [],
             status: isStudio ? 'pending' : 'approved',
-            author: isStudio ? 'User' : 'Admin'
+            author: currentUser ? currentUser.name : (isStudio ? 'User' : 'Admin')
         };
         setPoints(prev => [...prev, newPoint]);
         setSelectedPointId(newPoint.id);
@@ -648,7 +648,7 @@ function TourEditor() {
             const pointsToSave = points.map(p => ({
                 ...p,
                 status: isStudio ? 'pending' : (p.status || 'approved'),
-                author: p.author || (isStudio ? 'User' : 'Admin')
+                author: p.author || (currentUser ? currentUser.name : (isStudio ? 'User' : 'Admin'))
             }));
 
             const promises = pointsToSave.map(p => saveTourPoint(p));
