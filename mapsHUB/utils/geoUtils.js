@@ -154,26 +154,13 @@ function findSavedRoute(startCoords, endCoords) {
             const distStart = calculateDistance(r.startCoords.lat, r.startCoords.lon, startCoords.lat, startCoords.lon);
             
             if (distStart < 0.5) {
-                // If we are within 500m of the saved start point, use the route directly
                 return match.route;
             } else {
-                // If we are far from start, we can't fully reuse the geometry perfectly, 
-                // BUT it's better than a straight line if we are "on the way".
-                // For simplicity in this version, we return it anyway, 
-                // the user might see a "jump" line from current pos to start of route.
-                // We add a "connector" step.
-                
                 const route = JSON.parse(JSON.stringify(match.route)); // Deep copy
-                
-                // Prepend a "Navigate to start" segment logic visually? 
-                // Actually, let's just use it. The map component draws a line from user to route start automatically if needed by Leaflet logic, 
-                // or we can patch the geometry.
-                
-                // Let's patch geometry: Add current pos as first point
+                // Patch geometry: Add current pos as first point
                 if (route.geometry && route.geometry.coordinates) {
                     route.geometry.coordinates.unshift([startCoords.lon, startCoords.lat]);
                 }
-                
                 return route;
             }
         }
@@ -188,21 +175,12 @@ async function getRoute(startCoords, endCoords, profile = 'driving') {
 
     // 1. OFFLINE MODE CHECK
     if (!navigator.onLine) {
-        console.log("Offline: Checking for smart saved routes...");
-        
-        // A. Strict Cache
         const cachedStrict = localStorage.getItem(cacheKey);
         if (cachedStrict) return JSON.parse(cachedStrict);
 
-        // B. Smart/Fuzzy Saved Routes (The "Save Route" feature)
         const smartRoute = findSavedRoute(startCoords, endCoords);
-        if (smartRoute) {
-            console.log("Offline: Found saved route to destination.");
-            return smartRoute;
-        }
+        if (smartRoute) return smartRoute;
 
-        // C. Fallback
-        console.log("Offline: No saved route found. Using Direct Mode.");
         const direct = getDirectRoute(startCoords, endCoords);
         return direct.routes[0];
     }
@@ -221,14 +199,12 @@ async function getRoute(startCoords, endCoords, profile = 'driving') {
         const data = await response.json();
         if (data.code !== 'Ok' || !data.routes || data.routes.length === 0) throw new Error('No Route found');
         
-        // Cache strictly
         try {
             localStorage.setItem(cacheKey, JSON.stringify(data.routes[0]));
         } catch (e) {}
         
         return data.routes[0];
     } catch (error) {
-        // Fallback if API fails but we might have something saved
         const smartRoute = findSavedRoute(startCoords, endCoords);
         if (smartRoute) return smartRoute;
 
@@ -262,18 +238,63 @@ function calculateBearing(lat1, lon1, lat2, lon2) {
     return (brng * 180 / Math.PI + 360) % 360; 
 }
 
+// Error Message Helper
+function getGeoErrorMessage(error) {
+    switch(error.code) {
+        case error.PERMISSION_DENIED:
+            return "Permissão de localização negada.";
+        case error.POSITION_UNAVAILABLE:
+            return "Informações de localização indisponíveis.";
+        case error.TIMEOUT:
+            return "Tempo limite para obter localização esgotado.";
+        case error.UNKNOWN_ERROR:
+            return "Ocorreu um erro desconhecido ao obter localização.";
+        default:
+            return "Erro ao obter localização.";
+    }
+}
+
+// SOUND UTILS
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+function playAlertSound() {
+    if (audioContext.state === 'suspended') audioContext.resume();
+    
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(800, audioContext.currentTime); // Ding
+    oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.1);
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+    
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.3);
+}
+
 function speak(text) {
     if (!window.speechSynthesis) return;
     window.speechSynthesis.cancel(); 
+    
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'pt-BR';
-    utterance.rate = 1.1; 
+    utterance.rate = 1.05; // Slightly faster for natural flow
+    utterance.pitch = 1.0;
+    
+    // Priority for Google Voices (usually better quality)
     const voices = window.speechSynthesis.getVoices();
     const bestVoice = 
-        voices.find(v => v.lang.includes('pt-BR') && v.localService === true) || 
-        voices.find(v => v.lang.includes('pt-BR')) ||
-        voices.find(v => v.lang.includes('pt')) ||
-        voices.find(v => v.localService === true); 
+        voices.find(v => v.name.includes('Google') && v.lang.includes('pt-BR')) || 
+        voices.find(v => v.name.includes('Luciana') && v.lang.includes('pt-BR')) || // iOS high quality
+        voices.find(v => v.lang.includes('pt-BR') && v.localService === false) || // Network voices often better
+        voices.find(v => v.lang.includes('pt-BR'));
+        
     if (bestVoice) { utterance.voice = bestVoice; }
+    
     window.speechSynthesis.speak(utterance);
 }
