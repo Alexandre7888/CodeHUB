@@ -63,6 +63,11 @@ function PlaceDetail({ place, onClose, onDirections }) {
     // Drag / Click handler to expand
     const toggleExpand = () => setIsExpanded(!isExpanded);
 
+    const handleSaveOffline = (e) => {
+        e.stopPropagation();
+        if(place.onSaveOffline) place.onSaveOffline();
+    };
+
     return (
         <>
             {showPano && (
@@ -95,22 +100,24 @@ function PlaceDetail({ place, onClose, onDirections }) {
                         </button>
                     </div>
 
-                    <div className="flex gap-3 my-4">
+                    <div className="flex gap-2 my-4">
                         <button 
                             onClick={onDirections}
-                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-full flex items-center justify-center gap-2 font-bold shadow-md transform active:scale-95 transition-all"
+                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-3 rounded-xl flex items-center justify-center gap-2 font-bold shadow-md transform active:scale-95 transition-all text-sm"
                         >
-                            <div className="icon-navigation text-xl"></div>
-                            <span>Iniciar Rota</span>
+                            <div className="icon-navigation text-lg"></div>
+                            <span>Ir Agora</span>
+                        </button>
+
+                        <button 
+                            onClick={handleSaveOffline}
+                            className="flex-1 bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 py-3 px-3 rounded-xl flex items-center justify-center gap-2 font-bold shadow-sm transform active:scale-95 transition-all text-sm"
+                        >
+                            <div className="icon-download text-lg"></div>
+                            <span>Salvar Rota</span>
                         </button>
                         
-                        <button 
-                            className="w-12 h-12 rounded-full border border-gray-300 flex items-center justify-center text-blue-600 hover:bg-blue-50"
-                            title="Compartilhar"
-                        >
-                            <div className="icon-share-2"></div>
-                        </button>
-                         <label className="w-12 h-12 rounded-full border border-gray-300 flex items-center justify-center text-blue-600 hover:bg-blue-50 cursor-pointer">
+                        <label className="w-12 h-12 shrink-0 rounded-xl border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 cursor-pointer">
                              {isUploading ? <div className="icon-loader animate-spin"></div> : <div className="icon-camera"></div>}
                              <input type="file" className="hidden" accept="image/*" multiple onChange={handlePhotoUpload} disabled={isUploading} />
                         </label>
