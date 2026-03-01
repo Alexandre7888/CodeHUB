@@ -59,9 +59,7 @@ function App() {
     const [mapInstance, setMapInstance] = React.useState(null);
     
     // UI Modes
-    const [isAddingPlace, setIsAddingPlace] = React.useState(false);
     const [manualLocMode, setManualLocMode] = React.useState(false);
-    const [newPlacePos, setNewPlacePos] = React.useState(null);
     const [activeTour, setActiveTour] = React.useState(null); 
     
     // Layer & View States
@@ -75,6 +73,7 @@ function App() {
     
     // OSM Contribution State
     const [isOsmMode, setIsOsmMode] = React.useState(false);
+    const [showUserContributions, setShowUserContributions] = React.useState(false);
 
     // Navigation State
     const [isNavigating, setIsNavigating] = React.useState(false);
@@ -270,7 +269,11 @@ function App() {
     const toggleOsmMode = () => {
         setIsOsmMode(!isOsmMode);
         setIsSidebarOpen(false);
-        setIsAddingPlace(false);
+    };
+
+    const toggleContributions = () => {
+        setShowUserContributions(!showUserContributions);
+        setIsSidebarOpen(false);
     };
 
     const handleLocateMe = () => {
@@ -290,17 +293,8 @@ function App() {
         }
     };
 
-    const toggleAddPlaceMode = () => {
-        setIsAddingPlace(!isAddingPlace);
-        setManualLocMode(false);
-        setNewPlacePos(null);
-        setSelectedPlace(null);
-        setNearbyPreview(null);
-    };
-    
     const activateManualLocationMode = () => {
         setManualLocMode(true);
-        setIsAddingPlace(false);
         setErrorMessage(null);
         alert("Toque no mapa para definir sua localização atual.");
     };
@@ -319,11 +313,6 @@ function App() {
             const newLoc = { lat: e.latlng.lat, lon: e.latlng.lng };
             setUserLocation(newLoc);
             setManualLocMode(false);
-            return;
-        }
-
-        if (isAddingPlace) {
-            setNewPlacePos(e.latlng);
             return;
         }
 
@@ -475,18 +464,8 @@ function App() {
             });
         }
 
-        if (isAddingPlace && newPlacePos) {
-            list.push({
-                id: 'new_place_temp',
-                lat: newPlacePos.lat,
-                lon: newPlacePos.lng,
-                title: 'Novo Local',
-                type: 'plus-circle', 
-                color: 'orange-500'
-            });
-        }
         return list;
-    }, [markers, tourPoints, selectedPlace, isAddingPlace, newPlacePos, showPlaces, showTourPoints, userLocation]);
+    }, [markers, tourPoints, selectedPlace, showPlaces, showTourPoints, userLocation]);
 
     
     return (
@@ -555,7 +534,6 @@ function App() {
             <Sidebar 
                 isOpen={isSidebarOpen} 
                 onClose={() => setIsSidebarOpen(false)} 
-                onAddPlace={toggleAddPlaceMode}
                 currentUser={currentUser}
                 onLogin={handleLogin}
                 onLogout={handleLogout}
@@ -563,8 +541,13 @@ function App() {
                 onOSMLogin={loginOSM}
                 onOSMLogout={logoutOSM}
                 onOpenOsmMode={toggleOsmMode}
+                onOpenContributions={toggleContributions}
             />
             
+            {showUserContributions && (
+                <UserContributions onClose={() => setShowUserContributions(false)} />
+            )}
+
             <OsmContribution 
                 isActive={isOsmMode}
                 onClose={() => setIsOsmMode(false)}
@@ -658,18 +641,6 @@ function App() {
                 onToggle3D={() => setIs3DMode(!is3DMode)}
             />
 
-            {!isNavigating && (
-                <div className="absolute bottom-32 right-4 z-[999] flex flex-col gap-3 items-end">
-                    <button 
-                        onClick={toggleAddPlaceMode}
-                        className={`w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all ${isAddingPlace ? 'bg-red-500 text-white rotate-45' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
-                        title="Adicionar Local"
-                    >
-                        <div className="icon-plus text-2xl"></div>
-                    </button>
-                </div>
-            )}
-            
             <div className="absolute bottom-1 left-2 z-[500] text-[10px] text-gray-500 bg-white bg-opacity-50 px-2 rounded pointer-events-none">
                 © mapsHUB 2026
             </div>
