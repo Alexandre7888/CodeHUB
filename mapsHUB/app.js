@@ -33,6 +33,7 @@ const CODEHUB_APP_TOKEN = "KytjBryAR2zS8sVaj3vd";
 function App() {
     // --- STATE ---
     const [currentUser, setCurrentUser] = React.useState(null);
+    const [osmSession, setOsmSession] = React.useState(null);
     const savedMapState = JSON.parse(localStorage.getItem('mapState')) || {
         center: [-23.5505, -46.6333],
         zoom: 13
@@ -71,6 +72,9 @@ function App() {
     const [nearbyPreview, setNearbyPreview] = React.useState(null);
     const [is3DMode, setIs3DMode] = React.useState(false); 
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+    
+    // OSM Contribution State
+    const [isOsmMode, setIsOsmMode] = React.useState(false);
 
     // Navigation State
     const [isNavigating, setIsNavigating] = React.useState(false);
@@ -92,6 +96,27 @@ function App() {
     React.useEffect(() => {
         loadData();
         checkAuth();
+        
+        // OSM Auth Check
+        const checkOSM = async () => {
+            // 1. Check if returning from redirect
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get("code");
+            
+            if (code) {
+                // We are coming back from OSM
+                const session = await processOSMCode(code);
+                if (session) {
+                    setOsmSession(session);
+                    alert("Conectado ao OpenStreetMap com sucesso!");
+                }
+            } else {
+                // 2. Check local storage
+                const session = getOSMSession();
+                if (session) setOsmSession(session);
+            }
+        };
+        checkOSM();
 
         const handleAuthEvent = (e) => {
             console.log('Auth Event:', e.detail);
@@ -241,6 +266,12 @@ function App() {
     const handleMenuClick = () => {
         setIsSidebarOpen(true);
     };
+    
+    const toggleOsmMode = () => {
+        setIsOsmMode(!isOsmMode);
+        setIsSidebarOpen(false);
+        setIsAddingPlace(false);
+    };
 
     const handleLocateMe = () => {
         setErrorMessage(null);
@@ -275,6 +306,13 @@ function App() {
     };
 
     const handleMapClick = async (e) => {
+        // Dispatch global event for OSM Editor (Decoupled logic)
+        if (isOsmMode) {
+            const event = new CustomEvent('map-click', { detail: e.latlng });
+            window.dispatchEvent(event);
+            return;
+        }
+
         if (isNavigating) return; 
 
         if (manualLocMode) {
@@ -521,6 +559,18 @@ function App() {
                 currentUser={currentUser}
                 onLogin={handleLogin}
                 onLogout={handleLogout}
+                osmSession={osmSession}
+                onOSMLogin={loginOSM}
+                onOSMLogout={logoutOSM}
+                onOpenOsmMode={toggleOsmMode}
+            />
+            
+            <OsmContribution 
+                isActive={isOsmMode}
+                onClose={() => setIsOsmMode(false)}
+                userLocation={userLocation}
+                osmSession={osmSession}
+                onLoginReq={loginOSM}
             />
 
             <LeafletMap 
