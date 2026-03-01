@@ -129,3 +129,24 @@ async function createOsmWay(changesetId, points, tags, token) {
 
     return await response.text(); // Returns new Way ID
 }
+
+// Check status of an object
+async function fetchOsmObject(type, id) {
+    // type: 'node' or 'way'
+    const url = `${OSM_API_BASE}/${type}/${id}`;
+    
+    // We can use direct fetch for GET usually
+    try {
+        const response = await fetch(url);
+        if (response.ok) {
+            const text = await response.text();
+            return { exists: true, data: text };
+        } else if (response.status === 410) {
+             return { exists: false, status: 'deleted' };
+        }
+        return { exists: false, status: 'unknown' };
+    } catch (e) {
+        console.warn("Error fetching OSM object", e);
+        return { exists: false, error: e };
+    }
+}
