@@ -1,11 +1,21 @@
 export default async function handler(req, res) {
+
+  // 🔓 CORS
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
   try {
 
     if (req.method !== "POST") {
       return res.status(405).json({ error: "Método não permitido" });
     }
 
-    const redirectUri = req.query.redirect_uri;
+    const redirectUri = req.query.redirectUri;
     const { code } = req.body || {};
 
     if (!code) {
@@ -13,7 +23,7 @@ export default async function handler(req, res) {
     }
 
     if (!redirectUri) {
-      return res.status(400).json({ error: "redirect_uri faltando" });
+      return res.status(400).json({ error: "redirectUri faltando" });
     }
 
     const response = await fetch("https://www.openstreetmap.org/oauth2/token", {
@@ -30,9 +40,9 @@ export default async function handler(req, res) {
       })
     });
 
-    const text = await response.text();
+    const data = await response.text();
 
-    return res.status(response.status).send(text);
+    return res.status(response.status).send(data);
 
   } catch (error) {
     console.error("ERRO:", error);
