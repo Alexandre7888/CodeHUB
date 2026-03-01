@@ -2,7 +2,7 @@ export default async function handler(req, res) {
 
   // 🔓 CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") {
@@ -11,10 +11,15 @@ export default async function handler(req, res) {
 
   try {
 
-    if (req.method !== "POST") {
-      return res.status(405).json({ error: "Método não permitido" });
+    // 🔹 Permitir GET para teste no navegador
+    if (req.method === "GET") {
+      return res.status(200).json({
+        status: "API funcionando",
+        message: "Use POST para trocar o code por token."
+      });
     }
 
+    // 🔹 POST real
     const redirectUri = req.query.redirectUri;
     const { code } = req.body || {};
 
@@ -41,7 +46,6 @@ export default async function handler(req, res) {
     });
 
     const data = await response.text();
-
     return res.status(response.status).send(data);
 
   } catch (error) {
