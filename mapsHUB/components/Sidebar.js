@@ -1,4 +1,4 @@
-function Sidebar({ isOpen, onClose, onAddPlace, currentUser, onLogin, onLogout, osmSession, onOSMLogin, onOSMLogout, onOpenOsmMode }) {
+function Sidebar({ isOpen, onClose, currentUser, onLogin, onLogout, osmSession, onOSMLogin, onOSMLogout, onOpenOsmMode, onOpenContributions }) {
     if (!isOpen) return null;
 
     return (
@@ -63,14 +63,6 @@ function Sidebar({ isOpen, onClose, onAddPlace, currentUser, onLogin, onLogout, 
                     <div className="px-4 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Principal</div>
                     
                     <button 
-                        onClick={() => { onAddPlace(); onClose(); }}
-                        className="w-full text-left px-6 py-3 hover:bg-blue-50 flex items-center gap-4 text-gray-700 hover:text-blue-600 transition-colors"
-                    >
-                        <div className="icon-map-pin text-xl"></div>
-                        <span className="font-medium">Adicionar Local</span>
-                    </button>
-                    
-                    <button 
                         onClick={() => { onOpenOsmMode(); onClose(); }}
                         className="w-full text-left px-6 py-3 hover:bg-green-50 flex items-center gap-4 text-gray-700 hover:text-green-600 transition-colors"
                     >
@@ -78,6 +70,17 @@ function Sidebar({ isOpen, onClose, onAddPlace, currentUser, onLogin, onLogout, 
                         <div>
                             <span className="font-medium block">Editar OpenStreetMap</span>
                             <span className="text-[10px] text-gray-400 block">Adicionar POIs e Ruas (Global)</span>
+                        </div>
+                    </button>
+
+                    <button 
+                        onClick={() => { onOpenContributions(); onClose(); }}
+                        className="w-full text-left px-6 py-3 hover:bg-blue-50 flex items-center gap-4 text-gray-700 hover:text-blue-600 transition-colors"
+                    >
+                        <div className="icon-list text-xl"></div>
+                        <div>
+                            <span className="font-medium block">Minhas Contribuições</span>
+                            <span className="text-[10px] text-gray-400 block">Acompanhe seus envios</span>
                         </div>
                     </button>
 
