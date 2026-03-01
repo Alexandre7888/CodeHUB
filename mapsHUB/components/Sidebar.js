@@ -1,4 +1,4 @@
-function Sidebar({ isOpen, onClose, onAddPlace, currentUser, onLogin, onLogout }) {
+function Sidebar({ isOpen, onClose, onAddPlace, currentUser, onLogin, onLogout, osmSession, onOSMLogin, onOSMLogout, onOpenOsmMode }) {
     if (!isOpen) return null;
 
     return (
@@ -69,6 +69,17 @@ function Sidebar({ isOpen, onClose, onAddPlace, currentUser, onLogin, onLogout }
                         <div className="icon-map-pin text-xl"></div>
                         <span className="font-medium">Adicionar Local</span>
                     </button>
+                    
+                    <button 
+                        onClick={() => { onOpenOsmMode(); onClose(); }}
+                        className="w-full text-left px-6 py-3 hover:bg-green-50 flex items-center gap-4 text-gray-700 hover:text-green-600 transition-colors"
+                    >
+                        <div className="icon-edit text-xl"></div>
+                        <div>
+                            <span className="font-medium block">Editar OpenStreetMap</span>
+                            <span className="text-[10px] text-gray-400 block">Adicionar POIs e Ruas (Global)</span>
+                        </div>
+                    </button>
 
                     <button 
                         onClick={() => { window.location.href = 'studio.html'; }}
@@ -80,6 +91,47 @@ function Sidebar({ isOpen, onClose, onAddPlace, currentUser, onLogin, onLogout }
                             <span className="text-[10px] text-gray-400 block">Envie rotas e vídeos</span>
                         </div>
                     </button>
+
+                    <div className="my-4 border-t border-gray-100"></div>
+                    <div className="px-4 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Integrações</div>
+
+                    <div className="px-6 py-2">
+                        {osmSession ? (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-6 h-6 bg-green-100 text-green-600 rounded flex items-center justify-center">
+                                        <div className="icon-map text-xs"></div>
+                                    </div>
+                                    <span className="text-sm font-bold text-green-800">OSM Conectado</span>
+                                </div>
+                                <p className="text-[10px] text-green-700 mb-2">
+                                    Você pode contribuir com dados do mapa.
+                                </p>
+                                <button 
+                                    onClick={onOSMLogout}
+                                    className="text-xs text-red-500 hover:text-red-700 underline"
+                                >
+                                    Desconectar OSM
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="icon-map text-gray-400"></div>
+                                    <span className="text-sm font-bold text-gray-700">OpenStreetMap</span>
+                                </div>
+                                <p className="text-[10px] text-gray-500 mb-2">
+                                    Conecte sua conta para editar o mapa mundial.
+                                </p>
+                                <button 
+                                    onClick={onOSMLogin}
+                                    className="w-full bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 text-xs font-bold py-1.5 rounded flex items-center justify-center gap-2 transition-colors"
+                                >
+                                    Entrar no OSM
+                                </button>
+                            </div>
+                        )}
+                    </div>
 
                     <div className="my-4 border-t border-gray-100"></div>
                     <div className="px-4 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Conta</div>
