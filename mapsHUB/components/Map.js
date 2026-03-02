@@ -237,10 +237,10 @@ function LeafletMap({ center, zoom, markers = [], connections = [], routePath = 
         connections.forEach(conn => {
             if (conn.from && conn.to) {
                 L.polyline([conn.from, conn.to], {
-                    color: '#93c5fd', 
+                    color: conn.color || '#93c5fd', 
                     weight: 3,
                     opacity: 0.6,
-                    dashArray: '5, 10'
+                    dashArray: conn.dashArray || '5, 10'
                 }).addTo(linesLayerRef.current);
             }
         });

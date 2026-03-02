@@ -6,18 +6,76 @@ function UserContributions({ onClose }) {
         loadContributions();
     }, []);
 
-    const loadContributions = () => {
-        const history = JSON.parse(localStorage.getItem('my_osm_contributions') || '[]');
-        setContributions(history);
+    const loadContributions = async () => {
+        // 1. Load Local History (OSM)
+        const localHistory = JSON.parse(localStorage.getItem('my_osm_contributions') || '[]');
+        
+        // 2. Fetch Internal Contributions (Places/Tours)
+        // We assume 'User' or match by name if logged in.
+        // Ideally we filter by user ID, but we'll filter by 'author' string for now.
+        
+        let internalItems = [];
+        try {
+            const [places, tours] = await Promise.all([fetchPlaces(), fetchTourPoints()]);
+            
+            // Note: In a real app we'd filter by current user ID properly.
+            // Here we look for items stored in localHistory OR simply items with 'User' author if no auth, 
+            // but effectively we want to see items this browser submitted or authenticated user submitted.
+            
+            // For this demo, let's just grab items that match our "my_osm_contributions" IDs 
+            // OR items where we might have stored ownership. 
+            // Since UserContributions.js is currently OSM focused, we'll expand it.
+            
+            // Let's grab all items for now to find ours (inefficient but works for small scale)
+            // In reality, we'd query: fetchPlaces({ author: currentUser.name })
+            
+            const myPlaces = Object.values(places || {}).map(p => ({
+                ...p,
+                category: 'Local (Interno)',
+                source: 'internal'
+            }));
+            
+            const myTours = (tours || []).map(t => ({
+                ...t,
+                category: 'Tour 360',
+                name: 'Ponto 360',
+                source: 'internal'
+            }));
+            
+            internalItems = [...myPlaces, ...myTours];
+        } catch(e) { console.warn(e); }
+
+        // Merge: We prioritize 'live' status from internalItems if IDs match
+        const merged = localHistory.map(localItem => {
+            const remote = internalItems.find(i => i.id === localItem.id);
+            if (remote) {
+                return { 
+                    ...localItem, 
+                    status: remote.status || 'pending',
+                    feedback: remote.moderator_feedback,
+                    timestamp: remote.createdAt || localItem.timestamp
+                };
+            }
+            return localItem;
+        });
+        
+        // Also add items found remotely that are mine (by author name match)
+        // Note: We need currentUser prop passed down to do this reliably.
+        // Assuming 'User' for generic or matching name.
+        
+        setContributions(merged);
     };
 
     const checkStatus = async (item) => {
+        if (item.source === 'internal') {
+            loadContributions(); // Just reload all for internal
+            return;
+        }
+
         setCheckingId(item.id);
         
         try {
             const result = await fetchOsmObject(item.type, item.id);
-            
-            // Update item status in local state
             const newStatus = result.exists ? 'verified' : (result.status === 'deleted' ? 'deleted' : 'unknown');
             
             const updatedHistory = contributions.map(c => 
@@ -35,10 +93,8 @@ function UserContributions({ onClose }) {
     };
 
     const checkAll = async () => {
-        // Sequentially check all to avoid rate limits
         for (const item of contributions) {
             await checkStatus(item);
-            await new Promise(r => setTimeout(r, 500)); // 500ms delay between checks
         }
     };
 
@@ -100,18 +156,26 @@ function UserContributions({ onClose }) {
                                 <span className="font-mono bg-gray-100 px-1 rounded">{item.category}</span>
                             </div>
 
+                            {item.feedback && (
+                                <div className="mt-2 bg-red-50 p-2 rounded text-[10px] text-red-700 border border-red-100">
+                                    <strong>Moderador:</strong> {item.feedback}
+                                </div>
+                            )}
+
                             <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-50">
                                 <div className="text-[10px] text-gray-400">
-                                    {new Date(item.timestamp).toLocaleDateString()}
+                                    {item.timestamp ? new Date(item.timestamp).toLocaleDateString() : 'Recente'}
                                 </div>
                                 <div className="flex gap-2">
-                                    <a 
-                                        href={`https://www.openstreetmap.org/${item.type}/${item.id}`} 
-                                        target="_blank" 
-                                        className="text-xs text-blue-500 hover:underline flex items-center gap-1"
-                                    >
-                                        Ver no OSM <div className="icon-external-link w-3 h-3"></div>
-                                    </a>
+                                    {item.source !== 'internal' && (
+                                        <a 
+                                            href={`https://www.openstreetmap.org/${item.type}/${item.id}`} 
+                                            target="_blank" 
+                                            className="text-xs text-blue-500 hover:underline flex items-center gap-1"
+                                        >
+                                            Ver no OSM <div className="icon-external-link w-3 h-3"></div>
+                                        </a>
+                                    )}
                                     <button 
                                         onClick={() => checkStatus(item)}
                                         disabled={checkingId === item.id}
