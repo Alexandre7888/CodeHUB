@@ -210,16 +210,16 @@ function App() {
             fetchTourPoints()
         ]);
 
+        // Filter logic moved to displayMarkers to handle currentUser changes dynamically
         if (placesData) {
-            const approvedMarkers = Object.values(placesData)
-                .filter(p => p.status === 'approved')
-                .map(place => ({
-                    ...place,
-                    lat: parseFloat(place.lat),
-                    lon: parseFloat(place.lon),
-                    color: place.type === 'shop' ? 'green-500' : 'blue-500'
-                }));
-            setMarkers(approvedMarkers);
+            // We keep all data in state, and filter in render
+            const allMarkers = Object.values(placesData).map(place => ({
+                ...place,
+                lat: parseFloat(place.lat),
+                lon: parseFloat(place.lon),
+                color: place.type === 'shop' ? 'green-500' : 'blue-500'
+            }));
+            setMarkers(allMarkers);
         }
 
         if (connectionsData) {
@@ -227,14 +227,12 @@ function App() {
         }
 
         if (tourData) {
-            const tPoints = tourData
-                .filter(p => p.status === 'approved') // Only show approved points
-                .map(p => ({
-                    ...p,
-                    type: 'tour-point',
-                    title: 'Tour 360°',
-                    color: 'blue-400'
-                }));
+            const tPoints = tourData.map(p => ({
+                ...p,
+                type: 'tour-point',
+                title: 'Tour 360°',
+                color: 'blue-400'
+            }));
             setTourPoints(tPoints);
         }
     };
@@ -261,6 +259,44 @@ function App() {
         };
         setSelectedPlace(placeData);
     };
+
+    // Dynamic Connections for Tours (including pending for author)
+    const displayConnections = React.useMemo(() => {
+        if (!showTourPoints) return [];
+        
+        let activeConns = [...connections];
+        
+        // Generate implicit connections from Tour Points logic (if they have links or sequences)
+        // For simplicity, we can just connect sequential points if they look like a sequence
+        // Or if we have explicit links in the point data (Editor saves links)
+        
+        const isAuthor = (item) => currentUser && (item.author === currentUser.name || item.author === 'User');
+
+        const visiblePoints = tourPoints.filter(t => 
+            t.status === 'approved' || (t.status === 'pending' && isAuthor(t))
+        );
+
+        // Sort by ID is a rough approximation of sequence if created sequentially
+        // Better: look for 'links' array in point data
+        visiblePoints.forEach(p => {
+             if (p.links && p.links.length > 0) {
+                 p.links.forEach(link => {
+                     const target = visiblePoints.find(vp => vp.id === link.targetId);
+                     if (target) {
+                         activeConns.push({
+                             from: [p.lat, p.lon],
+                             to: [target.lat, target.lon],
+                             color: p.status === 'pending' ? '#eab308' : '#93c5fd', // Yellow for pending lines
+                             dashArray: p.status === 'pending' ? '5, 5' : null
+                         });
+                     }
+                 });
+             }
+        });
+
+        return activeConns;
+
+    }, [connections, tourPoints, showTourPoints, currentUser]);
 
     const handleMenuClick = () => {
         setIsSidebarOpen(true);
@@ -444,8 +480,25 @@ function App() {
     const displayMarkers = React.useMemo(() => {
         let list = [];
         
-        if (showPlaces) list = [...list, ...markers];
-        if (showTourPoints) list = [...list, ...tourPoints];
+        const isAuthor = (item) => currentUser && (item.author === currentUser.name || item.author === 'User'); // 'User' is fallback
+
+        // Filter Places
+        if (showPlaces) {
+            const visiblePlaces = markers.filter(m => 
+                m.status === 'approved' || (m.status === 'pending' && isAuthor(m))
+            ).map(m => m.status === 'pending' ? { ...m, color: 'yellow-500', title: `${m.title} (Pendente)` } : m);
+            
+            list = [...list, ...visiblePlaces];
+        }
+
+        // Filter Tour Points
+        if (showTourPoints) {
+            const visibleTours = tourPoints.filter(t => 
+                t.status === 'approved' || (t.status === 'pending' && isAuthor(t))
+            ).map(t => t.status === 'pending' ? { ...t, color: 'yellow-400', title: 'Tour (Em Análise)' } : t);
+            
+            list = [...list, ...visibleTours];
+        }
         
         if (selectedPlace && selectedPlace.id && selectedPlace.id.toString().startsWith('temp_')) {
              if (!list.find(m => m.id === selectedPlace.id)) {
@@ -560,7 +613,7 @@ function App() {
                 center={mapState.center} 
                 zoom={mapState.zoom} 
                 markers={displayMarkers}
-                connections={showTourPoints ? connections : []}
+                connections={displayConnections}
                 routePath={currentRoutePath}
                 mapStyle={mapStyle}
                 showTraffic={showTraffic}
