@@ -6,7 +6,8 @@ const PHOTON_API_URL = 'https://photon.komoot.io/api/';
 const OSRM_BASE_URL = 'https://router.project-osrm.org/route/v1';
 const PROXY_BASE_URL = 'https://proxy-api.trickle-app.host/?url=';
 
-async function searchPlaces(query) {
+// Search with Location Bias
+async function searchPlaces(query, userLocation = null) {
     if (!query || query.length < 3) return [];
     
     // Offline fallback: Search in saved places (UserPlaces) or cached history
@@ -24,12 +25,19 @@ async function searchPlaces(query) {
 
     try {
         // Use Photon API (OpenStreetMap based but better fuzzy search and performance)
-        // It mimics "Google-like" search quality better than raw Nominatim
         const params = new URLSearchParams({
             q: query,
             limit: 8,
             lang: 'pt'
         });
+
+        // Add Location Bias if available
+        if (userLocation && userLocation.lat && userLocation.lon) {
+            params.append('lat', userLocation.lat);
+            params.append('lon', userLocation.lon);
+            // location_bias_scale: defaults to reasonable value in Photon, 
+            // but providing lat/lon automatically sorts by distance/relevance combined.
+        }
         
         const response = await fetch(`${PHOTON_API_URL}?${params.toString()}`);
         if (!response.ok) throw new Error('Network response was not ok');
@@ -54,7 +62,8 @@ async function searchPlaces(query) {
                     country: props.country,
                     postcode: props.postcode
                 },
-                osm_id: props.osm_id
+                osm_id: props.osm_id,
+                source: 'osm'
             };
         });
 
@@ -70,6 +79,11 @@ async function searchPlaces(query) {
                 limit: 5,
                 'accept-language': 'pt-BR,pt;q=0.9,en;q=0.8'
             });
+            if (userLocation) {
+                // Nominatim viewbox or similar can be used, but usually just query is enough for fallback
+                // We can use 'viewbox' if we had a bounding box, but let's keep it simple for fallback
+            }
+
             const response = await fetch(`${NOMINATIM_BASE_URL}?${params.toString()}`);
             if(response.ok) return await response.json();
         } catch(e) {}
