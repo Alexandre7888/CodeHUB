@@ -67,6 +67,7 @@ function App() {
     const [showPlaces, setShowPlaces] = React.useState(true);
     const [showTourPoints, setShowTourPoints] = React.useState(true);
     const [showTraffic, setShowTraffic] = React.useState(false);
+    const [showCrossData, setShowCrossData] = React.useState(false);
     const [nearbyPreview, setNearbyPreview] = React.useState(null);
     const [is3DMode, setIs3DMode] = React.useState(false); 
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
@@ -624,6 +625,7 @@ function App() {
                 routePath={currentRoutePath}
                 mapStyle={mapStyle}
                 showTraffic={showTraffic}
+                showCrossData={showCrossData}
                 isNavigating={isNavigating}
                 is3DMode={is3DMode} 
                 heading={userHeading}
@@ -637,6 +639,7 @@ function App() {
                     <SearchBox 
                         onSelectResult={handleSearchResult} 
                         onMenuClick={handleMenuClick}
+                        userLocation={userLocation}
                     />
 
                     <LayerControl 
@@ -648,6 +651,8 @@ function App() {
                         setShowTourPoints={setShowTourPoints}
                         showTraffic={showTraffic}
                         setShowTraffic={setShowTraffic}
+                        showCrossData={showCrossData}
+                        setShowCrossData={setShowCrossData}
                     />
 
                     <UserPlaces 
