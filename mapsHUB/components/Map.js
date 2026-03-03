@@ -1,9 +1,10 @@
-function LeafletMap({ center, zoom, markers = [], connections = [], routePath = null, mapStyle = 'standard', showTraffic = false, isNavigating = false, is3DMode = false, heading = 0, onMapLoad, onMarkerClick, onClick }) {
+function LeafletMap({ center, zoom, markers = [], connections = [], routePath = null, mapStyle = 'standard', showTraffic = false, showCrossData = false, isNavigating = false, is3DMode = false, heading = 0, onMapLoad, onMarkerClick, onClick }) {
     const mapRef = React.useRef(null);
     const mapInstanceRef = React.useRef(null);
     const tileLayerRef = React.useRef(null);
     const labelLayerRef = React.useRef(null);
     const trafficLayerRef = React.useRef(null);
+    const crossDataLayerRef = React.useRef(null);
     const markersLayerRef = React.useRef(null);
     const linesLayerRef = React.useRef(null);
     const routeLayerRef = React.useRef(null); // Layer for Blue Route Line
@@ -83,7 +84,25 @@ function LeafletMap({ center, zoom, markers = [], connections = [], routePath = 
             crossOrigin: true
         };
 
-        if (mapStyle === 'satellite' || mapStyle === 'hybrid') {
+        // Google Maps Layers
+        // We use standard Google Tile URLs. 
+        // lyrs=m (Map), s (Satellite), y (Hybrid), h (Roads only), p (Terrain), t (Traffic/Terrain)
+        
+        if (mapStyle === 'google-streets') {
+            tileUrl = 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
+            options = {
+                maxZoom: 20,
+                attribution: '&copy; Google Maps',
+                crossOrigin: true
+            };
+        } else if (mapStyle === 'google-hybrid') {
+            tileUrl = 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}';
+            options = {
+                maxZoom: 20,
+                attribution: '&copy; Google Maps',
+                crossOrigin: true
+            };
+        } else if (mapStyle === 'satellite') { // Keeping Esri as option or fallback
             tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
             options = {
                 maxZoom: 19,
@@ -95,13 +114,10 @@ function LeafletMap({ center, zoom, markers = [], connections = [], routePath = 
         tileLayerRef.current = L.tileLayer(tileUrl, options).addTo(mapInstanceRef.current);
         tileLayerRef.current.bringToBack();
 
-        // If Hybrid, add Label Overlay
-        if (mapStyle === 'hybrid') {
-            const labelUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
-            labelLayerRef.current = L.tileLayer(labelUrl, {
-                maxZoom: 19,
-                zIndex: 400 
-            }).addTo(mapInstanceRef.current);
+        // Clear separate label layer if not Esri Hybrid (Google Hybrid has labels baked in)
+        if (labelLayerRef.current) {
+            mapInstanceRef.current.removeLayer(labelLayerRef.current);
+            labelLayerRef.current = null;
         }
 
     }, [mapStyle]);
@@ -113,11 +129,12 @@ function LeafletMap({ center, zoom, markers = [], connections = [], routePath = 
         if (showTraffic) {
              if (!trafficLayerRef.current) {
                  // Google Traffic Tiles: Shows Red/Yellow/Green lines overlay
+                 // Ensure high zIndex to be on top of base layers (which are ~1) but below markers (which are ~600)
                  trafficLayerRef.current = L.tileLayer('https://mt0.google.com/vt?lyrs=h,traffic&x={x}&y={y}&z={z}', {
                      maxZoom: 20,
                      opacity: 1, 
                      crossOrigin: true,
-                     zIndex: 450, // Between tiles and markers
+                     zIndex: 100, // Explicitly on top of base tiles
                      attribution: 'Traffic Data &copy; Google'
                  }).addTo(mapInstanceRef.current);
              }
@@ -128,6 +145,48 @@ function LeafletMap({ center, zoom, markers = [], connections = [], routePath = 
              }
         }
     }, [showTraffic]);
+
+    // Handle Cross Data Layer (Hybrid Overlay)
+    React.useEffect(() => {
+        if (!mapInstanceRef.current) return;
+
+        // Cleanup existing cross layer first
+        if (crossDataLayerRef.current) {
+            mapInstanceRef.current.removeLayer(crossDataLayerRef.current);
+            crossDataLayerRef.current = null;
+        }
+
+        if (showCrossData) {
+            let overlayUrl = '';
+            let options = {
+                maxZoom: 20,
+                opacity: 0.9,
+                crossOrigin: true,
+                zIndex: 90 // Just below traffic (100) but above base tiles
+            };
+
+            if (mapStyle === 'standard') {
+                // Base is OSM -> Overlay Google Roads/Labels (lyrs=h)
+                // This adds Google's superior POI density and road names on top of OSM
+                overlayUrl = 'https://mt1.google.com/vt/lyrs=h&x={x}&y={y}&z={z}';
+                options.attribution = '&copy; Google Maps (Overlay)';
+            } else if (mapStyle.includes('google')) {
+                // Base is Google -> Overlay OSM Data (CartoDB Labels)
+                // This adds OSM's open data details on top of Google Maps
+                overlayUrl = 'https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png';
+                options.attribution = '&copy; OpenStreetMap contributors &copy; CARTO';
+                options.subdomains = 'abcd';
+            } else if (mapStyle === 'satellite') {
+                // Base is Esri Satellite -> Overlay Google Roads (Best of both worlds)
+                overlayUrl = 'https://mt1.google.com/vt/lyrs=h&x={x}&y={y}&z={z}';
+                options.attribution = '&copy; Google Maps (Overlay)';
+            }
+
+            if (overlayUrl) {
+                crossDataLayerRef.current = L.tileLayer(overlayUrl, options).addTo(mapInstanceRef.current);
+            }
+        }
+    }, [showCrossData, mapStyle]);
 
     // Update View & 3D Tilt Logic
     React.useEffect(() => {

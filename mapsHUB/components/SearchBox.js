@@ -1,4 +1,4 @@
-function SearchBox({ onSelectResult, onMenuClick }) {
+function SearchBox({ onSelectResult, onMenuClick, userLocation }) {
     const [query, setQuery] = React.useState('');
     const [suggestions, setSuggestions] = React.useState([]);
     const [isLoading, setIsLoading] = React.useState(false);
@@ -9,7 +9,7 @@ function SearchBox({ onSelectResult, onMenuClick }) {
         const timer = setTimeout(async () => {
             if (query.length >= 3) {
                 setIsLoading(true);
-                const results = await searchPlaces(query);
+                const results = await searchPlaces(query, userLocation);
                 setSuggestions(results);
                 setIsLoading(false);
             } else {
@@ -91,6 +91,12 @@ function SearchBox({ onSelectResult, onMenuClick }) {
                                 </div>
                             </div>
                         ))
+                    )}
+                    {/* Fallback Message */}
+                    {suggestions.length === 0 && query.length > 2 && !isLoading && (
+                        <div className="px-4 py-3 bg-gray-50 text-gray-500 text-sm text-center">
+                            Nenhum resultado encontrado. Tente buscar pelo nome da rua ou bairro.
+                        </div>
                     )}
                 </div>
             )}

@@ -23,6 +23,36 @@ function OsmContribution({
     const [openingHours, setOpeningHours] = React.useState('');
     const [instagram, setInstagram] = React.useState('');
 
+    // Listen for Edit Requests from PlaceDetail
+    React.useEffect(() => {
+        const onEditPlace = (e) => {
+            const place = e.detail;
+            setMode('node'); // For now, simple POI editing
+            setNodeCoords({ lat: place.lat, lng: place.lon });
+            
+            // Pre-fill
+            setElementName(place.title || '');
+            if (place.address && place.address.phone) setPhone(place.address.phone);
+            if (place.address && place.address.website) setWebsite(place.address.website);
+            
+            // Try to map type
+            // This is basic mapping, robust app would map all OSM types
+            if (place.type === 'cafe') setElementType('amenity=cafe');
+            else if (place.type === 'restaurant') setElementType('amenity=restaurant');
+            else setElementType('other');
+
+            setStep('details');
+            // Trigger the parent to open the drawer
+            // This component is controlled by `isActive` prop from App.js
+            // We need to tell App.js to open OSM Mode. 
+            // Since we can't easily reach up without prop, we assume App handles the event too or we dispatch a global 'open-osm-mode'
+            window.dispatchEvent(new CustomEvent('open-osm-mode'));
+        };
+
+        window.addEventListener('edit-place', onEditPlace);
+        return () => window.removeEventListener('edit-place', onEditPlace);
+    }, []);
+
     // Global Map Click Listener
     React.useEffect(() => {
         if (!isActive || step !== 'select') return;

@@ -6,7 +6,9 @@ function LayerControl({
     showTourPoints, 
     setShowTourPoints,
     showTraffic,
-    setShowTraffic
+    setShowTraffic,
+    showCrossData,
+    setShowCrossData
 }) {
     const [isOpen, setIsOpen] = React.useState(false);
 
@@ -23,27 +25,34 @@ function LayerControl({
             {isOpen && (
                 <div className="bg-white rounded-xl shadow-xl border border-gray-200 p-4 w-64 animate-in fade-in slide-in-from-right-4 duration-200">
                     <h3 className="font-bold text-gray-800 mb-3 text-sm uppercase tracking-wide">Tipo de Mapa</h3>
-                    <div className="grid grid-cols-3 gap-2 mb-6">
+                    <div className="grid grid-cols-2 gap-2 mb-6">
                         <button 
                             onClick={() => setMapStyle('standard')}
                             className={`p-2 rounded-lg border flex flex-col items-center gap-1 text-[10px] font-medium transition-all ${mapStyle === 'standard' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 hover:bg-gray-50 text-gray-600'}`}
                         >
                             <div className="icon-map"></div>
-                            Padrão
+                            OSM Padrão
+                        </button>
+                        <button 
+                            onClick={() => setMapStyle('google-streets')}
+                            className={`p-2 rounded-lg border flex flex-col items-center gap-1 text-[10px] font-medium transition-all ${mapStyle === 'google-streets' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 hover:bg-gray-50 text-gray-600'}`}
+                        >
+                            <div className="icon-map-pin"></div>
+                            Google Map
+                        </button>
+                        <button 
+                            onClick={() => setMapStyle('google-hybrid')}
+                            className={`p-2 rounded-lg border flex flex-col items-center gap-1 text-[10px] font-medium transition-all ${mapStyle === 'google-hybrid' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 hover:bg-gray-50 text-gray-600'}`}
+                        >
+                            <div className="icon-earth"></div>
+                            Google Híbrido
                         </button>
                         <button 
                             onClick={() => setMapStyle('satellite')}
                             className={`p-2 rounded-lg border flex flex-col items-center gap-1 text-[10px] font-medium transition-all ${mapStyle === 'satellite' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 hover:bg-gray-50 text-gray-600'}`}
                         >
-                            <div className="icon-earth"></div>
-                            Satélite
-                        </button>
-                        <button 
-                            onClick={() => setMapStyle('hybrid')}
-                            className={`p-2 rounded-lg border flex flex-col items-center gap-1 text-[10px] font-medium transition-all ${mapStyle === 'hybrid' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 hover:bg-gray-50 text-gray-600'}`}
-                        >
                             <div className="icon-globe"></div>
-                            Híbrido
+                            Satélite (Esri)
                         </button>
                     </div>
 
@@ -85,6 +94,19 @@ function LayerControl({
                             <div className="relative">
                                 <input type="checkbox" checked={showTraffic} onChange={(e) => setShowTraffic && setShowTraffic(e.target.checked)} className="sr-only peer" />
                                 <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-500"></div>
+                            </div>
+                        </label>
+
+                        <label className="flex items-center justify-between cursor-pointer group">
+                            <div className="flex items-center gap-2 text-gray-700">
+                                <div className="p-1.5 bg-purple-100 text-purple-600 rounded">
+                                    <div className="icon-layers w-4 h-4"></div>
+                                </div>
+                                <span className="text-sm font-medium">Dados Cruzados (Google/OSM)</span>
+                            </div>
+                            <div className="relative">
+                                <input type="checkbox" checked={showCrossData} onChange={(e) => setShowCrossData && setShowCrossData(e.target.checked)} className="sr-only peer" />
+                                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500"></div>
                             </div>
                         </label>
                     </div>
