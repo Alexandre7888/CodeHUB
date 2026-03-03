@@ -2,6 +2,7 @@
 
 const NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org/search';
 const NOMINATIM_REVERSE_URL = 'https://nominatim.openstreetmap.org/reverse';
+const PHOTON_API_URL = 'https://photon.komoot.io/api/';
 const OSRM_BASE_URL = 'https://router.project-osrm.org/route/v1';
 const PROXY_BASE_URL = 'https://proxy-api.trickle-app.host/?url=';
 
@@ -10,7 +11,6 @@ async function searchPlaces(query) {
     
     // Offline fallback: Search in saved places (UserPlaces) or cached history
     if (!navigator.onLine) {
-        // Mock offline search in localStorage
         try {
             const savedPlaces = JSON.parse(localStorage.getItem('userPlaces') || '{}');
             const results = [];
@@ -23,20 +23,57 @@ async function searchPlaces(query) {
     }
 
     try {
+        // Use Photon API (OpenStreetMap based but better fuzzy search and performance)
+        // It mimics "Google-like" search quality better than raw Nominatim
         const params = new URLSearchParams({
             q: query,
-            format: 'json',
-            addressdetails: 1,
-            limit: 5,
-            'accept-language': 'pt-BR,pt;q=0.9,en;q=0.8'
+            limit: 8,
+            lang: 'pt'
         });
         
-        const response = await fetch(`${NOMINATIM_BASE_URL}?${params.toString()}`);
+        const response = await fetch(`${PHOTON_API_URL}?${params.toString()}`);
         if (!response.ok) throw new Error('Network response was not ok');
         
-        return await response.json();
+        const data = await response.json();
+        
+        // Map Photon GeoJSON to our App's expected format
+        return data.features.map(f => {
+            const props = f.properties;
+            const coords = f.geometry.coordinates;
+            return {
+                lat: coords[1],
+                lon: coords[0],
+                display_name: `${props.name || ''}, ${props.street || ''} ${props.city || props.state || props.country || ''}`.replace(/^, /, '').replace(/, ,/g, ','),
+                title: props.name || props.street || "Local",
+                type: props.osm_value || 'place',
+                address: {
+                    road: props.street,
+                    house_number: props.housenumber,
+                    city: props.city,
+                    state: props.state,
+                    country: props.country,
+                    postcode: props.postcode
+                },
+                osm_id: props.osm_id
+            };
+        });
+
     } catch (error) {
         console.warn("Search error (likely offline or blocked):", error);
+        
+        // Fallback to Nominatim if Photon fails
+        try {
+             const params = new URLSearchParams({
+                q: query,
+                format: 'json',
+                addressdetails: 1,
+                limit: 5,
+                'accept-language': 'pt-BR,pt;q=0.9,en;q=0.8'
+            });
+            const response = await fetch(`${NOMINATIM_BASE_URL}?${params.toString()}`);
+            if(response.ok) return await response.json();
+        } catch(e) {}
+
         return [];
     }
 }
@@ -142,30 +179,53 @@ function findSavedRoute(startCoords, endCoords) {
     try {
         const savedRoutes = JSON.parse(localStorage.getItem('offline_routes') || '[]');
         
-        // Find route with matching destination (approx 100m radius)
+        // Find route with matching destination (approx 200m radius)
         const match = savedRoutes.find(r => {
             const distDest = calculateDistance(r.destinationCoords.lat, r.destinationCoords.lon, endCoords.lat, endCoords.lon);
-            return distDest < 0.1; 
+            return distDest < 0.2; 
         });
 
         if (match) {
-            // We found a route to this destination!
-            // But does it start near where we are?
-            const distStart = calculateDistance(r.startCoords.lat, r.startCoords.lon, startCoords.lat, startCoords.lon);
+            // Found a route to the destination.
+            // Check if user is near the start OR anywhere along the path (Snap to Route)
+            const route = JSON.parse(JSON.stringify(match.route)); // Deep copy
             
-            if (distStart < 0.5) {
-                return match.route;
-            } else {
-                const route = JSON.parse(JSON.stringify(match.route)); // Deep copy
-                // Patch geometry: Add current pos as first point
-                if (route.geometry && route.geometry.coordinates) {
-                    route.geometry.coordinates.unshift([startCoords.lon, startCoords.lat]);
+            // 1. Check start
+            const distStart = calculateDistance(match.startCoords.lat, match.startCoords.lon, startCoords.lat, startCoords.lon);
+            if (distStart < 0.5) return route;
+
+            // 2. Check if user is along the path (within 100m of any point)
+            // This prevents "Straight Line" fallback if user restarts nav mid-route
+            if (route.geometry && route.geometry.coordinates) {
+                const path = route.geometry.coordinates; // [lon, lat]
+                // Simple scan (optimization: could use spatial index but array scan is fast enough for single route)
+                let nearestDist = Infinity;
+                let nearestIndex = -1;
+
+                for (let i = 0; i < path.length; i += 5) { // Check every 5th point for speed
+                    const p = path[i];
+                    const d = calculateDistance(startCoords.lat, startCoords.lon, p[1], p[0]);
+                    if (d < nearestDist) {
+                        nearestDist = d;
+                        nearestIndex = i;
+                    }
                 }
-                return route;
+
+                if (nearestDist < 0.2) { // Within 200m of the route
+                    // Slice the route to start from nearest point
+                    // We don't slice strictly to keep context, but we return it as valid
+                    console.log("Snap to offline route successful");
+                    return route;
+                }
             }
+            
+            // If we are far from start but have the geometry, return it anyway but warn?
+            // Better to return it than the straight line if it's the only option
+            console.log("Returning saved route despite distance (Best Effort)");
+            return route;
         }
     } catch (e) {
-        console.error(e);
+        console.error("Error finding saved route:", e);
     }
     return null;
 }
