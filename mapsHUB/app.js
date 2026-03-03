@@ -63,7 +63,7 @@ function App() {
     const [activeTour, setActiveTour] = React.useState(null); 
     
     // Layer & View States
-    const [mapStyle, setMapStyle] = React.useState('standard');
+    const [mapStyle, setMapStyle] = React.useState('google-streets'); // Default to Google Streets for better experience
     const [showPlaces, setShowPlaces] = React.useState(true);
     const [showTourPoints, setShowTourPoints] = React.useState(true);
     const [showTraffic, setShowTraffic] = React.useState(false);
@@ -123,6 +123,13 @@ function App() {
         };
 
         window.addEventListener('auth-completed', handleAuthEvent);
+
+        // Listen for open-osm-mode (from edit button)
+        const handleOpenOsm = () => {
+             setIsOsmMode(true);
+             setIsSidebarOpen(false);
+        };
+        window.addEventListener('open-osm-mode', handleOpenOsm);
         
         // Network Listeners
         const handleOnline = () => { setIsOnline(true); loadData(); };
