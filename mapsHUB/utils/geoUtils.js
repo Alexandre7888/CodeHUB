@@ -6,11 +6,11 @@ const PHOTON_API_URL = 'https://photon.komoot.io/api/';
 const OSRM_BASE_URL = 'https://router.project-osrm.org/route/v1';
 const PROXY_BASE_URL = 'https://proxy-api.trickle-app.host/?url=';
 
-// Search with Location Bias
+// Search with Deep Fallback Strategies
 async function searchPlaces(query, userLocation = null) {
     if (!query || query.length < 3) return [];
     
-    // Offline fallback: Search in saved places (UserPlaces) or cached history
+    // Offline Check
     if (!navigator.onLine) {
         try {
             const savedPlaces = JSON.parse(localStorage.getItem('userPlaces') || '{}');
@@ -18,78 +18,197 @@ async function searchPlaces(query, userLocation = null) {
             if (savedPlaces.home && savedPlaces.home.title.toLowerCase().includes(query.toLowerCase())) results.push(savedPlaces.home);
             if (savedPlaces.car && savedPlaces.car.title.toLowerCase().includes(query.toLowerCase())) results.push(savedPlaces.car);
             return results;
-        } catch (e) {
-            return [];
-        }
+        } catch (e) { return []; }
     }
 
+    let results = [];
+
+    // --- STRATEGY 1: Local Context (Photon with Bias) ---
+    // Fast, localized, prioritizes neighborhood
     try {
-        // Use Photon API (OpenStreetMap based but better fuzzy search and performance)
         const params = new URLSearchParams({
             q: query,
-            limit: 8,
+            limit: 10,
             lang: 'pt'
         });
 
-        // Add Location Bias if available
-        if (userLocation && userLocation.lat && userLocation.lon) {
+        if (userLocation && userLocation.lat) {
             params.append('lat', userLocation.lat);
             params.append('lon', userLocation.lon);
-            // location_bias_scale: defaults to reasonable value in Photon, 
-            // but providing lat/lon automatically sorts by distance/relevance combined.
+            params.append('zoom', '16'); // Focus local
+            params.append('location_bias_scale', '0.8'); // Strong bias
         }
         
         const response = await fetch(`${PHOTON_API_URL}?${params.toString()}`);
-        if (!response.ok) throw new Error('Network response was not ok');
-        
-        const data = await response.json();
-        
-        // Map Photon GeoJSON to our App's expected format
-        return data.features.map(f => {
-            const props = f.properties;
-            const coords = f.geometry.coordinates;
-            return {
-                lat: coords[1],
-                lon: coords[0],
-                display_name: `${props.name || ''}, ${props.street || ''} ${props.city || props.state || props.country || ''}`.replace(/^, /, '').replace(/, ,/g, ','),
-                title: props.name || props.street || "Local",
-                type: props.osm_value || 'place',
-                address: {
-                    road: props.street,
-                    house_number: props.housenumber,
-                    city: props.city,
-                    state: props.state,
-                    country: props.country,
-                    postcode: props.postcode
-                },
-                osm_id: props.osm_id,
-                source: 'osm'
-            };
-        });
+        if (response.ok) {
+            const data = await response.json();
+            results = mapPhotonResults(data.features);
+        }
+    } catch (e) { console.warn("Local search failed", e); }
 
-    } catch (error) {
-        console.warn("Search error (likely offline or blocked):", error);
+    // --- STRATEGY 2: Deep Global Search (If Local failed) ---
+    // "Vasculhar o mapa" - No bias, global scope, higher limit
+    if (results.length === 0) {
+        console.log("Local search empty. Triggering Deep Global Search...");
         
-        // Fallback to Nominatim if Photon fails
+        // 2a. Photon Global
         try {
-             const params = new URLSearchParams({
+            const globalParams = new URLSearchParams({
                 q: query,
-                format: 'json',
-                addressdetails: 1,
-                limit: 5,
-                'accept-language': 'pt-BR,pt;q=0.9,en;q=0.8'
+                limit: 15,
+                lang: 'pt'
             });
-            if (userLocation) {
-                // Nominatim viewbox or similar can be used, but usually just query is enough for fallback
-                // We can use 'viewbox' if we had a bounding box, but let's keep it simple for fallback
+            const globalRes = await fetch(`${PHOTON_API_URL}?${globalParams.toString()}`);
+            if (globalRes.ok) {
+                const data = await globalRes.json();
+                results = mapPhotonResults(data.features);
             }
+        } catch (e) { console.warn("Photon Global failed", e); }
 
-            const response = await fetch(`${NOMINATIM_BASE_URL}?${params.toString()}`);
-            if(response.ok) return await response.json();
-        } catch(e) {}
+        // 2b. Nominatim Global (Structured)
+        if (results.length === 0) {
+            try {
+                const nomParams = new URLSearchParams({
+                    q: query,
+                    format: 'json',
+                    addressdetails: 1,
+                    limit: 10,
+                    'accept-language': 'pt-BR,pt;q=0.9,en;q=0.8',
+                    dedupe: 0
+                });
+                const nomRes = await fetch(`${NOMINATIM_BASE_URL}?${nomParams.toString()}`);
+                if (nomRes.ok) {
+                    const nomData = await nomRes.json();
+                    results = nomData.map(mapNominatimResult);
+                }
+            } catch (e) { console.warn("Nominatim failed", e); }
+        }
 
+        // --- STRATEGY 3: "SCOUR" MODE (Recursive Simplification) ---
+        // If query is "McDonalds, Rua Augusta, Sao Paulo", and failed:
+        // Try 1: "McDonalds, Sao Paulo" (Skip street)
+        // Try 2: "McDonalds" (Just name, look everywhere)
+        
+        if (results.length === 0 && query.includes(',')) {
+            console.log("Activating SCOUR MODE (Recursive Retry)...");
+            const parts = query.split(',');
+            
+            // Try First Part + Last Part (e.g. "Name, City")
+            if (parts.length >= 2) {
+                const simplifiedQuery = `${parts[0].trim()}, ${parts[parts.length-1].trim()}`;
+                if (simplifiedQuery.length > 5 && simplifiedQuery !== query) {
+                     try {
+                        const scourRes = await fetch(`${PHOTON_API_URL}?q=${encodeURIComponent(simplifiedQuery)}&lang=pt`);
+                        if (scourRes.ok) {
+                            const data = await scourRes.json();
+                            results = mapPhotonResults(data.features);
+                        }
+                     } catch(e) {}
+                }
+            }
+            
+            // Try JUST First Part (Name Only - Broadest Search)
+            if (results.length === 0 && parts[0].trim().length > 3) {
+                try {
+                    const nameOnlyParams = new URLSearchParams({
+                        q: parts[0].trim(),
+                        limit: 20, // High limit to find the right one in list
+                        lang: 'pt'
+                    });
+                    // If we have user location, bias heavily even for name-only to find "nearest Starbucks"
+                    if (userLocation) {
+                        nameOnlyParams.append('lat', userLocation.lat);
+                        nameOnlyParams.append('lon', userLocation.lon);
+                        nameOnlyParams.append('location_bias_scale', '0.4'); // Mild bias
+                    }
+                    
+                    const nameRes = await fetch(`${PHOTON_API_URL}?${nameOnlyParams.toString()}`);
+                    if (nameRes.ok) {
+                        const data = await nameRes.json();
+                        results = mapPhotonResults(data.features);
+                    }
+                } catch(e) {}
+            }
+        }
+    }
+
+    // --- POST-PROCESSING ---
+
+    // 1. Calculate Distances (Client Side Sort)
+    if (userLocation && userLocation.lat && results.length > 0) {
+        results.forEach(item => {
+            item.distance = calculateDistance(userLocation.lat, userLocation.lon, item.lat, item.lon);
+        });
+        // Sort by distance
+        results.sort((a, b) => a.distance - b.distance);
+    }
+    
+    // 2. De-duplicate
+    const seen = new Set();
+    results = results.filter(item => {
+        const key = item.osm_id || `${item.lat.toFixed(4)},${item.lon.toFixed(4)}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+
+    // 3. Fallback to Google (REMOVED: Incentivizing OSM Mapping)
+    if (results.length === 0) {
         return [];
     }
+
+    return results.slice(0, 15);
+}
+
+// Helpers for mapping API results
+function mapPhotonResults(features) {
+    if (!features) return [];
+    return features.map(f => {
+        const props = f.properties;
+        const coords = f.geometry.coordinates;
+        return {
+            lat: coords[1],
+            lon: coords[0],
+            display_name: formatDisplayName(props), 
+            title: props.name || props.street || "Local sem nome",
+            type: props.osm_value || 'place',
+            address: {
+                road: props.street,
+                city: props.city,
+                state: props.state,
+                country: props.country
+            },
+            osm_id: props.osm_id,
+            source: 'osm'
+        };
+    });
+}
+
+function mapNominatimResult(item) {
+    return {
+        lat: parseFloat(item.lat),
+        lon: parseFloat(item.lon),
+        display_name: item.display_name,
+        title: item.name || item.display_name.split(',')[0],
+        type: item.type,
+        address: item.address,
+        source: 'osm'
+    };
+}
+
+function formatDisplayName(props) {
+    const parts = [];
+    if (props.name) parts.push(props.name);
+    if (props.street) parts.push(props.street);
+    
+    const context = [];
+    if (props.city) context.push(props.city);
+    else if (props.state) context.push(props.state);
+    
+    const main = parts.join(', ');
+    const ctx = context.join(', ');
+    
+    return ctx ? `${main} - ${ctx}` : main;
 }
 
 async function reverseGeocode(lat, lon) {
