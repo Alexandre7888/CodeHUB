@@ -68,11 +68,6 @@ function PlaceDetail({ place, onClose, onDirections }) {
         if(place.onSaveOffline) place.onSaveOffline();
     };
 
-    const handleGoogleSearch = () => {
-        const query = place.title + " " + (place.address?.city || "");
-        window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`, '_blank');
-    };
-
     const handleEdit = () => {
         // Dispatch event to open OSM Editor with this place data
         const event = new CustomEvent('edit-place', { detail: place });
@@ -137,18 +132,11 @@ function PlaceDetail({ place, onClose, onDirections }) {
 
                     <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
                         <button 
-                            onClick={handleGoogleSearch}
-                            className="flex-1 min-w-[120px] bg-white border border-gray-200 text-gray-600 py-2 px-3 rounded-lg flex items-center justify-center gap-2 text-xs font-bold hover:bg-gray-50 whitespace-nowrap"
-                        >
-                            <div className="icon-search"></div>
-                            Buscar no Google
-                        </button>
-                        <button 
                             onClick={handleEdit}
-                            className="flex-1 min-w-[120px] bg-white border border-gray-200 text-blue-600 py-2 px-3 rounded-lg flex items-center justify-center gap-2 text-xs font-bold hover:bg-blue-50 whitespace-nowrap"
+                            className="w-full bg-white border border-gray-200 text-blue-600 py-3 px-3 rounded-lg flex items-center justify-center gap-2 text-xs font-bold hover:bg-blue-50 whitespace-nowrap"
                         >
                             <div className="icon-edit-3"></div>
-                            Sugerir Edição
+                            Sugerir Edição ou Corrigir Dados
                         </button>
                     </div>
 

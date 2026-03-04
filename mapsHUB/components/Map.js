@@ -102,11 +102,12 @@ function LeafletMap({ center, zoom, markers = [], connections = [], routePath = 
                 attribution: '&copy; Google Maps',
                 crossOrigin: true
             };
-        } else if (mapStyle === 'satellite') { // Keeping Esri as option or fallback
-            tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+        } else if (mapStyle === 'satellite') {
+            // Switched to Google Satellite as requested
+            tileUrl = 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}';
             options = {
-                maxZoom: 19,
-                attribution: 'Tiles &copy; Esri &mdash; Source: Esri',
+                maxZoom: 20,
+                attribution: '&copy; Google Maps Satellite',
                 crossOrigin: true
             };
         }
@@ -177,7 +178,7 @@ function LeafletMap({ center, zoom, markers = [], connections = [], routePath = 
                 options.attribution = '&copy; OpenStreetMap contributors &copy; CARTO';
                 options.subdomains = 'abcd';
             } else if (mapStyle === 'satellite') {
-                // Base is Esri Satellite -> Overlay Google Roads (Best of both worlds)
+                // Base is Google Satellite -> Overlay Google Roads (Hybrid view)
                 overlayUrl = 'https://mt1.google.com/vt/lyrs=h&x={x}&y={y}&z={z}';
                 options.attribution = '&copy; Google Maps (Overlay)';
             }

@@ -21,6 +21,15 @@ function SearchBox({ onSelectResult, onMenuClick, userLocation }) {
     }, [query]);
 
     const handleSelect = (item) => {
+        if (item.type === 'google_search') {
+            const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.query)}`;
+            window.open(url, '_blank');
+            setQuery('');
+            setSuggestions([]);
+            setIsFocused(false);
+            return;
+        }
+
         setQuery(item.display_name.split(',')[0]); // Keep only main name in input
         setSuggestions([]);
         onSelectResult(item);
@@ -43,7 +52,7 @@ function SearchBox({ onSelectResult, onMenuClick, userLocation }) {
                 <input
                     type="text"
                     className="flex-1 bg-transparent border-none outline-none text-gray-700 placeholder-gray-400 text-base h-10"
-                    placeholder="Pesquisar no OpenMaps"
+                    placeholder="Pesquisar local ou endereço..."
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onFocus={() => setIsFocused(true)}
@@ -69,33 +78,55 @@ function SearchBox({ onSelectResult, onMenuClick, userLocation }) {
                     {isLoading ? (
                         <div className="flex items-center justify-center p-4 text-gray-500 gap-2">
                             <div className="icon-loader animate-spin"></div>
-                            <span>Buscando...</span>
+                            <span>Vasculhando o mapa completo...</span>
                         </div>
                     ) : (
                         suggestions.map((item, index) => (
                             <div 
                                 key={index}
                                 onClick={() => handleSelect(item)}
-                                className="px-4 py-3 hover:bg-gray-100 cursor-pointer flex items-start gap-3 border-b border-gray-50 last:border-0"
+                                className={`px-4 py-3 hover:bg-gray-100 cursor-pointer flex items-start gap-3 border-b border-gray-50 last:border-0 ${item.type === 'google_search' ? 'bg-blue-50 hover:bg-blue-100' : ''}`}
                             >
-                                <div className="mt-1 text-gray-400">
-                                    <div className="icon-map-pin"></div>
+                                <div className={`mt-1 ${item.type === 'google_search' ? 'text-blue-500' : 'text-gray-400'}`}>
+                                    <div className={item.icon ? `icon-${item.icon}` : "icon-map-pin"}></div>
                                 </div>
-                                <div>
-                                    <div className="font-medium text-gray-800 text-sm">
-                                        {item.display_name.split(',')[0]}
+                                <div className="flex-1">
+                                    <div className={`font-medium text-sm ${item.type === 'google_search' ? 'text-blue-700' : 'text-gray-800'}`}>
+                                        {item.title}
                                     </div>
                                     <div className="text-xs text-gray-500 line-clamp-1">
-                                        {formatAddress(item)}
+                                        {item.distance ? `${Math.round(item.distance * 100) / 100} km • ` : ''}
+                                        {item.display_name}
                                     </div>
                                 </div>
+                                {item.type === 'google_search' && (
+                                    <div className="text-blue-500 bg-blue-100 p-1.5 rounded-full">
+                                        <div className="icon-search w-4 h-4"></div>
+                                    </div>
+                                )}
                             </div>
                         ))
                     )}
                     {/* Fallback Message */}
                     {suggestions.length === 0 && query.length > 2 && !isLoading && (
-                        <div className="px-4 py-3 bg-gray-50 text-gray-500 text-sm text-center">
-                            Nenhum resultado encontrado. Tente buscar pelo nome da rua ou bairro.
+                        <div className="px-4 py-4 bg-gray-50 text-gray-500 text-sm text-center flex flex-col items-center gap-2">
+                            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                                <div className="icon-map-pin-off text-2xl text-gray-400"></div>
+                            </div>
+                            <div>
+                                <p className="font-bold text-gray-700">Não encontrado no mapa.</p>
+                                <p className="text-xs text-gray-500 mt-1">Esse local ainda não existe no OpenStreetMap.</p>
+                            </div>
+                            <button 
+                                onClick={() => {
+                                    // Trigger OSM Mode via global event
+                                    window.dispatchEvent(new CustomEvent('open-osm-mode'));
+                                }}
+                                className="mt-2 text-blue-600 font-bold text-xs bg-blue-50 px-4 py-2 rounded-full hover:bg-blue-100 transition-colors flex items-center gap-2"
+                            >
+                                <div className="icon-plus-circle w-3 h-3"></div>
+                                Adicionar ao Mapa Agora
+                            </button>
                         </div>
                     )}
                 </div>
