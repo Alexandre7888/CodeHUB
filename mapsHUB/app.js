@@ -63,11 +63,11 @@ function App() {
     const [activeTour, setActiveTour] = React.useState(null); 
     
     // Layer & View States
-    const [mapStyle, setMapStyle] = React.useState('google-streets'); // Default to Google Streets for better experience
+    const [mapStyle, setMapStyle] = React.useState('standard'); // Default to OSM Standard
     const [showPlaces, setShowPlaces] = React.useState(true);
     const [showTourPoints, setShowTourPoints] = React.useState(true);
     const [showTraffic, setShowTraffic] = React.useState(false);
-    const [showCrossData, setShowCrossData] = React.useState(false);
+    const [showCrossData, setShowCrossData] = React.useState(true); // Always ON as requested
     const [nearbyPreview, setNearbyPreview] = React.useState(null);
     const [is3DMode, setIs3DMode] = React.useState(false); 
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
