@@ -60,18 +60,45 @@ function Sidebar({ isOpen, onClose, currentUser, onLogin, onLogout, osmSession, 
 
                 {/* Menu Items */}
                 <div className="flex-1 overflow-y-auto py-4">
-                    <div className="px-4 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Principal</div>
-                    
-                    <button 
-                        onClick={() => { onOpenOsmMode(); onClose(); }}
-                        className="w-full text-left px-6 py-3 hover:bg-green-50 flex items-center gap-4 text-gray-700 hover:text-green-600 transition-colors"
-                    >
-                        <div className="icon-edit text-xl"></div>
-                        <div>
-                            <span className="font-medium block">Editar OpenStreetMap</span>
-                            <span className="text-[10px] text-gray-400 block">Adicionar POIs e Ruas (Global)</span>
+                    {/* Creator Section - Highlighted */}
+                    <div className="mx-4 mb-6 bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-4 text-white shadow-lg relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-20 h-20 bg-white opacity-5 rounded-full -mr-10 -mt-10 pointer-events-none"></div>
+                        
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-blue-300 mb-3 flex items-center gap-2">
+                            <div className="icon-laptop w-3 h-3"></div>
+                            Central do Criador
+                        </h3>
+
+                        <div className="space-y-2">
+                            <button 
+                                onClick={() => { onOpenOsmMode(); onClose(); }}
+                                className="w-full bg-white bg-opacity-10 hover:bg-opacity-20 rounded-lg p-2 flex items-center gap-3 transition-all"
+                            >
+                                <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center shadow-lg">
+                                    <div className="icon-map-pin-plus text-white"></div>
+                                </div>
+                                <div className="text-left">
+                                    <span className="font-bold text-sm block">Adicionar Local</span>
+                                    <span className="text-[10px] text-gray-300 block">Editar Mapa Global</span>
+                                </div>
+                            </button>
+
+                            <button 
+                                onClick={() => { window.location.href = 'studio.html'; }}
+                                className="w-full bg-white bg-opacity-10 hover:bg-opacity-20 rounded-lg p-2 flex items-center gap-3 transition-all"
+                            >
+                                <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center shadow-lg">
+                                    <div className="icon-clapperboard text-white"></div>
+                                </div>
+                                <div className="text-left">
+                                    <span className="font-bold text-sm block">mapsHUB Studio</span>
+                                    <span className="text-[10px] text-gray-300 block">Criar Tours 360 & Rotas</span>
+                                </div>
+                            </button>
                         </div>
-                    </button>
+                    </div>
+
+                    <div className="px-4 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Explorar</div>
 
                     <button 
                         onClick={() => { onOpenContributions(); onClose(); }}
@@ -81,17 +108,6 @@ function Sidebar({ isOpen, onClose, currentUser, onLogin, onLogout, osmSession, 
                         <div>
                             <span className="font-medium block">Minhas Contribuições</span>
                             <span className="text-[10px] text-gray-400 block">Acompanhe seus envios</span>
-                        </div>
-                    </button>
-
-                    <button 
-                        onClick={() => { window.location.href = 'studio.html'; }}
-                        className="w-full text-left px-6 py-3 hover:bg-purple-50 flex items-center gap-4 text-gray-700 hover:text-purple-600 transition-colors"
-                    >
-                        <div className="icon-clapperboard text-xl"></div>
-                        <div>
-                            <span className="font-medium block">Studio (Criadores)</span>
-                            <span className="text-[10px] text-gray-400 block">Envie rotas e vídeos</span>
                         </div>
                     </button>
 

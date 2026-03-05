@@ -179,15 +179,18 @@ function OsmContribution({
     };
 
     return (
-        <div className="absolute top-20 left-4 z-[1100] bg-white rounded-xl shadow-2xl border border-gray-200 w-[350px] overflow-hidden animate-in fade-in flex flex-col max-h-[80vh]">
+        <div className="absolute top-20 left-4 md:left-20 z-[1100] bg-white rounded-xl shadow-2xl border border-gray-200 w-[350px] md:w-[400px] overflow-hidden animate-in fade-in flex flex-col max-h-[80vh]">
             <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-4 text-white flex justify-between items-center shadow-md shrink-0">
-                <div className="flex items-center gap-2">
-                    <div className="bg-white bg-opacity-20 p-1.5 rounded">
+                <div className="flex items-center gap-3">
+                    <div className="bg-white bg-opacity-20 p-2 rounded-lg">
                         <div className="icon-edit-3"></div>
                     </div>
                     <div>
                         <span className="font-bold block text-sm">Editor OSM Global</span>
-                        <span className="text-[10px] text-green-100 opacity-80 block leading-none">Modificações em Tempo Real</span>
+                        <div className="flex items-center gap-1.5 opacity-90">
+                            <div className="icon-globe w-3 h-3"></div>
+                            <span className="text-[10px] uppercase font-bold tracking-wide">Live • PC & Mobile</span>
+                        </div>
                     </div>
                 </div>
                 <button onClick={onClose} className="hover:bg-white hover:bg-opacity-20 rounded p-1 transition-colors">

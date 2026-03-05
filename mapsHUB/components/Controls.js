@@ -1,7 +1,38 @@
 function Controls({ onZoomIn, onZoomOut, onLocateMe, onDownloadMap, isNavigating, is3DMode, onToggle3D }) {
     
+    const handleStudioClick = () => {
+        window.location.href = 'studio.html';
+    };
+
+    const handleOsmClick = () => {
+        window.dispatchEvent(new CustomEvent('open-osm-mode'));
+    };
+
     return (
-        <div className="absolute bottom-8 right-4 z-[999] flex flex-col gap-2" data-file="Controls.js">
+        <div className="absolute bottom-8 right-4 z-[999] flex flex-col gap-2 items-end" data-file="Controls.js">
+            
+            {/* Creator Tools (Always visible on Desktop, usually) */}
+            {!isNavigating && (
+                <div className="hidden md:flex flex-col gap-2 mb-2 animate-in slide-in-from-right-4">
+                     <button 
+                        onClick={handleStudioClick}
+                        className="bg-gray-900 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-black transition-transform hover:scale-105 flex items-center gap-2"
+                        title="Abrir Studio Completo"
+                    >
+                        <div className="icon-clapperboard text-purple-400"></div>
+                        <span className="font-bold text-sm">Studio</span>
+                    </button>
+                    <button 
+                        onClick={handleOsmClick}
+                        className="bg-white text-gray-800 px-4 py-2 rounded-lg shadow-lg hover:bg-gray-50 transition-transform hover:scale-105 flex items-center gap-2 border border-gray-200"
+                        title="Adicionar Local no Mapa"
+                    >
+                        <div className="icon-plus-circle text-green-600"></div>
+                        <span className="font-bold text-sm">Contribuir</span>
+                    </button>
+                </div>
+            )}
+
             <div className="glass-panel rounded-lg p-1 flex flex-col shadow-md">
                 {isNavigating && (
                     <>
