@@ -1,5 +1,5 @@
 // Placeholder Token - User should replace this if they have a specific app token
-const CODEHUB_APP_TOKEN = "MAPSHUB_STUDIO_V1"; 
+const CODEHUB_APP_TOKEN = "KytjBryAR2zS8sVaj3vd"; 
 
 function LoginScreen({ onLogin }) {
     const handleLogin = () => {
