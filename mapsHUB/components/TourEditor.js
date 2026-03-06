@@ -642,15 +642,25 @@ function TourEditor({ currentUser }) {
     const handleSaveTour = async () => {
         if (points.length === 0) return;
         
+        // Filter: In Studio, only count/save MY points
+        const myPoints = isStudio 
+            ? points.filter(p => p.author === (currentUser ? currentUser.name : 'User'))
+            : points;
+
+        if (isStudio && myPoints.length === 0) {
+            alert("Você não tem novos pontos criados por você para salvar.");
+            return;
+        }
+        
         const message = isStudio 
-            ? `Enviar ${points.length} pontos para aprovação?` 
+            ? `Enviar ${myPoints.length} pontos seus para aprovação?` 
             : `Salvar ${points.length} pontos do tour? Isso atualizará o mapa público.`;
             
         const confirmed = confirm(message);
         if (!confirmed) return;
 
         try {
-            const pointsToSave = points.map(p => ({
+            const pointsToSave = myPoints.map(p => ({
                 ...p,
                 status: isStudio ? 'pending' : (p.status || 'approved'),
                 author: p.author || (currentUser ? currentUser.name : (isStudio ? 'User' : 'Admin'))
@@ -659,8 +669,11 @@ function TourEditor({ currentUser }) {
             const promises = pointsToSave.map(p => saveTourPoint(p));
             await Promise.all(promises);
             
-            alert(isStudio ? "Tour enviado para análise do Admin!" : "Tour salvo com sucesso!");
+            alert(isStudio ? "Seus pontos foram enviados para análise do Admin!" : "Tour salvo com sucesso!");
             if(isStudio) {
+                // Only clear if successful submission
+                // Might want to reload data instead of clearing to empty to show "pending" state?
+                // But request was to clear/reset.
                 setPoints([]);
                 setExtractedFrames([]);
                 setIsMapReady(false);
