@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     });
   }
 
-  const API_KEY = "SUA_FIREBASE_API_KEY";
+  const API_KEY = "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo";
 
   try {
 
