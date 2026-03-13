@@ -1,57 +1,78 @@
-export default async function handler(req, res) {
+// Configurações do Firebase
+const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo'
+};
 
-  const uid = req.query.uid;
+// HTTP
+function doGet(e) {
+  return handleRequest(e);
+}
+
+function doPost(e) {
+  return handleRequest(e);
+}
+
+function handleRequest(e) {
+  const uid = e.parameter.uid;
+
+  const output = ContentService.createTextOutput();
+  output.setMimeType(ContentService.MimeType.JSON);
 
   if (!uid) {
-    return res.status(400).json({
+    return output.setContent(JSON.stringify({
       success: false,
-      error: "uid obrigatório"
-    });
+      error: "UID não enviado"
+    }));
   }
 
-  const API_KEY = "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo";
+  const result = loginWithUID(uid);
 
+  return output.setContent(JSON.stringify(result, null, 2));
+}
+
+// Login usando UID
+function loginWithUID(uid) {
   try {
 
-    const response = await fetch(
-      "https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=" + API_KEY,
+    const response = UrlFetchApp.fetch(
+      "https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=" + FIREBASE_CONFIG.apiKey,
       {
-        method: "POST",
+        method: "post",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({
+        payload: JSON.stringify({
           localId: [uid]
-        })
+        }),
+        muteHttpExceptions: true
       }
     );
 
-    const data = await response.json();
+    const data = JSON.parse(response.getContentText());
 
-    if (!data.users || data.users.length === 0) {
-      return res.status(404).json({
+    if (data.users && data.users.length > 0) {
+      const user = data.users[0];
+
+      return {
+        success: true,
+        autenticado: true,
+        uid: uid,
+        email: user.email || null,
+        username: user.displayName || null
+      };
+
+    } else {
+      return {
         success: false,
-        error: "usuário não encontrado"
-      });
+        autenticado: false,
+        mensagem: "UID não encontrado"
+      };
     }
 
-    const user = data.users[0];
-
-    return res.status(200).json({
-      success: true,
-      id: user.localId,
-      username: user.displayName || null,
-      email: user.email || null,
-      photo: user.photoUrl || null
-    });
-
   } catch (error) {
-
-    return res.status(500).json({
+    return {
       success: false,
-      error: error.toString()
-    });
-
+      erro: error.toString()
+    };
   }
-
 }
