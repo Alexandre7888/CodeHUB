@@ -2,32 +2,23 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>CodeHUB Terminal Web</title>
+<title>CodeHUB Terminal</title>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 <style>
 body { background:black; color:#00ff00; font-family:monospace; padding:20px; }
-input { width:80%; background:black; color:#00ff00; border:1px solid #00ff00; padding:5px; }
-button { background:black; color:#00ff00; border:1px solid #00ff00; padding:5px; }
-#saida { margin-top:20px; white-space:pre-wrap; }
-#terminal { display:none; margin-top:10px; }
-#loginDiv { margin-bottom:20px; }
+#cmd { width:80%; background:black; color:#00ff00; border:none; padding:5px; }
+#saida { margin-top:10px; white-space:pre-wrap; max-height:400px; overflow-y:auto; border-top:1px solid #00ff00; padding-top:5px; }
+button { display:none; }
 </style>
 </head>
 <body>
 
 <h2>CodeHUB Terminal Web</h2>
 
-<div id="loginDiv">
-  <input id="token" placeholder="Digite a chave do terminal">
-  <button onclick="autorizar()">Autorizar</button>
-</div>
+<input id="cmd" placeholder="Digite um comando e pressione Enter">
 
-<div id="terminal">
-  <input id="cmd" placeholder="Digite um comando">
-  <button onclick="executar()">Executar</button>
-  <pre id="saida"></pre>
-</div>
+<pre id="saida"></pre>
 
 <script>
 // Config Firebase
@@ -41,50 +32,72 @@ const firebaseConfig = {
   appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32",
   measurementId: "G-V57KRZ02HJ"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 let currentUID = null;
 
-// Autorizar chave temporária do terminal
-function autorizar(){
-  let chave = document.getElementById("token").value.trim();
-  if(chave === "") return;
+// Função para autenticar automaticamente via client_id na URL
+function autoAuth() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const token = urlParams.get('client_id');
+  if(!token) return;
 
-  // UID temporário para este usuário
-  currentUID = "uid_" + Math.floor(Math.random()*1000000);
+  // Checa se já está salvo localStorage
+  let storedUID = localStorage.getItem('uid_'+token);
+  if(storedUID){
+    currentUID = storedUID;
+  } else {
+    currentUID = "uid_" + Math.floor(Math.random()*1000000);
+    localStorage.setItem('uid_'+token,currentUID);
+    db.ref("autenticados/"+token).set(currentUID);
+  }
 
-  // Salva no Firebase /autenticados/<token> = UID
-  db.ref("autenticados/"+chave).set(currentUID);
-
-  document.getElementById("loginDiv").style.display="none";
-  document.getElementById("terminal").style.display="block";
+  echoTerminal("Usuário autenticado automaticamente! UID: "+currentUID+"\n");
 }
 
-// Executar comando
-function executar(){
-  let comando = document.getElementById("cmd").value.trim();
-  if(comando === "" || !currentUID) return;
-  db.ref("comando").set({uid:currentUID, comando:comando});
-  document.getElementById("cmd").value="";
+// Função para enviar comandos
+function enviarComando(cmd){
+  if(!currentUID || cmd.trim()==="") return;
+  db.ref("comando").set({uid:currentUID, comando:cmd});
+  echoTerminal("> "+cmd);
 }
 
-// Atualizar saída do terminal
+// Função para escrever no terminal
+function echoTerminal(text){
+  const saida = document.getElementById("saida");
+  saida.innerText += text+"\n";
+  saida.scrollTop = saida.scrollHeight;
+}
+
+// Evento Enter para enviar comando
+document.getElementById("cmd").addEventListener("keydown", function(e){
+  if(e.key==="Enter"){
+    e.preventDefault();
+    enviarComando(this.value);
+    this.value="";
+  }
+});
+
+// Atualiza a saída do terminal
 async function atualizar(){
-  try {
+  if(!currentUID) return;
+  try{
     let res = await db.ref("resposta").get();
     if(res.exists() && res.val()){
       let obj = res.val();
       if(obj.uid === currentUID){
-        document.getElementById("saida").innerText = obj.texto;
+        echoTerminal(obj.texto);
       }
     }
-  } catch(err){ console.log(err); }
+  }catch(err){ console.log(err); }
 }
 
-// Atualiza a cada 2 segundos
-setInterval(atualizar,2000);
+// Autentica automaticamente ao carregar
+autoAuth();
+
+// Atualiza a cada 1s
+setInterval(atualizar,1000);
 </script>
 
 </body>
