@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste - Créditos Ilimitados</title>
+</head>
+<body>
+    <h1>Teste - Créditos Ilimitados</h1>
+    
+    <div>
+        <p>Créditos atuais: <span id="creditsDisplay">0</span></p>
+    </div>
+    
+    <button onclick="addCredits(100)">+100 Créditos</button>
+    <button onclick="addCredits(1000)">+1000 Créditos</button>
+    <button onclick="addCredits(10000)">+10000 Créditos</button>
+    <button onclick="resetCredits()">Resetar (0)</button>
+    <button onclick="ativarPainel()">Ativar Painel Profissional</button>
+    
+    <br><br>
+    <button onclick="window.location.href='index.html'">Voltar ao Chat</button>
+
+    <script>
+        function updateDisplay() {
+            const credits = localStorage.getItem("saldo_creditos") || "0";
+            document.getElementById("creditsDisplay").innerText = credits;
+        }
+
+        function addCredits(amount) {
+            const current = parseFloat(localStorage.getItem("saldo_creditos") || "0");
+            const novo = current + amount;
+            localStorage.setItem("saldo_creditos", novo);
+            updateDisplay();
+            alert(`+${amount} créditos adicionados! Total: ${novo}`);
+        }
+
+        function resetCredits() {
+            localStorage.setItem("saldo_creditos", "0");
+            updateDisplay();
+            alert("Créditos resetados para 0");
+        }
+
+        function ativarPainel() {
+            localStorage.setItem('professional_panel', 'activated');
+            alert("Painel Profissional ativado!");
+        }
+
+        updateDisplay();
+    </script>
+</body>
+</html>
