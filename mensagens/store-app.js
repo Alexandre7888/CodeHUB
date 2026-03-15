@@ -2,7 +2,7 @@ function StoreApp() {
     const [user, setUser] = React.useState(null);
     const [credits, setCredits] = React.useState(0);
     const [history, setHistory] = React.useState([]);
-    const [activeTab, setActiveTab] = React.useState('stickers'); // stickers, sounds, credits
+    const [activeTab, setActiveTab] = React.useState('stickers'); // stickers, sounds, credits, panel
 
     // Sticker Creation
     const [stickerUrl, setStickerUrl] = React.useState("");
@@ -12,6 +12,9 @@ function StoreApp() {
     const [soundName, setSoundName] = React.useState("");
     const [soundFile, setSoundFile] = React.useState(null);
     const [mySounds, setMySounds] = React.useState([]);
+
+    // Professional Panel
+    const [professionalPanelActive, setProfessionalPanelActive] = React.useState(false);
 
     React.useEffect(() => {
         const storedUser = localStorage.getItem("chat_user");
@@ -29,16 +32,18 @@ function StoreApp() {
         const storedHistory = localStorage.getItem("historico_recargas");
         setHistory(storedHistory ? JSON.parse(storedHistory) : []);
 
-        // Load Stickers & Sounds (Mock local storage for now)
+        // Load Stickers & Sounds
         const storedStickers = localStorage.getItem("user_stickers");
         if(storedStickers) setMyStickers(JSON.parse(storedStickers));
 
         const storedSounds = localStorage.getItem("user_sounds");
         if(storedSounds) setMySounds(JSON.parse(storedSounds));
 
-    }, []);
+        // Check if Professional Panel is active
+        const panelActive = localStorage.getItem('professional_panel') === 'activated';
+        setProfessionalPanelActive(panelActive);
 
-    // Função de adicionar créditos removida - sem botões de recarga grátis
+    }, []);
 
     const handleCreateSticker = () => {
         if (!stickerUrl) return alert("Insira uma URL de imagem/gif");
@@ -55,6 +60,16 @@ function StoreApp() {
         setCredits(credits - cost);
         localStorage.setItem("saldo_creditos", credits - cost);
 
+        // Add to history
+        const newHistory = [{
+            id: Date.now(),
+            desc: "Compra de Sticker",
+            amount: -cost,
+            date: new Date().toLocaleString()
+        }, ...history];
+        setHistory(newHistory);
+        localStorage.setItem("historico_recargas", JSON.stringify(newHistory));
+
         setStickerUrl("");
         alert("Sticker Criado!");
     };
@@ -66,7 +81,6 @@ function StoreApp() {
         if (credits < cost) return alert("Saldo insuficiente (Custo: 50)");
 
         try {
-            // Compress/Convert logic here if needed, for now just base64
             const reader = new FileReader();
             reader.readAsDataURL(soundFile);
             reader.onload = () => {
@@ -79,6 +93,16 @@ function StoreApp() {
                 setCredits(credits - cost);
                 localStorage.setItem("saldo_creditos", credits - cost);
 
+                // Add to history
+                const newHistory = [{
+                    id: Date.now(),
+                    desc: "Compra de Efeito Sonoro",
+                    amount: -cost,
+                    date: new Date().toLocaleString()
+                }, ...history];
+                setHistory(newHistory);
+                localStorage.setItem("historico_recargas", JSON.stringify(newHistory));
+
                 setSoundName("");
                 setSoundFile(null);
                 alert("Efeito Sonoro Adicionado!");
@@ -87,6 +111,37 @@ function StoreApp() {
             console.error(e);
             alert("Erro ao processar áudio");
         }
+    };
+
+    // Função para comprar o Painel Profissional (APENAS COMPRA, SEM ATIVAÇÃO GRÁTIS)
+    const handleBuyProfessionalPanel = () => {
+        const cost = 10;
+        
+        if (credits < cost) {
+            alert(`❌ Saldo insuficiente! Você tem ${credits} créditos. O Painel Profissional custa 10 créditos.\n\nClique em OK para recarregar.`);
+            window.open('https://code.codehub.ct.ws/payments/credits', '_blank');
+            return;
+        }
+
+        // Deduct credits
+        setCredits(credits - cost);
+        localStorage.setItem("saldo_creditos", credits - cost);
+
+        // Activate professional panel
+        localStorage.setItem('professional_panel', 'activated');
+        setProfessionalPanelActive(true);
+
+        // Add to history
+        const newHistory = [{
+            id: Date.now(),
+            desc: "Compra do Painel Profissional",
+            amount: -cost,
+            date: new Date().toLocaleString()
+        }, ...history];
+        setHistory(newHistory);
+        localStorage.setItem("historico_recargas", JSON.stringify(newHistory));
+
+        alert("✅ Painel Profissional ativado com sucesso! Use durante chamadas em grupo.");
     };
 
     if (!user) return <div className="p-10 text-center">Carregando...</div>;
@@ -120,7 +175,13 @@ function StoreApp() {
                         onClick={() => setActiveTab('sounds')}
                         className={`flex-1 py-3 text-sm font-medium border-b-2 ${activeTab === 'sounds' ? 'border-[#00a884] text-[#00a884]' : 'border-transparent text-gray-500'}`}
                     >
-                        Efeitos Sonoros
+                        Efeitos
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('panel')}
+                        className={`flex-1 py-3 text-sm font-medium border-b-2 ${activeTab === 'panel' ? 'border-[#00a884] text-[#00a884]' : 'border-transparent text-gray-500'}`}
+                    >
+                        Painel Pro
                     </button>
                     <button 
                         onClick={() => setActiveTab('credits')}
@@ -240,27 +301,113 @@ function StoreApp() {
                         </div>
                     )}
 
+                    {/* PROFESSIONAL PANEL TAB - APENAS COMPRA */}
+                    {activeTab === 'panel' && (
+                        <div className="space-y-6">
+                            <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl p-6 text-white text-center shadow-lg">
+                                <div className="icon-settings text-5xl mb-3"></div>
+                                <h2 className="text-2xl font-bold mb-2">Painel Profissional</h2>
+                                <p className="text-sm opacity-90 mb-4">Controle total em chamadas de grupo</p>
+                                
+                                {professionalPanelActive ? (
+                                    <div className="bg-white/20 p-4 rounded-lg">
+                                        <p className="font-bold text-lg mb-2">✅ ATIVO</p>
+                                        <p className="text-sm">Você tem acesso a todos os recursos do Painel Profissional durante chamadas em grupo.</p>
+                                        <p className="text-xs mt-3 opacity-75">* Válido enquanto não desativar manualmente</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <div className="bg-black/20 p-4 rounded-lg text-left">
+                                            <p className="font-bold text-lg mb-3 text-center">🎮 Recursos:</p>
+                                            <ul className="text-sm space-y-2">
+                                                <li className="flex items-center gap-2">
+                                                    <div className="icon-check text-green-300"></div>
+                                                    Controlar volume de cada participante
+                                                </li>
+                                                <li className="flex items-center gap-2">
+                                                    <div className="icon-check text-green-300"></div>
+                                                    Silenciar todos os participantes
+                                                </li>
+                                                <li className="flex items-center gap-2">
+                                                    <div className="icon-check text-green-300"></div>
+                                                    Modo "Só Admin Fala"
+                                                </li>
+                                                <li className="flex items-center gap-2">
+                                                    <div className="icon-check text-green-300"></div>
+                                                    Compartilhar tela do computador
+                                                </li>
+                                                <li className="flex items-center gap-2">
+                                                    <div className="icon-check text-green-300"></div>
+                                                    Enviar áudio global para todos
+                                                </li>
+                                                <li className="flex items-center gap-2">
+                                                    <div className="icon-check text-green-300"></div>
+                                                    Injetar HTML personalizado
+                                                </li>
+                                            </ul>
+                                        </div>
+
+                                        <button 
+                                            onClick={handleBuyProfessionalPanel}
+                                            className="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 py-4 rounded-lg text-lg font-bold transition transform hover:scale-105 shadow-lg flex items-center justify-center gap-2"
+                                        >
+                                            <div className="icon-shopping-cart"></div>
+                                            COMPRAR POR 10 CRÉDITOS
+                                        </button>
+
+                                        <p className="text-xs text-gray-500 text-center mt-2">
+                                            Após a compra, o painel aparecerá automaticamente durante chamadas em grupo
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Instruções de uso (só aparece se tiver o painel) */}
+                            {professionalPanelActive && (
+                                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                                    <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                                        <div className="icon-info text-blue-500"></div>
+                                        Como usar:
+                                    </h3>
+                                    <ol className="list-decimal list-inside text-sm text-gray-600 space-y-2">
+                                        <li>Entre em uma chamada de grupo</li>
+                                        <li>Clique no botão <span className="bg-gray-200 px-2 py-1 rounded-full text-xs">⚙️</span> ao lado do microfone</li>
+                                        <li>Use os controles do painel profissional</li>
+                                    </ol>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {/* CREDITS TAB */}
                     {activeTab === 'credits' && (
                         <div className="space-y-6">
                             <div className="bg-gradient-to-r from-green-500 to-teal-600 rounded-xl p-6 text-white text-center shadow-lg">
                                 <p className="text-sm opacity-80 mb-1">Saldo Atual</p>
                                 <h2 className="text-4xl font-bold mb-4">{credits}</h2>
-                                {/* Botões de crédito grátis removidos */}
                                 <p className="text-sm opacity-75">Créditos são adquiridos apenas através de recargas oficiais</p>
+                                <a 
+                                    href="https://code.codehub.ct.ws/payments/credits" 
+                                    target="_blank"
+                                    className="inline-block mt-4 bg-white/20 hover:bg-white/30 text-white py-2 px-6 rounded-lg text-sm font-bold transition"
+                                >
+                                    Recarregar Créditos
+                                </a>
                             </div>
 
                             <div>
-                                <h4 className="font-bold text-gray-600 mb-3 text-sm">Histórico de Recargas</h4>
+                                <h4 className="font-bold text-gray-600 mb-3 text-sm">Histórico de Transações</h4>
                                 <div className="space-y-2">
-                                    {history.length === 0 && <p className="text-center text-gray-400 text-sm py-4">Nenhum histórico de recarga.</p>}
+                                    {history.length === 0 && <p className="text-center text-gray-400 text-sm py-4">Nenhuma transação.</p>}
                                     {history.map(h => (
                                         <div key={h.id} className="bg-white p-3 rounded-lg border border-gray-100 flex justify-between items-center">
                                             <div>
                                                 <p className="font-bold text-gray-800 text-sm">{h.desc}</p>
                                                 <p className="text-xs text-gray-400">{h.date}</p>
                                             </div>
-                                            <span className="text-green-600 font-bold">+{h.amount}</span>
+                                            <span className={h.amount > 0 ? "text-green-600 font-bold" : "text-red-600 font-bold"}>
+                                                {h.amount > 0 ? '+' : ''}{h.amount}
+                                            </span>
                                         </div>
                                     ))}
                                 </div>
