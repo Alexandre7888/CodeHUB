@@ -19,17 +19,14 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
 
     // Professional Panel Activation - APENAS VIA LOCALSTORAGE
     const [professionalPanel, setProfessionalPanel] = React.useState(false);
+    
+    // Controlar visibilidade do painel profissional durante a chamada
+    const [showProfessionalPanel, setShowProfessionalPanel] = React.useState(false);
 
-    // Verificar localStorage para ativação do painel (sem botões)
+    // Verificar localStorage para ativação do painel
     React.useEffect(() => {
-        // Verifica apenas o localStorage - sem URL, sem botões, sem nada
         const panelActive = localStorage.getItem('professional_panel') === 'activated';
         setProfessionalPanel(panelActive);
-        
-        // Log silencioso (opcional, pode remover)
-        if (panelActive) {
-            console.log('✅ Painel Profissional ativo');
-        }
     }, []);
 
     // Navigation History
@@ -70,7 +67,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
     const [isCamMuted, setIsCamMuted] = React.useState(false);
     const [showSoundBoard, setShowSoundBoard] = React.useState(false);
     
-    // Professional Panel Controls (só ativos se professionalPanel = true)
+    // Professional Panel Controls
     const [participantVolumes, setParticipantVolumes] = React.useState({});
     const [mutedAll, setMutedAll] = React.useState(false);
     const [adminOnlyMode, setAdminOnlyMode] = React.useState(false);
@@ -108,7 +105,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         return activeChat.members?.[user.id] === 'admin';
     }, [activeChat, user.id]);
 
-    // Screen Sharing Function (só se painel ativo)
+    // Screen Sharing Function
     const startScreenShare = async () => {
         if (!professionalPanel || !isCurrentUserAdmin) {
             alert("Apenas administradores com painel profissional podem compartilhar tela.");
@@ -146,7 +143,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         setScreenSharing(false);
     };
 
-    // Global Audio Message (só se painel ativo)
+    // Global Audio Message
     const sendGlobalAudio = (audioBase64, duration) => {
         if (!professionalPanel || !isCurrentUserAdmin) {
             alert("Apenas administradores com painel profissional podem enviar áudio global.");
@@ -181,7 +178,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         return () => globalAudioRef.off();
     }, [user.id, professionalPanel]);
 
-    // Volume Control (só se painel ativo)
+    // Volume Control
     const setParticipantVolume = (participantId, volume) => {
         if (!professionalPanel || !isCurrentUserAdmin) return;
         
@@ -235,7 +232,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         });
     };
 
-    // HTML Injection (só se painel ativo)
+    // HTML Injection
     const injectHTML = (htmlContent) => {
         if (!professionalPanel || !isCurrentUserAdmin) {
             alert("Apenas administradores com painel profissional podem injetar HTML.");
@@ -863,6 +860,9 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         window.NotificationSystem.stopRingtone();
         stopRecordingCall();
         stopScreenShare();
+        
+        // Fechar painel profissional quando a chamada terminar
+        setShowProfessionalPanel(false);
 
         if (callStatus === 'connected' && activeChat) {
              const durationStr = formatDuration(callDuration);
@@ -1141,13 +1141,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
     return (
         <div className="flex h-screen bg-gray-100 overflow-hidden relative">
 
-            {/* Professional Panel Indicator (só visual, sem botão) */}
-            {professionalPanel && (
-                <div className="absolute top-20 right-4 z-[65] bg-gradient-to-r from-green-600 to-blue-600 text-white px-4 py-2 rounded-full shadow-lg">
-                    ⚡ Painel Profissional Ativo
-                </div>
-            )}
-
             {/* System Status Banner */}
             {user && <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[60] w-full max-w-lg pointer-events-auto">
                  <SystemStatus />
@@ -1232,7 +1225,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                 />
             )}
 
-            {/* Call Modal with Professional Panel */}
+            {/* Call Modal */}
             {(incomingCall || callStatus) && (
                 <div className={`fixed z-50 transition-all duration-300 ease-in-out shadow-2xl overflow-hidden
                     ${isCallMinimized 
@@ -1240,7 +1233,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                         : 'inset-0 bg-black/95 flex flex-col items-center justify-center'
                     }
                 `}>
-                    {/* Screen Share Video (só se painel ativo) */}
+                    {/* Screen Share Video */}
                     {screenSharing && professionalPanel && (
                         <div className="absolute top-4 left-4 w-64 h-36 bg-black border-2 border-green-500 rounded-lg overflow-hidden z-20">
                             <video ref={screenVideoRef} autoPlay className="w-full h-full object-cover" />
@@ -1282,10 +1275,18 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                          )}
                     </div>
 
-                    {/* Professional Panel Controls (Só aparece se painel ativo E admin) */}
-                    {professionalPanel && isCurrentUserAdmin && activeGroupCall && !isCallMinimized && (
+                    {/* Professional Panel - Só aparece se: em chamada de grupo, admin, painel ativo, e botão ativado */}
+                    {professionalPanel && isCurrentUserAdmin && activeGroupCall && showProfessionalPanel && !isCallMinimized && (
                         <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-30 bg-gradient-to-r from-purple-900 to-blue-900 text-white p-4 rounded-xl shadow-2xl border border-purple-500 w-[600px]">
-                            <h3 className="text-lg font-bold mb-3 text-center">🎮 Painel de Controle Profissional</h3>
+                            <div className="flex justify-between items-center mb-3">
+                                <h3 className="text-lg font-bold">🎮 Painel de Controle Profissional</h3>
+                                <button 
+                                    onClick={() => setShowProfessionalPanel(false)}
+                                    className="text-white/80 hover:text-white"
+                                >
+                                    <div className="icon-x text-xl"></div>
+                                </button>
+                            </div>
                             
                             <div className="grid grid-cols-2 gap-4">
                                 {/* Volume Controls */}
@@ -1474,6 +1475,17 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                                     >
                                         <div className="icon-music text-xl"></div>
                                     </button>
+
+                                    {/* Botão do Painel Profissional - Só aparece em chamada de grupo e se for admin e painel ativo */}
+                                    {professionalPanel && isCurrentUserAdmin && activeGroupCall && (
+                                        <button 
+                                            onClick={() => setShowProfessionalPanel(!showProfessionalPanel)}
+                                            className={`p-3 rounded-full shadow-lg transition-colors ${showProfessionalPanel ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white' : 'bg-white/20 text-white hover:bg-white/30'}`}
+                                            title="Painel Profissional"
+                                        >
+                                            <div className="icon-settings text-xl"></div>
+                                        </button>
+                                    )}
                                  </>
                              )}
 
@@ -1533,7 +1545,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                                             {isAdmin && (
                                                 <span className="text-yellow-400 text-xs ml-1" title="Administrador">👑</span>
                                             )}
-                                            {professionalPanel && isCurrentUserAdmin && (
+                                            {professionalPanel && isCurrentUserAdmin && showProfessionalPanel && (
                                                 <input 
                                                     type="range" 
                                                     min="0" 
