@@ -1,26 +1,39 @@
 function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
     const [activeChat, setActiveChat] = React.useState(null);
     const [messageInput, setMessageInput] = React.useState("");
-    const [chats, setChats] = React.useState([]); // Contacts
+    const [chats, setChats] = React.useState([]);
     const [messages, setMessages] = React.useState([]);
     const [showAudioRecorder, setShowAudioRecorder] = React.useState(false);
-    
+
     // Bot & Media States
     const [showBotCreator, setShowBotCreator] = React.useState(false);
     const fileInputRef = React.useRef(null);
-    
-    // Modal States with History Management
+
+    // Modal States
     const [showAddContact, setShowAddContact] = React.useState(false);
     const [showGroupInfo, setShowGroupInfo] = React.useState(false);
     const [showSettings, setShowSettings] = React.useState(false);
-    
-    // Permissions (Group)
+
+    // Permissions
     const [groupPermissions, setGroupPermissions] = React.useState(null);
 
-    // --- Navigation History Fix ---
+    // Professional Panel Activation
+    const [professionalPanel, setProfessionalPanel] = React.useState(false);
+    const [panelPassword, setPanelPassword] = React.useState("");
+    const [showPanelLogin, setShowPanelLogin] = React.useState(false);
+
+    // Check URL for panel activation
+    React.useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('painel') === 'activado') {
+            setProfessionalPanel(true);
+            alert("✅ Painel Profissional ativado!");
+        }
+    }, []);
+
+    // Navigation History
     React.useEffect(() => {
         const handlePopState = (event) => {
-            // If any modal is open, close it and prevent browser back
             if (showSettings || showGroupInfo || showAddContact || activeChat) {
                 if (showSettings) setShowSettings(false);
                 else if (showGroupInfo) setShowGroupInfo(false);
@@ -28,7 +41,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                 else if (activeChat) setActiveChat(null);
             }
         };
-
         window.addEventListener('popstate', handlePopState);
         return () => window.removeEventListener('popstate', handlePopState);
     }, [showSettings, showGroupInfo, showAddContact, activeChat]);
@@ -37,7 +49,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         window.history.pushState({ view }, '', window.location.pathname);
     };
 
-    // Helper wrappers to set state AND push history
     const openSettings = () => { pushHistoryState('settings'); setShowSettings(true); };
     const openGroupInfo = () => { pushHistoryState('groupInfo'); setShowGroupInfo(true); };
     const openAddContact = () => { pushHistoryState('addContact'); setShowAddContact(true); };
@@ -45,19 +56,30 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
 
     // Call States
     const [incomingCall, setIncomingCall] = React.useState(null);
-    const [callStatus, setCallStatus] = React.useState(null); // 'calling', 'connected', 'ended'
+    const [callStatus, setCallStatus] = React.useState(null);
     const [isVideoCall, setIsVideoCall] = React.useState(false);
     const [activeGroupCall, setActiveGroupCall] = React.useState(false);
     const [peer, setPeer] = React.useState(null);
-    const [activeCalls, setActiveCalls] = React.useState({}); // Map of calls for group
-    const [remoteStreams, setRemoteStreams] = React.useState({}); // Map of streams
+    const [activeCalls, setActiveCalls] = React.useState({});
+    const [remoteStreams, setRemoteStreams] = React.useState({});
     const [isCallMinimized, setIsCallMinimized] = React.useState(false);
-    
+
     // Call Controls
     const [isMicMuted, setIsMicMuted] = React.useState(false);
     const [isCamMuted, setIsCamMuted] = React.useState(false);
     const [showSoundBoard, setShowSoundBoard] = React.useState(false);
     
+    // Professional Panel Controls
+    const [participantVolumes, setParticipantVolumes] = React.useState({});
+    const [mutedAll, setMutedAll] = React.useState(false);
+    const [adminOnlyMode, setAdminOnlyMode] = React.useState(false);
+    const [globalAudioMessage, setGlobalAudioMessage] = React.useState(null);
+    const [showGlobalAudio, setShowGlobalAudio] = React.useState(false);
+    const [htmlInput, setHtmlInput] = React.useState("");
+    const [showHtmlInput, setShowHtmlInput] = React.useState(false);
+    const [screenSharing, setScreenSharing] = React.useState(false);
+    const screenStreamRef = React.useRef(null);
+
     // Recording
     const [isRecordingCall, setIsRecordingCall] = React.useState(false);
     const [callDuration, setCallDuration] = React.useState(0);
@@ -65,35 +87,285 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
     const audioContextRef = React.useRef(null);
     const mixedDestRef = React.useRef(null);
     const callTimerRef = React.useRef(null);
-    const localStreamRef = React.useRef(null); // Keep track of local stream
-    
-    // Status & Presence
+    const localStreamRef = React.useRef(null);
+
+    // Status
     const [onlineUsers, setOnlineUsers] = React.useState({});
     const [backgroundMode, setBackgroundMode] = React.useState(false);
 
     const messagesEndRef = React.useRef(null);
     const localVideoRef = React.useRef(null);
     const remoteVideoRef = React.useRef(null);
-    const currentAudioRef = React.useRef(null); // Track currently playing audio
-    const backgroundAudioRef = React.useRef(null); // Silent loop
+    const screenVideoRef = React.useRef(null);
+    const currentAudioRef = React.useRef(null);
+    const backgroundAudioRef = React.useRef(null);
     const db = window.firebaseDB;
 
-    // --- Audio Exclusive Play ---
+    // Check if current user is admin
+    const isCurrentUserAdmin = React.useMemo(() => {
+        if (!activeChat || activeChat.type !== 'group') return false;
+        return activeChat.members?.[user.id] === 'admin';
+    }, [activeChat, user.id]);
+
+    // Screen Sharing Function
+    const startScreenShare = async () => {
+        if (!professionalPanel || !isCurrentUserAdmin) {
+            alert("Apenas administradores com painel profissional podem compartilhar tela.");
+            return;
+        }
+
+        try {
+            const stream = await navigator.mediaDevices.getDisplayMedia({ 
+                video: true, 
+                audio: true 
+            });
+            
+            screenStreamRef.current = stream;
+            setScreenSharing(true);
+
+            // Send screen to all participants
+            Object.values(activeCalls).forEach(call => {
+                // Add screen track to call
+                const sender = call.peerConnection.addTrack(stream.getVideoTracks()[0], stream);
+            });
+
+            stream.getVideoTracks()[0].onended = () => {
+                stopScreenShare();
+            };
+
+        } catch (error) {
+            console.error("Erro ao compartilhar tela:", error);
+            alert("Erro ao compartilhar tela. Certifique-se de estar no computador.");
+        }
+    };
+
+    const stopScreenShare = () => {
+        if (screenStreamRef.current) {
+            screenStreamRef.current.getTracks().forEach(track => track.stop());
+            screenStreamRef.current = null;
+        }
+        setScreenSharing(false);
+    };
+
+    // Global Audio Message
+    const sendGlobalAudio = (audioBase64, duration) => {
+        if (!professionalPanel || !isCurrentUserAdmin) {
+            alert("Apenas administradores com painel profissional podem enviar áudio global.");
+            return;
+        }
+
+        setGlobalAudioMessage({ audio: audioBase64, duration });
+        
+        // Play for all participants
+        Object.keys(activeCalls).forEach(participantId => {
+            db.ref(`users/${participantId}/global_audio`).set({
+                audio: audioBase64,
+                duration: duration,
+                timestamp: Date.now(),
+                sender: user.id
+            });
+        });
+
+        // Play locally
+        const audio = new Audio(audioBase64);
+        audio.play();
+    };
+
+    // Listen for global audio from admin
+    React.useEffect(() => {
+        const globalAudioRef = db.ref(`users/${user.id}/global_audio`);
+        globalAudioRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data && data.sender !== user.id) {
+                const audio = new Audio(data.audio);
+                audio.play();
+                alert(`🔊 Mensagem global do administrador`);
+            }
+        });
+        return () => globalAudioRef.off();
+    }, [user.id]);
+
+    // Volume Control
+    const setParticipantVolume = (participantId, volume) => {
+        if (!professionalPanel || !isCurrentUserAdmin) return;
+        
+        setParticipantVolumes(prev => ({
+            ...prev,
+            [participantId]: volume
+        }));
+
+        // Apply volume to remote stream
+        const remoteStream = remoteStreams[participantId];
+        if (remoteStream) {
+            const audioContext = new AudioContext();
+            const source = audioContext.createMediaStreamSource(remoteStream);
+            const gainNode = audioContext.createGain();
+            gainNode.gain.value = volume / 100;
+            source.connect(gainNode).connect(audioContext.destination);
+        }
+    };
+
+    const muteAllParticipants = () => {
+        if (!professionalPanel || !isCurrentUserAdmin) return;
+        
+        const newMutedState = !mutedAll;
+        setMutedAll(newMutedState);
+
+        Object.keys(activeCalls).forEach(participantId => {
+            if (!mutedAll) {
+                setParticipantVolume(participantId, 0);
+                // Send mute signal
+                db.ref(`users/${participantId}/call_control`).set({
+                    action: 'mute',
+                    adminId: user.id
+                });
+            }
+        });
+    };
+
+    const setAdminOnlyVoice = () => {
+        if (!professionalPanel || !isCurrentUserAdmin) return;
+        
+        const newMode = !adminOnlyMode;
+        setAdminOnlyMode(newMode);
+
+        Object.keys(activeCalls).forEach(participantId => {
+            const isAdmin = activeChat?.members?.[participantId] === 'admin';
+            if (!isAdmin) {
+                setParticipantVolume(participantId, newMode ? 0 : 100);
+                db.ref(`users/${participantId}/call_control`).set({
+                    action: newMode ? 'admin_only' : 'normal',
+                    adminId: user.id
+                });
+            }
+        });
+    };
+
+    // HTML Injection (Admin only)
+    const injectHTML = (htmlContent) => {
+        if (!professionalPanel || !isCurrentUserAdmin) {
+            alert("Apenas administradores com painel profissional podem injetar HTML.");
+            return;
+        }
+
+        // Create iframe with HTML
+        const iframe = document.createElement('iframe');
+        iframe.srcdoc = htmlContent;
+        iframe.style.position = 'fixed';
+        iframe.style.top = '50%';
+        iframe.style.left = '50%';
+        iframe.style.transform = 'translate(-50%, -50%)';
+        iframe.style.width = '80%';
+        iframe.style.height = '80%';
+        iframe.style.zIndex = '9999';
+        iframe.style.backgroundColor = 'white';
+        iframe.style.border = '2px solid #00a884';
+        iframe.style.borderRadius = '10px';
+        
+        // Add close button
+        const closeBtn = document.createElement('button');
+        closeBtn.innerHTML = '✕';
+        closeBtn.style.position = 'fixed';
+        closeBtn.style.top = 'calc(50% - 40vh)';
+        closeBtn.style.right = 'calc(50% - 38vw)';
+        closeBtn.style.zIndex = '10000';
+        closeBtn.style.padding = '10px 15px';
+        closeBtn.style.backgroundColor = 'red';
+        closeBtn.style.color = 'white';
+        closeBtn.style.border = 'none';
+        closeBtn.style.borderRadius = '5px';
+        closeBtn.style.cursor = 'pointer';
+        closeBtn.onclick = () => {
+            iframe.remove();
+            closeBtn.remove();
+        };
+
+        document.body.appendChild(iframe);
+        document.body.appendChild(closeBtn);
+
+        // Send to all participants
+        Object.keys(activeCalls).forEach(participantId => {
+            db.ref(`users/${participantId}/html_inject`).set({
+                html: htmlContent,
+                adminId: user.id,
+                timestamp: Date.now()
+            });
+        });
+    };
+
+    // Listen for HTML injection from admin
+    React.useEffect(() => {
+        const htmlRef = db.ref(`users/${user.id}/html_inject`);
+        htmlRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data && data.adminId !== user.id && professionalPanel) {
+                // Show HTML content
+                const iframe = document.createElement('iframe');
+                iframe.srcdoc = data.html;
+                iframe.style.position = 'fixed';
+                iframe.style.top = '50%';
+                iframe.style.left = '50%';
+                iframe.style.transform = 'translate(-50%, -50%)';
+                iframe.style.width = '80%';
+                iframe.style.height = '80%';
+                iframe.style.zIndex = '9999';
+                iframe.style.backgroundColor = 'white';
+                iframe.style.border = '2px solid #00a884';
+                iframe.style.borderRadius = '10px';
+                
+                const closeBtn = document.createElement('button');
+                closeBtn.innerHTML = '✕';
+                closeBtn.style.position = 'fixed';
+                closeBtn.style.top = 'calc(50% - 40vh)';
+                closeBtn.style.right = 'calc(50% - 38vw)';
+                closeBtn.style.zIndex = '10000';
+                closeBtn.style.padding = '10px 15px';
+                closeBtn.style.backgroundColor = 'red';
+                closeBtn.style.color = 'white';
+                closeBtn.style.border = 'none';
+                closeBtn.style.borderRadius = '5px';
+                closeBtn.style.cursor = 'pointer';
+                closeBtn.onclick = () => {
+                    iframe.remove();
+                    closeBtn.remove();
+                };
+
+                document.body.appendChild(iframe);
+                document.body.appendChild(closeBtn);
+            }
+        });
+        return () => htmlRef.off();
+    }, [user.id, professionalPanel]);
+
+    // Listen for call control from admin
+    React.useEffect(() => {
+        const controlRef = db.ref(`users/${user.id}/call_control`);
+        controlRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data && data.adminId !== user.id) {
+                if (data.action === 'mute') {
+                    toggleMic(); // Mute local mic
+                } else if (data.action === 'admin_only') {
+                    // Logic for admin only mode
+                }
+            }
+        });
+        return () => controlRef.off();
+    }, [user.id]);
+
     const handleAudioPlay = (audioElement) => {
         if (currentAudioRef.current && currentAudioRef.current !== audioElement) {
             currentAudioRef.current.pause();
-            currentAudioRef.current.currentTime = 0; // Optional: reset or just pause
+            currentAudioRef.current.currentTime = 0;
         }
         currentAudioRef.current = audioElement;
     };
 
-    // --- Background Mode (Silent Audio Loop) ---
     const toggleBackgroundMode = () => {
         if (!backgroundAudioRef.current) {
-            // Create a silent audio element
             const audio = new Audio("data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq");
             audio.loop = true;
-            audio.volume = 0.01; // Almost silent but active
+            audio.volume = 0.01;
             backgroundAudioRef.current = audio;
         }
 
@@ -103,15 +375,13 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         } else {
             backgroundAudioRef.current.play().then(() => {
                 setBackgroundMode(true);
-                alert("Modo Segundo Plano Ativado: O app continuará ativo mesmo se você trocar de aba (áudio silencioso rodando).");
+                alert("Modo Segundo Plano Ativado");
             }).catch(e => {
                 console.error("Erro ao ativar background:", e);
-                alert("Toque na página primeiro para ativar o áudio.");
             });
         }
     };
 
-    // --- Media Controls ---
     const toggleMic = () => {
         if (localStreamRef.current) {
             const audioTrack = localStreamRef.current.getAudioTracks()[0];
@@ -132,9 +402,8 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         }
     };
 
-    // --- PeerJS Setup & Presence System ---
+    // PeerJS Setup
     React.useEffect(() => {
-        // Ensure ID is safe for PeerJS (alphanumeric only)
         const cleanId = user.id.replace(/[^a-zA-Z0-9]/g, ''); 
         const newPeer = new window.Peer(cleanId);
 
@@ -152,17 +421,10 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
 
         newPeer.on('error', (err) => {
             console.error('PeerJS Error:', err);
-            // Ignore trivial errors, alert on critical ones
-            if (err.type === 'peer-unavailable') {
-                // peer unavailable is common in mesh network, ignore or show toast
-            } else {
-                // alert(`Erro na conexão P2P: ${err.type}`);
-            }
         });
 
         setPeer(newPeer);
 
-        // Presence Logic
         const connectedRef = db.ref(".info/connected");
         const userStatusRef = db.ref(`users/${user.id}/status`);
 
@@ -180,7 +442,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         };
     }, [user.id]);
 
-    // --- Group Call Status Listener ---
+    // Group Call Status
     const [ongoingGroupCall, setOngoingGroupCall] = React.useState(null);
 
     React.useEffect(() => {
@@ -190,13 +452,11 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         }
 
         const callStatusRef = db.ref(`groups/${activeChat.id}/callStatus`);
-        
+
         const handleStatus = (snap) => {
             const status = snap.val();
             if (status) {
-                // Check if active
                 if (status.state === 'active') {
-                    // Check if I am already in it?
                     if (!activeGroupCall) {
                         setOngoingGroupCall(status);
                     } else {
@@ -218,11 +478,10 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         return () => callStatusRef.off();
     }, [activeChat, callStatus, activeGroupCall]);
 
-    // --- Global Message Listener (Notifications) ---
+    // Notifications
     React.useEffect(() => {
         if (!chats.length) return;
 
-        // Listen to last message of ALL chats to trigger notification
         const listeners = [];
 
         chats.forEach(chat => {
@@ -238,12 +497,9 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                 const msg = snapshot.val();
                 if (!msg) return;
 
-                // Check if new (compare roughly with now - 5s to avoid flood on load)
-                // In a real app, track 'lastRead' timestamp. Here we use a simple time check
                 const isRecent = (Date.now() - msg.timestamp) < 10000; 
                 const isFromMe = msg.senderId === user.id;
-                
-                // If it's NOT from me, IS recent, and I am NOT looking at this chat (or window hidden)
+
                 if (!isFromMe && isRecent) {
                     const isChatActive = activeChat && activeChat.id === chat.id;
                     if (!isChatActive || document.hidden) {
@@ -261,11 +517,9 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         return () => {
             listeners.forEach(l => l.ref.off('child_added', l.fn));
         };
-    }, [chats, activeChat]); // Re-run when chat list changes or active chat changes
+    }, [chats, activeChat]);
 
-    // --- Call Logic (P2P & Mesh) ---
-
-    // Init Audio Context for Recording
+    // Audio Recording
     const initAudioContext = () => {
         if (!audioContextRef.current) {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -284,7 +538,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
 
     const startRecordingCall = () => {
         if (!mixedDestRef.current) return;
-        
+
         try {
             const stream = mixedDestRef.current.stream;
             const recorder = new MediaRecorder(stream);
@@ -300,8 +554,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                 reader.readAsDataURL(blob);
                 reader.onloadend = () => {
                     const base64Audio = reader.result;
-                    // Auto send to chat or download?
-                    // Let's send to chat as a "Call Recording"
                     const durationStr = formatDuration(callDuration);
                     if (confirm(`Gravação finalizada (${durationStr}). Deseja enviar no chat?`)) {
                         handleSendMessage(base64Audio, 'audio', durationStr);
@@ -312,8 +564,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
             recorder.start();
             recorderRef.current = recorder;
             setIsRecordingCall(true);
-            
-            // Timer
+
             setCallDuration(0);
             callTimerRef.current = setInterval(() => setCallDuration(p => p + 1), 1000);
 
@@ -340,16 +591,13 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
-    // --- Join Request Handling ---
     const handleJoinSuccess = (groupData) => {
         alert(`Você entrou no grupo ${groupData.name}!`);
         setActiveChat({ ...groupData, id: pendingJoinGroupId, type: 'group' });
         onClearJoin();
     };
 
-    // --- Call Handlers ---
-
-    // Listen for external start call triggers (e.g. from GroupInfo)
+    // Call Handlers
     React.useEffect(() => {
         const handleStartGroupCall = (e) => {
             const { groupId, video } = e.detail;
@@ -363,19 +611,15 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         return () => window.removeEventListener('start-group-call', handleStartGroupCall);
     }, [activeChat]);
 
-    // New: Handle incoming signal to join a multi-user call
     React.useEffect(() => {
         const signalRef = db.ref(`users/${user.id}/call_signal`);
         signalRef.on('child_added', snapshot => {
             const signal = snapshot.val();
             if (signal && signal.type === 'connect_peer' && signal.targetPeer && callStatus === 'connected') {
-                // We are in a call, and requested to connect to a new peer
-                // Check if already connected (checking sanitized ID)
                 const targetSanitized = signal.targetPeer.replace(/[^a-zA-Z0-9]/g, '');
                 if (!activeCalls[targetSanitized]) {
                     console.log("Sinal recebido para conectar com:", signal.targetPeer);
                     connectToNewPeer(signal.targetPeer, isVideoCall);
-                    // Remove signal
                     snapshot.ref.remove();
                 }
             }
@@ -388,16 +632,15 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
             const stream = localStreamRef.current 
                 || localVideoRef.current?.srcObject 
                 || await navigator.mediaDevices.getUserMedia({ audio: true, video: video });
-            
+
             if (!localStreamRef.current) localStreamRef.current = stream;
 
-            // Sanitize ID
             const targetPeerId = peerId.replace(/[^a-zA-Z0-9]/g, '');
 
             const call = peer.call(targetPeerId, stream, { 
                 metadata: { isVideo: video, isGroup: true, inviterId: user.id } 
             });
-            
+
             if (call) {
                 handleCallStream(call, video);
                 setActiveCalls(prev => ({ ...prev, [targetPeerId]: call }));
@@ -409,23 +652,10 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
 
     const handleAddParticipantToCall = async (newId) => {
         if (!newId) return;
-        
-        // 1. Call the new person myself
+
         await connectToNewPeer(newId, isVideoCall);
 
-        // 2. Tell all CURRENTLY connected peers to call the new person too
         Object.keys(activeCalls).forEach(connectedPeerId => {
-            // We need to send signal to ORIGINAL ID if possible, but we stored sanitized.
-            // But firebase needs original ID. 
-            // Limitation: If sanitized ID clashes or we can't reverse it, this is tricky.
-            // Assumption: IDs are numeric or simple enough that sanitized == original usually, 
-            // OR we iterate members list to find who matches sanitized ID.
-            // For now, let's try to use connectedPeerId as the key for firebase signal, hoping it matches enough.
-            // Ideally we should store { id: original, call: callObj } in activeCalls.
-            
-            // NOTE: For robustness, we are using sanitized ID for PeerJS. 
-            // Firebase paths might need original ID. 
-            // If user IDs are just numbers (from our generator), sanitized == original.
             db.ref(`users/${connectedPeerId}/call_signal`).push({
                 type: 'connect_peer',
                 targetPeer: newId,
@@ -452,7 +682,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
     const answerCall = () => {
         window.NotificationSystem.stopRingtone();
         if (!incomingCall || !incomingCall.callObj) return;
-        
+
         const isVideo = incomingCall.isVideo;
         setIsVideoCall(isVideo);
         setIncomingCall(null);
@@ -461,17 +691,15 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         setIsCamMuted(false);
 
         navigator.mediaDevices.getUserMedia({ audio: true, video: isVideo }).then((stream) => {
-            // Local Stream
             localStreamRef.current = stream;
             if (isVideo && localVideoRef.current) localVideoRef.current.srcObject = stream;
-            addToMix(stream); // Record my voice
+            addToMix(stream);
 
             const call = incomingCall.callObj;
             call.answer(stream);
-            
+
             handleCallStream(call, isVideo);
-            
-            // call.peer is already sanitized (it comes from peerjs)
+
             setActiveCalls(prev => ({ ...prev, [call.peer]: call }));
 
         }).catch(err => {
@@ -482,14 +710,12 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
 
     const startCall = async (video = false) => {
         if (!activeChat) return;
-        
-        // Group Logic
+
         if (activeChat.type === 'group') {
              startGroupCall(video);
              return;
         }
 
-        // Private Logic
         setCallStatus('calling');
         setIsVideoCall(video);
         setIsMicMuted(false);
@@ -501,10 +727,9 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
             if (video && localVideoRef.current) localVideoRef.current.srcObject = stream;
             addToMix(stream);
 
-            // Sanitize target ID
             const targetPeerId = activeChat.id.replace(/[^a-zA-Z0-9]/g, '');
             const call = peer.call(targetPeerId, stream, { metadata: { isVideo: video } });
-            
+
             if (!call) {
                 throw new Error("Falha ao iniciar conexão com Peer.");
             }
@@ -520,40 +745,36 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
     };
 
     const startGroupCall = async (video) => {
-        // Permission Check
         if (groupPermissions) {
             if (video && !groupPermissions.sendVideo) { alert("Vídeo chamadas desativadas neste grupo."); return; }
             if (!video && !groupPermissions.sendAudio) { alert("Chamadas de áudio desativadas neste grupo."); return; }
         }
 
-        // Fetch all group members
         const groupRef = db.ref(`groups/${activeChat.id}/members`);
         const snapshot = await groupRef.once('value');
         const members = snapshot.val();
         if (!members) return;
 
-        const memberIds = Object.keys(members).filter(id => id !== user.id); // Exclude self
-        
+        const memberIds = Object.keys(members).filter(id => id !== user.id);
+
         if (memberIds.length === 0) {
             alert("Grupo vazio ou só você está nele.");
             return;
         }
 
-        setCallStatus('connected'); // Immediately show UI
+        setCallStatus('connected');
         setIsVideoCall(video);
         setIsMicMuted(false);
         setIsCamMuted(false);
         setActiveGroupCall(true);
-        setOngoingGroupCall(null); // Clear banner
-        
-        // Set Group Call Status to active
+        setOngoingGroupCall(null);
+
         db.ref(`groups/${activeChat.id}/callStatus`).set({
             state: 'active',
             startedBy: user.id,
             timestamp: Date.now()
         });
 
-        // Notify group via system message
         handleSendMessage(`📞 Iniciou uma chamada de ${video ? 'vídeo' : 'voz'} em grupo.`, 'system');
 
         try {
@@ -562,9 +783,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
             if (video && localVideoRef.current) localVideoRef.current.srcObject = stream;
             addToMix(stream);
 
-            // Mesh: Call everyone
             memberIds.forEach(id => {
-                // Sanitize ID
                 const targetPeerId = id.replace(/[^a-zA-Z0-9]/g, '');
                 const call = peer.call(targetPeerId, stream, { metadata: { isVideo: video, isGroup: true, groupId: activeChat.id } });
                 if (call) {
@@ -582,8 +801,8 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
 
     const joinGroupCall = async () => {
         if (!ongoingGroupCall) return;
-        
-        const video = false; // Default to audio when joining
+
+        const video = false;
         setIsVideoCall(video);
         setCallStatus('connected');
         setIsMicMuted(false);
@@ -597,7 +816,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
             if (video && localVideoRef.current) localVideoRef.current.srcObject = stream;
             addToMix(stream);
 
-            // Signal to everyone in the group that I am joining
             const groupRef = db.ref(`groups/${activeChat.id}/members`);
             const snapshot = await groupRef.once('value');
             const members = snapshot.val();
@@ -634,8 +852,8 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
     const handleCallStream = (call, isVideo) => {
         call.on('stream', (remoteStream) => {
             setRemoteStreams(prev => ({ ...prev, [call.peer]: remoteStream }));
-            addToMix(remoteStream); // Record remote
-            
+            addToMix(remoteStream);
+
             if (!isVideo) {
                  const audio = new Audio();
                  audio.srcObject = remoteStream;
@@ -649,7 +867,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
              setActiveCalls(prev => {
                  const newCalls = { ...prev };
                  delete newCalls[call.peer];
-                 if (Object.keys(newCalls).length === 0) endCall(true); // true = remote ended
+                 if (Object.keys(newCalls).length === 0) endCall(true);
                  return newCalls;
              });
              setRemoteStreams(prev => {
@@ -667,23 +885,22 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
     const endCall = (remoteEnded = false) => {
         window.NotificationSystem.stopRingtone();
         stopRecordingCall();
+        stopScreenShare();
 
-        // Log Call Message if I was connected
         if (callStatus === 'connected' && activeChat) {
              const durationStr = formatDuration(callDuration);
              const type = isVideoCall ? 'video' : 'audio';
-             if (!remoteEnded) { // I hung up
+             if (!remoteEnded) {
                  handleSendMessage(`Chamada de ${type} encerrada • ${durationStr}`, 'system');
              }
         }
 
         Object.values(activeCalls).forEach(call => call.close());
-        
+
         if (localVideoRef.current?.srcObject) {
             localVideoRef.current.srcObject.getTracks().forEach(t => t.stop());
         }
-        
-        // Also stop tracks in localStreamRef if distinct
+
         if (localStreamRef.current) {
             localStreamRef.current.getTracks().forEach(t => t.stop());
             localStreamRef.current = null;
@@ -699,7 +916,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         setIsMicMuted(false);
         setIsCamMuted(false);
         if (document.pictureInPictureElement) document.exitPictureInPicture();
-        
+
         if (audioContextRef.current) {
             audioContextRef.current.close();
             audioContextRef.current = null;
@@ -708,7 +925,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
 
     const deleteMessage = (msgKey) => {
         if (!activeChat) return;
-        // Check Admin permission if group
         if (activeChat.type === 'group') {
              if (!confirm("Excluir esta mensagem para todos?")) return;
              db.ref(`groups/${activeChat.id}/messages/${msgKey}`).remove();
@@ -719,9 +935,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         }
     };
 
-    // --- Data Loading (Privacy Fix) ---
-
-    // Load Permissions if Group
+    // Data Loading
     React.useEffect(() => {
         if (activeChat && activeChat.type === 'group') {
              db.ref(`groups/${activeChat.id}/permissions`).on('value', s => setGroupPermissions(s.val()));
@@ -730,22 +944,19 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         }
     }, [activeChat]);
 
-    // Load CONTACTS only (Privacy Fix)
     React.useEffect(() => {
         const contactsRef = db.ref(`users/${user.id}/contacts`);
-        const groupsRef = db.ref(`users/${user.id}/groups`); // User's groups
 
         const loadContacts = (snapshot) => {
             const data = snapshot.val();
             if (!data) return;
-            
+
             const contactIds = Object.keys(data);
             Promise.all(contactIds.map(async id => {
                 const ref = data[id].type === 'group' ? `groups/${id}` : `users/${id}`;
                 const s = await db.ref(ref).once('value');
                 const val = s.val();
-                
-                // Fetch status for private contacts
+
                 let status = 'offline';
                 let privacy = {};
                 if (data[id].type !== 'group' && val) {
@@ -777,7 +988,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         };
     }, [user.id]);
 
-    // 2. Carregar Mensagens
+    // Load Messages
     React.useEffect(() => {
         if (!activeChat) return;
 
@@ -789,14 +1000,11 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
             messagesRef = db.ref(`chats/${chatId}/messages`);
         }
 
-        // Mark as Read Logic & Privacy Check
         const markAsRead = (msgId, senderId) => {
-             // Check my privacy settings first: Do I allow sending read receipts?
              db.ref(`users/${user.id}/settings`).once('value').then(s => {
                  const settings = s.val() || {};
-                 let allowReadReceipt = settings.readReceipts !== false; // default true
-                 
-                 // Exception List Check
+                 let allowReadReceipt = settings.readReceipts !== false;
+
                  if (settings.readReceiptExceptions && settings.readReceiptExceptions[senderId]) {
                       allowReadReceipt = !allowReadReceipt;
                  }
@@ -815,20 +1023,17 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         messagesRef.limitToLast(50).on('child_added', (snapshot) => {
             const msg = snapshot.val();
             setMessages(prev => [...prev, { ...msg, key: snapshot.key }]);
-            
-            // If I am receiving this message and I am looking at it, mark read
+
             if (msg.senderId !== user.id) {
                  markAsRead(snapshot.key, msg.senderId);
             }
         });
 
-        // Listen for status changes (Read Receipts updates)
         messagesRef.limitToLast(50).on('child_changed', (snapshot) => {
              const val = snapshot.val();
              setMessages(prev => prev.map(m => m.key === snapshot.key ? { ...val, key: snapshot.key } : m));
         });
 
-        // --- SCRIPT ENGINE EXECUTION ---
         if (activeChat.type === 'group') {
             const scriptsRef = db.ref(`groups/${activeChat.id}/scripts`);
             scriptsRef.once('value').then(scriptsSnap => {
@@ -836,18 +1041,15 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                 if (scripts) {
                     messagesRef.limitToLast(1).on('child_added', (snapshot) => {
                         const msg = snapshot.val();
-                        // Run only for new messages (timestamp check)
                         if (Date.now() - msg.timestamp < 2000) {
                             const engine = new window.ScriptEngine(activeChat.id, {
                                 deleteMessage: (msgId) => db.ref(`groups/${activeChat.id}/messages/${msgId}`).remove(),
-                                sendMessage: (text) => handleSendMessage(text, 'text'), // Bots speak as the user running them in this architecture
+                                sendMessage: (text) => handleSendMessage(text, 'text'),
                                 kickMember: (uid) => db.ref(`groups/${activeChat.id}/members/${uid}`).remove(),
                                 alert: (txt) => alert(`[BOT]: ${txt}`)
                             });
-                            
-                            // Get Member Info
+
                             const senderId = msg.senderId;
-                            // We need member role. Simplified here:
                             const memberContext = { id: senderId, name: msg.senderName };
 
                             Object.values(scripts).forEach(script => {
@@ -871,11 +1073,9 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
-
     const handleSendMessage = (content, type = 'text', duration = null, msgType = 'text') => {
         if (!activeChat) return;
-        
-        // Permission Check
+
         if (activeChat.type === 'group' && groupPermissions && type !== 'system') {
             if (type === 'text' && !groupPermissions.sendText) { alert("Envio de texto bloqueado neste grupo."); return; }
             if (type === 'audio' && !groupPermissions.sendAudio) { alert("Envio de áudio bloqueado neste grupo."); return; }
@@ -884,7 +1084,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         if (type === 'audio') {
             window.ChatAppAPI.sendAudio(activeChat.id, content, duration, activeChat.type);
         } else if (type === 'system') {
-             // System message injection
              const msgData = {
                 senderId: 'system',
                 senderName: 'Sistema',
@@ -898,7 +1097,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                 : db.ref(`chats/${[user.id, activeChat.id].sort().join('_')}/messages`);
             ref.push(msgData);
         } else {
-            // Support Image/Text types
             window.ChatAppAPI.sendMessage(activeChat.id, content, activeChat.type, msgType);
         }
         setMessageInput("");
@@ -909,7 +1107,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         const groupName = prompt("Nome do Grupo:");
         if (groupName) {
             const groupId = Math.floor(1000 + Math.random() * 9000).toString();
-            // Create Group
             db.ref(`groups/${groupId}`).set({
                 id: groupId,
                 name: groupName,
@@ -923,7 +1120,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                     changeInfo: false
                 }
             });
-            // Add to my contacts/groups list
             db.ref(`users/${user.id}/contacts/${groupId}`).set({ type: 'group', joinedAt: Date.now() });
         }
     };
@@ -933,30 +1129,25 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
 
         const cleanInput = inputId.trim();
 
-        // Bot Creation Trigger
         if (cleanInput.toLowerCase() === 'bot') {
             setShowAddContact(false);
             setShowBotCreator(true);
             return;
         }
-        
+
         try {
-            // 1. Try to find as Group
             const groupSnap = await db.ref(`groups/${inputId}`).once('value');
             if (groupSnap.exists()) {
                  const groupData = groupSnap.val();
-                 // Add to user contacts as group
                  await db.ref(`users/${user.id}/contacts/${inputId}`).set({ type: 'group', joinedAt: Date.now() });
-                 // Add user to group members (default role: member)
                  await db.ref(`groups/${inputId}/members/${user.id}`).set('member');
-                 
+
                  setActiveChat({ ...groupData, type: 'group' });
                  setShowAddContact(false);
                  alert(`Você entrou no grupo "${groupData.name}"!`);
                  return;
             }
 
-            // 2. Try to find as User
             const userSnap = await db.ref(`users/${inputId}`).once('value');
             if (userSnap.exists()) {
                 const userData = userSnap.val();
@@ -965,7 +1156,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                 setShowAddContact(false);
                 return;
             }
-            
+
             alert("ID não encontrado (nem usuário, nem grupo).");
 
         } catch (error) {
@@ -976,7 +1167,56 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
 
     return (
         <div className="flex h-screen bg-gray-100 overflow-hidden relative">
-            
+
+            {/* Panel Login Modal */}
+            {showPanelLogin && (
+                <div className="absolute inset-0 z-[70] bg-black/70 flex items-center justify-center">
+                    <div className="bg-white p-6 rounded-lg w-80 shadow-xl">
+                        <h3 className="text-lg font-semibold mb-4 text-gray-800">Ativar Painel Profissional</h3>
+                        <p className="text-sm text-gray-500 mb-2">Digite a senha:</p>
+                        <input 
+                            type="password"
+                            value={panelPassword}
+                            onChange={(e) => setPanelPassword(e.target.value)}
+                            placeholder="Senha do painel"
+                            className="w-full border border-gray-300 rounded p-2 mb-4 outline-none focus:border-[#00a884]"
+                        />
+                        <div className="flex justify-end gap-2">
+                            <button onClick={() => setShowPanelLogin(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancelar</button>
+                            <button onClick={() => {
+                                if (panelPassword === "admin123") { // Change this password
+                                    setProfessionalPanel(true);
+                                    setShowPanelLogin(false);
+                                    alert("✅ Painel Profissional ativado!");
+                                } else {
+                                    alert("❌ Senha incorreta!");
+                                }
+                                setPanelPassword("");
+                            }} className="px-4 py-2 bg-[#00a884] text-white rounded hover:bg-[#008f6f]">
+                                Ativar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Professional Panel Button (only visible when not active) */}
+            {!professionalPanel && (
+                <button
+                    onClick={() => setShowPanelLogin(true)}
+                    className="absolute top-20 right-4 z-[65] bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-full shadow-lg hover:shadow-xl transition-all animate-pulse"
+                >
+                    ⚡ Ativar Painel Profissional
+                </button>
+            )}
+
+            {/* Professional Panel Indicator */}
+            {professionalPanel && (
+                <div className="absolute top-20 right-4 z-[65] bg-gradient-to-r from-green-600 to-blue-600 text-white px-4 py-2 rounded-full shadow-lg">
+                    ⚡ Painel Profissional Ativo
+                </div>
+            )}
+
             {/* System Status Banner */}
             {user && <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[60] w-full max-w-lg pointer-events-auto">
                  <SystemStatus />
@@ -1000,17 +1240,17 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                 />
             )}
 
-            {/* Modal Layer */}
+            {/* Settings Modal */}
             {showSettings && <Settings user={user} onClose={() => setShowSettings(false)} chats={chats} />}
-            
+
+            {/* Add Contact Modal */}
             {showAddContact && (
                 <div className="absolute inset-0 z-50 bg-black/50 flex items-center justify-center">
                     <div className="bg-white p-6 rounded-lg w-80 shadow-xl animate-fade-in flex flex-col max-h-[80vh]">
                         <h3 className="text-lg font-semibold mb-4 text-gray-800">
                             {callStatus ? 'Adicionar à Chamada' : 'Adicionar / Entrar'}
                         </h3>
-                        
-                        {/* Tab or simple switch if in call */}
+
                         {callStatus ? (
                             <div className="flex-1 overflow-y-auto mb-4">
                                 <p className="text-sm text-gray-500 mb-2">Escolha dos seus contatos:</p>
@@ -1052,6 +1292,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                 </div>
             )}
 
+            {/* Group Info Modal */}
             {showGroupInfo && activeChat?.type === 'group' && (
                 <GroupInfo 
                     activeChat={activeChat} 
@@ -1060,7 +1301,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                 />
             )}
 
-            {/* Call Modal / Mini Player */}
+            {/* Call Modal with Professional Panel */}
             {(incomingCall || callStatus) && (
                 <div className={`fixed z-50 transition-all duration-300 ease-in-out shadow-2xl overflow-hidden
                     ${isCallMinimized 
@@ -1068,18 +1309,25 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                         : 'inset-0 bg-black/95 flex flex-col items-center justify-center'
                     }
                 `}>
+                    {/* Screen Share Video */}
+                    {screenSharing && (
+                        <div className="absolute top-4 left-4 w-64 h-36 bg-black border-2 border-green-500 rounded-lg overflow-hidden z-20">
+                            <video ref={screenVideoRef} autoPlay className="w-full h-full object-cover" />
+                            <div className="absolute bottom-1 right-1 bg-green-500 text-white text-xs px-2 py-1 rounded">
+                                Compartilhando Tela
+                            </div>
+                        </div>
+                    )}
+
                     {/* Background / Video Area */}
                     <div className={`absolute inset-0 ${isCallMinimized ? 'bg-gray-800' : ''}`}>
-                         {/* Only render video elements if it IS a video call */}
                          <div className={`w-full h-full relative ${!isVideoCall && 'hidden'}`}>
-                             {/* Remote Video */}
                              <video 
                                 ref={remoteVideoRef} 
                                 autoPlay 
                                 className={`w-full h-full object-cover ${isCallMinimized ? 'opacity-100' : ''}`} 
                              />
-                             
-                             {/* Local Video - PiP style in Fullscreen, Hidden in Mini (too small) */}
+
                              {!isCallMinimized && (
                                  <div className="w-32 h-48 absolute top-4 right-4 md:w-1/4 md:h-1/3 bg-gray-900 border border-gray-700 shadow-lg rounded-lg overflow-hidden">
                                     <video ref={localVideoRef} autoPlay muted className="w-full h-full object-cover" />
@@ -1087,7 +1335,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                              )}
                          </div>
 
-                         {/* Avatar for Audio Calls */}
                          {!isVideoCall && (
                              <div className="w-full h-full flex flex-col items-center justify-center bg-gray-900">
                                 <img 
@@ -1104,10 +1351,137 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                          )}
                     </div>
 
+                    {/* Professional Panel Controls (Only visible in group calls and for admin with panel) */}
+                    {professionalPanel && isCurrentUserAdmin && activeGroupCall && !isCallMinimized && (
+                        <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-30 bg-gradient-to-r from-purple-900 to-blue-900 text-white p-4 rounded-xl shadow-2xl border border-purple-500 w-[600px]">
+                            <h3 className="text-lg font-bold mb-3 text-center">🎮 Painel de Controle Profissional</h3>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                {/* Volume Controls */}
+                                <div className="bg-black/30 p-3 rounded-lg">
+                                    <h4 className="font-semibold mb-2 text-sm">🔊 Controle de Áudio</h4>
+                                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                                        {Object.keys(activeCalls).map(pid => {
+                                            const isAdmin = activeChat?.members?.[pid] === 'admin';
+                                            return (
+                                                <div key={pid} className="flex items-center gap-2">
+                                                    <span className="text-xs truncate w-20">{pid}</span>
+                                                    {isAdmin && <span className="text-yellow-400 text-xs">👑</span>}
+                                                    <input 
+                                                        type="range" 
+                                                        min="0" 
+                                                        max="100" 
+                                                        value={participantVolumes[pid] || 100}
+                                                        onChange={(e) => setParticipantVolume(pid, parseInt(e.target.value))}
+                                                        className="flex-1"
+                                                        disabled={adminOnlyMode && !isAdmin}
+                                                    />
+                                                    <span className="text-xs w-8">{participantVolumes[pid] || 100}%</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Admin Controls */}
+                                <div className="bg-black/30 p-3 rounded-lg">
+                                    <h4 className="font-semibold mb-2 text-sm">⚙️ Controles Admin</h4>
+                                    <div className="space-y-2">
+                                        <button 
+                                            onClick={muteAllParticipants}
+                                            className={`w-full px-3 py-2 rounded-lg text-sm flex items-center justify-center gap-2 ${mutedAll ? 'bg-red-600' : 'bg-gray-600'}`}
+                                        >
+                                            <div className="icon-mic-off"></div>
+                                            {mutedAll ? 'Ativar Todos' : 'Silenciar Todos'}
+                                        </button>
+                                        
+                                        <button 
+                                            onClick={setAdminOnlyVoice}
+                                            className={`w-full px-3 py-2 rounded-lg text-sm flex items-center justify-center gap-2 ${adminOnlyMode ? 'bg-purple-600' : 'bg-gray-600'}`}
+                                        >
+                                            <div className="icon-crown"></div>
+                                            {adminOnlyMode ? 'Todos Podem Falar' : 'Só Admin Fala'}
+                                        </button>
+
+                                        <button 
+                                            onClick={startScreenShare}
+                                            className={`w-full px-3 py-2 rounded-lg text-sm flex items-center justify-center gap-2 ${screenSharing ? 'bg-green-600' : 'bg-gray-600'}`}
+                                        >
+                                            <div className="icon-monitor"></div>
+                                            {screenSharing ? 'Parar Compartilhamento' : 'Compartilhar Tela'}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Global Audio & HTML */}
+                                <div className="col-span-2 bg-black/30 p-3 rounded-lg">
+                                    <h4 className="font-semibold mb-2 text-sm">🌐 Mensagens Globais</h4>
+                                    <div className="flex gap-2">
+                                        <button 
+                                            onClick={() => setShowGlobalAudio(!showGlobalAudio)}
+                                            className="flex-1 px-3 py-2 bg-blue-600 rounded-lg text-sm flex items-center justify-center gap-2"
+                                        >
+                                            <div className="icon-mic"></div>
+                                            Enviar Áudio Global
+                                        </button>
+                                        <button 
+                                            onClick={() => setShowHtmlInput(!showHtmlInput)}
+                                            className="flex-1 px-3 py-2 bg-orange-600 rounded-lg text-sm flex items-center justify-center gap-2"
+                                        >
+                                            <div className="icon-code"></div>
+                                            Injetar HTML
+                                        </button>
+                                    </div>
+
+                                    {showGlobalAudio && (
+                                        <div className="mt-3">
+                                            <AudioRecorder 
+                                                onSendAudio={(base64, duration) => {
+                                                    sendGlobalAudio(base64, duration);
+                                                    setShowGlobalAudio(false);
+                                                }} 
+                                                onCancel={() => setShowGlobalAudio(false)} 
+                                            />
+                                        </div>
+                                    )}
+
+                                    {showHtmlInput && (
+                                        <div className="mt-3">
+                                            <textarea
+                                                value={htmlInput}
+                                                onChange={(e) => setHtmlInput(e.target.value)}
+                                                placeholder="Digite seu HTML aqui..."
+                                                className="w-full h-24 p-2 bg-gray-800 text-white rounded-lg text-sm font-mono"
+                                            />
+                                            <div className="flex gap-2 mt-2">
+                                                <button 
+                                                    onClick={() => {
+                                                        injectHTML(htmlInput);
+                                                        setShowHtmlInput(false);
+                                                        setHtmlInput("");
+                                                    }}
+                                                    className="flex-1 px-3 py-2 bg-green-600 rounded-lg text-sm"
+                                                >
+                                                    Injetar
+                                                </button>
+                                                <button 
+                                                    onClick={() => setShowHtmlInput(false)}
+                                                    className="flex-1 px-3 py-2 bg-red-600 rounded-lg text-sm"
+                                                >
+                                                    Cancelar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Controls Overlay */}
                     <div className={`relative z-10 flex ${isCallMinimized ? 'w-full h-full opacity-0 hover:opacity-100 bg-black/60 items-center justify-center gap-2' : 'flex-col items-center mt-auto mb-12'}`}>
-                         
-                         {/* Header Controls (Minimize/PiP) - Only in Fullscreen */}
+
+                         {/* Header Controls */}
                          {!isCallMinimized && !incomingCall && (
                              <div className="absolute top-8 left-8 flex gap-4 z-20">
                                 <button onClick={() => setIsCallMinimized(true)} className="p-3 bg-white/10 rounded-full hover:bg-white/20 text-white" title="Minimizar">
@@ -1131,17 +1505,17 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                              </div>
                          )}
 
-                         {/* Restore Button (Mini Mode) */}
+                         {/* Restore Button */}
                          {isCallMinimized && (
                              <button onClick={() => setIsCallMinimized(false)} className="absolute top-2 right-2 text-white p-1">
                                  <div className="icon-maximize-2 text-sm"></div>
                              </button>
                          )}
-                         
+
                          {/* Main Action Buttons */}
                          <div className={`flex items-center ${isCallMinimized ? 'gap-2' : 'gap-6'}`}>
-                             
-                             {/* Mic/Cam Controls (Only when connected/calling) */}
+
+                             {/* Mic/Cam Controls */}
                              {!incomingCall && !isCallMinimized && (
                                  <>
                                      <button 
@@ -1201,9 +1575,9 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                                      <button onClick={() => endCall(false)} className={`${isCallMinimized ? 'p-3' : 'p-5'} bg-red-600 rounded-full hover:bg-red-700 shadow-lg`} title="Sair da Chamada">
                                         <div className={`icon-phone-off ${isCallMinimized ? 'text-xl' : 'text-3xl'}`}></div>
                                      </button>
-                                     
-                                     {/* Force End Button for Admins/Permitted Roles */}
-                                     {!isCallMinimized && activeGroupCall && (groupPermissions?.manageCalls || activeChat?.members?.[user.id] === 'admin') && (
+
+                                     {/* Force End Button for Admins */}
+                                     {!isCallMinimized && activeGroupCall && (groupPermissions?.manageCalls || isCurrentUserAdmin) && (
                                         <button onClick={endGroupCallForEveryone} className="p-5 bg-orange-600 rounded-full hover:bg-orange-700 shadow-lg" title="Encerrar para Todos">
                                             <div className="icon-trash-2 text-3xl"></div>
                                         </button>
@@ -1212,50 +1586,38 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                              )}
                          </div>
 
-                         {/* Multi-User List (If Group Call) */}
+                         {/* Participant List with Admin Indicators */}
                          {!isCallMinimized && Object.keys(activeCalls).length > 1 && (
-                            <div className="absolute top-4 left-4 flex flex-col gap-2">
-                                {Object.keys(activeCalls).map(pid => (
-                                    <div key={pid} className="flex items-center gap-2 bg-black/50 p-2 rounded-lg">
-                                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                        <span className="text-white text-xs">{pid}</span>
-                                    </div>
-                                ))}
+                            <div className="absolute top-4 left-4 flex flex-col gap-2 max-h-40 overflow-y-auto">
+                                {Object.keys(activeCalls).map(pid => {
+                                    const isAdmin = activeChat?.members?.[pid] === 'admin';
+                                    return (
+                                        <div key={pid} className="flex items-center gap-2 bg-black/50 p-2 rounded-lg">
+                                            <img 
+                                                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${pid}`}
+                                                className="w-6 h-6 rounded-full"
+                                            />
+                                            <div className={`w-2 h-2 rounded-full ${isAdmin ? 'bg-yellow-500' : 'bg-green-500'}`}></div>
+                                            <span className="text-white text-xs">{pid}</span>
+                                            {isAdmin && (
+                                                <span className="text-yellow-400 text-xs ml-1" title="Administrador">👑</span>
+                                            )}
+                                            {professionalPanel && isCurrentUserAdmin && (
+                                                <input 
+                                                    type="range" 
+                                                    min="0" 
+                                                    max="100" 
+                                                    value={participantVolumes[pid] || 100}
+                                                    onChange={(e) => setParticipantVolume(pid, parseInt(e.target.value))}
+                                                    className="w-16 h-1 ml-2"
+                                                />
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                          )}
                     </div>
-
-                    {/* SoundBoard Overlay */}
-                    {showSoundBoard && !isCallMinimized && (
-                        <div className="absolute bottom-28 left-1/2 transform -translate-x-1/2 bg-black/80 p-4 rounded-xl border border-gray-700 w-64 animate-slide-in-right z-30">
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="text-white text-sm font-bold">Efeitos Sonoros</span>
-                                <button onClick={() => setShowSoundBoard(false)} className="text-gray-400 hover:text-white"><div className="icon-x text-sm"></div></button>
-                            </div>
-                            <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
-                                {JSON.parse(localStorage.getItem("user_sounds") || "[]").length > 0 ? (
-                                    JSON.parse(localStorage.getItem("user_sounds") || "[]").map(sound => (
-                                        <button 
-                                            key={sound.id}
-                                            onClick={() => {
-                                                const audio = new Audio(sound.src);
-                                                audio.play();
-                                            }}
-                                            className="flex flex-col items-center justify-center p-2 bg-white/10 hover:bg-purple-600 rounded-lg transition"
-                                            title={sound.name}
-                                        >
-                                            <div className="icon-volume-2 text-white mb-1"></div>
-                                            <span className="text-[10px] text-gray-300 truncate w-full text-center">{sound.name}</span>
-                                        </button>
-                                    ))
-                                ) : (
-                                    <div className="col-span-3 text-center text-gray-500 text-xs py-2">
-                                        Vá na Loja para adicionar sons.
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
 
                     {/* SoundBoard Overlay */}
                     {showSoundBoard && !isCallMinimized && (
@@ -1302,7 +1664,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                     <div className="flex gap-4 text-gray-600 items-center">
                         <div 
                             className={`icon-zap cursor-pointer p-1.5 rounded-full transition ${backgroundMode ? 'text-green-500 bg-green-50' : 'text-gray-400 hover:bg-gray-200'}`} 
-                            title="Ativar Segundo Plano (Áudio Constante)" 
+                            title="Ativar Segundo Plano" 
                             onClick={toggleBackgroundMode}
                         ></div>
                         <div className="icon-users cursor-pointer hover:bg-gray-200 p-1.5 rounded-full transition" title="Criar Grupo" onClick={handleCreateGroup}></div>
@@ -1320,7 +1682,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                     </div>
                 </div>
 
-                {/* Chat List (Contacts Only) */}
+                {/* Chat List */}
                 <div className="flex-1 overflow-y-auto">
                     {chats.map(chat => (
                         <div key={chat.id} onClick={() => openChat(chat)} className={`flex items-center p-3 cursor-pointer hover:bg-[#f5f6f6] ${activeChat?.id === chat.id ? 'bg-[#f0f2f5]' : ''}`}>
@@ -1328,8 +1690,13 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                             <div className="flex-1 border-b border-gray-100 pb-3 h-full flex flex-col justify-center">
                                 <div className="flex justify-between items-baseline">
                                     <span className="text-gray-900 font-medium">{chat.name}</span>
+                                    {chat.type === 'group' && chat.members?.[user.id] === 'admin' && (
+                                        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full ml-2">Admin</span>
+                                    )}
                                 </div>
-                                <div className="text-sm text-gray-500 truncate w-48">{chat.type === 'group' ? 'Grupo' : 'Privado'}</div>
+                                <div className="text-sm text-gray-500 truncate w-48">
+                                    {chat.type === 'group' ? 'Grupo' : 'Privado'}
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -1346,7 +1713,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
             {/* Main Chat Area */}
             {activeChat ? (
                 <div className={`flex-1 flex flex-col h-full bg-[#efeae2] ${activeChat ? 'flex' : 'hidden md:flex'}`}>
-                    
+
                     {/* Chat Header */}
                     <div className="bg-[#f0f2f5] p-3 px-4 flex justify-between items-center h-16 border-b border-gray-300 cursor-pointer" 
                          onClick={() => activeChat.type === 'group' && openGroupInfo()}>
@@ -1354,7 +1721,12 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                             <button onClick={() => setActiveChat(null)} className="md:hidden text-gray-600"><div className="icon-arrow-left"></div></button>
                             <img src={activeChat.avatar} className="w-10 h-10 rounded-full" />
                             <div className="flex flex-col">
-                                <span className="text-gray-800 font-medium">{activeChat.name}</span>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-gray-800 font-medium">{activeChat.name}</span>
+                                    {activeChat.type === 'group' && activeChat.members?.[user.id] === 'admin' && (
+                                        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">Admin</span>
+                                    )}
+                                </div>
                                 {activeChat.type === 'group' 
                                     ? <span className="text-xs text-gray-500">Toque para info do grupo</span>
                                     : (activeChat.privacy?.showOnline !== false && activeChat.status === 'online') 
@@ -1364,7 +1736,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                             </div>
                         </div>
                         <div className="flex items-center gap-2 text-gray-600" onClick={(e) => e.stopPropagation()}>
-                            {/* Unified Call Buttons (Works for both Private and Group) */}
                             <div 
                                 className={`p-2 rounded-full cursor-pointer transition-colors ${activeChat.type === 'group' ? 'text-[#00a884] bg-green-50 hover:bg-green-100' : 'hover:bg-gray-200'}`}
                                 onClick={() => startCall(true)} 
@@ -1380,13 +1751,13 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                             >
                                 <div className="icon-phone text-xl"></div>
                             </div>
-                            
+
                             <div className="w-px h-6 bg-gray-300 mx-1"></div>
                             <div className="icon-search cursor-pointer hover:bg-gray-200 p-2 rounded-full"></div>
                             <div className="icon-more-vertical cursor-pointer hover:bg-gray-200 p-2 rounded-full"></div>
                         </div>
                     </div>
-                    
+
                     {/* Ongoing Call Banner */}
                     {ongoingGroupCall && !activeGroupCall && (
                         <div className="bg-green-100 p-3 flex justify-between items-center px-6 animate-slide-in-right cursor-pointer shadow-inner" onClick={joinGroupCall}>
@@ -1412,13 +1783,11 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                                 const isMe = msg.senderId === user.id;
                                 const isSystem = msg.type === 'system';
 
-                                // Common Embed Logic
                                 const renderEmbedIfMatch = (text, senderId) => {
-                                    // Removed restriction: works in groups AND private chats now
                                     const urlMatch = (typeof text === 'string') 
                                         ? text.match(/#url=(https?:\/\/[^\s]+)/i) 
                                         : null;
-                                    
+
                                     if (urlMatch) {
                                         const originalUrl = urlMatch[1];
                                         const senderIdParam = senderId || 'unknown';
@@ -1451,7 +1820,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                                     }
                                     return null;
                                 };
-                                
+
                                 if (isSystem) {
                                     const embedContent = renderEmbedIfMatch(msg.text, msg.senderId);
                                     return (
@@ -1460,11 +1829,9 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                                                 <div className="icon-info shrink-0"></div>
                                                 {msg.text}
                                             </div>
-                                            {/* Render Embed below system pill if present */}
                                             {embedContent && <div className="w-full px-4">{embedContent}</div>}
 
-                                            {/* Admin Delete Button for System Msgs */}
-                                            {activeChat.type === 'group' && (
+                                            {activeChat.type === 'group' && isCurrentUserAdmin && (
                                                 <button 
                                                     onClick={() => deleteMessage(msg.key)}
                                                     className="hidden group-hover:block absolute right-4 top-0 text-red-400 hover:text-red-600"
@@ -1480,8 +1847,14 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                                 return (
                                     <div key={idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'} group mb-1`}>
                                         <div className={`max-w-[80%] md:max-w-[60%] rounded-lg p-2 px-3 shadow-sm relative text-sm ${isMe ? 'bg-[#d9fdd3] rounded-tr-none' : 'bg-white rounded-tl-none'}`}>
-                                            {/* Message Content */}
-                                            {!isMe && activeChat.type === 'group' && <p className="text-xs text-orange-500 font-bold mb-1">{msg.senderName}</p>}
+                                            {!isMe && activeChat.type === 'group' && (
+                                                <div className="flex items-center gap-1 mb-1">
+                                                    <p className="text-xs text-orange-500 font-bold">{msg.senderName}</p>
+                                                    {activeChat.members?.[msg.senderId] === 'admin' && (
+                                                        <span className="text-xs bg-yellow-100 text-yellow-800 px-1 rounded">👑</span>
+                                                    )}
+                                                </div>
+                                            )}
                                             {msg.type === 'text' && (() => {
                                                 const embed = renderEmbedIfMatch(msg.text, msg.senderId);
                                                 if (embed) return embed;
@@ -1506,7 +1879,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                                                     <div className="flex-1 flex flex-col justify-center">
                                                         <div className="h-1 bg-gray-300 rounded-full w-full mb-1 overflow-hidden">
                                                             <div className="h-full bg-gray-500 w-0 transition-all duration-300" style={{width: '0%'}}></div> 
-                                                            {/* We'd need state for progress bar to be real, simplistic here */}
                                                         </div>
                                                         <span className="text-xs text-gray-500">{msg.duration}</span>
                                                     </div>
@@ -1514,12 +1886,10 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                                                         src={msg.audio} 
                                                         className="hidden" 
                                                         onPlay={(e) => handleAudioPlay(e.target)}
-                                                        onEnded={() => { /* maybe auto play next? */ }}
                                                     /> 
                                                 </div>
                                             )}
 
-                                            {/* Metadata & Status */}
                                             <div className="flex justify-end items-center gap-1 mt-1">
                                                 <span className="text-[10px] text-gray-500">{msg.time}</span>
                                                 {isMe && (
@@ -1529,14 +1899,15 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                                                 )}
                                             </div>
 
-                                            {/* Delete Button (Context Menu style) */}
-                                            <button 
-                                                onClick={() => deleteMessage(msg.key)}
-                                                className={`absolute top-0 -right-8 p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity ${isMe ? 'block' : (activeChat.type === 'group' ? 'block' : 'hidden')}`}
-                                                title="Apagar mensagem"
-                                            >
-                                                <div className="icon-trash text-sm"></div>
-                                            </button>
+                                            {(isMe || (activeChat.type === 'group' && isCurrentUserAdmin)) && (
+                                                <button 
+                                                    onClick={() => deleteMessage(msg.key)}
+                                                    className={`absolute top-0 -right-8 p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity`}
+                                                    title="Apagar mensagem"
+                                                >
+                                                    <div className="icon-trash text-sm"></div>
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 )
@@ -1564,16 +1935,11 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                                         const file = e.target.files[0];
                                         if (file) {
                                             if (file.size > 2 * 1024 * 1024) return alert("Arquivo muito grande! Máximo 2MB.");
-                                            
-                                            // Handle Image
+
                                             if (file.type.startsWith('image/')) {
                                                 const base64 = await window.compressImage(file, 800, 0.7);
-                                                // Send as image message
-                                                // NOTE: We need to handle 'image' type in handleSendMessage, currently only text/audio/system.
-                                                // Let's implement basic image type support inline here or modify handleSendMessage
                                                 window.ChatAppAPI.sendMessage(activeChat.id, `[IMAGEM] ${base64}`, activeChat.type, 'image');
                                             } 
-                                            // Handle Video
                                             else if (file.type.startsWith('video/')) {
                                                 alert("Envio de vídeo ainda experimental.");
                                             }
