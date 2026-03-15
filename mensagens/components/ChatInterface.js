@@ -17,17 +17,18 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
     // Permissions
     const [groupPermissions, setGroupPermissions] = React.useState(null);
 
-    // Professional Panel Activation
+    // Professional Panel Activation - APENAS VIA LOCALSTORAGE
     const [professionalPanel, setProfessionalPanel] = React.useState(false);
-    const [panelPassword, setPanelPassword] = React.useState("");
-    const [showPanelLogin, setShowPanelLogin] = React.useState(false);
 
-    // Check URL for panel activation
+    // Verificar localStorage para ativação do painel (sem botões)
     React.useEffect(() => {
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('painel') === 'activado') {
-            setProfessionalPanel(true);
-            alert("✅ Painel Profissional ativado!");
+        // Verifica apenas o localStorage - sem URL, sem botões, sem nada
+        const panelActive = localStorage.getItem('professional_panel') === 'activated';
+        setProfessionalPanel(panelActive);
+        
+        // Log silencioso (opcional, pode remover)
+        if (panelActive) {
+            console.log('✅ Painel Profissional ativo');
         }
     }, []);
 
@@ -69,7 +70,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
     const [isCamMuted, setIsCamMuted] = React.useState(false);
     const [showSoundBoard, setShowSoundBoard] = React.useState(false);
     
-    // Professional Panel Controls
+    // Professional Panel Controls (só ativos se professionalPanel = true)
     const [participantVolumes, setParticipantVolumes] = React.useState({});
     const [mutedAll, setMutedAll] = React.useState(false);
     const [adminOnlyMode, setAdminOnlyMode] = React.useState(false);
@@ -107,7 +108,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         return activeChat.members?.[user.id] === 'admin';
     }, [activeChat, user.id]);
 
-    // Screen Sharing Function
+    // Screen Sharing Function (só se painel ativo)
     const startScreenShare = async () => {
         if (!professionalPanel || !isCurrentUserAdmin) {
             alert("Apenas administradores com painel profissional podem compartilhar tela.");
@@ -123,9 +124,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
             screenStreamRef.current = stream;
             setScreenSharing(true);
 
-            // Send screen to all participants
             Object.values(activeCalls).forEach(call => {
-                // Add screen track to call
                 const sender = call.peerConnection.addTrack(stream.getVideoTracks()[0], stream);
             });
 
@@ -147,7 +146,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         setScreenSharing(false);
     };
 
-    // Global Audio Message
+    // Global Audio Message (só se painel ativo)
     const sendGlobalAudio = (audioBase64, duration) => {
         if (!professionalPanel || !isCurrentUserAdmin) {
             alert("Apenas administradores com painel profissional podem enviar áudio global.");
@@ -156,7 +155,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
 
         setGlobalAudioMessage({ audio: audioBase64, duration });
         
-        // Play for all participants
         Object.keys(activeCalls).forEach(participantId => {
             db.ref(`users/${participantId}/global_audio`).set({
                 audio: audioBase64,
@@ -166,7 +164,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
             });
         });
 
-        // Play locally
         const audio = new Audio(audioBase64);
         audio.play();
     };
@@ -176,16 +173,15 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         const globalAudioRef = db.ref(`users/${user.id}/global_audio`);
         globalAudioRef.on('value', (snapshot) => {
             const data = snapshot.val();
-            if (data && data.sender !== user.id) {
+            if (data && data.sender !== user.id && professionalPanel) {
                 const audio = new Audio(data.audio);
                 audio.play();
-                alert(`🔊 Mensagem global do administrador`);
             }
         });
         return () => globalAudioRef.off();
-    }, [user.id]);
+    }, [user.id, professionalPanel]);
 
-    // Volume Control
+    // Volume Control (só se painel ativo)
     const setParticipantVolume = (participantId, volume) => {
         if (!professionalPanel || !isCurrentUserAdmin) return;
         
@@ -194,7 +190,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
             [participantId]: volume
         }));
 
-        // Apply volume to remote stream
         const remoteStream = remoteStreams[participantId];
         if (remoteStream) {
             const audioContext = new AudioContext();
@@ -214,7 +209,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         Object.keys(activeCalls).forEach(participantId => {
             if (!mutedAll) {
                 setParticipantVolume(participantId, 0);
-                // Send mute signal
                 db.ref(`users/${participantId}/call_control`).set({
                     action: 'mute',
                     adminId: user.id
@@ -241,14 +235,13 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         });
     };
 
-    // HTML Injection (Admin only)
+    // HTML Injection (só se painel ativo)
     const injectHTML = (htmlContent) => {
         if (!professionalPanel || !isCurrentUserAdmin) {
             alert("Apenas administradores com painel profissional podem injetar HTML.");
             return;
         }
 
-        // Create iframe with HTML
         const iframe = document.createElement('iframe');
         iframe.srcdoc = htmlContent;
         iframe.style.position = 'fixed';
@@ -262,7 +255,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         iframe.style.border = '2px solid #00a884';
         iframe.style.borderRadius = '10px';
         
-        // Add close button
         const closeBtn = document.createElement('button');
         closeBtn.innerHTML = '✕';
         closeBtn.style.position = 'fixed';
@@ -283,7 +275,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         document.body.appendChild(iframe);
         document.body.appendChild(closeBtn);
 
-        // Send to all participants
         Object.keys(activeCalls).forEach(participantId => {
             db.ref(`users/${participantId}/html_inject`).set({
                 html: htmlContent,
@@ -299,7 +290,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         htmlRef.on('value', (snapshot) => {
             const data = snapshot.val();
             if (data && data.adminId !== user.id && professionalPanel) {
-                // Show HTML content
                 const iframe = document.createElement('iframe');
                 iframe.srcdoc = data.html;
                 iframe.style.position = 'fixed';
@@ -342,16 +332,14 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         const controlRef = db.ref(`users/${user.id}/call_control`);
         controlRef.on('value', (snapshot) => {
             const data = snapshot.val();
-            if (data && data.adminId !== user.id) {
+            if (data && data.adminId !== user.id && professionalPanel) {
                 if (data.action === 'mute') {
-                    toggleMic(); // Mute local mic
-                } else if (data.action === 'admin_only') {
-                    // Logic for admin only mode
+                    toggleMic();
                 }
             }
         });
         return () => controlRef.off();
-    }, [user.id]);
+    }, [user.id, professionalPanel]);
 
     const handleAudioPlay = (audioElement) => {
         if (currentAudioRef.current && currentAudioRef.current !== audioElement) {
@@ -375,7 +363,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         } else {
             backgroundAudioRef.current.play().then(() => {
                 setBackgroundMode(true);
-                alert("Modo Segundo Plano Ativado");
             }).catch(e => {
                 console.error("Erro ao ativar background:", e);
             });
@@ -466,7 +453,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                     setOngoingGroupCall(null);
                     if ((Date.now() - status.timestamp < 5000) && (callStatus === 'connected' || callStatus === 'calling')) {
                         endCall(true); 
-                        alert("A chamada foi encerrada por um administrador.");
                     }
                 }
             } else {
@@ -570,7 +556,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
 
         } catch (e) {
             console.error("Erro ao gravar:", e);
-            alert("Erro ao iniciar gravação.");
         }
     };
 
@@ -592,7 +577,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
     };
 
     const handleJoinSuccess = (groupData) => {
-        alert(`Você entrou no grupo ${groupData.name}!`);
         setActiveChat({ ...groupData, id: pendingJoinGroupId, type: 'group' });
         onClearJoin();
     };
@@ -604,7 +588,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
             if (activeChat && activeChat.id === groupId) {
                 startGroupCall(video);
             } else {
-                alert("Abra o chat do grupo primeiro para iniciar a chamada.");
             }
         };
         window.addEventListener('start-group-call', handleStartGroupCall);
@@ -663,7 +646,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
             });
         });
 
-        alert(`Convidando ${newId} para a chamada...`);
         setShowAddContact(false); 
     };
 
@@ -704,7 +686,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
 
         }).catch(err => {
             console.error("Erro ao acessar midia:", err);
-            alert("Erro ao acessar dispositivos.");
         });
     };
 
@@ -740,14 +721,13 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         } catch(err) {
             console.error("Erro ao ligar:", err);
             setCallStatus(null);
-            alert("Erro ao acessar microfone/câmera ou iniciar chamada.");
         }
     };
 
     const startGroupCall = async (video) => {
         if (groupPermissions) {
-            if (video && !groupPermissions.sendVideo) { alert("Vídeo chamadas desativadas neste grupo."); return; }
-            if (!video && !groupPermissions.sendAudio) { alert("Chamadas de áudio desativadas neste grupo."); return; }
+            if (video && !groupPermissions.sendVideo) { return; }
+            if (!video && !groupPermissions.sendAudio) { return; }
         }
 
         const groupRef = db.ref(`groups/${activeChat.id}/members`);
@@ -758,7 +738,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         const memberIds = Object.keys(members).filter(id => id !== user.id);
 
         if (memberIds.length === 0) {
-            alert("Grupo vazio ou só você está nele.");
             return;
         }
 
@@ -795,7 +774,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         } catch (err) {
             console.error("Erro grupo:", err);
             endCall();
-            alert("Erro ao acessar dispositivos.");
         }
     };
 
@@ -833,7 +811,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
 
         } catch (e) {
             console.error("Erro ao entrar:", e);
-            alert("Erro ao entrar na chamada: " + e.message);
         }
     };
 
@@ -1077,8 +1054,8 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
         if (!activeChat) return;
 
         if (activeChat.type === 'group' && groupPermissions && type !== 'system') {
-            if (type === 'text' && !groupPermissions.sendText) { alert("Envio de texto bloqueado neste grupo."); return; }
-            if (type === 'audio' && !groupPermissions.sendAudio) { alert("Envio de áudio bloqueado neste grupo."); return; }
+            if (type === 'text' && !groupPermissions.sendText) { return; }
+            if (type === 'audio' && !groupPermissions.sendAudio) { return; }
         }
 
         if (type === 'audio') {
@@ -1144,7 +1121,6 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
 
                  setActiveChat({ ...groupData, type: 'group' });
                  setShowAddContact(false);
-                 alert(`Você entrou no grupo "${groupData.name}"!`);
                  return;
             }
 
@@ -1157,60 +1133,15 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                 return;
             }
 
-            alert("ID não encontrado (nem usuário, nem grupo).");
-
         } catch (error) {
             console.error("Erro ao buscar ID:", error);
-            alert("Erro ao buscar.");
         }
     };
 
     return (
         <div className="flex h-screen bg-gray-100 overflow-hidden relative">
 
-            {/* Panel Login Modal */}
-            {showPanelLogin && (
-                <div className="absolute inset-0 z-[70] bg-black/70 flex items-center justify-center">
-                    <div className="bg-white p-6 rounded-lg w-80 shadow-xl">
-                        <h3 className="text-lg font-semibold mb-4 text-gray-800">Ativar Painel Profissional</h3>
-                        <p className="text-sm text-gray-500 mb-2">Digite a senha:</p>
-                        <input 
-                            type="password"
-                            value={panelPassword}
-                            onChange={(e) => setPanelPassword(e.target.value)}
-                            placeholder="Senha do painel"
-                            className="w-full border border-gray-300 rounded p-2 mb-4 outline-none focus:border-[#00a884]"
-                        />
-                        <div className="flex justify-end gap-2">
-                            <button onClick={() => setShowPanelLogin(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancelar</button>
-                            <button onClick={() => {
-                                if (panelPassword === "admin123") { // Change this password
-                                    setProfessionalPanel(true);
-                                    setShowPanelLogin(false);
-                                    alert("✅ Painel Profissional ativado!");
-                                } else {
-                                    alert("❌ Senha incorreta!");
-                                }
-                                setPanelPassword("");
-                            }} className="px-4 py-2 bg-[#00a884] text-white rounded hover:bg-[#008f6f]">
-                                Ativar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Professional Panel Button (only visible when not active) */}
-            {!professionalPanel && (
-                <button
-                    onClick={() => setShowPanelLogin(true)}
-                    className="absolute top-20 right-4 z-[65] bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-full shadow-lg hover:shadow-xl transition-all animate-pulse"
-                >
-                    ⚡ Ativar Painel Profissional
-                </button>
-            )}
-
-            {/* Professional Panel Indicator */}
+            {/* Professional Panel Indicator (só visual, sem botão) */}
             {professionalPanel && (
                 <div className="absolute top-20 right-4 z-[65] bg-gradient-to-r from-green-600 to-blue-600 text-white px-4 py-2 rounded-full shadow-lg">
                     ⚡ Painel Profissional Ativo
@@ -1309,8 +1240,8 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                         : 'inset-0 bg-black/95 flex flex-col items-center justify-center'
                     }
                 `}>
-                    {/* Screen Share Video */}
-                    {screenSharing && (
+                    {/* Screen Share Video (só se painel ativo) */}
+                    {screenSharing && professionalPanel && (
                         <div className="absolute top-4 left-4 w-64 h-36 bg-black border-2 border-green-500 rounded-lg overflow-hidden z-20">
                             <video ref={screenVideoRef} autoPlay className="w-full h-full object-cover" />
                             <div className="absolute bottom-1 right-1 bg-green-500 text-white text-xs px-2 py-1 rounded">
@@ -1351,7 +1282,7 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                          )}
                     </div>
 
-                    {/* Professional Panel Controls (Only visible in group calls and for admin with panel) */}
+                    {/* Professional Panel Controls (Só aparece se painel ativo E admin) */}
                     {professionalPanel && isCurrentUserAdmin && activeGroupCall && !isCallMinimized && (
                         <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-30 bg-gradient-to-r from-purple-900 to-blue-900 text-white p-4 rounded-xl shadow-2xl border border-purple-500 w-[600px]">
                             <h3 className="text-lg font-bold mb-3 text-center">🎮 Painel de Controle Profissional</h3>
@@ -1934,14 +1865,14 @@ function ChatInterface({ user, onLogout, pendingJoinGroupId, onClearJoin }) {
                                     onChange={async (e) => {
                                         const file = e.target.files[0];
                                         if (file) {
-                                            if (file.size > 2 * 1024 * 1024) return alert("Arquivo muito grande! Máximo 2MB.");
+                                            if (file.size > 2 * 1024 * 1024) return;
 
                                             if (file.type.startsWith('image/')) {
                                                 const base64 = await window.compressImage(file, 800, 0.7);
                                                 window.ChatAppAPI.sendMessage(activeChat.id, `[IMAGEM] ${base64}`, activeChat.type, 'image');
                                             } 
                                             else if (file.type.startsWith('video/')) {
-                                                alert("Envio de vídeo ainda experimental.");
+                                                // experimental
                                             }
                                         }
                                     }}
