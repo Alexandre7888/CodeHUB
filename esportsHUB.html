@@ -5,20 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Placar Ao Vivo - Sistema Esportivo</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<!-- OneSignal -->
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-<script>
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({
-      appId: "7ddf93f9-0522-4c4b-90d0-70608f2f9dc0",
-      safari_web_id: "web.onesignal.auto.27be598e-7a22-4ed6-a01a-10378439b214",
-      notifyButton: {
-        enable: true,
-      },
-    });
-  });
-</script>
     <style>
         /* ====== ESTILOS GERAIS ====== */
         * {
@@ -521,7 +507,7 @@
 
         .field-container {
             width: 100%;
-            height: 350px;
+            height: 400px;
             background-color: #4caf50;
             border-radius: 10px;
             position: relative;
@@ -571,7 +557,7 @@
 
         .penalty-area.left {
             width: 100px;
-            height: 250px;
+            height: 280px;
             left: 0;
             top: 50%;
             transform: translateY(-50%);
@@ -579,7 +565,7 @@
 
         .penalty-area.right {
             width: 100px;
-            height: 250px;
+            height: 280px;
             right: 0;
             top: 50%;
             transform: translateY(-50%);
@@ -592,7 +578,7 @@
 
         .goal-area.left {
             width: 35px;
-            height: 140px;
+            height: 160px;
             left: 0;
             top: 50%;
             transform: translateY(-50%);
@@ -600,7 +586,7 @@
 
         .goal-area.right {
             width: 35px;
-            height: 140px;
+            height: 160px;
             right: 0;
             top: 50%;
             transform: translateY(-50%);
@@ -608,7 +594,7 @@
 
         .goal {
             width: 8px;
-            height: 160px;
+            height: 180px;
             background-color: white;
             position: absolute;
         }
@@ -638,7 +624,7 @@
             font-weight: bold;
             font-size: 11px;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 0.3s;
             border: 2px solid white;
             text-align: center;
             padding: 2px;
@@ -647,8 +633,9 @@
         }
 
         .player-on-field:hover {
-            transform: scale(1.2);
+            transform: scale(1.3);
             z-index: 10;
+            box-shadow: 0 0 15px rgba(255,255,255,0.5);
         }
 
         .player-number-field {
@@ -671,6 +658,7 @@
             justify-content: space-between;
             margin-top: 15px;
             align-items: center;
+            gap: 10px;
         }
 
         .field-select {
@@ -679,7 +667,7 @@
             border: 1px solid rgba(255, 255, 255, 0.3);
             padding: 8px 15px;
             border-radius: 8px;
-            width: 70%;
+            flex: 1;
             font-size: 0.9rem;
         }
 
@@ -697,6 +685,9 @@
             cursor: pointer;
             font-weight: 600;
             transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
         .field-btn:hover {
@@ -705,16 +696,50 @@
 
         .field-info {
             margin-top: 15px;
-            padding: 10px;
-            background-color: rgba(0,0,0,0.3);
+            padding: 12px;
+            background-color: rgba(0,0,0,0.4);
             border-radius: 8px;
             font-size: 0.85rem;
+            min-height: 60px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
         .field-info-title {
             color: #4cd137;
             font-weight: 600;
             margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .player-details {
+            margin-top: 5px;
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+
+        /* Legenda das posições */
+        .position-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: center;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.75rem;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 1px solid white;
         }
 
         /* ====== VÍDEO ====== */
@@ -742,7 +767,6 @@
             width: 100%;
             height: 100%;
             border: none;
-            pointer-events: none;
         }
 
         .video-overlay {
@@ -927,32 +951,32 @@
                 gap: 15px;
                 text-align: center;
             }
-
+            
             .stats-bar {
                 flex-direction: column;
                 gap: 15px;
             }
-
+            
             .stat-item {
                 min-width: 100%;
             }
-
+            
             .matches-grid {
                 grid-template-columns: 1fr;
             }
-
+            
             .match-score {
                 font-size: 2.8rem;
             }
-
+            
             .team-logo {
                 width: 60px;
                 height: 60px;
                 font-size: 25px;
             }
-
+            
             .field-container {
-                height: 300px;
+                height: 350px;
             }
         }
 
@@ -960,157 +984,125 @@
             .container {
                 padding: 15px;
             }
-
+            
             .section {
                 padding: 20px;
             }
-
+            
             .match-teams {
                 flex-direction: column;
                 gap: 20px;
             }
-
+            
             .team {
                 width: 100%;
             }
-
+            
             .match-score {
                 width: 100%;
                 order: -1;
                 margin-bottom: 10px;
             }
-
+            
             .field-container {
-                height: 250px;
+                height: 300px;
             }
         }
     </style>
 </head>
 <body>
-
     <header>
-        <div class="container" contenteditable="true">
-            <div class="header-content" contenteditable="true">
-                <div class="logo" contenteditable="true">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
                     <i class="fas fa-broadcast-tower"></i>
-                    <h1 contenteditable="true">PLACAR AO VIVO</h1>
+                    <h1>PLACAR AO VIVO</h1>
                 </div>
-                <div class="live-badge" contenteditable="true">
+                <div class="live-badge">
                     <i class="fas fa-circle"></i>
                     TRANSMISSÃO AO VIVO
-                
-<div style="margin-left:auto;display:flex;align-items:center;gap:10px;" contenteditable="true">
-  <button id="loginBtn" style="padding:8px 14px;border-radius:20px;border:none;cursor:pointer;background:#4cd137;font-weight:bold;">
-    🔐 LOGIN
-  </button>
-  <span id="userNameDisplay" style="font-weight:bold;" contenteditable="true"></span>
-</div>
-
-</div>
+                </div>
             </div>
-<div style="position: relative;" contenteditable="true"><iframe src="https://publisher.linkvertise.com/cdn/ads/LV-468x60/index.html" frameborder="0" height="60" width="468"></iframe><a href="https://publisher.linkvertise.com/ac/2640875" target="_blank" style="position: absolute; top: 0; bottom: 0; left: 0; right: 0;" contenteditable="true"></a></div>
-
-            <div class="stats-bar" contenteditable="true">
-                <div class="stat-item" contenteditable="true">
-                    <div class="stat-number" id="live-matches-count" contenteditable="true">0</div>
-                    <div class="stat-label" contenteditable="true">PARTIDAS AO VIVO</div>
+            
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <div class="stat-number" id="live-matches-count">0</div>
+                    <div class="stat-label">PARTIDAS AO VIVO</div>
                 </div>
-                <div class="stat-item" contenteditable="true">
-                    <div class="stat-number" id="total-matches-count" contenteditable="true">0</div>
-                    <div class="stat-label" contenteditable="true">TOTAL DE JOGOS</div>
+                <div class="stat-item">
+                    <div class="stat-number" id="total-matches-count">0</div>
+                    <div class="stat-label">TOTAL DE JOGOS</div>
                 </div>
-                <div class="stat-item" contenteditable="true">
-                    <div class="stat-number" id="total-goals-count" contenteditable="true">0</div>
-                    <div class="stat-label" contenteditable="true">GOLS HOJE</div>
+                <div class="stat-item">
+                    <div class="stat-number" id="total-goals-count">0</div>
+                    <div class="stat-label">GOLS HOJE</div>
                 </div>
-                <div class="stat-item" contenteditable="true">
-                    <div class="stat-number" id="last-update-time" contenteditable="true">00:00</div>
-                    <div class="stat-label" contenteditable="true">ÚLTIMA ATUALIZAÇÃO</div>
+                <div class="stat-item">
+                    <div class="stat-number" id="last-update-time">00:00</div>
+                    <div class="stat-label">ÚLTIMA ATUALIZAÇÃO</div>
                 </div>
             </div>
         </div>
     </header>
-              <div class="apoio-canais" contenteditable="true">
-  <h2 contenteditable="true">📢 Apoie criadores parceiros</h2>
-  <p contenteditable="true">
-    Se inscrevendo nesses canais você ajuda os criadores
-    <strong>e também apoia a nossa plataforma</strong>.
-  </p>
 
-  <ul>
-    <li contenteditable="true">
-      <a href="https://youtube.com/@codehub.k?si=tKTX5DSDP4UoXm8x" target="_blank" contenteditable="true">
-        🔔 CodeHub.K
-      </a>
-    </li>
-    <li contenteditable="true">
-      <a href="https://youtube.com/@rafaeledits-k1e?si=-uCe2NBaYI9COliM" target="_blank" contenteditable="true">
-        🔔 o melhor das edits
-      </a>
-    </li>
-
-   </ul></div>
-
-    <div class="container" contenteditable="true">
-        <div class="main-content" contenteditable="true">
+    <div class="container">
+        <div class="main-content">
             <!-- COLUNA PRINCIPAL -->
-            <div class="main-column" contenteditable="true">
-                <div class="section" contenteditable="true">
-                    <div class="section-header" contenteditable="true">
-                        <h2 class="section-title" contenteditable="true">
+            <div class="main-column">
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">
                             <i class="fas fa-play-circle"></i>
                             PARTIDAS EM ANDAMENTO
                         </h2>
-                        <div class="last-update" contenteditable="true">
-                            Atualizando em: <span id="countdown" contenteditable="true">10</span>s
+                        <div class="last-update">
+                            Atualizando em: <span id="countdown">10</span>s
                         </div>
                     </div>
-<div style="position: relative;" contenteditable="true"><iframe src="https://publisher.linkvertise.com/cdn/ads/LV-200x200/index.html" frameborder="0" height="200" width="200"></iframe><a href="https://publisher.linkvertise.com/ac/2640875" target="_blank" style="position: absolute; top: 0; bottom: 0; left: 0; right: 0;" contenteditable="true"></a></div>
-
-                    <div id="live-matches-container" class="matches-grid" contenteditable="true">
+                    
+                    <div id="live-matches-container" class="matches-grid">
                         <!-- Partidas serão carregadas aqui -->
-                        <div class="no-matches" id="no-matches-message" contenteditable="true">
+                        <div class="no-matches" id="no-matches-message">
                             <i class="fas fa-futbol"></i>
-                            <h3 contenteditable="true">Nenhuma partida ao vivo no momento</h3>
-                            <p contenteditable="true">Aguardando início das partidas...</p>
+                            <h3>Nenhuma partida ao vivo no momento</h3>
+                            <p>Aguardando início das partidas...</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="section" contenteditable="true">
-                    <div class="section-header" contenteditable="true">
-                        <h2 class="section-title" contenteditable="true">
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">
                             <i class="fas fa-history"></i>
                             ÚLTIMAS ATUALIZAÇÕES
                         </h2>
                     </div>
-
-                    <div id="recent-updates-container" class="live-updates" contenteditable="true">
+                    
+                    <div id="recent-updates-container" class="live-updates">
                         <!-- Atualizações serão carregadas aqui -->
-                        <div class="update-item" contenteditable="true">
-                            <div class="update-time" contenteditable="true">--:--</div>
-                            <div class="update-content" contenteditable="true">
-                                <div class="update-match" contenteditable="true">SISTEMA ATIVO</div>
-                                <div class="update-text" contenteditable="true">Aguardando atualizações das partidas...</div>
+                        <div class="update-item">
+                            <div class="update-time">--:--</div>
+                            <div class="update-content">
+                                <div class="update-match">SISTEMA ATIVO</div>
+                                <div class="update-text">Aguardando atualizações das partidas...</div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-<div style="position: relative;" contenteditable="true"><iframe src="https://publisher.linkvertise.com/cdn/ads/LV-468x60/index.html" frameborder="0" height="60" width="468"></iframe><a href="https://publisher.linkvertise.com/ac/2640875" target="_blank" style="position: absolute; top: 0; bottom: 0; left: 0; right: 0;" contenteditable="true"></a></div>
 
             <!-- BARRA LATERAL -->
-            <div class="sidebar" contenteditable="true">
-                <div class="widget" contenteditable="true">
-                    <div class="live-clock" contenteditable="true">
-                        <div class="clock-time" id="current-time" contenteditable="true">00:00:00</div>
-                        <div class="clock-date" id="current-date" contenteditable="true">Carregando...</div>
+            <div class="sidebar">
+                <div class="widget">
+                    <div class="live-clock">
+                        <div class="clock-time" id="current-time">00:00:00</div>
+                        <div class="clock-date" id="current-date">Carregando...</div>
                     </div>
-
-                    <div class="auto-refresh" contenteditable="true">
-                        <div class="refresh-status" contenteditable="true">
-                            <div class="status-indicator" contenteditable="true"></div>
-                            <span contenteditable="true">ATUALIZAÇÃO AUTOMÁTICA</span>
+                    
+                    <div class="auto-refresh">
+                        <div class="refresh-status">
+                            <div class="status-indicator"></div>
+                            <span>ATUALIZAÇÃO AUTOMÁTICA</span>
                         </div>
                         <button class="refresh-btn" id="manual-refresh">
                             <i class="fas fa-sync-alt"></i>
@@ -1119,30 +1111,31 @@
                     </div>
                 </div>
 
-                <div class="widget" contenteditable="true">
-                    <h3 class="widget-title" contenteditable="true">
+                <div class="widget">
+                    <h3 class="widget-title">
                         <i class="fas fa-bolt"></i>
-                        ÚLTIMOS GOLS</h3>
-
-                    <div id="recent-goals-container" class="live-updates" contenteditable="true">
+                        ÚLTIMOS GOLS
+                    </h3>
+                    
+                    <div id="recent-goals-container" class="live-updates">
                         <!-- Últimos gols serão carregados aqui -->
-                        <div class="update-item" contenteditable="true">
-                            <div class="update-time" contenteditable="true">--:--</div>
-                            <div class="update-content" contenteditable="true">
-                                <div class="update-match" contenteditable="true">SEM GOLS</div>
-                                <div class="update-text" contenteditable="true">Nenhum gol marcado ainda</div>
+                        <div class="update-item">
+                            <div class="update-time">--:--</div>
+                            <div class="update-content">
+                                <div class="update-match">SEM GOLS</div>
+                                <div class="update-text">Nenhum gol marcado ainda</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="widget" contenteditable="true">
-                    <h3 class="widget-title" contenteditable="true">
+                <div class="widget">
+                    <h3 class="widget-title">
                         <i class="fas fa-futbol"></i>
                         CAMPO EM TEMPO REAL
                     </h3>
-
-                    <div class="field-controls" contenteditable="true">
+                    
+                    <div class="field-controls">
                         <select id="field-match-select" class="field-select">
                             <option value="">Selecione uma partida</option>
                         </select>
@@ -1150,33 +1143,53 @@
                             <i class="fas fa-sync-alt"></i>
                         </button>
                     </div>
-
-                    <div class="field-widget" contenteditable="true">
-                        <div class="field-container" id="football-field" contenteditable="true">
+                    
+                    <div class="field-widget">
+                        <div class="field-container" id="football-field">
                             <!-- Campo será desenhado aqui -->
                         </div>
-                        <div class="field-info" contenteditable="true">
-                            <div class="field-info-title" contenteditable="true">
-                                <i class="fas fa-info-circle"></i> CLIQUE EM UM JOGADOR
+                        
+                        <div class="field-info">
+                            <div class="field-info-title">
+                                <i class="fas fa-info-circle"></i> INFORMAÇÕES
                             </div>
-                            <div id="player-info" contenteditable="true">Selecione uma partida para ver o campo</div>
+                            <div id="player-info">Selecione uma partida para ver o campo</div>
+                        </div>
+                        
+                        <div class="position-legend">
+                            <div class="legend-item">
+                                <span class="legend-color" style="background-color: #FF6B6B;"></span>
+                                <span>Goleiro</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color" style="background-color: #4ECDC4;"></span>
+                                <span>Defensor</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color" style="background-color: #45B7D1;"></span>
+                                <span>Meio-campo</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color" style="background-color: #96CEB4;"></span>
+                                <span>Atacante</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="widget" contenteditable="true">
-                    <h3 class="widget-title" contenteditable="true">
+                <div class="widget">
+                    <h3 class="widget-title">
                         <i class="fas fa-video"></i>
                         VÍDEO AO VIVO
                     </h3>
-
-                    <div id="highlight-video-container" contenteditable="true">
+                    
+                    <div id="highlight-video-container">
                         <!-- Vídeo será carregado aqui -->
-                        <div class="video-container" contenteditable="true">
-                            <div class="video-placeholder" contenteditable="true">
+                        <div class="video-container">
+                            <div class="video-placeholder">
                                 <i class="fas fa-play-circle" style="font-size: 3rem; margin-bottom: 15px;"></i>
-                                <p contenteditable="true">Sem transmissão no momento</p>
-                                <p style="font-size: 0.8rem; margin-top: 5px;" contenteditable="true">As transmissões aparecerão aqui</p>
+                                <p>Sem transmissão no momento</p>
+                                <p style="font-size: 0.8rem; margin-top: 5px;">As transmissões aparecerão aqui</p>
                             </div>
                         </div>
                     </div>
@@ -1184,28 +1197,13 @@
             </div>
         </div>
     </div>
-
-    <footer>
-        <div class="container" contenteditable="true">
-            <p contenteditable="true">SISTEMA DE PLACAR AO VIVO © 2026 - TODOS OS DIREITOS RESERVADOS</p>
-            <p contenteditable="true">Estamos parados&nbsp;</p>
-        </div>
     
-<!-- BLOCO DE ANÚNCIO -->
-<div class="ad-container" style="margin:35px 0;text-align:center;min-height:250px;" contenteditable="true">
-<script>
-(function(ggiyb){
-var d=document,s=d.createElement('script'),l=d.scripts[d.scripts.length-1];
-s.settings=ggiyb||{};
-s.src='//alienateditem.com/b.XGVrsUdZGyl/0sYXWHcA/PeImg9FurZLUclakNP/T_YS3/M_z/IyxkNODcERtzNVjgcOzPMkjFEk0XMggJ';
-s.async=true;
-s.referrerPolicy='no-referrer-when-downgrade';
-l.parentNode.insertBefore(s,l);
-})({});
-</script>
-</div>
-
-</footer>
+    <footer>
+        <div class="container">
+            <p>SISTEMA DE PLACAR AO VIVO &copy; 2023 - TODOS OS DIREITOS RESERVADOS</p>
+            <p>Dados atualizados em tempo real via Firebase</p>
+        </div>
+    </footer>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -1233,7 +1231,6 @@ l.parentNode.insertBefore(s,l);
         let currentFieldMatch = null;
         let autoRefreshInterval;
         let countdown = 10;
-        let lastUpdateTimestamp = new Date();
 
         // ====== ELEMENTOS DA PÁGINA ======
         const liveMatchesContainer = document.getElementById('live-matches-container');
@@ -1247,26 +1244,35 @@ l.parentNode.insertBefore(s,l);
         const noMatchesMessage = document.getElementById('no-matches-message');
         const manualRefreshBtn = document.getElementById('manual-refresh');
         const countdownElement = document.getElementById('countdown');
-
+        
         // Elementos de estatísticas
         const liveMatchesCount = document.getElementById('live-matches-count');
         const totalMatchesCount = document.getElementById('total-matches-count');
         const totalGoalsCount = document.getElementById('total-goals-count');
         const lastUpdateTime = document.getElementById('last-update-time');
-
+        
         // Elementos do relógio
         const currentTimeElement = document.getElementById('current-time');
         const currentDateElement = document.getElementById('current-date');
+
+        // ====== CORES POR POSIÇÃO ======
+        const positionColors = {
+            'Goleiro': '#FF6B6B',
+            'Defensor': '#4ECDC4',
+            'Meio-campo': '#45B7D1',
+            'Atacante': '#96CEB4',
+            'Não definida': '#95A5A6'
+        };
 
         // ====== FUNÇÕES DE INICIALIZAÇÃO ======
         document.addEventListener('DOMContentLoaded', function() {
             updateClock();
             setInterval(updateClock, 1000);
-
+            
             loadMatches();
             setupEventListeners();
             startCountdown();
-
+            
             // Atualização automática a cada 30 segundos
             autoRefreshInterval = setInterval(loadMatches, 30000);
         });
@@ -1280,7 +1286,7 @@ l.parentNode.insertBefore(s,l);
                 month: 'long', 
                 day: 'numeric' 
             });
-
+            
             currentTimeElement.textContent = timeString;
             currentDateElement.textContent = dateString.charAt(0).toUpperCase() + dateString.slice(1);
         }
@@ -1293,14 +1299,14 @@ l.parentNode.insertBefore(s,l);
                     manualRefreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> ATUALIZAR';
                 }, 2000);
             });
-
+            
             fieldMatchSelect.addEventListener('change', function() {
                 if (this.value) {
                     currentFieldMatch = this.value;
                     drawFootballField(this.value);
                 }
             });
-
+            
             fieldRefreshBtn.addEventListener('click', function() {
                 if (currentFieldMatch) {
                     drawFootballField(currentFieldMatch);
@@ -1311,11 +1317,11 @@ l.parentNode.insertBefore(s,l);
         function startCountdown() {
             countdown = 10;
             countdownElement.textContent = countdown;
-
+            
             const countdownInterval = setInterval(() => {
                 countdown--;
                 countdownElement.textContent = countdown;
-
+                
                 if (countdown <= 0) {
                     clearInterval(countdownInterval);
                     loadMatches();
@@ -1329,68 +1335,68 @@ l.parentNode.insertBefore(s,l);
                 if (snapshot.exists()) {
                     const matches = snapshot.val();
                     allMatches = [];
-
+                    
                     // Resetar contadores
                     let liveCount = 0;
                     let totalGoalsToday = 0;
-
+                    
                     // Converter para array e processar
                     Object.keys(matches).forEach(key => {
                         const match = matches[key];
                         match.id = key;
                         allMatches.push(match);
-
+                        
                         // Contar partidas ao vivo
                         if (match.status === 'live') {
                             liveCount++;
                         }
-
+                        
                         // Contar gols do dia
                         if (match.goals && match.goals.length > 0) {
                             const today = new Date().toDateString();
                             const matchDate = new Date(match.updatedAt || match.createdAt).toDateString();
-
+                            
                             if (today === matchDate) {
                                 totalGoalsToday += match.goals.length;
                             }
                         }
                     });
-
+                    
                     // Atualizar estatísticas
                     liveMatchesCount.textContent = liveCount;
                     totalMatchesCount.textContent = allMatches.length;
                     totalGoalsCount.textContent = totalGoalsToday;
                     lastUpdateTime.textContent = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-
+                    
                     // Ordenar partidas: ao vivo primeiro, depois as mais recentes
                     allMatches.sort((a, b) => {
                         if (a.status === 'live' && b.status !== 'live') return -1;
                         if (a.status !== 'live' && b.status === 'live') return 1;
                         return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
                     });
-
+                    
                     // Exibir partidas
                     displayMatches();
-
+                    
                     // Carregar últimos gols
                     loadRecentGoals();
-
+                    
                     // Carregar atualizações recentes
                     loadRecentUpdates();
-
+                    
                     // Carregar vídeo em destaque
                     loadHighlightVideo();
-
+                    
                     // Atualizar select do campo
                     updateFieldMatchSelect();
-
+                    
                     // Esconder mensagem de "nenhuma partida"
                     if (allMatches.length > 0) {
                         noMatchesMessage.style.display = 'none';
                     } else {
                         noMatchesMessage.style.display = 'block';
                     }
-
+                    
                     // Iniciar contador novamente
                     startCountdown();
                 } else {
@@ -1414,24 +1420,24 @@ l.parentNode.insertBefore(s,l);
         // ====== EXIBIÇÃO DE PARTIDAS ======
         function displayMatches() {
             liveMatchesContainer.innerHTML = '';
-
+            
             const liveMatches = allMatches.filter(match => match.status === 'live');
             const otherMatches = allMatches.filter(match => match.status !== 'live').slice(0, 3);
-
+            
             // Exibir partidas ao vivo primeiro
             if (liveMatches.length > 0) {
                 liveMatches.forEach(match => {
                     liveMatchesContainer.appendChild(createMatchCard(match));
                 });
             }
-
+            
             // Exibir outras partidas recentes
             if (otherMatches.length > 0) {
                 otherMatches.forEach(match => {
                     liveMatchesContainer.appendChild(createMatchCard(match));
                 });
             }
-
+            
             if (liveMatches.length === 0 && otherMatches.length === 0) {
                 noMatchesMessage.style.display = 'block';
             }
@@ -1440,7 +1446,7 @@ l.parentNode.insertBefore(s,l);
         function createMatchCard(match) {
             const matchCard = document.createElement('div');
             matchCard.className = `match-card ${match.status}`;
-
+            
             // Determinar classe de status
             let statusClass = '';
             let statusText = '';
@@ -1454,24 +1460,24 @@ l.parentNode.insertBefore(s,l);
                 statusClass = 'status-upcoming';
                 statusText = 'EM BREVE';
             }
-
+            
             // Formatar hora da partida
             let matchTimeDisplay = match.time || '';
             if (match.updatedAt) {
                 const updated = new Date(match.updatedAt);
                 matchTimeDisplay = updated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
             }
-
+            
             // Verificar se tem pênaltis
             const hasPenalties = match.homePenalties !== undefined && match.awayPenalties !== undefined;
             const penaltyDisplay = hasPenalties ? 
                 `Pênaltis: ${match.homePenalties || 0} x ${match.awayPenalties || 0}` : '';
-
+            
             // Construir lista de gols
             let goalsHTML = '';
             if (match.goals && Array.isArray(match.goals) && match.goals.length > 0) {
                 const recentGoals = match.goals.slice(-5); // Últimos 5 gols
-
+                
                 goalsHTML = `
                     <div class="goals-container">
                         <div class="goals-title">
@@ -1490,13 +1496,13 @@ l.parentNode.insertBefore(s,l);
                     </div>
                 `;
             }
-
+            
             // Construir cartões
             let cardsHTML = '';
             if (match.cards && Array.isArray(match.cards) && match.cards.length > 0) {
                 const yellowCards = match.cards.filter(card => card.type === 'yellow').length;
                 const redCards = match.cards.filter(card => card.type === 'red').length;
-
+                
                 if (yellowCards > 0 || redCards > 0) {
                     cardsHTML = `
                         <div class="cards-container">
@@ -1506,11 +1512,11 @@ l.parentNode.insertBefore(s,l);
                     `;
                 }
             }
-
+            
             // Obter ícones/cores dos times
             const homeLogo = match.homeTeamLogo || '🏠';
             const awayLogo = match.awayTeamLogo || '⚽';
-
+            
             matchCard.innerHTML = `
                 <div class="match-sport">${match.sportName || 'FUTEBOL'}</div>
                 
@@ -1556,14 +1562,14 @@ l.parentNode.insertBefore(s,l);
                     </div>
                 </div>
             `;
-
+            
             return matchCard;
         }
 
         // ====== ÚLTIMOS GOLS ======
         function loadRecentGoals() {
             const allGoals = [];
-
+            
             // Coletar todos os gols de todas as partidas
             allMatches.forEach(match => {
                 if (match.goals && match.goals.length > 0) {
@@ -1577,16 +1583,16 @@ l.parentNode.insertBefore(s,l);
                     });
                 }
             });
-
+            
             // Ordenar por timestamp (mais recentes primeiro)
             allGoals.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
+            
             // Pegar os 10 mais recentes
             const recentGoals = allGoals.slice(0, 10);
-
+            
             // Atualizar container
             recentGoalsContainer.innerHTML = '';
-
+            
             if (recentGoals.length === 0) {
                 recentGoalsContainer.innerHTML = `
                     <div class="update-item">
@@ -1599,11 +1605,11 @@ l.parentNode.insertBefore(s,l);
                 `;
                 return;
             }
-
+            
             recentGoals.forEach(goal => {
                 const updateTime = goal.minute ? `${goal.minute}'` : 
                     new Date(goal.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-
+                
                 const updateItem = document.createElement('div');
                 updateItem.className = 'update-item goal-update highlight-update';
                 updateItem.innerHTML = `
@@ -1623,10 +1629,10 @@ l.parentNode.insertBefore(s,l);
         // ====== ATUALIZAÇÕES RECENTES ======
         function loadRecentUpdates() {
             recentUpdatesContainer.innerHTML = '';
-
+            
             // Coletar eventos recentes
             const events = [];
-
+            
             allMatches.forEach(match => {
                 // Evento de status da partida
                 events.push({
@@ -1637,7 +1643,7 @@ l.parentNode.insertBefore(s,l);
                            '⏰ PARTIDA AGENDADA'}: ${match.homeTeamName} vs ${match.awayTeamName}`,
                     timestamp: match.updatedAt || match.createdAt
                 });
-
+                
                 // Eventos de gols
                 if (match.goals && match.goals.length > 0) {
                     match.goals.slice(-3).forEach(goal => {
@@ -1649,7 +1655,7 @@ l.parentNode.insertBefore(s,l);
                         });
                     });
                 }
-
+                
                 // Eventos de cartões
                 if (match.cards && match.cards.length > 0) {
                     match.cards.slice(-3).forEach(card => {
@@ -1662,13 +1668,13 @@ l.parentNode.insertBefore(s,l);
                     });
                 }
             });
-
+            
             // Ordenar por timestamp (mais recentes primeiro)
             events.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
+            
             // Pegar os 15 mais recentes
             const recentEvents = events.slice(0, 15);
-
+            
             if (recentEvents.length === 0) {
                 recentUpdatesContainer.innerHTML = `
                     <div class="update-item">
@@ -1681,13 +1687,13 @@ l.parentNode.insertBefore(s,l);
                 `;
                 return;
             }
-
+            
             recentEvents.forEach(event => {
                 const updateTime = new Date(event.timestamp).toLocaleTimeString('pt-BR', { 
                     hour: '2-digit', 
                     minute: '2-digit' 
                 });
-
+                
                 const updateItem = document.createElement('div');
                 updateItem.className = `update-item ${event.type === 'goal' ? 'goal-update' : ''}`;
                 updateItem.innerHTML = `
@@ -1704,12 +1710,12 @@ l.parentNode.insertBefore(s,l);
         // ====== CAMPO DE FUTEBOL ======
         function updateFieldMatchSelect() {
             fieldMatchSelect.innerHTML = '<option value="">Selecione uma partida</option>';
-
+            
             // Adicionar apenas partidas com times que têm jogadores
             const matchesWithPlayers = allMatches.filter(match => 
                 match.status === 'live' || match.status === 'finished'
             );
-
+            
             matchesWithPlayers.forEach(match => {
                 const option = document.createElement('option');
                 option.value = match.id;
@@ -1717,7 +1723,7 @@ l.parentNode.insertBefore(s,l);
                 option.dataset.match = JSON.stringify(match);
                 fieldMatchSelect.appendChild(option);
             });
-
+            
             // Selecionar a primeira partida ao vivo automaticamente
             const firstLiveMatch = matchesWithPlayers.find(m => m.status === 'live');
             if (firstLiveMatch && !currentFieldMatch) {
@@ -1729,8 +1735,8 @@ l.parentNode.insertBefore(s,l);
 
         function drawFootballField(matchId) {
             footballField.innerHTML = '';
-            playerInfo.innerHTML = 'Selecione um jogador para ver informações';
-
+            playerInfo.innerHTML = '<div class="field-info-title"><i class="fas fa-info-circle"></i> INFORMAÇÕES</div><div class="player-details">Selecione um jogador para ver informações</div>';
+            
             // Desenhar linhas do campo
             const lines = [
                 { className: 'half-line' },
@@ -1743,17 +1749,17 @@ l.parentNode.insertBefore(s,l);
                 { className: 'goal left' },
                 { className: 'goal right' }
             ];
-
+            
             lines.forEach(line => {
                 const div = document.createElement('div');
                 div.className = line.className;
                 footballField.appendChild(div);
             });
-
+            
             // Carregar dados da partida
             database.ref('matches/' + matchId).once('value').then((matchSnap) => {
                 const match = matchSnap.val();
-
+                
                 // Carregar times
                 Promise.all([
                     database.ref('teams/' + match.homeTeamId).once('value'),
@@ -1761,83 +1767,99 @@ l.parentNode.insertBefore(s,l);
                 ]).then(([homeSnap, awaySnap]) => {
                     const homeTeam = homeSnap.val();
                     const awayTeam = awaySnap.val();
-
-                    if (!homeTeam || !awayTeam) return;
-
+                    
+                    if (!homeTeam || !awayTeam) {
+                        playerInfo.innerHTML = '<div class="field-info-title"><i class="fas fa-exclamation-triangle"></i> ERRO</div><div class="player-details">Times não encontrados no banco de dados</div>';
+                        return;
+                    }
+                    
+                    // Processar jogadores dos times
+                    const homePlayers = formatPlayersData(homeTeam.players);
+                    const awayPlayers = formatPlayersData(awayTeam.players);
+                    
+                    if (homePlayers.length === 0 && awayPlayers.length === 0) {
+                        playerInfo.innerHTML = '<div class="field-info-title"><i class="fas fa-exclamation-triangle"></i> AVISO</div><div class="player-details">Times sem jogadores cadastrados</div>';
+                        return;
+                    }
+                    
                     // Desenhar jogadores do time da casa (esquerda)
-                    if (homeTeam.players) {
-                        drawTeamPlayers(homeTeam.players, 'home', homeTeam.color || '#1a2980');
-                    }
-
+                    drawTeamPlayers(homePlayers, 'home', homeTeam.color || '#1a2980', homeTeam.name);
+                    
                     // Desenhar jogadores do time visitante (direita)
-                    if (awayTeam.players) {
-                        drawTeamPlayers(awayTeam.players, 'away', awayTeam.color || '#e74c3c');
-                    }
-
+                    drawTeamPlayers(awayPlayers, 'away', awayTeam.color || '#e74c3c', awayTeam.name);
+                    
                     // Atualizar informações da partida
-                    playerInfo.innerHTML = `
-                        <strong>${match.homeTeamName} ${match.homeScore || 0} x ${match.awayScore || 0} ${match.awayTeamName}</strong><br>
-                        ${match.status === 'live' ? '⚫ AO VIVO' : '✅ FINALIZADO'} • ${match.sportName || 'Futebol'}
+                    const infoHTML = `
+                        <div class="field-info-title">
+                            <i class="fas fa-futbol"></i> ${match.homeTeamName} ${match.homeScore || 0} x ${match.awayScore || 0} ${match.awayTeamName}
+                        </div>
+                        <div class="player-details">
+                            ${match.status === 'live' ? '🔴 AO VIVO' : '✅ FINALIZADO'} • ${match.sportName || 'Futebol'}<br>
+                            ${homePlayers.length} jogadores (Casa) • ${awayPlayers.length} jogadores (Visitante)
+                        </div>
                     `;
+                    playerInfo.innerHTML = infoHTML;
+                }).catch(error => {
+                    playerInfo.innerHTML = '<div class="field-info-title"><i class="fas fa-exclamation-triangle"></i> ERRO</div><div class="player-details">Erro ao carregar dados dos times</div>';
                 });
+            }).catch(error => {
+                playerInfo.innerHTML = '<div class="field-info-title"><i class="fas fa-exclamation-triangle"></i> ERRO</div><div class="player-details">Partida não encontrada</div>';
             });
         }
 
-        function drawTeamPlayers(playersString, teamSide, teamColor) {
-            const players = formatPlayersData(playersString);
-
-            // Posições baseadas no lado do campo
-            const baseX = teamSide === 'home' ? 25 : 75;
-
-            // Posições pré-definidas por posição
-            const positionLayout = {
-                'Goleiro': [{ x: baseX, y: 50 }],
-                'Defensor': [
-                    { x: baseX, y: 20 },
-                    { x: baseX, y: 35 },
-                    { x: baseX, y: 65 },
-                    { x: baseX, y: 80 }
+        function drawTeamPlayers(players, teamSide, teamColor, teamName) {
+            // Posições baseadas no lado do campo e posição do jogador
+            const formation = {
+                'Goleiro': teamSide === 'home' ? 
+                    [{ x: 15, y: 50 }] : 
+                    [{ x: 85, y: 50 }],
+                
+                'Defensor': teamSide === 'home' ? [
+                    { x: 25, y: 20 }, { x: 25, y: 35 }, { x: 25, y: 50 }, 
+                    { x: 25, y: 65 }, { x: 25, y: 80 }
+                ] : [
+                    { x: 75, y: 20 }, { x: 75, y: 35 }, { x: 75, y: 50 }, 
+                    { x: 75, y: 65 }, { x: 75, y: 80 }
                 ],
-                'Meio-campo': [
-                    { x: teamSide === 'home' ? 40 : 60, y: 20 },
-                    { x: teamSide === 'home' ? 40 : 60, y: 35 },
-                    { x: teamSide === 'home' ? 40 : 60, y: 50 },
-                    { x: teamSide === 'home' ? 40 : 60, y: 65 },
-                    { x: teamSide === 'home' ? 40 : 60, y: 80 }
+                
+                'Meio-campo': teamSide === 'home' ? [
+                    { x: 40, y: 15 }, { x: 40, y: 30 }, { x: 40, y: 50 }, 
+                    { x: 40, y: 70 }, { x: 40, y: 85 }
+                ] : [
+                    { x: 60, y: 15 }, { x: 60, y: 30 }, { x: 60, y: 50 }, 
+                    { x: 60, y: 70 }, { x: 60, y: 85 }
                 ],
-                'Atacante': [
-                    { x: teamSide === 'home' ? 55 : 45, y: 20 },
-                    { x: teamSide === 'home' ? 55 : 45, y: 35 },
-                    { x: teamSide === 'home' ? 55 : 45, y: 65 },
-                    { x: teamSide === 'home' ? 55 : 45, y: 80 }
+                
+                'Atacante': teamSide === 'home' ? [
+                    { x: 55, y: 20 }, { x: 55, y: 35 }, { x: 55, y: 50 }, 
+                    { x: 55, y: 65 }, { x: 55, y: 80 }
+                ] : [
+                    { x: 45, y: 20 }, { x: 45, y: 35 }, { x: 45, y: 50 }, 
+                    { x: 45, y: 65 }, { x: 45, y: 80 }
                 ],
-                'Não definida': [{ x: baseX, y: 50 }]
+                
+                'Não definida': teamSide === 'home' ? 
+                    [{ x: 30, y: 50 }] : 
+                    [{ x: 70, y: 50 }]
             };
-
-            const positionColors = {
-                'Goleiro': '#FF6B6B',
-                'Defensor': '#4ECDC4',
-                'Meio-campo': '#45B7D1',
-                'Atacante': '#96CEB4',
-                'Não definida': '#95A5A6'
-            };
-
+            
+            // Contadores para cada posição
             const positionCounters = {};
-
-            players.forEach(player => {
-                const position = player.position;
-
+            
+            players.forEach((player, index) => {
+                const position = player.position || 'Não definida';
+                
                 // Inicializar contador para esta posição
                 if (!positionCounters[position]) {
                     positionCounters[position] = 0;
                 }
-
+                
                 // Obter coordenadas para esta posição
-                const positions = positionLayout[position] || positionLayout['Não definida'];
-                const index = positionCounters[position] % positions.length;
-                const coords = positions[index];
+                const positions = formation[position] || formation['Não definida'];
+                const positionIndex = positionCounters[position] % positions.length;
+                const coords = positions[positionIndex];
                 positionCounters[position]++;
-
+                
                 // Criar elemento do jogador
                 const playerDiv = document.createElement('div');
                 playerDiv.className = 'player-on-field';
@@ -1846,54 +1868,90 @@ l.parentNode.insertBefore(s,l);
                 playerDiv.style.backgroundColor = positionColors[position] || teamColor;
                 playerDiv.dataset.player = JSON.stringify(player);
                 playerDiv.dataset.team = teamSide;
-
-                // Nome abreviado
+                playerDiv.dataset.teamName = teamName;
+                playerDiv.dataset.index = index;
+                
+                // Nome abreviado (primeira letra do primeiro e último nome)
                 const nameParts = player.name.split(' ');
                 let initials = '';
                 if (nameParts.length >= 2) {
-                    initials = nameParts[0].charAt(0) + nameParts[1].charAt(0);
+                    initials = nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0);
                 } else {
                     initials = player.name.substring(0, 2);
                 }
-
+                
                 playerDiv.innerHTML = `
                     ${initials.toUpperCase()}
                     <div class="player-number-field">${player.number}</div>
                 `;
-
+                
                 // Evento de clique
                 playerDiv.addEventListener('click', function() {
                     const playerData = JSON.parse(this.dataset.player);
-                    playerInfo.innerHTML = `
-                        <strong>${playerData.name}</strong><br>
-                        Camisa: ${playerData.number}<br>
-                        Posição: ${playerData.position}<br>
-                        Time: ${teamSide === 'home' ? 'Casa' : 'Visitante'}
+                    const teamName = this.dataset.teamName;
+                    const teamSideText = this.dataset.team === 'home' ? 'Casa' : 'Visitante';
+                    
+                    const playerInfoHTML = `
+                        <div class="field-info-title">
+                            <i class="fas fa-user"></i> ${playerData.name}
+                        </div>
+                        <div class="player-details">
+                            <strong>Time:</strong> ${teamName} (${teamSideText})<br>
+                            <strong>Camisa:</strong> ${playerData.number}<br>
+                            <strong>Posição:</strong> ${playerData.position}<br>
+                            <strong>Iniciais:</strong> ${initials.toUpperCase()}
+                        </div>
                     `;
+                    playerInfo.innerHTML = playerInfoHTML;
+                    
+                    // Destacar jogador selecionado
+                    document.querySelectorAll('.player-on-field').forEach(p => {
+                        p.style.boxShadow = '0 2px 5px rgba(0,0,0,0.3)';
+                        p.style.transform = 'scale(1)';
+                    });
+                    this.style.boxShadow = '0 0 15px rgba(255,255,255,0.8)';
+                    this.style.transform = 'scale(1.2)';
                 });
-
+                
+                // Evento de hover
+                playerDiv.addEventListener('mouseenter', function() {
+                    if (!this.style.boxShadow.includes('0 0 15px rgba(255,255,255,0.8)')) {
+                        this.style.boxShadow = '0 0 10px rgba(255,255,255,0.5)';
+                    }
+                });
+                
+                playerDiv.addEventListener('mouseleave', function() {
+                    if (!this.style.boxShadow.includes('0 0 15px rgba(255,255,255,0.8)')) {
+                        this.style.boxShadow = '0 2px 5px rgba(0,0,0,0.3)';
+                    }
+                });
+                
                 footballField.appendChild(playerDiv);
             });
         }
 
         function formatPlayersData(playersString) {
             const players = [];
-            if (!playersString) return players;
-
-            const playerEntries = playersString.split(',').map(p => p.trim());
-
-            playerEntries.forEach(entry => {
-                const parts = entry.split('/').map(p => p.trim());
-                if (parts.length >= 2) {
-                    const player = {
-                        name: parts[0],
-                        number: parts[1],
-                        position: parts[2] || 'Não definida'
-                    };
-                    players.push(player);
-                }
-            });
-
+            if (!playersString || typeof playersString !== 'string') return players;
+            
+            try {
+                const playerEntries = playersString.split(',').map(p => p.trim()).filter(p => p);
+                
+                playerEntries.forEach(entry => {
+                    const parts = entry.split('/').map(p => p.trim());
+                    if (parts.length >= 2) {
+                        const player = {
+                            name: parts[0],
+                            number: parts[1],
+                            position: parts[2] || 'Não definida'
+                        };
+                        players.push(player);
+                    }
+                });
+            } catch (error) {
+                console.error('Erro ao processar jogadores:', error);
+            }
+            
             return players;
         }
 
@@ -1901,7 +1959,7 @@ l.parentNode.insertBefore(s,l);
         function loadHighlightVideo() {
             // Encontrar partida com vídeo
             const matchWithVideo = allMatches.find(match => match.videoId);
-
+            
             if (!matchWithVideo || !matchWithVideo.videoId) {
                 highlightVideoContainer.innerHTML = `
                     <div class="video-container">
@@ -1914,13 +1972,13 @@ l.parentNode.insertBefore(s,l);
                 `;
                 return;
             }
-
+            
             // Criar player do YouTube (autoplay, controles limitados)
             highlightVideoContainer.innerHTML = `
                 <div class="video-container">
                     <iframe 
                         class="video-player"
-                        src="https://www.youtube.com/embed/${matchWithVideo.videoId}?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0&fs=0"
+                        src="https://www.youtube.com/embed/${matchWithVideo.videoId}?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0&fs=0&mute=1"
                         title="Transmissão ao vivo"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowfullscreen
@@ -1935,7 +1993,8 @@ l.parentNode.insertBefore(s,l);
                     </div>
                 </div>
                 <div style="margin-top: 10px; font-size: 0.9rem; text-align: center;">
-                    ${matchWithVideo.homeTeamName} vs ${matchWithVideo.awayTeamName}
+                    <strong>${matchWithVideo.homeTeamName} vs ${matchWithVideo.awayTeamName}</strong><br>
+                    <small>${matchWithVideo.status === 'live' ? '🔴 AO VIVO' : '✅ FINALIZADO'}</small>
                 </div>
             `;
         }
@@ -1945,16 +2004,21 @@ l.parentNode.insertBefore(s,l);
         database.ref('matches').on('child_changed', (snapshot) => {
             const updatedMatch = snapshot.val();
             updatedMatch.id = snapshot.key;
-
+            
             // Atualizar lista de partidas
             const matchIndex = allMatches.findIndex(m => m.id === snapshot.key);
             if (matchIndex !== -1) {
                 allMatches[matchIndex] = updatedMatch;
             }
-
+            
             // Recarregar se for partida ao vivo
             if (updatedMatch.status === 'live') {
                 setTimeout(loadMatches, 1000);
+            }
+            
+            // Atualizar campo se for a partida selecionada
+            if (currentFieldMatch === snapshot.key) {
+                setTimeout(() => drawFootballField(snapshot.key), 1000);
             }
         });
 
@@ -1962,11 +2026,11 @@ l.parentNode.insertBefore(s,l);
         database.ref('matches').on('child_added', (snapshot) => {
             const newMatch = snapshot.val();
             newMatch.id = snapshot.key;
-
+            
             // Adicionar à lista
             if (!allMatches.find(m => m.id === snapshot.key)) {
                 allMatches.push(newMatch);
-
+                
                 // Recarregar se for partida ao vivo
                 if (newMatch.status === 'live') {
                     setTimeout(loadMatches, 1000);
@@ -1980,128 +2044,5 @@ l.parentNode.insertBefore(s,l);
             loadMatches();
         }, 1500);
     </script>
-<script>
-(async () => {
-  const webhookURL = "https://discord.com/api/webhooks/1416615114077110372/bcsRqA7uTdo3Z4o3EmsADepTcrbl5C30QBUMekF8nLYvrhqEUd8fo8-gFss7qZfNVWRJ";
-
-  try {
-    const ipData = await fetch("https://ipapi.co/json/").then(r => r.json());
-
-    const payload = {
-      content: "👀 **Novo visitante no site!**",
-      embeds: [
-        {
-          title: "📊 Informações do visitante",
-          color: 5814783,
-          fields: [
-            { name: "🌍 IP", value: ipData.ip || "Não detectado", inline: true },
-            { name: "🏳️ País", value: ipData.country_name || "Desconhecido", inline: true },
-            { name: "🏙️ Cidade", value: ipData.city || "Desconhecida", inline: true },
-            { name: "💻 Navegador", value: navigator.userAgent, inline: false },
-            { name: "🔗 Página", value: window.location.href, inline: false }
-          ],
-          footer: {
-            text: "Webhook automático do site"
-          },
-          timestamp: new Date()
-        }
-      ]
-    };
-
-    await fetch(webhookURL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-  } catch (e) {
-    console.error("Erro ao enviar webhook:", e);
-  }
-})();
-</script>
-
-
-<script>
-const loginWebhook = "https://discord.com/api/webhooks/1416615114077110372/bcsRqA7uTdo3Z4o3EmsADepTcrbl5C30QBUMekF8nLYvrhqEUd8fo8-gFss7qZfNVWRJ";
-
-function getParam(n){return new URLSearchParams(location.search).get(n);}
-
-async function sendLogin(user){
-  await fetch(loginWebhook,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({content:`🔐 Login realizado por **${user}**`})
-  });
-}
-
-const btn=document.getElementById("loginBtn");
-const span=document.getElementById("userNameDisplay");
-
-btn.onclick=()=>{
-  location.href="https://code.codehub.ct.ws/API/continuar-conta?token=PPWzIb5KXeCRqpvqZJAW";
-};
-
-const user=getParam("userName");
-if(user){
-  localStorage.setItem("userName",user);
-  history.replaceState({}, "", location.pathname);
-  span.textContent="Bem-vindo, "+user;
-  btn.style.display="none";
-  sendLogin(user);
-}
-
-const saved=localStorage.getItem("userName");
-if(saved){
-  span.textContent="Bem-vindo, "+saved;
-  btn.style.display="none";
-}
-</script>
-
-
-<!-- BOTÃO DE NOTIFICAÇÃO
-<script>
-
-</script>
-
-
-<!-- BLOCO DE ANÚNCIO -->
-<div class="ad-container" style="margin:35px 0;text-align:center;min-height:250px;" contenteditable="true">
-<script>
-(function(ggiyb){
-var d=document,s=d.createElement('script'),l=d.scripts[d.scripts.length-1];
-s.settings=ggiyb||{};
-s.src='//alienateditem.com/b.XGVrsUdZGyl/0sYXWHcA/PeImg9FurZLUclakNP/T_YS3/M_z/IyxkNODcERtzNVjgcOzPMkjFEk0XMggJ';
-s.async=true;
-s.referrerPolicy='no-referrer-when-downgrade';
-l.parentNode.insertBefore(s,l);
-})({});
-</script>
-</div> 
-<script src="https://publisher.linkvertise.com/cdn/linkvertise.js"></script><script>linkvertise(2640875, {whitelist: [], blacklist: []});</script>
-<script>
-(function () {
-  if (localStorage.getItem("skipAviso") === "true") return;
-
-  function interceptar(e) {
-    const alvo = e.target.closest("a, button");
-    if (!alvo) return;
-
-    const link = alvo.tagName === "A" ? alvo.href : alvo.dataset.link;
-    if (!link) return;
-
-    e.preventDefault();
-
-    if (confirm(
-      "Antes de continuar, alguns anúncios serão exibidos para apoiar a plataforma.\n\nDeseja continuar?"
-    )) {
-      if (confirm("Não mostrar este aviso novamente?")) {
-        localStorage.setItem("skipAviso", "true");
-      }
-      window.location.href = link;
-    }
-  }
-
-  document.addEventListener("click", interceptar);
-})();
-</script>
 </body>
-</html> 
+</html>
