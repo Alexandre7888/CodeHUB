@@ -60,19 +60,12 @@ html, body {
 #donationOverlay a.button:hover {
     background-color: #00c853;
 }
-#alerts {
-    max-height: 150px;
-    overflow-y: auto;
-    background-color: #000;
-    color: #00ff00;
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid #444;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
+#pixIframe {
     width: 100%;
+    height: 200px;
+    border: none;
+    border-radius: 8px;
     margin-top: 15px;
-    box-sizing: border-box;
 }
 </style>
 </head>
@@ -88,10 +81,9 @@ html, body {
             Se você gosta do que fazemos, considere apoiar com uma doação. 💚
         </p>
         <a class="button" href="https://pixgg.com/Abacaxi" target="_blank">💸 Fazer Doação</a>
-    </div>
-    <div id="alerts">
-        <strong>Últimas doações:</strong><br>
-        Carregando...
+
+        <!-- iframe incorporando alertas da API do Pix.gg -->
+        <iframe id="pixIframe" src="https://api.pixgg.com/?apikey=91d54bcb-d311-440a-b482-e1d38f021b3c"></iframe>
     </div>
 </div>
 
@@ -99,34 +91,6 @@ html, body {
 // Bloqueia interação com o fundo
 document.body.addEventListener('click', e => e.stopPropagation(), true);
 document.body.addEventListener('keydown', e => e.stopPropagation(), true);
-
-// Função para buscar alertas de doações
-async function loadAlerts() {
-    const alertContainer = document.getElementById('alerts');
-    try {
-        const res = await fetch('https://api.pixgg.com/?apikey=91d54bcb-d311-440a-b482-e1d38f021b3c');
-        const data = await res.json();
-
-        // Limpa conteúdo
-        alertContainer.innerHTML = "<strong>Últimas doações:</strong><br>";
-
-        if(data.length === 0) {
-            alertContainer.innerHTML += "Nenhuma doação ainda.";
-            return;
-        }
-
-        data.forEach(d => {
-            alertContainer.innerHTML += `• ${d.nome} doou R$${d.valor}<br>`;
-        });
-    } catch(err) {
-        alertContainer.innerHTML = "Erro ao carregar alertas.";
-        console.error(err);
-    }
-}
-
-// Atualiza alertas a cada 15s
-loadAlerts();
-setInterval(loadAlerts, 15000);
 </script>
 </body>
 </html>
