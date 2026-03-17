@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Token Completo</title>
+</head>
+<body>
+
+<h2>Token Recebido</h2>
+<p id="token">Carregando...</p>
+
+<script>
+async function pegarToken() {
+  try {
+    const resposta = await fetch("https://code-hub-eta.vercel.app/api/app/a.js");
+    const data = await resposta.json();
+
+    const token = data.access; // pega o token inteiro
+
+    document.getElementById("token").textContent = token;
+
+  } catch (erro) {
+    document.getElementById("token").textContent = "Erro ao carregar token";
+  }
+}
+
+pegarToken();
+</script>
+
+</body>
+</html>
