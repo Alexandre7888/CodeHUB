@@ -4,7 +4,7 @@ export default function handler(req, res) {
   const origin = req.headers.origin
 
   if (origin !== "https://code.codehub.ct.ws") {
-    res.status(403).send("<h1>Erro</h1>")
+    res.status(403).send("<h1>Access denied </h1>")
     return
   }
 
