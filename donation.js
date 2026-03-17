@@ -1,35 +1,40 @@
 // donation.js
-
 (function() {
-    // Cria o overlay
+    // Cria o overlay full-screen
     const overlay = document.createElement('div');
     overlay.id = 'donationOverlay';
-    overlay.style.position = 'fixed';
-    overlay.style.top = 0;
-    overlay.style.left = 0;
-    overlay.style.width = '100%';
-    overlay.style.height = '100%';
-    overlay.style.backgroundColor = 'rgba(18,18,18,0.95)';
-    overlay.style.display = 'flex';
-    overlay.style.justifyContent = 'center';
-    overlay.style.alignItems = 'center';
-    overlay.style.zIndex = 9999;
-    overlay.style.textAlign = 'center';
-    overlay.style.padding = '20px';
-    overlay.style.boxSizing = 'border-box';
-    overlay.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-    overlay.style.color = '#e0e0e0';
-    overlay.style.overflow = 'hidden';
+    Object.assign(overlay.style, {
+        position: 'fixed',
+        top: '0',
+        left: '0',
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'rgba(18,18,18,0.95)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexDirection: 'column',
+        zIndex: '9999',
+        textAlign: 'center',
+        padding: '20px',
+        boxSizing: 'border-box',
+        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+        color: '#e0e0e0',
+        overflowY: 'auto',
+    });
 
     // Cria a caixa central
     const box = document.createElement('div');
-    box.style.backgroundColor = '#1e1e1e';
-    box.style.padding = '30px 25px';
-    box.style.borderRadius = '12px';
-    box.style.maxWidth = '500px';
-    box.style.boxShadow = '0 0 25px rgba(0,255,0,0.2)';
+    Object.assign(box.style, {
+        backgroundColor: '#1e1e1e',
+        padding: '30px 25px',
+        borderRadius: '12px',
+        maxWidth: '500px',
+        boxShadow: '0 0 25px rgba(0,255,0,0.2)',
+        textAlign: 'center',
+    });
 
-    // Conteúdo HTML
+    // Conteúdo completo
     box.innerHTML = `
         <h1 style="color:#00e676;margin-bottom:15px;">🚀 Nossa Plataforma</h1>
         <p style="font-size:16px;line-height:1.5;margin-bottom:20px;">
@@ -38,6 +43,10 @@
             da melhor forma. 😅
         </p>
         <p style="font-size:16px;line-height:1.5;margin-bottom:20px;">
+            Estamos fazendo o nosso melhor para vocês, mas precisamos da sua ajuda para
+            continuar crescendo e mantendo tudo estável.
+        </p>
+        <p style="font-size:16px;line-height:1.5;margin-bottom:25px;">
             Se você gosta do que estamos fazendo, considere nos apoiar com uma doação.
             Qualquer valor ajuda! 💚
         </p>
@@ -50,7 +59,7 @@
     overlay.appendChild(box);
     document.body.appendChild(overlay);
 
-    // Bloqueia interação com fundo
+    // Bloqueia interação com o fundo
     overlay.addEventListener('click', e => e.stopPropagation(), true);
     document.body.addEventListener('click', e => e.stopPropagation(), true);
     document.body.addEventListener('keydown', e => e.stopPropagation(), true);
