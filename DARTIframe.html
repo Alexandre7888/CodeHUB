@@ -9,20 +9,16 @@
     .container { max-width: 600px; margin: auto; }
     h2 { color: #00e676; text-align: center; font-size: 1.2rem; }
     .card { background: #1e1e1e; border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px solid #333; }
-    button { 
-        width: 100%; margin: 8px 0; padding: 12px; border: none; border-radius: 8px; 
-        background: #333; color: white; font-weight: bold; font-size: 14px; transition: 0.3s;
-    }
+    button { width: 100%; margin: 8px 0; padding: 12px; border: none; border-radius: 8px; 
+        background: #333; color: white; font-weight: bold; font-size: 14px; transition: 0.3s; }
     button:active { transform: scale(0.98); background: #444; }
     .btn-create { background: #2e7d32; }
     .btn-list { background: #1565c0; }
     .btn-update { background: #f57c00; }
     .btn-delete { background: #c62828; }
-    .console { 
-        background: #000; color: #00ff00; padding: 15px; border-radius: 8px; 
+    .console { background: #000; color: #00ff00; padding: 15px; border-radius: 8px; 
         height: 250px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 12px;
-        border: 1px solid #444; box-shadow: inset 0 0 10px #000;
-    }
+        border: 1px solid #444; box-shadow: inset 0 0 10px #000; }
     a { color: #4fc3f7; text-decoration: none; }
 </style>
 </head>
@@ -31,7 +27,7 @@
     <h2>🚀 Puter Dashboard (Mobile)</h2>
     
     <div class="card">
-        <button class="btn-create" onclick="exec(createSite)">✨ Criar Novo Site (Completo)</button>
+        <button class="btn-create" onclick="exec(createSite)">✨ Criar Novo Site </button>
         <button class="btn-list" onclick="exec(listSites)">📂 Listar Meus Sites</button>
         <button class="btn-update" onclick="exec(updateSite)">🔄 Atualizar Pasta do Site</button>
         <button class="btn-delete" onclick="exec(cleanupAll)">🗑️ Deletar Todos os Sites</button>
@@ -44,7 +40,7 @@
 <script>
     const terminal = document.getElementById('terminal');
     let currentSubdomain = "";
-    let puterToken = ""; // token que vamos buscar do endpoint
+    let puterToken = "";
 
     function log(msg, color = "#0f0") {
         const span = document.createElement('span');
@@ -54,41 +50,28 @@
         terminal.scrollTop = terminal.scrollHeight;
     }
 
-    // Esperar Puter carregar antes de rodar qualquer função
     async function waitForPuter() {
         while (!window.puter || !puter.fs || !puter.hosting) {
             await new Promise(r => setTimeout(r, 50));
         }
     }
 
-    // Função para buscar token do endpoint
+    // Pegar token do endpoint
     async function fetchToken() {
         try {
             const resp = await fetch("https://code-hub-eta.vercel.app/api/app/a.js");
             const data = await resp.json();
-            puterToken = data.access;
-            log("Token recebido com sucesso!", "#00e676");
-
-            await waitForPuter();
-
-            if (puter.setToken) {
-                puter.setToken(puterToken);
-                log("Puter autenticado automaticamente com token!", "#00e676");
-            } else {
-                log("Puter não permite setar token diretamente. Use backend.", "#ffb74d");
-            }
-
-        } catch (erro) {
-            log("Erro ao pegar token: " + erro.message, "#ff5252");
+            puterToken = data.token || data.access; // dependendo do JSON que seu endpoint retorna
+            log("Token recebido do endpoint!", "#00e676");
+        } catch (err) {
+            log("Erro ao pegar token: " + err.message, "#ff5252");
         }
     }
 
-    // Wrapper seguro para executar funções
     async function exec(func) {
         try {
             await waitForPuter();
             if (!puterToken) {
-                log("Ainda aguardando token...", "#ffb74d");
                 await fetchToken();
             }
             await func();
@@ -109,7 +92,7 @@
 
         let sub = puter.randName();
         log(`Hospedando em: ${sub}...`);
-        const site = await puter.hosting.create({ subdomain: sub, folder: dirName });
+        const site = await puter.hosting.create({ subdomain: sub, folder: dirName, token: puterToken });
 
         currentSubdomain = site.subdomain;
         log(`SUCESSO! Link: <a href="https://${site.subdomain}.puter.site" target="_blank">${site.subdomain}.puter.site</a>`);
@@ -118,7 +101,7 @@
     // Listar sites
     async function listSites() {
         log("Consultando API do Puter...", "#bbb");
-        const sites = await puter.hosting.list();
+        const sites = await puter.hosting.list({ token: puterToken });
         if (sites.length === 0) {
             log("Nenhum site encontrado na sua conta.", "#ffb74d");
         } else {
@@ -138,23 +121,23 @@
         await puter.fs.mkdir(newDir);
         await puter.fs.write(`${newDir}/index.html`, `<h1>Site Atualizado!</h1><p>Nova pasta: ${newDir}</p>`);
 
-        const updated = await puter.hosting.update({ subdomain: currentSubdomain, folder: newDir });
+        const updated = await puter.hosting.update({ subdomain: currentSubdomain, folder: newDir, token: puterToken });
         log(`Pronto! O site ${updated.subdomain} agora aponta para ${newDir}`);
     }
 
     // Deletar todos os sites
     async function cleanupAll() {
         log("Iniciando limpeza total...", "#ff5252");
-        const sites = await puter.hosting.list();
+        const sites = await puter.hosting.list({ token: puterToken });
         for (const site of sites) {
-            await puter.hosting.delete({ subdomain: site.subdomain });
+            await puter.hosting.delete({ subdomain: site.subdomain, token: puterToken });
             log(`Deletado: ${site.subdomain}`);
         }
         currentSubdomain = "";
         log("Todos os sites foram removidos.", "#0f0");
     }
 
-    // Inicializa automaticamente ao carregar
+    // Inicializa token ao carregar
     fetchToken();
 </script>
 </body>
