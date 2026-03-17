@@ -24,10 +24,10 @@
 </head>
 <body>
 <div class="container">
-    <h2>🚀 Puter Dashboard (Mobile)</h2>
+    <h2>🚀 Puter Dashboard (Token)</h2>
     
     <div class="card">
-        <button class="btn-create" onclick="exec(createSite)">✨ Criar Novo Site </button>
+        <button class="btn-create" onclick="exec(createSite)">✨ Criar Novo Site (Completo)</button>
         <button class="btn-list" onclick="exec(listSites)">📂 Listar Meus Sites</button>
         <button class="btn-update" onclick="exec(updateSite)">🔄 Atualizar Pasta do Site</button>
         <button class="btn-delete" onclick="exec(cleanupAll)">🗑️ Deletar Todos os Sites</button>
@@ -38,107 +38,115 @@
 
 <script src="https://js.puter.com/v2/"></script>
 <script>
-    const terminal = document.getElementById('terminal');
-    let currentSubdomain = "";
-    let puterToken = "";
+const terminal = document.getElementById('terminal');
+let currentSubdomain = "";
 
-    function log(msg, color = "#0f0") {
-        const span = document.createElement('span');
-        span.style.color = color;
-        span.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
-        terminal.appendChild(span);
-        terminal.scrollTop = terminal.scrollHeight;
+// Função para logar mensagens
+function log(msg, color = "#0f0") {
+    const span = document.createElement('span');
+    span.style.color = color;
+    span.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+    terminal.appendChild(span);
+    terminal.scrollTop = terminal.scrollHeight;
+}
+
+// Espera a lib Puter carregar
+async function waitForPuter() {
+    while (!window.puter || !puter.fs || !puter.hosting || !puter.auth) {
+        await new Promise(r => setTimeout(r, 50));
     }
+}
 
-    async function waitForPuter() {
-        while (!window.puter || !puter.fs || !puter.hosting) {
-            await new Promise(r => setTimeout(r, 50));
-        }
+// Executa função com tratamento de erro
+async function exec(func) {
+    try {
+        await waitForPuter();
+        await func();
+    } catch (error) {
+        log("ERRO: " + error.message, "#ff5252");
+        console.error(error);
     }
+}
 
-    // Pegar token do endpoint
-    async function fetchToken() {
-        try {
-            const resp = await fetch("https://code-hub-eta.vercel.app/api/app/a.js");
-            const data = await resp.json();
-            puterToken = data.token || data.access; // dependendo do JSON que seu endpoint retorna
-            log("Token recebido do endpoint!", "#00e676");
-        } catch (err) {
-            log("Erro ao pegar token: " + err.message, "#ff5252");
-        }
-    }
-
-    async function exec(func) {
-        try {
-            await waitForPuter();
-            if (!puterToken) {
-                await fetchToken();
-            }
-            await func();
-        } catch (error) {
-            log("ERRO: " + error.message, "#ff5252");
-            console.error(error);
-        }
-    }
-
-    // Criar site
-    async function createSite() {
-        log("Criando diretório...", "#bbb");
-        let dirName = "site_" + puter.randName();
-        await puter.fs.mkdir(dirName);
-
-        log("Gravando index.html...");
-        await puter.fs.write(`${dirName}/index.html`, `<h1>Site de ${dirName}</h1><p>Criado via Puter API!</p>`);
-
-        let sub = puter.randName();
-        log(`Hospedando em: ${sub}...`);
-        const site = await puter.hosting.create({ subdomain: sub, folder: dirName, token: puterToken });
-
-        currentSubdomain = site.subdomain;
-        log(`SUCESSO! Link: <a href="https://${site.subdomain}.puter.site" target="_blank">${site.subdomain}.puter.site</a>`);
-    }
-
-    // Listar sites
-    async function listSites() {
-        log("Consultando API do Puter...", "#bbb");
-        const sites = await puter.hosting.list({ token: puterToken });
-        if (sites.length === 0) {
-            log("Nenhum site encontrado na sua conta.", "#ffb74d");
+// Pega token do endpoint e autentica Puter
+async function autenticarToken() {
+    await waitForPuter();
+    log("Buscando token do endpoint...", "#00e676");
+    try {
+        const resp = await fetch('https://code-hub-eta.vercel.app/api/app/a.js');
+        const data = await resp.json();
+        if(data.token) {
+            window.puter.authToken = data.token; // injetando o token
+            log("Token carregado com sucesso!", "#00e676");
+            // Tenta verificar usuário com token
+            const user = await puter.auth.getUser();
+            log(`Autenticado como: ${user.username}`, "#00e676");
         } else {
-            log("Sites ativos:", "#4fc3f7");
-            sites.forEach(s => log(`• ${s.subdomain}.puter.site`, "#4fc3f7"));
+            log("Não foi possível obter token do endpoint", "#ff5252");
         }
+    } catch(err) {
+        log("Erro ao buscar token: " + err.message, "#ff5252");
     }
+}
 
-    // Atualizar site
-    async function updateSite() {
-        if (!currentSubdomain) {
-            log("Crie um site primeiro para poder atualizar!", "#ffb74d");
-            return;
-        }
-        log(`Atualizando site: ${currentSubdomain}...`);
-        let newDir = "update_" + puter.randName();
-        await puter.fs.mkdir(newDir);
-        await puter.fs.write(`${newDir}/index.html`, `<h1>Site Atualizado!</h1><p>Nova pasta: ${newDir}</p>`);
+// Criar site
+async function createSite() {
+    log("Criando diretório...", "#bbb");
+    let dirName = "site_" + puter.randName();
+    await puter.fs.mkdir(dirName);
 
-        const updated = await puter.hosting.update({ subdomain: currentSubdomain, folder: newDir, token: puterToken });
-        log(`Pronto! O site ${updated.subdomain} agora aponta para ${newDir}`);
+    log("Gravando index.html...");
+    await puter.fs.write(`${dirName}/index.html`, `<h1>Site de ${dirName}</h1><p>Criado via Puter API!</p>`);
+
+    let sub = puter.randName();
+    log(`Hospedando em: ${sub}...`);
+    const site = await puter.hosting.create({ subdomain: sub, folder: dirName });
+
+    currentSubdomain = site.subdomain;
+    log(`SUCESSO! Link: <a href="https://${site.subdomain}.puter.site" target="_blank">${site.subdomain}.puter.site</a>`);
+}
+
+// Listar sites
+async function listSites() {
+    log("Consultando API do Puter...", "#bbb");
+    const sites = await puter.hosting.list();
+    if (sites.length === 0) {
+        log("Nenhum site encontrado na sua conta.", "#ffb74d");
+    } else {
+        log("Sites ativos:", "#4fc3f7");
+        sites.forEach(s => log(`• ${s.subdomain}.puter.site`, "#4fc3f7"));
     }
+}
 
-    // Deletar todos os sites
-    async function cleanupAll() {
-        log("Iniciando limpeza total...", "#ff5252");
-        const sites = await puter.hosting.list({ token: puterToken });
-        for (const site of sites) {
-            await puter.hosting.delete({ subdomain: site.subdomain, token: puterToken });
-            log(`Deletado: ${site.subdomain}`);
-        }
-        currentSubdomain = "";
-        log("Todos os sites foram removidos.", "#0f0");
+// Atualizar site
+async function updateSite() {
+    if (!currentSubdomain) {
+        log("Crie um site primeiro para poder atualizar!", "#ffb74d");
+        return;
     }
+    log(`Atualizando site: ${currentSubdomain}...`);
+    let newDir = "update_" + puter.randName();
+    await puter.fs.mkdir(newDir);
+    await puter.fs.write(`${newDir}/index.html`, `<h1>Site Atualizado!</h1><p>Nova pasta: ${newDir}</p>`);
 
-    // Inicializa token ao carregar
-    fetchToken();
+    const updated = await puter.hosting.update({ subdomain: currentSubdomain, folder: newDir });
+    log(`Pronto! O site ${updated.subdomain} agora aponta para ${newDir}`);
+}
+
+// Deletar todos os sites
+async function cleanupAll() {
+    log("Iniciando limpeza total...", "#ff5252");
+    const sites = await puter.hosting.list();
+    for (const site of sites) {
+        await puter.hosting.delete({ subdomain: site.subdomain });
+        log(`Deletado: ${site.subdomain}`);
+    }
+    currentSubdomain = "";
+    log("Todos os sites foram removidos.", "#0f0");
+}
+
+// Autentica automaticamente ao carregar
+document.addEventListener("DOMContentLoaded", autenticarToken);
 </script>
 </body>
 </html>
