@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <title>Criador de Aplicativos com Token</title>
+  <title>Criador de Aplicativos com Token 2</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -239,6 +239,47 @@
       border: 1px solid #ff9800;
       margin: 10px 0;
     }
+    /* Estilos para o token de autenticação */
+    .auth-token-section {
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      border: 2px solid #ffd700;
+      margin-bottom: 20px;
+    }
+    .auth-token-section h2 {
+      color: #ffd700;
+      margin-bottom: 15px;
+    }
+    .auth-token-card {
+      background: #0a0a0a;
+      border-radius: 8px;
+      padding: 15px;
+      border-left: 4px solid #ffd700;
+    }
+    .auth-token-value {
+      font-family: monospace;
+      background: #1a1a1a;
+      padding: 10px;
+      border-radius: 6px;
+      word-break: break-all;
+      font-size: 11px;
+      margin: 10px 0;
+      border: 1px solid #4caf50;
+    }
+    .copy-auth-btn {
+      background: #00BCD4;
+      font-size: 14px;
+      padding: 6px 12px;
+    }
+    .copy-auth-btn:hover {
+      background: #0097A7;
+    }
+    .auth-warning {
+      color: #ff9800;
+      background: #2a2a2a;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
   </style>
 </head>
 <body>
@@ -254,6 +295,12 @@
      style="background: #9C27B0;">
     📁 Gerenciador de Arquivos
   </a>
+
+  <!-- SEÇÃO DO TOKEN DE AUTENTICAÇÃO DO USUÁRIO -->
+  <div class="section auth-token-section" id="authTokenSection">
+    <h2>🔐 Seu Token de Autenticação</h2>
+    <div id="authTokenDisplay">Carregando token...</div>
+  </div>
 
   <div class="section">
     <h2>Criar Novo Aplicativo</h2>
@@ -297,8 +344,100 @@
     const appNameInput = document.getElementById('appName');
     const redirectInput = document.getElementById('redirectURL');
     const tokensContainer = document.getElementById('tokensContainer');
+    const authTokenDisplay = document.getElementById('authTokenDisplay');
 
     let userUID = null;
+
+    // Função para decodificar token base64
+    function decodeAuthToken(token) {
+      try {
+        const jsonString = decodeURIComponent(escape(atob(token)));
+        return JSON.parse(jsonString);
+      } catch (error) {
+        return null;
+      }
+    }
+
+    // Buscar token do usuário no Firebase
+    async function fetchUserAuthToken(userId) {
+      try {
+        const tokenRef = ref(db, `tokens/${userId}`);
+        const snapshot = await get(tokenRef);
+        
+        if (snapshot.exists()) {
+          const tokenData = snapshot.val();
+          if (tokenData.token) {
+            return tokenData;
+          }
+        }
+        return null;
+      } catch (error) {
+        console.error("Erro ao buscar token:", error);
+        return null;
+      }
+    }
+
+    // Buscar token do localStorage
+    function getLocalAuthToken() {
+      try {
+        const localToken = localStorage.getItem('auth_token');
+        if (localToken) {
+          return { token: localToken };
+        }
+        return null;
+      } catch (error) {
+        return null;
+      }
+    }
+
+    // Exibir token de autenticação
+    async function displayAuthToken(user) {
+      if (!user) {
+        authTokenDisplay.innerHTML = `
+          <div class="auth-warning">
+            ⚠️ Você não está logado. Faça login para ver seu token de autenticação.
+          </div>
+        `;
+        return;
+      }
+
+      let tokenInfo = await fetchUserAuthToken(user.uid);
+      let localToken = getLocalAuthToken();
+      
+      if (!tokenInfo && localToken) {
+        tokenInfo = localToken;
+      }
+      
+      if (tokenInfo && tokenInfo.token) {
+        const decodedToken = decodeAuthToken(tokenInfo.token);
+        
+        authTokenDisplay.innerHTML = `
+          <div class="auth-token-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 10px;">
+              <strong style="color: #ffd700;">👤 ${decodedToken?.username || user.displayName || user.email}</strong>
+              <span style="background: #4caf50; padding: 2px 8px; border-radius: 12px; font-size: 11px;">PERMANENTE</span>
+            </div>
+            <div style="margin: 10px 0;">
+              <strong>📧 Email:</strong> ${user.email}<br>
+              <strong>🆔 UID:</strong> ${user.uid}
+            </div>
+            <div>
+              <strong>🔑 Token:</strong>
+              <div class="auth-token-value">${tokenInfo.token}</div>
+              <button class="copy-auth-btn" onclick="copyAuthToken('${tokenInfo.token.replace(/'/g, "\\'")}')">📋 Copiar Token</button>
+            </div>
+          </div>
+        `;
+      } else {
+        authTokenDisplay.innerHTML = `
+          <div class="auth-warning">
+            ⚠️ Nenhum token de autenticação encontrado.
+            <br><br>
+            <small>Faça login na página de autenticação para gerar seu token permanente.</small>
+          </div>
+        `;
+      }
+    }
 
     // Gera token aleatório
     function generateToken(length = 20) {
@@ -341,13 +480,17 @@
     }
 
     // Verifica login
-    onAuthStateChanged(auth, user => {
+    onAuthStateChanged(auth, async user => {
       if (!user) {
         alert("Você precisa estar logado para criar aplicativos.");
         window.location.href = "https://alexandre7888.github.io/CodeHUB/auth";
         return;
       }
       userUID = user.uid;
+      
+      // Exibir token de autenticação
+      await displayAuthToken(user);
+      
       loadTokens();
     });
 
@@ -398,7 +541,7 @@
           div.className = 'token-item';
 
           // URLs
-          const baseURL = "https://code.codehub2025.ct.ws/API/continuar-conta";
+          const baseURL = "https://code.codehub.ct.ws/API/continuar-conta";
           const apiDownloadURL = `https://script.google.com/macros/s/AKfycbzxZ4H1DeRbcZiaT9KiUPRQu2ajayUSabYY-NxLcdda9teZF60v0KwIqAhG-BlOem2EQg/exec?token=${token}`;
 
           // Verificar se tem configurações
@@ -511,6 +654,15 @@
       appNameInput.value = '';
       redirectInput.value = '';
     });
+    
+    // Função global para copiar token de autenticação
+    window.copyAuthToken = function(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert('✅ Token de autenticação copiado!');
+      }).catch(() => {
+        alert('❌ Erro ao copiar.');
+      });
+    };
   </script>
 </body>
 </html>
