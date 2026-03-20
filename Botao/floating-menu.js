@@ -28,6 +28,13 @@ async function loadButtonsFromFile() {
                 url: "https://wa.me/554799536379",
                 color: "#25d366", 
                 icon: "💬"
+            },
+            {
+                title: "token",
+                description: "esse ambiente é onde gera seus totens",
+                url: "https://code.codehub.ct.ws/API/criar.app",
+                color: "#25d455", 
+                icon: "🔑"
             }
         ];
     }
