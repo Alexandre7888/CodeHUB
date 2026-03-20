@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Continuar Login com Usuário</title>
+<title>Continuar Login com Usuário 2</title>
 <style>
     :root {
       --primary-color: #4361ee;
@@ -167,6 +167,17 @@
       background-color: rgba(255, 255, 255, 0.3);
     }
 
+    .token-info {
+      background: #e7f3ff;
+      border-left: 4px solid var(--primary-color);
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 6px;
+      font-size: 12px;
+      word-break: break-all;
+      text-align: left;
+    }
+
     @media (max-width: 480px) {
       .auth-container {
         border-radius: 12px;
@@ -179,7 +190,7 @@
       .auth-content {
         padding: 20px;
       }
-      
+
       .header-actions {
         top: 10px;
         left: 10px;
@@ -207,6 +218,7 @@
       <p id="status">Verificando autenticação...</p>
       <p id="username"></p>
       <div id="user-info"></div>
+      <div id="auth-token-display" class="token-info" style="display: none;"></div>
       <button id="continueBtn">Continuar</button>
       <div id="login-redirect" class="login-redirect" style="display: none;">
         <p>Você precisa fazer login para continuar</p>
@@ -218,7 +230,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signInAnonymously, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
     import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
     const firebaseConfig = {
@@ -243,10 +255,72 @@
     const errorEl = document.getElementById('error');
     const loginRedirectEl = document.getElementById('login-redirect');
     const loginLinkEl = document.getElementById('loginLink');
+    const authTokenDisplay = document.getElementById('auth-token-display');
 
     // Pega token da URL
     const urlParams = new URLSearchParams(window.location.search);
     const appToken = urlParams.get('token');
+
+    // ==================== FUNÇÕES DO TOKEN DE AUTENTICAÇÃO ====================
+    
+    // Decodifica token base64
+    function decodeAuthToken(token) {
+      try {
+        const jsonString = decodeURIComponent(escape(atob(token)));
+        return JSON.parse(jsonString);
+      } catch (error) {
+        console.error("Erro ao decodificar token:", error);
+        return null;
+      }
+    }
+
+    // Busca token do usuário no Firebase (collection tokens)
+    async function fetchUserAuthTokenFromFirebase(userId) {
+      try {
+        const tokenRef = ref(db, `tokens/${userId}`);
+        const snapshot = await get(tokenRef);
+        
+        if (snapshot.exists()) {
+          const tokenData = snapshot.val();
+          if (tokenData.token) {
+            return tokenData.token;
+          }
+        }
+        return null;
+      } catch (error) {
+        console.error("Erro ao buscar token do Firebase:", error);
+        return null;
+      }
+    }
+
+    // Busca token do localStorage
+    function getLocalAuthToken() {
+      try {
+        const localToken = localStorage.getItem('auth_token');
+        if (localToken) {
+          return localToken;
+        }
+        return null;
+      } catch (error) {
+        console.error("Erro ao ler localStorage:", error);
+        return null;
+      }
+    }
+
+    // Função para obter o token de autenticação do usuário
+    async function getUserAuthToken(userId) {
+      // Tenta buscar do Firebase primeiro
+      let authToken = await fetchUserAuthTokenFromFirebase(userId);
+      
+      // Se não tiver no Firebase, tenta do localStorage
+      if (!authToken) {
+        authToken = getLocalAuthToken();
+      }
+      
+      return authToken;
+    }
+
+    // ==================== FIM FUNÇÕES DO TOKEN ====================
 
     // Função para ir para index.html
     window.goToIndex = function() {
@@ -260,7 +334,6 @@
 
     function redirectToLogin() {
       if (appToken) {
-        // Redireciona para auth.html com o token
         window.location.href = `../auth.html?token=${appToken}`;
       } else {
         window.location.href = '../auth.html';
@@ -290,14 +363,15 @@
         userInfoEl.innerHTML = '';
         continueBtn.style.display = 'none';
         loginRedirectEl.style.display = 'block';
+        authTokenDisplay.style.display = 'none';
         return;
       }
 
       // Usuário ESTÁ logado
       loginRedirectEl.style.display = 'none';
       continueBtn.style.display = 'block';
-      
-      // Verificar token
+
+      // Verificar token da aplicação
       if (!appToken) {
         statusEl.textContent = 'Token da aplicação não informado. Redirecionando...';
         setTimeout(() => {
@@ -311,7 +385,7 @@
 
       try {
         const snapshot = await get(tokenRef);
-        
+
         if (!snapshot.exists()) {
           statusEl.textContent = 'Token da aplicação inválido.';
           disableContinue();
@@ -327,6 +401,9 @@
           return;
         }
 
+        // ==================== PEGAR TOKEN DE AUTENTICAÇÃO DO USUÁRIO ====================
+        const userAuthToken = await getUserAuthToken(user.uid);
+        
         // Mostrar informações do usuário
         const hasEmail = user.email && !user.isAnonymous;
         const nome = hasEmail ? user.email.split('@')[0] : `Usuário-${user.uid.substring(0,6)}`;
@@ -336,12 +413,30 @@
         statusEl.textContent = 'Pronto para continuar';
         errorEl.textContent = '';
 
+        // Exibir token de autenticação se existir
+        if (userAuthToken) {
+          const decodedToken = decodeAuthToken(userAuthToken);
+          authTokenDisplay.style.display = 'block';
+          authTokenDisplay.innerHTML = `
+            <strong>🔐 Token de Autenticação encontrado:</strong><br>
+            <span style="font-family: monospace; font-size: 10px;">${userAuthToken.substring(0, 80)}...</span><br>
+            <small>✅ Token será salvo na sessão</small>
+          `;
+        } else {
+          authTokenDisplay.style.display = 'block';
+          authTokenDisplay.innerHTML = `
+            <strong>⚠️ Token de Autenticação:</strong><br>
+            Nenhum token encontrado. Um novo será gerado no login.
+          `;
+        }
+
         // Exibir informações adicionais
         userInfoEl.innerHTML = `
           <div style="text-align: left; margin: 15px 0; padding: 10px; background: #f8f9fa; border-radius: 8px;">
             <p><strong>ID do Usuário:</strong> ${user.uid.substring(0, 8)}...</p>
             ${userEmail ? `<p><strong>Email:</strong> ${userEmail}</p>` : ''}
             <p><strong>Tipo:</strong> ${user.isAnonymous ? 'Sessão Temporária' : 'Conta Registrada'}</p>
+            ${userAuthToken ? `<p><strong>✅ Token Auth:</strong> Presente</p>` : '<p><strong>❌ Token Auth:</strong> Não encontrado</p>'}
           </div>
         `;
 
@@ -363,22 +458,38 @@
             }
 
             const userKeyDataRef = ref(db, `userKeysData/${userKey}`);
-            await set(userKeyDataRef, {
+            
+            // ==================== SALVAR O TOKEN DE AUTENTICAÇÃO DENTRO DO JSON ====================
+            // Monta o objeto com todas as informações, incluindo o token de autenticação
+            const userDataToSave = {
               nome: nome,
               uid: user.uid,
               email: userEmail,
               criadoEm: Date.now(),
-              isAnonymous: user.isAnonymous
-            });
-
+              isAnonymous: user.isAnonymous,
+              authToken: userAuthToken || null,  // Salva o token de autenticação aqui!
+              authTokenDecoded: userAuthToken ? decodeAuthToken(userAuthToken) : null,
+              hasAuthToken: !!userAuthToken
+            };
+            
+            // Salva no Firebase
+            await set(userKeyDataRef, userDataToSave);
+            
+            console.log('✅ Dados salvos no Firebase:', userDataToSave);
+            
             statusEl.textContent = 'Redirecionando...';
 
-            // Redireciona com userKey e userName na URL
+            // Redireciona com userKey, userName e authToken na URL
             const sep = redirectURL.includes('?') ? '&' : '?';
-            const urlFinal = redirectURL + sep + 
+            let urlFinal = redirectURL + sep + 
               `userKey=${encodeURIComponent(userKey)}` + 
               `&userName=${encodeURIComponent(nome)}`;
             
+            // Adiciona o authToken na URL se existir
+            if (userAuthToken) {
+              urlFinal += `&authToken=${encodeURIComponent(userAuthToken)}`;
+            }
+
             window.location.href = urlFinal;
 
           } catch (err) {
@@ -419,7 +530,7 @@
         console.error('Erro ao fazer logout:', error);
       }
     };
-    
+
     document.querySelector('.auth-content').appendChild(logoutBtn);
   </script>
 </body>
