@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CodeHub - Autenticação</title>
+  <title>CodeHub - Autenticação 2</title>
   <style>
     :root {
       --primary-color: #4361ee;
@@ -255,6 +255,20 @@
       background-color: rgba(255, 255, 255, 0.3);
     }
 
+    .token-info {
+      background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+      border-radius: 8px;
+      padding: 12px;
+      margin: 15px 0;
+      font-size: 12px;
+      word-break: break-all;
+      border: 1px solid var(--primary-color);
+    }
+
+    .token-info strong {
+      color: var(--primary-color);
+    }
+
     @media (max-width: 480px) {
       .auth-container {
         border-radius: 12px;
@@ -267,7 +281,7 @@
       .tab-content {
         padding: 20px;
       }
-      
+
       .header-actions {
         top: 10px;
         right: 10px;
@@ -291,9 +305,14 @@
       <p>Seu editor de código online favorito</p>
     </div>
 
+    <div id="token-display" class="token-info" style="display: none;">
+      <strong>🔐 Token de Autenticação:</strong><br>
+      <span id="token-value"></span>
+    </div>
+
     <div id="no-token-info" class="info-message" style="display: none;">
       <strong>Modo Direto:</strong> Você acessou diretamente a página de login. 
-      Após o login, você será redirecionado para a página inicial.
+      Após o login, um token único será gerado e salvo permanentemente.
     </div>
 
     <div class="tabs">
@@ -391,7 +410,7 @@
       GoogleAuthProvider, 
       signInWithPopup 
     } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
-    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
+    import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
@@ -413,6 +432,148 @@
     const urlParams = new URLSearchParams(window.location.search);
     const appToken = urlParams.get('token');
 
+    // ==================== SISTEMA DE TOKEN ====================
+    // Função para gerar token único e permanente (Base64 com JSON)
+    function generateAuthToken(userId, userEmail, username) {
+      // Cria um objeto com informações do usuário
+      const tokenData = {
+        uid: userId,
+        email: userEmail,
+        username: username,
+        createdAt: Date.now(),
+        expiresAt: null, // permanente
+        version: "1.0",
+        isPermanent: true
+      };
+      
+      // Converte para JSON e depois para Base64
+      const jsonString = JSON.stringify(tokenData);
+      const base64Token = btoa(unescape(encodeURIComponent(jsonString)));
+      
+      return base64Token;
+    }
+
+    // Função para decodificar token e obter informações
+    function decodeToken(token) {
+      try {
+        const jsonString = decodeURIComponent(escape(atob(token)));
+        return JSON.parse(jsonString);
+      } catch (error) {
+        console.error("Erro ao decodificar token:", error);
+        return null;
+      }
+    }
+
+    // Função para salvar token no Firebase e localStorage
+    async function saveTokenToFirebase(userId, token, userInfo) {
+      try {
+        // Salva no Realtime Database em tokens/{userId}
+        await set(ref(database, `tokens/${userId}`), {
+          token: token,
+          userInfo: userInfo,
+          createdAt: Date.now(),
+          isPermanent: true,
+          lastUsed: Date.now()
+        });
+        
+        // Salva também no localStorage para persistência local
+        localStorage.setItem('auth_token', token);
+        localStorage.setItem('token_user_id', userId);
+        localStorage.setItem('token_data', JSON.stringify(userInfo));
+        
+        console.log("✅ Token salvo com sucesso no Firebase e localStorage");
+        return true;
+      } catch (error) {
+        console.error("❌ Erro ao salvar token:", error);
+        return false;
+      }
+    }
+
+    // Função para verificar se o usuário já tem token no Firebase
+    async function getUserExistingToken(userId) {
+      try {
+        const tokenRef = ref(database, `tokens/${userId}`);
+        const snapshot = await get(tokenRef);
+        
+        if (snapshot.exists()) {
+          const tokenData = snapshot.val();
+          // Verifica se o token ainda é válido (permanente)
+          if (tokenData.isPermanent === true) {
+            return tokenData.token;
+          }
+        }
+        return null;
+      } catch (error) {
+        console.error("Erro ao buscar token existente:", error);
+        return null;
+      }
+    }
+
+    // Função principal: gerenciar token do usuário
+    async function manageUserToken(user, username) {
+      const userId = user.uid;
+      const userEmail = user.email;
+      const displayName = username || user.displayName || userEmail.split('@')[0];
+      
+      // Verifica se já existe um token para este usuário no Firebase
+      let existingToken = await getUserExistingToken(userId);
+      
+      if (existingToken) {
+        // Token já existe, é permanente - apenas recupera
+        console.log("🔑 Token existente encontrado (permanente)");
+        
+        // Atualiza localStorage com o token existente
+        localStorage.setItem('auth_token', existingToken);
+        localStorage.setItem('token_user_id', userId);
+        
+        // Mostra token na tela
+        displayTokenInfo(existingToken);
+        
+        return existingToken;
+      } else {
+        // Primeiro acesso - gera token único e permanente
+        console.log("✨ Gerando novo token permanente para o usuário");
+        
+        const newToken = generateAuthToken(userId, userEmail, displayName);
+        const tokenInfo = decodeToken(newToken);
+        
+        // Salva token no Firebase e localStorage
+        await saveTokenToFirebase(userId, newToken, tokenInfo);
+        
+        // Mostra token na tela
+        displayTokenInfo(newToken);
+        
+        return newToken;
+      }
+    }
+
+    // Função para exibir o token na interface
+    function displayTokenInfo(token) {
+      const tokenDisplay = document.getElementById('token-display');
+      const tokenValueSpan = document.getElementById('token-value');
+      
+      if (token && tokenDisplay) {
+        const decoded = decodeToken(token);
+        if (decoded) {
+          tokenValueSpan.innerHTML = `
+            <span style="font-family: monospace; font-size: 11px;">${token.substring(0, 80)}...</span><br>
+            <small style="opacity: 0.8;">👤 Usuário: ${decoded.username} | 📧 ${decoded.email}</small><br>
+            <small style="opacity: 0.8;">🔒 Token Permanente | Criado em: ${new Date(decoded.createdAt).toLocaleString()}</small>
+          `;
+          tokenDisplay.style.display = 'block';
+        }
+      }
+    }
+
+    // Verifica se há token no localStorage ao carregar a página
+    function checkLocalToken() {
+      const localToken = localStorage.getItem('auth_token');
+      if (localToken) {
+        displayTokenInfo(localToken);
+      }
+    }
+    // ==================== FIM SISTEMA DE TOKEN ====================
+
     // Função para ir para index.html
     window.goToIndex = function() {
       window.location.href = 'index.html';
@@ -420,28 +581,17 @@
 
     // Verifica se há token na URL
     if (!appToken) {
-      // Mostra mensagem informativa
       const infoElement = document.getElementById('no-token-info');
       infoElement.style.display = 'block';
-      
-      // Adiciona botão de voltar ao início no header
-      const authHeader = document.querySelector('.auth-header');
-      authHeader.innerHTML += `
-        <div style="margin-top: 10px; font-size: 12px; opacity: 0.8;">
-          <a href="index.html" style="color: white; text-decoration: underline;">Voltar para a página inicial</a>
-        </div>
-      `;
     }
 
     // Função para redirecionar após login/registro
     function redirectAfterAuth() {
       if (appToken) {
-        // Se tiver token, redireciona para continuar-conta.html
         setTimeout(() => {
           window.location.href = `API/continuar-conta.html?token=${appToken}`;
         }, 1500);
       } else {
-        // Se não tiver token, redireciona para index.html
         setTimeout(() => {
           window.location.href = 'index.html';
         }, 1500);
@@ -477,43 +627,41 @@
       successElement.textContent = message;
     }
 
-    // Função de registro
+    // Função de registro com geração de token
     window.register = async () => {
       clearErrors();
-      
+
       const username = document.getElementById('register-username').value.trim();
       const email = document.getElementById('register-email').value.trim();
       const password = document.getElementById('register-password').value;
       const confirmPassword = document.getElementById('register-confirm-password').value;
 
-      // Validações
       if (!username) {
         showError('register-username', 'Nome de usuário é obrigatório');
         return;
       }
-      
+
       if (!email) {
         showError('register-email', 'Email é obrigatório');
         return;
       }
-      
+
       if (!password) {
         showError('register-password', 'Senha é obrigatória');
         return;
       }
-      
+
       if (password.length < 6) {
         showError('register-password', 'A senha deve ter pelo menos 6 caracteres');
         return;
       }
-      
+
       if (password !== confirmPassword) {
         showError('register-confirm', 'As senhas não coincidem');
         return;
       }
 
       try {
-        // Criar usuário no Firebase Authentication
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
@@ -522,20 +670,19 @@
           username: username,
           email: email,
           createdAt: Date.now(),
-          lastLogin: Date.now()
+          lastLogin: Date.now(),
+          hasToken: true
         });
 
-        const successMessage = appToken 
-          ? 'Conta criada com sucesso! Redirecionando...' 
-          : 'Conta criada com sucesso! Redirecionando para a página inicial...';
+        // GERAR TOKEN PERMANENTE PARA O NOVO USUÁRIO
+        const authToken = await manageUserToken(user, username);
         
-        showSuccess('register', successMessage);
+        showSuccess('register', `✅ Conta criada com sucesso! Token gerado e salvo permanentemente. Redirecionando...`);
         redirectAfterAuth();
 
       } catch (error) {
         console.error('Erro no registro:', error);
-        
-        // Tratamento de erros específicos do Firebase
+
         switch(error.code) {
           case 'auth/email-already-in-use':
             showError('register-email', 'Este email já está em uso');
@@ -552,10 +699,10 @@
       }
     };
 
-    // Função de login
+    // Função de login com gerenciamento de token
     window.login = async () => {
       clearErrors();
-      
+
       const email = document.getElementById('login-email').value.trim();
       const password = document.getElementById('login-password').value;
 
@@ -563,7 +710,7 @@
         showError('login-email', 'Email é obrigatório');
         return;
       }
-      
+
       if (!password) {
         showError('login-password', 'Senha é obrigatória');
         return;
@@ -573,19 +720,26 @@
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // Atualizar último login no database
+        // Buscar username do usuário
+        let username = email.split('@')[0];
+        const userRef = ref(database, 'users/' + user.uid);
+        const userSnapshot = await get(userRef);
+        if (userSnapshot.exists()) {
+          username = userSnapshot.val().username || username;
+        }
+
+        // Atualizar último login
         await set(ref(database, 'users/' + user.uid + '/lastLogin'), Date.now());
 
-        const successMessage = appToken 
-          ? 'Login realizado com sucesso! Redirecionando...' 
-          : 'Login realizado com sucesso! Redirecionando para a página inicial...';
-        
-        showSuccess('login', successMessage);
+        // GERAR OU RECUPERAR TOKEN DO USUÁRIO
+        const authToken = await manageUserToken(user, username);
+
+        showSuccess('login', `✅ Login realizado! Token ${authToken ? 'recuperado' : 'gerado'} com sucesso. Redirecionando...`);
         redirectAfterAuth();
 
       } catch (error) {
         console.error('Erro no login:', error);
-        
+
         switch(error.code) {
           case 'auth/user-not-found':
             showError('login-email', 'Usuário não encontrado');
@@ -596,35 +750,33 @@
           case 'auth/invalid-email':
             showError('login-email', 'Email inválido');
             break;
-          case 'auth/user-disabled':
-            showError('login-email', 'Esta conta foi desativada');
-            break;
           default:
             showError('login-email', 'Erro ao fazer login. Verifique suas credenciais.');
         }
       }
     };
 
-    // Login com Google
+    // Login com Google com token
     window.loginWithGoogle = async () => {
       try {
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
+        const username = user.displayName || user.email.split('@')[0];
 
-        // Salvar/atualizar dados do usuário no database
+        // Salvar/atualizar dados do usuário
         await set(ref(database, 'users/' + user.uid), {
-          username: user.displayName || user.email.split('@')[0],
+          username: username,
           email: user.email,
           createdAt: Date.now(),
           lastLogin: Date.now(),
-          provider: 'google'
+          provider: 'google',
+          hasToken: true
         });
 
-        const successMessage = appToken 
-          ? 'Login com Google realizado! Redirecionando...' 
-          : 'Login com Google realizado! Redirecionando para a página inicial...';
-        
-        showSuccess('login', successMessage);
+        // GERAR OU RECUPERAR TOKEN
+        const authToken = await manageUserToken(user, username);
+
+        showSuccess('login', `✅ Login com Google realizado! Token ${authToken ? 'recuperado' : 'gerado'} com sucesso. Redirecionando...`);
         redirectAfterAuth();
 
       } catch (error) {
@@ -633,24 +785,36 @@
       }
     };
 
-    // Verificar se o usuário já está logado
-    auth.onAuthStateChanged((user) => {
+    // Verificar se o usuário já está logado e gerenciar token
+    auth.onAuthStateChanged(async (user) => {
       if (user) {
-        // Se já estiver logado e tiver token, redirecionar automaticamente
+        // Buscar username
+        let username = user.displayName || user.email.split('@')[0];
+        const userRef = ref(database, 'users/' + user.uid);
+        const userSnapshot = await get(userRef);
+        if (userSnapshot.exists() && userSnapshot.val().username) {
+          username = userSnapshot.val().username;
+        }
+        
+        // Gerenciar token para usuário já logado
+        await manageUserToken(user, username);
+        
         if (appToken) {
-          showSuccess('login', 'Você já está logado! Redirecionando...');
+          showSuccess('login', '✅ Você já está logado! Token verificado. Redirecionando...');
           setTimeout(() => {
             window.location.href = `API/continuar-conta.html?token=${appToken}`;
           }, 1000);
         } else {
-          // Se já estiver logado mas não tiver token, redirecionar para index
-          showSuccess('login', 'Você já está logado! Redirecionando para a página inicial...');
+          showSuccess('login', '✅ Você já está logado! Token ativo. Redirecionando...');
           setTimeout(() => {
             window.location.href = 'index.html';
           }, 1000);
         }
       }
     });
+
+    // Verificar token local ao iniciar
+    checkLocalToken();
   </script>
 </body>
 </html>
