@@ -1,30 +1,24 @@
 
 title: API de Fontes
 description: Textos personalizados
-url: https://seusite.com/fonts.html
+url: https://code.codehub.ct.ws/API FONTS/fonts
 color: #28a745
 icon: 🎨
 ---
 title: WhatsApp
 description: Fale conosco
-url: https://wa.me/5511999999999
+url: https://wa.me/47999536379
 color: #25d366
 icon: 💬
 ---
-title: DevTools
-description: Ferramentas de desenvolvimento
-url: https://seusite.com/devtools
-color: #ff6b35
-icon: 🔧
----
 title: Dox
 description: Documentação técnica
-url: https://seusite.com/dox
+url: https://code.codehub.ct.ws/documentacao
 color: #6f42c1
 icon: 📖
 ---
 title: API Developer
 description: Acesse nossa API completa
-url: https://seusite.com/api/docs
+url: https://code.codehub.ct.ws/API/criar.app
 color: #2196f3
 icon: 📡
