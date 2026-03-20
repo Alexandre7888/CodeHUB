@@ -2,11 +2,11 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <title>Criador de Aplicativos com Token</title>
+  <title>Criador de Aplicativos com Token 2</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      max-width: 1200px;
+      max-width: 1000px;
       margin: 40px auto;
       background: #121212;
       color: #eee;
@@ -56,12 +56,6 @@
     button.url-btn:hover {
       background: #F57C00;
     }
-    button.api-btn {
-      background: #607D8B;
-    }
-    button.api-btn:hover {
-      background: #455A64;
-    }
     button.delete-btn {
       background: #f44336;
     }
@@ -74,13 +68,13 @@
     button.settings-btn:hover {
       background: #1976D2;
     }
-    button.refresh-btn {
+    button.copy-btn {
       background: #00BCD4;
     }
-    button.refresh-btn:hover {
+    button.copy-btn:hover {
       background: #0097A7;
     }
-    h1, h2 {
+    h1, h2, h3 {
       text-align: center;
       margin-bottom: 20px;
       color: #4caf50;
@@ -94,6 +88,7 @@
       margin-bottom: 15px;
       border-radius: 6px;
       word-break: break-all;
+      border-left: 4px solid #4caf50;
     }
     .token-item strong {
       display: block;
@@ -110,24 +105,6 @@
       background: #1a1a1a;
       border-radius: 4px;
       border: 1px solid #333;
-    }
-    .api-download-url {
-      color: #81c784;
-      text-decoration: none;
-      word-break: break-all;
-      display: block;
-      margin: 10px 0;
-      padding: 8px;
-      background: #1a1a1a;
-      border-radius: 4px;
-      border: 1px solid #4caf50;
-    }
-    .download-btn {
-      background: #9C27B0;
-      margin-top: 5px;
-    }
-    .download-btn:hover {
-      background: #7B1FA2;
     }
     .section {
       background: #1a1a1a;
@@ -146,77 +123,6 @@
     .form-group {
       margin-bottom: 15px;
     }
-    .form-group label {
-      display: block;
-      margin-bottom: 5px;
-      color: #81c784;
-      font-weight: bold;
-    }
-    .form-group input, .form-group textarea {
-      background: #1a1a1a;
-      border: 1px solid #333;
-      padding: 8px;
-      border-radius: 4px;
-      color: #eee;
-    }
-    .api-info {
-      background: #1a1a1a;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 4px;
-      border-left: 4px solid #607D8B;
-    }
-    .api-info-item {
-      margin: 5px 0;
-      padding: 5px;
-      background: #2a2a2a;
-      border-radius: 3px;
-    }
-    .api-key {
-      font-family: monospace;
-      background: #333;
-      padding: 5px 10px;
-      border-radius: 3px;
-      margin: 5px 0;
-      display: inline-block;
-      word-break: break-all;
-    }
-    .rules-display {
-      white-space: pre-wrap;
-      font-family: monospace;
-      font-size: 14px;
-      background: #2a2a2a;
-      padding: 10px;
-      border-radius: 4px;
-      max-height: 200px;
-      overflow-y: auto;
-      margin: 5px 0;
-    }
-    .domains-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-      margin: 5px 0;
-    }
-    .domain-tag {
-      background: #2d3748;
-      color: #90cdf4;
-      padding: 3px 8px;
-      border-radius: 12px;
-      font-size: 12px;
-    }
-    .btn{
-      display:inline-block;
-      padding:10px 18px;
-      background:#2b6cb0;
-      color:#fff;
-      text-decoration:none;
-      border-radius:8px;
-      font-weight:600;
-      box-shadow:0 4px 10px rgba(0,0,0,0.08);
-      margin-bottom: 20px;
-    }
-    .btn:hover{ opacity:0.95; transform:translateY(-1px); }
     .token-actions {
       margin-top: 15px;
       padding-top: 15px;
@@ -225,29 +131,25 @@
       flex-wrap: wrap;
       gap: 10px;
     }
-    .config-form {
-      margin-top: 15px;
-      padding: 15px;
-      background: #2a2a2a;
-      border-radius: 5px;
-      border: 1px solid #333;
+    .btn {
+      display: inline-block;
+      padding: 10px 18px;
+      background: #2b6cb0;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+      margin-right: 10px;
     }
-    .config-form h3 {
-      margin-top: 0;
-      color: #2196F3;
-    }
-    .no-config {
-      color: #ff9800;
-      font-style: italic;
-      padding: 8px;
-      background: #2a2a2a;
-      border-radius: 4px;
-      border: 1px solid #ff9800;
-      margin: 10px 0;
+    .btn:hover { 
+      opacity: 0.95; 
+      transform: translateY(-1px); 
     }
     .user-token-section {
       background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-      border: 2px solid #4caf50;
+      border: 2px solid #ffd700;
       margin-bottom: 30px;
     }
     .user-token-section h2 {
@@ -279,6 +181,8 @@
       font-size: 13px;
       margin: 10px 0;
       white-space: pre-wrap;
+      max-height: 200px;
+      overflow: auto;
     }
     .status-badge {
       display: inline-block;
@@ -292,18 +196,6 @@
       background: #4caf50;
       color: white;
     }
-    .status-temp {
-      background: #ff9800;
-      color: white;
-    }
-    .copy-btn {
-      background: #00BCD4;
-      font-size: 14px;
-      padding: 6px 12px;
-    }
-    .copy-btn:hover {
-      background: #0097A7;
-    }
     .warning {
       color: #ff9800;
       background: #2a2a2a;
@@ -311,33 +203,30 @@
       border-radius: 4px;
       margin: 10px 0;
     }
+    .button-group {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 <body>
-  <h1>Criador de Aplicativos com Token</h1>
-  <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-    <a href="https://alexandre7888.github.io/CodeHUB/documentacao.html"
-       class="btn"
-       target="_blank"
-       rel="noopener noreferrer">
-      📚 Documentação
-    </a>
-    <a href="file-manager.html"
-       class="btn"
-       style="background: #9C27B0;">
-      📁 Gerenciador de Arquivos
-    </a>
-    <button class="btn refresh-btn" onclick="refreshPage()" style="background: #00BCD4;">
-      🔄 Atualizar Token
-    </button>
+  <h1>🚀 Criador de Aplicativos com Token</h1>
+  
+  <div class="button-group">
+    <a href="https://alexandre7888.github.io/CodeHUB/documentacao.html" class="btn" target="_blank">📚 Documentação</a>
+    <a href="file-manager.html" class="btn" style="background: #9C27B0;">📁 Gerenciador de Arquivos</a>
   </div>
 
-  <!-- SEÇÃO DO TOKEN DE AUTENTICAÇÃO DO USUÁRIO (do localStorage e Firebase) -->
+  <!-- SEÇÃO DO TOKEN DE AUTENTICAÇÃO DO USUÁRIO (AUTH TOKEN) -->
   <div class="section user-token-section" id="userTokenSection">
-    <h2>🔐 Seu Token de Autenticação Permanente</h2>
-    <div id="userTokenDisplay">Carregando token do usuário...</div>
+    <h2>🔐 SEU TOKEN DE AUTENTICAÇÃO (AUTH TOKEN)</h2>
+    <div id="userTokenDisplay">Carregando token de autenticação...</div>
   </div>
 
+  <!-- SEÇÃO PARA CRIAR NOVO APLICATIVO -->
   <div class="section">
     <h2>✨ Criar Novo Aplicativo</h2>
     <form id="appForm">
@@ -347,18 +236,19 @@
       <div class="form-group">
         <input type="url" id="redirectURL" placeholder="URL do Redirecionador (ex: dashboard.html)" required />
       </div>
-      <button type="submit">Gerar Token e Salvar</button>
+      <button type="submit">🎯 Gerar Token e Salvar</button>
     </form>
   </div>
 
+  <!-- LISTA DE APLICATIVOS CRIADOS -->
   <div id="tokenList" class="section">
-    <h2>📱 APIs Criadas (Tokens dos Aplicativos)</h2>
+    <h2>📱 Seus Aplicativos</h2>
     <div id="tokensContainer">Carregando...</div>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-    import { getDatabase, ref, set, get, onValue, child } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+    import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -385,7 +275,9 @@
     let userUID = null;
     let currentUser = null;
 
-    // Função para decodificar token base64
+    // ==================== FUNÇÕES DO TOKEN DE AUTENTICAÇÃO (AUTH TOKEN) ====================
+    
+    // Decodifica token base64
     function decodeToken(token) {
       try {
         const jsonString = decodeURIComponent(escape(atob(token)));
@@ -396,7 +288,7 @@
       }
     }
 
-    // Função para buscar token do usuário do Firebase
+    // Busca token do usuário no Firebase (collection tokens)
     async function fetchUserTokenFromFirebase(userId) {
       try {
         const tokenRef = ref(db, `tokens/${userId}`);
@@ -420,7 +312,7 @@
       }
     }
 
-    // Função para buscar token do localStorage
+    // Busca token do localStorage
     function getLocalAuthToken() {
       try {
         const localToken = localStorage.getItem('auth_token');
@@ -441,29 +333,30 @@
       }
     }
 
-    // Função para exibir token do usuário
-    async function displayUserToken(user) {
+    // Exibe o token de autenticação do usuário
+    async function displayUserAuthToken(user) {
       if (!user) {
         userTokenDisplay.innerHTML = `
           <div class="warning">
             ⚠️ Você não está logado. Faça login para ver seu token de autenticação.
             <br><br>
-            <a href="https://alexandre7888.github.io/CodeHUB/auth" class="btn" style="background: #4caf50; display: inline-block;">Fazer Login</a>
+            <a href="https://alexandre7888.github.io/CodeHUB/auth" class="btn" style="background: #4caf50; display: inline-block;">🔑 Fazer Login</a>
           </div>
         `;
         return;
       }
 
-      // Tentar pegar token do Firebase primeiro
+      // Tenta buscar token do Firebase primeiro
       let tokenInfo = await fetchUserTokenFromFirebase(user.uid);
       let localTokenInfo = getLocalAuthToken();
       
-      // Se não tiver no Firebase, usar do localStorage
+      // Se não tiver no Firebase, usa do localStorage
       if (!tokenInfo && localTokenInfo) {
         tokenInfo = {
           token: localTokenInfo.token,
           userInfo: localTokenInfo.tokenData,
-          isPermanent: true
+          isPermanent: true,
+          createdAt: localTokenInfo.tokenData?.createdAt
         };
       }
       
@@ -474,7 +367,7 @@
         
         userTokenDisplay.innerHTML = `
           <div class="token-info-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 15px;">
               <strong style="font-size: 18px; color: #ffd700;">👤 ${decodedToken?.username || user.displayName || user.email}</strong>
               <span class="status-badge status-permanent">✅ TOKEN PERMANENTE</span>
             </div>
@@ -482,12 +375,12 @@
               <strong>📧 Email:</strong> ${user.email}<br>
               <strong>🆔 UID:</strong> ${user.uid}<br>
               <strong>📅 Criado em:</strong> ${createdAt}<br>
-              <strong>🔒 Status:</strong> Token permanente - não pode ser alterado
+              <strong>🔒 Status:</strong> Token permanente - único para sua conta
             </div>
             <div>
-              <strong>🔑 Token (Base64):</strong>
+              <strong>🔑 AUTH TOKEN (Base64):</strong>
               <div class="token-value" id="userTokenValue">${tokenInfo.token}</div>
-              <button class="copy-btn" onclick="copyToClipboard('${tokenInfo.token.replace(/'/g, "\\'")}')">📋 Copiar Token</button>
+              <button class="copy-btn" onclick="window.copyToClipboard('${tokenInfo.token.replace(/'/g, "\\'")}')">📋 Copiar Token</button>
             </div>
             <div>
               <strong>📦 Informações decodificadas (JSON):</strong>
@@ -495,9 +388,8 @@
                 ${JSON.stringify(decodedToken, null, 2)}
               </div>
             </div>
-            <div class="warning" style="margin-top: 15px;">
-              💡 <strong>Importante:</strong> Este token é PERMANENTE e único para sua conta. 
-              Ele é salvo no Firebase e localStorage automaticamente. Use este token para autenticar suas APIs.
+            <div class="warning" style="margin-top: 15px; background: #1e3c72;">
+              💡 <strong>Dica:</strong> Este é seu token de autenticação permanente. Use-o para acessar APIs e serviços do CodeHub.
             </div>
           </div>
         `;
@@ -508,9 +400,9 @@
             <br><br>
             <strong>Para gerar seu token permanente:</strong>
             <ol style="margin-left: 20px; margin-top: 10px;">
-              <li>Faça logout e login novamente</li>
-              <li>Ou crie um novo aplicativo abaixo</li>
-              <li>O token será gerado automaticamente</li>
+              <li>Faça logout e login novamente na página de autenticação</li>
+              <li>O token será gerado automaticamente ao fazer login</li>
+              <li>Após gerado, ele aparecerá aqui permanentemente</li>
             </ol>
             <button onclick="window.location.reload()" class="btn" style="background: #4caf50; margin-top: 10px;">🔄 Tentar Recarregar</button>
           </div>
@@ -518,27 +410,19 @@
       }
     }
 
+    // ==================== FUNÇÕES DOS TOKENS DOS APLICATIVOS ====================
+    
     // Gera token aleatório para aplicativo
     function generateToken(length = 20) {
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
       let token = '';
-      for(let i=0; i<length; i++) {
+      for(let i = 0; i < length; i++) {
         token += chars.charAt(Math.floor(Math.random() * chars.length));
       }
       return token;
     }
 
-    // Gera uma chave de API aleatória
-    function generateApiKey(length = 32) {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_-+=';
-      let key = '';
-      for(let i=0; i<length; i++) {
-        key += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return key;
-    }
-
-    // Salvar token do aplicativo no localStorage
+    // Salvar token do aplicativo no localStorage (histórico local)
     function saveAppTokenToLocalStorage(token, appName, redirectURL) {
       try {
         const existingTokens = JSON.parse(localStorage.getItem('userAppTokens') || '[]');
@@ -552,52 +436,40 @@
           };
           existingTokens.push(newToken);
           localStorage.setItem('userAppTokens', JSON.stringify(existingTokens));
+          console.log('✅ Token salvo no localStorage:', token);
         }
       } catch (error) {
         console.error('Erro ao salvar token no localStorage:', error);
       }
     }
 
-    // Verifica login
-    onAuthStateChanged(auth, async user => {
-      if (!user) {
-        alert("Você precisa estar logado para criar aplicativos.");
-        window.location.href = "https://alexandre7888.github.io/CodeHUB/auth";
-        return;
-      }
-      userUID = user.uid;
-      currentUser = user;
-      
-      // Exibir token do usuário
-      await displayUserToken(user);
-      loadTokens();
-    });
-
-    // Salvar token do aplicativo
+    // Salvar token do aplicativo no Firebase
     async function saveAppToken(token, appName, redirectURL) {
       try {
         const tokenData = {
-          appName,
-          redirectURL,
+          appName: appName,
+          redirectURL: redirectURL,
           ownerUID: userUID,
           createdAt: new Date().toISOString(),
           type: 'app_token'
         };
 
         await set(ref(db, `app_tokens/${token}`), tokenData);
-
+        
+        // Salva também no localStorage
         saveAppTokenToLocalStorage(token, appName, redirectURL);
+        
         alert('✅ Token do aplicativo criado com sucesso!');
-        loadTokens();
+        loadAppTokens();
         return true;
       } catch(e) {
-        alert('Erro ao salvar token: ' + e.message);
+        alert('❌ Erro ao salvar token: ' + e.message);
         return false;
       }
     }
 
-    // Carregar tokens dos aplicativos do usuário
-    async function loadTokens() {
+    // Carregar tokens dos aplicativos do usuário (do Firebase)
+    async function loadAppTokens() {
       const tokensRef = ref(db, 'app_tokens');
       onValue(tokensRef, async (snapshot) => {
         const data = snapshot.val();
@@ -631,13 +503,13 @@
             <div class="url-container">
               <div class="url-type">🔗 URL para Continuar Conta:</div>
               <div class="api-url">${baseURL}?token=${token}</div>
-              <button class="copy-btn" style="margin-top: 5px;" onclick="copyToClipboard('${baseURL}?token=${token}')">📋 Copiar URL</button>
+              <button class="copy-btn" style="margin-top: 5px;" onclick="window.copyToClipboard('${baseURL}?token=${token}')">📋 Copiar URL</button>
             </div>
             
             <div class="url-container">
               <div class="url-type">📡 URL para API/SDK:</div>
-              <div class="api-download-url">${apiDownloadURL}</div>
-              <button class="copy-btn" style="margin-top: 5px;" onclick="copyToClipboard('${apiDownloadURL}')">📋 Copiar URL</button>
+              <div class="api-url" style="border-color: #4caf50;">${apiDownloadURL}</div>
+              <button class="copy-btn" style="margin-top: 5px;" onclick="window.copyToClipboard('${apiDownloadURL}')">📋 Copiar URL</button>
             </div>
           `;
 
@@ -648,8 +520,7 @@
           copyTokenBtn.className = 'url-btn';
           copyTokenBtn.textContent = '📋 Copiar Token';
           copyTokenBtn.onclick = () => {
-            copyToClipboard(token);
-            alert('Token copiado!');
+            window.copyToClipboard(token);
           };
 
           const fileManagerBtn = document.createElement('button');
@@ -678,7 +549,26 @@
       });
     }
 
-    // Quando enviar o formulário
+    // ==================== VERIFICAÇÃO DE AUTENTICAÇÃO ====================
+    
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        alert("Você precisa estar logado para criar aplicativos.");
+        window.location.href = "https://alexandre7888.github.io/CodeHUB/auth";
+        return;
+      }
+      userUID = user.uid;
+      currentUser = user;
+      
+      // Exibe o token de autenticação do usuário
+      await displayUserAuthToken(user);
+      
+      // Carrega os tokens dos aplicativos
+      loadAppTokens();
+    });
+
+    // ==================== EVENTO DO FORMULÁRIO ====================
+    
     appForm.addEventListener('submit', e => {
       e.preventDefault();
       const appName = appNameInput.value.trim();
@@ -696,18 +586,18 @@
       redirectInput.value = '';
     });
 
-    // Função para recarregar a página
-    window.refreshPage = function() {
-      window.location.reload();
-    };
-
-    // Função global para copiar texto
+    // ==================== FUNÇÕES GLOBAIS ====================
+    
     window.copyToClipboard = function(text) {
       navigator.clipboard.writeText(text).then(() => {
         alert('✅ Copiado para a área de transferência!');
       }).catch(() => {
         alert('❌ Erro ao copiar. Tente manualmente.');
       });
+    };
+
+    window.refreshPage = function() {
+      window.location.reload();
     };
   </script>
 </body>
