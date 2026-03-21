@@ -1,14 +1,23 @@
-// api.js
 const https = require("https");
 
 module.exports = async (req, res) => {
+  // ===== CORS para todos os domínios =====
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  // Responde rápido para preflight OPTIONS
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
   const { userkey, info } = req.query;
 
   if (!userkey && !info) {
     return res.status(400).json({ error: "Parâmetro 'userkey' ou 'info' é obrigatório." });
   }
 
-  // ===== 1️⃣ Se info existe e não é só userkey, faz PUT =====
+  // ===== 1️⃣ Se info existe e userkey existe, faz PUT =====
   if (info && userkey) {
     const dataToSave = JSON.stringify({ data: info });
     const options = {
@@ -41,7 +50,7 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // ===== 2️⃣ Se info existe mas só é userkey, faz GET do tokens/userkey.json =====
+  // ===== 2️⃣ Se info existe mas userkey não, faz GET =====
   if (info && !userkey) {
     const getUrl = `https://html-15e80-default-rtdb.firebaseio.com/tokens/${info}.json`;
 
@@ -62,7 +71,7 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // ===== 3️⃣ Se só tiver userkey, GET do userKeysData/userkey.json =====
+  // ===== 3️⃣ Se só userkey, GET do userKeysData =====
   if (userkey) {
     const getUrl = `https://html-15e80-default-rtdb.firebaseio.com/userKeysData/${userkey}.json`;
 
