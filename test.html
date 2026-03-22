@@ -3,22 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>360 Live AR</title>
+    <title>360 Ar</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
-        #tap-to-start {
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; color: white; font-family: sans-serif; }
+        #overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; justify-content: center; align-items: center;
-            color: white; z-index: 1000; cursor: pointer;
-            background: rgba(0,0,0,0.1); /* Quase invisível */
+            z-index: 1000; background: rgba(0,0,0,0.5); cursor: pointer;
         }
-        .instruction { pointer-events: none; text-transform: uppercase; letter-spacing: 2px; opacity: 0.8; }
+        .msg { border: 2px solid white; padding: 20px; text-transform: uppercase; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div id="tap-to-start">
-        <div class="instruction">Toque na tela para iniciar</div>
+    <div id="overlay">
+        <div class="msg">Toque para Ativar Sensores e Câmera</div>
     </div>
 
     <script type="importmap">
@@ -35,70 +34,69 @@
         import { DeviceOrientationControls } from 'three/addons/controls/DeviceOrientationControls.js';
 
         let scene, camera, renderer, controls;
-        const overlay = document.getElementById('tap-to-start');
+        const overlay = document.getElementById('overlay');
 
-        // O "automático" possível: iniciar no primeiro toque em qualquer lugar
-        window.addEventListener('click', setup, { once: true });
-        window.addEventListener('touchstart', setup, { once: true });
-
-        async function setup() {
-            overlay.style.display = 'none';
+        // Função principal disparada pelo toque
+        async function start() {
+            console.log("Iniciando...");
             
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+                alert("ERRO: O giroscópio e a câmera só funcionam em sites com HTTPS.");
+                return;
+            }
+
             try {
-                // 1. Iniciar Câmera Traseira
+                // 1. Pedir Câmera Traseira
+                console.log("Pedindo câmera...");
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { facingMode: "environment" } 
                 });
 
-                // 2. Permissão de Sensores (Essencial para iOS)
+                // 2. Pedir Orientação (Crucial para iPhone)
                 if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                    const res = await DeviceOrientationEvent.requestPermission();
-                    if (res === 'granted') initThree(stream);
-                } else {
-                    initThree(stream);
+                    console.log("Pedindo permissão de giroscópio (iOS)...");
+                    const permission = await DeviceOrientationEvent.requestPermission();
+                    if (permission !== 'granted') {
+                        alert("Você precisa permitir o acesso aos sensores de movimento.");
+                        return;
+                    }
                 }
-            } catch (e) {
-                console.error(e);
-                alert("Acesse via HTTPS e autorize a câmera/giroscópio.");
+
+                initScene(stream);
+                overlay.style.display = 'none';
+                
+            } catch (err) {
+                console.error(err);
+                alert("Erro ao iniciar: " + err.name + " - " + err.message);
             }
         }
 
-        function initThree(stream) {
+        function initScene(stream) {
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1100);
-            camera.position.set(0, 0, 0);
-
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
+            
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            // Vídeo Element
+            // Criar vídeo e textura
             const video = document.createElement('video');
             video.srcObject = stream;
-            video.setAttribute('webkit-playsinline', 'true');
-            video.setAttribute('playsinline', 'true');
+            video.setAttribute('playsinline', 'true'); // Importante para mobile
             video.play();
 
             const texture = new THREE.VideoTexture(video);
-            texture.colorSpace = THREE.SRGBColorSpace;
-
-            // Esfera invertida para o 360
+            
+            // Esfera 360
             const geometry = new THREE.SphereGeometry(500, 60, 40);
             geometry.scale(-1, 1, 1); 
-
             const material = new THREE.MeshBasicMaterial({ map: texture });
             const mesh = new THREE.Mesh(geometry, material);
             scene.add(mesh);
 
-            // Giroscópio Real
+            // Giroscópio
             controls = new DeviceOrientationControls(camera);
-
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            });
 
             animate();
         }
@@ -108,6 +106,18 @@
             if (controls) controls.update();
             renderer.render(scene, camera);
         }
+
+        // Eventos para dispositivos móveis
+        overlay.addEventListener('click', start);
+        overlay.addEventListener('touchstart', start);
+
+        window.addEventListener('resize', () => {
+            if (camera && renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        });
     </script>
 </body>
 </html>
