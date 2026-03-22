@@ -3,40 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Live 360 AR Camera</title>
+    <title>360 Live AR</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: sans-serif; }
-        canvas { display: block; }
-        #overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            background: rgba(0,0,0,0.8);
-            z-index: 10;
-            color: white;
-            text-align: center;
-            padding: 20px;
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
+        #tap-to-start {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            color: white; z-index: 1000; cursor: pointer;
+            background: rgba(0,0,0,0.1); /* Quase invisível */
         }
-        button {
-            padding: 15px 30px;
-            font-size: 18px;
-            cursor: pointer;
-            border: none;
-            border-radius: 50px;
-            background: #2196F3;
-            color: white;
-            font-weight: bold;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
+        .instruction { pointer-events: none; text-transform: uppercase; letter-spacing: 2px; opacity: 0.8; }
     </style>
 </head>
 <body>
 
-    <div id="overlay">
-        <h1>Experiência 360° Viva</h1>
-        <p>Precisamos de acesso à câmera e aos sensores de movimento.</p>
-        <button id="startBtn">INICIAR EXPERIÊNCIA</button>
+    <div id="tap-to-start">
+        <div class="instruction">Toque na tela para iniciar</div>
     </div>
 
     <script type="importmap">
@@ -52,50 +34,38 @@
         import * as THREE from 'three';
         import { DeviceOrientationControls } from 'three/addons/controls/DeviceOrientationControls.js';
 
-        let scene, camera, renderer, controls, videoTexture;
-        const startBtn = document.getElementById('startBtn');
-        const overlay = document.getElementById('overlay');
+        let scene, camera, renderer, controls;
+        const overlay = document.getElementById('tap-to-start');
 
-        startBtn.addEventListener('click', () => {
-            initPermissions();
-        });
+        // O "automático" possível: iniciar no primeiro toque em qualquer lugar
+        window.addEventListener('click', setup, { once: true });
+        window.addEventListener('touchstart', setup, { once: true });
 
-        async function initPermissions() {
+        async function setup() {
+            overlay.style.display = 'none';
+            
             try {
-                // 1. Solicitar Câmera
+                // 1. Iniciar Câmera Traseira
                 const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: { exact: "environment" } } 
-                }).catch(() => {
-                    // Fallback para qualquer câmera se a traseira falhar
-                    return navigator.mediaDevices.getUserMedia({ video: true });
+                    video: { facingMode: "environment" } 
                 });
 
-                // 2. Solicitar Sensores (Necessário para iOS 13+)
+                // 2. Permissão de Sensores (Essencial para iOS)
                 if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                    const permission = await DeviceOrientationEvent.requestPermission();
-                    if (permission === 'granted') {
-                        startScene(stream);
-                    } else {
-                        alert("Permissão de movimento negada.");
-                    }
+                    const res = await DeviceOrientationEvent.requestPermission();
+                    if (res === 'granted') initThree(stream);
                 } else {
-                    // Android e navegadores que não exigem permissão explícita
-                    startScene(stream);
+                    initThree(stream);
                 }
-            } catch (err) {
-                console.error("Erro ao acessar recursos:", err);
-                alert("Erro: Certifique-se de usar HTTPS e dar as permissões.");
+            } catch (e) {
+                console.error(e);
+                alert("Acesse via HTTPS e autorize a câmera/giroscópio.");
             }
         }
 
-        function startScene(stream) {
-            overlay.style.display = 'none';
-
-            // Configuração da Cena
+        function initThree(stream) {
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            
-            // A câmera começa no centro da esfera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1100);
             camera.position.set(0, 0, 0);
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -103,36 +73,34 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            // Criar o elemento de vídeo
+            // Vídeo Element
             const video = document.createElement('video');
             video.srcObject = stream;
+            video.setAttribute('webkit-playsinline', 'true');
+            video.setAttribute('playsinline', 'true');
             video.play();
 
-            // Textura de Vídeo
-            videoTexture = new THREE.VideoTexture(video);
-            videoTexture.colorSpace = THREE.SRGBColorSpace;
+            const texture = new THREE.VideoTexture(video);
+            texture.colorSpace = THREE.SRGBColorSpace;
 
-            // Criar a Esfera 360 Invertida
+            // Esfera invertida para o 360
             const geometry = new THREE.SphereGeometry(500, 60, 40);
-            // Inverter a geometria para que a textura fique do lado de dentro
-            geometry.scale(-1, 1, 1);
+            geometry.scale(-1, 1, 1); 
 
-            const material = new THREE.MeshBasicMaterial({ map: videoTexture });
-            const sphere = new THREE.Mesh(geometry, material);
-            scene.add(sphere);
+            const material = new THREE.MeshBasicMaterial({ map: texture });
+            const mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
 
-            // Controles de Giroscópio
+            // Giroscópio Real
             controls = new DeviceOrientationControls(camera);
 
-            window.addEventListener('resize', onWindowResize);
-            
-            animate();
-        }
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
 
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            animate();
         }
 
         function animate() {
