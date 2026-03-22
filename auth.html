@@ -802,7 +802,7 @@
         if (appToken) {
           showSuccess('login', '✅ Você já está logado! Token verificado. Redirecionando...');
           setTimeout(() => {
-            window.location.href = `API/continuar-conta.html?token=${appToken}`;
+            window.location.href = `API/v2/continuar-conta.html?token=${appToken}`;
           }, 1000);
         } else {
           showSuccess('login', '✅ Você já está logado! Token ativo. Redirecionando...');
