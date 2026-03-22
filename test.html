@@ -1,103 +1,145 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<title>Câmera 360 com Giroscópio</title>
-<style>
-body{margin:0;overflow:hidden;background:black;}
-#start{
-position:absolute;
-top:20px;
-left:20px;
-z-index:10;
-padding:12px;
-background:#0080ff;
-color:white;
-border:none;
-font-size:16px;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Live 360 AR Camera</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: sans-serif; }
+        canvas { display: block; }
+        #overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.8);
+            z-index: 10;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            border: none;
+            border-radius: 50px;
+            background: #2196F3;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+    </style>
 </head>
 <body>
 
-<button id="start">Ativar câmera e giroscópio</button>
+    <div id="overlay">
+        <h1>Experiência 360° Viva</h1>
+        <p>Precisamos de acesso à câmera e aos sensores de movimento.</p>
+        <button id="startBtn">INICIAR EXPERIÊNCIA</button>
+    </div>
 
-<video id="video" autoplay playsinline style="display:none"></video>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
 
-<script type="module">
+    <script type="module">
+        import * as THREE from 'three';
+        import { DeviceOrientationControls } from 'three/addons/controls/DeviceOrientationControls.js';
 
-import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
-import { DeviceOrientationControls } from "https://unpkg.com/three@0.160.0/examples/jsm/controls/DeviceOrientationControls.js";
+        let scene, camera, renderer, controls, videoTexture;
+        const startBtn = document.getElementById('startBtn');
+        const overlay = document.getElementById('overlay');
 
-let scene,camera,renderer,controls,videoTexture;
+        startBtn.addEventListener('click', () => {
+            initPermissions();
+        });
 
-const video = document.getElementById("video");
+        async function initPermissions() {
+            try {
+                // 1. Solicitar Câmera
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: { exact: "environment" } } 
+                }).catch(() => {
+                    // Fallback para qualquer câmera se a traseira falhar
+                    return navigator.mediaDevices.getUserMedia({ video: true });
+                });
 
-document.getElementById("start").onclick = async ()=>{
+                // 2. Solicitar Sensores (Necessário para iOS 13+)
+                if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    const permission = await DeviceOrientationEvent.requestPermission();
+                    if (permission === 'granted') {
+                        startScene(stream);
+                    } else {
+                        alert("Permissão de movimento negada.");
+                    }
+                } else {
+                    // Android e navegadores que não exigem permissão explícita
+                    startScene(stream);
+                }
+            } catch (err) {
+                console.error("Erro ao acessar recursos:", err);
+                alert("Erro: Certifique-se de usar HTTPS e dar as permissões.");
+            }
+        }
 
-// pedir câmera
-const stream = await navigator.mediaDevices.getUserMedia({
-video:{facingMode:"environment"}
-});
+        function startScene(stream) {
+            overlay.style.display = 'none';
 
-video.srcObject = stream;
+            // Configuração da Cena
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            
+            // A câmera começa no centro da esfera
+            camera.position.set(0, 0, 0);
 
-// pedir permissão sensores (iOS)
-if(typeof DeviceOrientationEvent.requestPermission==="function"){
-await DeviceOrientationEvent.requestPermission();
-}
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
 
-init();
+            // Criar o elemento de vídeo
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            video.play();
 
-};
+            // Textura de Vídeo
+            videoTexture = new THREE.VideoTexture(video);
+            videoTexture.colorSpace = THREE.SRGBColorSpace;
 
-function init(){
+            // Criar a Esfera 360 Invertida
+            const geometry = new THREE.SphereGeometry(500, 60, 40);
+            // Inverter a geometria para que a textura fique do lado de dentro
+            geometry.scale(-1, 1, 1);
 
-scene = new THREE.Scene();
+            const material = new THREE.MeshBasicMaterial({ map: videoTexture });
+            const sphere = new THREE.Mesh(geometry, material);
+            scene.add(sphere);
 
-camera = new THREE.PerspectiveCamera(
-75,
-window.innerWidth/window.innerHeight,
-0.1,
-1000
-);
+            // Controles de Giroscópio
+            controls = new DeviceOrientationControls(camera);
 
-renderer = new THREE.WebGLRenderer();
-renderer.setSize(window.innerWidth,window.innerHeight);
-document.body.appendChild(renderer.domElement);
+            window.addEventListener('resize', onWindowResize);
+            
+            animate();
+        }
 
-// textura do vídeo
-videoTexture = new THREE.VideoTexture(video);
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
 
-// esfera gigante
-const geometry = new THREE.SphereGeometry(500,60,40);
-geometry.scale(-1,1,1);
-
-const material = new THREE.MeshBasicMaterial({
-map:videoTexture
-});
-
-const mesh = new THREE.Mesh(geometry,material);
-scene.add(mesh);
-
-// giroscópio
-controls = new DeviceOrientationControls(camera);
-
-animate();
-
-}
-
-function animate(){
-
-requestAnimationFrame(animate);
-
-if(controls) controls.update();
-
-renderer.render(scene,camera);
-
-}
-
-</script>
-
+        function animate() {
+            requestAnimationFrame(animate);
+            if (controls) controls.update();
+            renderer.render(scene, camera);
+        }
+    </script>
 </body>
 </html>
