@@ -2,24 +2,25 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Mini Live View Web AR</title>
+<title>Mini AR Realista Web</title>
 <style>
   body, html { margin: 0; padding: 0; overflow: hidden; height: 100%; font-family: Arial; }
   #video { position: absolute; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
-  .marker {
+  .arButton {
     position: absolute;
-    width: 60px;
-    height: 60px;
+    width: 70px;
+    height: 70px;
     background: rgba(255,0,0,0.7);
     border-radius: 50%;
-    text-align: center;
-    line-height: 60px;
     color: white;
+    text-align: center;
+    line-height: 70px;
     font-weight: bold;
-    font-size: 16px;
-    z-index: 1;
-    pointer-events: none;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
     transform: translate(-50%, -50%);
+    z-index: 1;
   }
 </style>
 </head>
@@ -27,75 +28,97 @@
 
 <video id="video" autoplay playsinline></video>
 
-<!-- Marcadores de teste -->
-<div class="marker" id="marker1">A</div>
-<div class="marker" id="marker2">B</div>
-<div class="marker" id="marker3">C</div>
-
 <script>
-// 1️⃣ Ativar câmera do celular
+// 1️⃣ Ativar câmera
 const video = document.getElementById('video');
 navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
-  .then(stream => { video.srcObject = stream; })
-  .catch(err => { alert('Erro ao acessar câmera: ' + err); });
+  .then(stream => video.srcObject = stream)
+  .catch(err => alert('Erro ao acessar câmera: ' + err));
 
-// 2️⃣ Coordenadas simuladas para marcadores (lat, lng)
-const testLocations = [
-  { el: document.getElementById('marker1'), lat: -23.561, lng: -46.655 }, // Exemplo SP
-  { el: document.getElementById('marker2'), lat: -23.562, lng: -46.656 },
-  { el: document.getElementById('marker3'), lat: -23.563, lng: -46.657 }
+// 2️⃣ Botões do mundo real (GPS simulado)
+const arWorld = [
+  { label: 'A', lat: -23.561, lng: -46.655 },
+  { label: 'B', lat: -23.562, lng: -46.656 },
+  { label: 'C', lat: -23.563, lng: -46.657 }
 ];
 
-// Função para calcular posição na tela baseada na posição do usuário
-function latLngToScreen(lat, lng, userLat, userLng, heading) {
-  // Diferença em graus
-  const dLat = lat - userLat;
-  const dLng = lng - userLng;
+// Criar elementos DOM
+arWorld.forEach(item => {
+  const btn = document.createElement('div');
+  btn.className = 'arButton';
+  btn.innerText = item.label;
+  document.body.appendChild(btn);
+  item.el = btn;
 
-  // Convertendo diferença em pixels (simples simulação)
-  const scale = 100000; // quanto maior, mais longe na tela
-  let x = dLng * scale;
-  let y = -dLat * scale;
+  // Drag & drop simples
+  let dragging = false;
+  btn.addEventListener('pointerdown', e => { dragging = true; e.preventDefault(); });
+  window.addEventListener('pointerup', e => dragging = false);
+  window.addEventListener('pointermove', e => {
+    if(dragging) {
+      btn.dataset.offsetX = e.clientX;
+      btn.dataset.offsetY = e.clientY;
+    }
+  });
+});
 
-  // Rotaciona baseado na orientação do celular
-  const rad = heading * Math.PI / 180;
-  const rotatedX = x * Math.cos(rad) - y * Math.sin(rad);
-  const rotatedY = x * Math.sin(rad) + y * Math.cos(rad);
+// 3️⃣ Posição e orientação do usuário
+let userLat = -23.561;
+let userLng = -46.655;
+let alpha=0, beta=0, gamma=0; // giroscópio
 
-  return { x: window.innerWidth/2 + rotatedX, y: window.innerHeight/2 + rotatedY };
-}
-
-// 3️⃣ Obter GPS do usuário
-let userPosition = { lat: -23.561, lng: -46.655 }; // posição inicial simulada
-let userHeading = 0; // graus
-
-if (navigator.geolocation) {
+// GPS
+if(navigator.geolocation) {
   navigator.geolocation.watchPosition(pos => {
-    userPosition.lat = pos.coords.latitude;
-    userPosition.lng = pos.coords.longitude;
+    userLat = pos.coords.latitude;
+    userLng = pos.coords.longitude;
   });
 }
 
-// 4️⃣ Obter orientação do celular (bússola)
-if (window.DeviceOrientationEvent) {
-  window.addEventListener("deviceorientation", e => {
-    if (e.absolute !== null) {
-      userHeading = e.alpha; // rotação em torno do eixo Z
-    }
+// Giroscópio
+if(window.DeviceOrientationEvent) {
+  window.addEventListener('deviceorientation', e => {
+    alpha = e.alpha || 0; // rotação Z
+    beta = e.beta || 0;   // inclinação X
+    gamma = e.gamma || 0; // inclinação Y
   }, true);
 }
 
-// 5️⃣ Atualizar posição dos marcadores na tela
-function updateMarkers() {
-  testLocations.forEach(loc => {
-    const screenPos = latLngToScreen(loc.lat, loc.lng, userPosition.lat, userPosition.lng, userHeading);
-    loc.el.style.left = screenPos.x + 'px';
-    loc.el.style.top = screenPos.y + 'px';
-  });
-  requestAnimationFrame(updateMarkers);
-}
-updateMarkers();
-</script>
+// 4️⃣ Converter coordenadas para tela
+function latLngToScreen(lat, lng) {
+  const dLat = lat - userLat;
+  const dLng = lng - userLng;
 
+  const scale = 100000; // simula distância
+  let x = dLng*scale;
+  let y = -dLat*scale;
+
+  const rad = alpha * Math.PI / 180;
+  const rotatedX = x*Math.cos(rad) - y*Math.sin(rad);
+  const rotatedY = x*Math.sin(rad) + y*Math.cos(rad);
+
+  const screenX = window.innerWidth/2 + rotatedX;
+  const screenY = window.innerHeight/2 + rotatedY;
+
+  // Simula tamanho baseado na distância
+  const distance = Math.sqrt(dLat*dLat + dLng*dLng);
+  const scaleFactor = Math.max(0.5, 1 - distance*20);
+
+  return { x: screenX, y: screenY, scale: scaleFactor };
+}
+
+// 5️⃣ Atualizar AR
+function updateAR() {
+  arWorld.forEach(item => {
+    const pos = latLngToScreen(item.lat, item.lng);
+    item.el.style.left = pos.x + 'px';
+    item.el.style.top = pos.y + 'px';
+    item.el.style.transform = `translate(-50%, -50%) scale(${pos.scale})`;
+  });
+  requestAnimationFrame(updateAR);
+}
+updateAR();
+
+</script>
 </body>
 </html>
