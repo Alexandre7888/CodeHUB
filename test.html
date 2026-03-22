@@ -2,70 +2,100 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>AR</title>
-
-<script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/aframe-ar-hit-test-component/dist/aframe-ar-hit-test-component.min.js"></script>
-
+<title>Câmera 360 com Giroscópio</title>
 <style>
-body{
-margin:0;
-overflow:hidden;
-}
-#info{
+body{margin:0;overflow:hidden;background:black;}
+#start{
 position:absolute;
 top:20px;
 left:20px;
-background:black;
+z-index:10;
+padding:12px;
+background:#0080ff;
 color:white;
-padding:10px;
-font-family:Arial;
+border:none;
+font-size:16px;
 }
 </style>
 </head>
-
 <body>
 
-<div id="info">
-Toque na tela para colocar o botão no mundo
-</div>
+<button id="start">Ativar câmera e giroscópio</button>
 
-<a-scene
-webxr="requiredFeatures: hit-test"
-vr-mode-ui="enabled: false"
-renderer="logarithmicDepthBuffer: true;"
-ar-hit-test>
+<video id="video" autoplay playsinline style="display:none"></video>
 
-<a-camera position="0 1.6 0"></a-camera>
+<script type="module">
 
-<a-entity id="reticle"
-geometry="primitive:ring;radiusInner:0.05;radiusOuter:0.06"
-material="color:green"
-visible="false">
-</a-entity>
+import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
+import { DeviceOrientationControls } from "https://unpkg.com/three@0.160.0/examples/jsm/controls/DeviceOrientationControls.js";
 
-</a-scene>
+let scene,camera,renderer,controls,videoTexture;
 
-<script>
+const video = document.getElementById("video");
 
-const scene = document.querySelector("a-scene")
-const reticle = document.querySelector("#reticle")
+document.getElementById("start").onclick = async ()=>{
 
-scene.addEventListener("ar-hit-test-select", e => {
+// pedir câmera
+const stream = await navigator.mediaDevices.getUserMedia({
+video:{facingMode:"environment"}
+});
 
-const pos = reticle.object3D.position
+video.srcObject = stream;
 
-const btn = document.createElement("a-cylinder")
+// pedir permissão sensores (iOS)
+if(typeof DeviceOrientationEvent.requestPermission==="function"){
+await DeviceOrientationEvent.requestPermission();
+}
 
-btn.setAttribute("color","#0080ff")
-btn.setAttribute("radius","0.1")
-btn.setAttribute("height","0.05")
+init();
 
-btn.object3D.position.copy(pos)
+};
 
-scene.appendChild(btn)
+function init(){
 
-})
+scene = new THREE.Scene();
+
+camera = new THREE.PerspectiveCamera(
+75,
+window.innerWidth/window.innerHeight,
+0.1,
+1000
+);
+
+renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth,window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// textura do vídeo
+videoTexture = new THREE.VideoTexture(video);
+
+// esfera gigante
+const geometry = new THREE.SphereGeometry(500,60,40);
+geometry.scale(-1,1,1);
+
+const material = new THREE.MeshBasicMaterial({
+map:videoTexture
+});
+
+const mesh = new THREE.Mesh(geometry,material);
+scene.add(mesh);
+
+// giroscópio
+controls = new DeviceOrientationControls(camera);
+
+animate();
+
+}
+
+function animate(){
+
+requestAnimationFrame(animate);
+
+if(controls) controls.update();
+
+renderer.render(scene,camera);
+
+}
 
 </script>
 
