@@ -2,74 +2,70 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>AR Real WebXR</title>
+<title>AR</title>
+
+<script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/aframe-ar-hit-test-component/dist/aframe-ar-hit-test-component.min.js"></script>
+
 <style>
-body{margin:0;overflow:hidden;}
-#start{
+body{
+margin:0;
+overflow:hidden;
+}
+#info{
 position:absolute;
 top:20px;
 left:20px;
-padding:15px;
-background:#0080ff;
+background:black;
 color:white;
-font-size:18px;
-border:none;
+padding:10px;
+font-family:Arial;
 }
 </style>
 </head>
+
 <body>
 
-<button id="start">Iniciar AR</button>
+<div id="info">
+Toque na tela para colocar o botão no mundo
+</div>
 
-<script type="module">
+<a-scene
+webxr="requiredFeatures: hit-test"
+vr-mode-ui="enabled: false"
+renderer="logarithmicDepthBuffer: true;"
+ar-hit-test>
 
-import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
-import { ARButton } from "https://unpkg.com/three@0.160.0/examples/jsm/webxr/ARButton.js";
+<a-camera position="0 1.6 0"></a-camera>
 
-let camera, scene, renderer;
-let cube;
+<a-entity id="reticle"
+geometry="primitive:ring;radiusInner:0.05;radiusOuter:0.06"
+material="color:green"
+visible="false">
+</a-entity>
 
-init();
+</a-scene>
 
-function init(){
+<script>
 
-scene = new THREE.Scene();
+const scene = document.querySelector("a-scene")
+const reticle = document.querySelector("#reticle")
 
-camera = new THREE.PerspectiveCamera(
-70,
-window.innerWidth/window.innerHeight,
-0.01,
-20
-);
+scene.addEventListener("ar-hit-test-select", e => {
 
-renderer = new THREE.WebGLRenderer({alpha:true,antialias:true});
-renderer.setSize(window.innerWidth,window.innerHeight);
-renderer.xr.enabled = true;
+const pos = reticle.object3D.position
 
-document.body.appendChild(renderer.domElement);
+const btn = document.createElement("a-cylinder")
 
-const light = new THREE.HemisphereLight(0xffffff,0xbbbbff,1);
-scene.add(light);
+btn.setAttribute("color","#0080ff")
+btn.setAttribute("radius","0.1")
+btn.setAttribute("height","0.05")
 
-// objeto AR
-const geometry = new THREE.BoxGeometry(0.1,0.1,0.1);
-const material = new THREE.MeshStandardMaterial({color:0x0080ff});
-cube = new THREE.Mesh(geometry,material);
+btn.object3D.position.copy(pos)
 
-cube.position.set(0,0,-0.5); // meio metro na frente
-scene.add(cube);
+scene.appendChild(btn)
 
-document.getElementById("start").onclick=()=>{
-document.body.appendChild(ARButton.createButton(renderer,{requiredFeatures:['hit-test']}));
-};
-
-renderer.setAnimationLoop(render);
-
-}
-
-function render(){
-renderer.render(scene,camera);
-}
+})
 
 </script>
 
