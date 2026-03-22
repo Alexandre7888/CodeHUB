@@ -2,123 +2,76 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Mini AR Realista Web</title>
+<title>AR Real WebXR</title>
 <style>
-  body, html { margin: 0; padding: 0; overflow: hidden; height: 100%; font-family: Arial; }
-  #video { position: absolute; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
-  .arButton {
-    position: absolute;
-    width: 70px;
-    height: 70px;
-    background: rgba(255,0,0,0.7);
-    border-radius: 50%;
-    color: white;
-    text-align: center;
-    line-height: 70px;
-    font-weight: bold;
-    cursor: grab;
-    user-select: none;
-    touch-action: none;
-    transform: translate(-50%, -50%);
-    z-index: 1;
-  }
+body{margin:0;overflow:hidden;}
+#start{
+position:absolute;
+top:20px;
+left:20px;
+padding:15px;
+background:#0080ff;
+color:white;
+font-size:18px;
+border:none;
+}
 </style>
 </head>
 <body>
 
-<video id="video" autoplay playsinline></video>
+<button id="start">Iniciar AR</button>
 
-<script>
-// 1️⃣ Ativar câmera
-const video = document.getElementById('video');
-navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
-  .then(stream => video.srcObject = stream)
-  .catch(err => alert('Erro ao acessar câmera: ' + err));
+<script type="module">
 
-// 2️⃣ Botões do mundo real (GPS simulado)
-const arWorld = [
-  { label: 'A', lat: -23.561, lng: -46.655 },
-  { label: 'B', lat: -23.562, lng: -46.656 },
-  { label: 'C', lat: -23.563, lng: -46.657 }
-];
+import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
+import { ARButton } from "https://unpkg.com/three@0.160.0/examples/jsm/webxr/ARButton.js";
 
-// Criar elementos DOM
-arWorld.forEach(item => {
-  const btn = document.createElement('div');
-  btn.className = 'arButton';
-  btn.innerText = item.label;
-  document.body.appendChild(btn);
-  item.el = btn;
+let camera, scene, renderer;
+let cube;
 
-  // Drag & drop simples
-  let dragging = false;
-  btn.addEventListener('pointerdown', e => { dragging = true; e.preventDefault(); });
-  window.addEventListener('pointerup', e => dragging = false);
-  window.addEventListener('pointermove', e => {
-    if(dragging) {
-      btn.dataset.offsetX = e.clientX;
-      btn.dataset.offsetY = e.clientY;
-    }
-  });
-});
+init();
 
-// 3️⃣ Posição e orientação do usuário
-let userLat = -23.561;
-let userLng = -46.655;
-let alpha=0, beta=0, gamma=0; // giroscópio
+function init(){
 
-// GPS
-if(navigator.geolocation) {
-  navigator.geolocation.watchPosition(pos => {
-    userLat = pos.coords.latitude;
-    userLng = pos.coords.longitude;
-  });
+scene = new THREE.Scene();
+
+camera = new THREE.PerspectiveCamera(
+70,
+window.innerWidth/window.innerHeight,
+0.01,
+20
+);
+
+renderer = new THREE.WebGLRenderer({alpha:true,antialias:true});
+renderer.setSize(window.innerWidth,window.innerHeight);
+renderer.xr.enabled = true;
+
+document.body.appendChild(renderer.domElement);
+
+const light = new THREE.HemisphereLight(0xffffff,0xbbbbff,1);
+scene.add(light);
+
+// objeto AR
+const geometry = new THREE.BoxGeometry(0.1,0.1,0.1);
+const material = new THREE.MeshStandardMaterial({color:0x0080ff});
+cube = new THREE.Mesh(geometry,material);
+
+cube.position.set(0,0,-0.5); // meio metro na frente
+scene.add(cube);
+
+document.getElementById("start").onclick=()=>{
+document.body.appendChild(ARButton.createButton(renderer,{requiredFeatures:['hit-test']}));
+};
+
+renderer.setAnimationLoop(render);
+
 }
 
-// Giroscópio
-if(window.DeviceOrientationEvent) {
-  window.addEventListener('deviceorientation', e => {
-    alpha = e.alpha || 0; // rotação Z
-    beta = e.beta || 0;   // inclinação X
-    gamma = e.gamma || 0; // inclinação Y
-  }, true);
+function render(){
+renderer.render(scene,camera);
 }
-
-// 4️⃣ Converter coordenadas para tela
-function latLngToScreen(lat, lng) {
-  const dLat = lat - userLat;
-  const dLng = lng - userLng;
-
-  const scale = 100000; // simula distância
-  let x = dLng*scale;
-  let y = -dLat*scale;
-
-  const rad = alpha * Math.PI / 180;
-  const rotatedX = x*Math.cos(rad) - y*Math.sin(rad);
-  const rotatedY = x*Math.sin(rad) + y*Math.cos(rad);
-
-  const screenX = window.innerWidth/2 + rotatedX;
-  const screenY = window.innerHeight/2 + rotatedY;
-
-  // Simula tamanho baseado na distância
-  const distance = Math.sqrt(dLat*dLat + dLng*dLng);
-  const scaleFactor = Math.max(0.5, 1 - distance*20);
-
-  return { x: screenX, y: screenY, scale: scaleFactor };
-}
-
-// 5️⃣ Atualizar AR
-function updateAR() {
-  arWorld.forEach(item => {
-    const pos = latLngToScreen(item.lat, item.lng);
-    item.el.style.left = pos.x + 'px';
-    item.el.style.top = pos.y + 'px';
-    item.el.style.transform = `translate(-50%, -50%) scale(${pos.scale})`;
-  });
-  requestAnimationFrame(updateAR);
-}
-updateAR();
 
 </script>
+
 </body>
 </html>
