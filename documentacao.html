@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Documentação API CodeHUB</title>
+  <title>Documentação API CodeHUB - Sistema Completo v4.0</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -11,7 +11,7 @@
       padding: 20px;
       background: #f5f5f5;
     }
-    
+
     .container {
       max-width: 1200px;
       margin: 0 auto;
@@ -20,19 +20,19 @@
       border-radius: 10px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
-    
+
     h1 {
       color: #333;
       margin-top: 0;
     }
-    
+
     h2 {
       color: #555;
       margin-top: 30px;
       border-bottom: 2px solid #eee;
       padding-bottom: 10px;
     }
-    
+
     pre {
       background: #f4f4f4;
       padding: 15px;
@@ -41,14 +41,14 @@
       font-family: monospace;
       font-size: 14px;
     }
-    
+
     code {
       background: #f4f4f4;
       padding: 2px 5px;
       border-radius: 3px;
       font-family: monospace;
     }
-    
+
     .exemplo-box {
       background: #f9f9f9;
       border: 1px solid #ddd;
@@ -56,12 +56,12 @@
       padding: 20px;
       margin: 20px 0;
     }
-    
+
     .exemplo-box h3 {
       margin-top: 0;
       color: #007bff;
     }
-    
+
     .btn-copiar {
       background: #007bff;
       color: white;
@@ -72,11 +72,11 @@
       margin-bottom: 10px;
       font-size: 14px;
     }
-    
+
     .btn-copiar:hover {
       background: #0056b3;
     }
-    
+
     .note {
       background: #fff3cd;
       border-left: 4px solid #ffc107;
@@ -84,7 +84,7 @@
       margin: 20px 0;
       border-radius: 5px;
     }
-    
+
     .success {
       background: #d4edda;
       border-left: 4px solid #28a745;
@@ -92,14 +92,22 @@
       margin: 20px 0;
       border-radius: 5px;
     }
-    
+
+    .warning {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 5px;
+    }
+
     .auth-demo {
       background: #e7f3ff;
       padding: 20px;
       border-radius: 8px;
       margin: 20px 0;
     }
-    
+
     .auth-btn {
       padding: 10px 20px;
       margin: 5px;
@@ -108,160 +116,349 @@
       cursor: pointer;
       font-size: 14px;
     }
-    
+
     .auth-login {
       background: #007bff;
       color: white;
     }
-    
+
     .auth-logout {
       background: #dc3545;
       color: white;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin: 20px 0;
+    }
+
+    .feature-card {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #dee2e6;
+    }
+
+    .feature-card h4 {
+      margin-top: 0;
+      color: #007bff;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>📚 Documentação API CodeHUB</h1>
-    <p><strong>Versão:</strong> 4.0 - Sistema de Autenticação</p>
-    
-    <!-- Exemplo de código HTML para copiar - Sistema de Autenticação -->
+    <h1>📚 Documentação API CodeHUB - Sistema Completo</h1>
+    <p><strong>Versão:</strong> 4.0 - Sistema de Autenticação com Visualização de Projetos</p>
+
+    <div class="success">
+      <strong>✨ NOVIDADE!</strong> Agora é possível visualizar os projetos e arquivos diretamente no sistema!
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h4>🔐 Autenticação</h4>
+        <p>Login via UserKey com salvamento automático</p>
+      </div>
+      <div class="feature-card">
+        <h4>📦 Listagem de Projetos</h4>
+        <p>Visualiza todos os projetos do usuário</p>
+      </div>
+      <div class="feature-card">
+        <h4>📄 Visualização de Arquivos</h4>
+        <p>Preview de HTML, CSS, JS e imagens</p>
+      </div>
+      <div class="feature-card">
+        <h4>🔗 Links Externos</h4>
+        <p>Abrir arquivos em nova aba</p>
+      </div>
+    </div>
+
+    <!-- Código Completo do Sistema -->
     <div class="exemplo-box">
-      <h3>📋 Código de Exemplo - Sistema de Autenticação</h3>
-      <button class="btn-copiar" onclick="copiarCodigo()">📋 Copiar Código</button>
-      <pre id="codigoExemplo">&lt;!DOCTYPE html&gt;
+      <h3>📋 Código Completo - Sistema com Visualização de Projetos</h3>
+      <button class="btn-copiar" onclick="copiarCodigoCompleto()">📋 Copiar Código Completo</button>
+      <pre id="codigoCompleto">&lt;!DOCTYPE html&gt;
 &lt;html lang="pt-BR"&gt;
 &lt;head&gt;
-  &lt;meta charset="UTF-8"&gt;
-  &lt;title&gt;Sistema de Autenticação CodeHUB&lt;/title&gt;
-  &lt;style&gt;
-    body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; }
-    .dados { background: #f4f4f4; padding: 20px; border-radius: 5px; margin-top: 20px; }
-    .dados p { margin: 10px 0; font-size: 16px; }
-    button { padding: 10px 20px; margin: 5px; cursor: pointer; font-size: 16px; }
-    .login-area { background: #e3f2fd; padding: 20px; border-radius: 5px; margin-bottom: 20px; text-align: center; }
-    h1 { margin-top: 0; }
-  &lt;/style&gt;
-&lt;/head&gt;
-&lt;body&gt;
-  &lt;div id="loginArea" class="login-area"&gt;
-    &lt;h2&gt;Faça login para continuar&lt;/h2&gt;
-    &lt;button onclick="abrirLogin()"&gt;Fazer Login&lt;/button&gt;
-  &lt;/div&gt;
-  
-  &lt;div id="dadosUsuario" style="display: none;"&gt;
-    &lt;h1&gt;👤 Dados do Usuário&lt;/h1&gt;
-    &lt;button onclick="sair()"&gt;Sair&lt;/button&gt;
-    &lt;div id="resultado" class="dados"&gt;Carregando...&lt;/div&gt;
-  &lt;/div&gt;
+&lt;meta charset="UTF-8"&gt;
+&lt;title&gt;Sistema CodeHUB&lt;/title&gt;
 
-  &lt;script&gt;
-    const apiUrl = "https://code-hub-eta.vercel.app/api/userkey.js";
-    // PEGAR SEU TOKEN EM: https://code.codehub.ct.ws/API/criar.app
-    const loginUrl = "https://code.codehub.ct.ws/API/v2/continuar-conta?token=SEU_TOKEN_AQUI";
-    
-    function abrirLogin() {
-      window.open(loginUrl, "_blank");
-    }
-    
-    function buscarDados(userkey) {
-      fetch(`${apiUrl}?userkey=${encodeURIComponent(userkey)}`)
-        .then(res =&gt; res.json())
-        .then(data =&gt; {
-          const nome = data.nome || "Não disponível";
-          const email = data.email || "Não disponível";
-          
-          document.getElementById("resultado").innerHTML = `
-            &lt;p&gt;&lt;strong&gt;Nome:&lt;/strong&gt; ${nome}&lt;/p&gt;
-            &lt;p&gt;&lt;strong&gt;E-mail:&lt;/strong&gt; ${email}&lt;/p&gt;
-            &lt;p&gt;&lt;strong&gt;UserKey:&lt;/strong&gt; ${userkey}&lt;/p&gt;
-          `;
-          
-          document.getElementById("loginArea").style.display = "none";
-          document.getElementById("dadosUsuario").style.display = "block";
-        })
-        .catch(err =&gt; {
-          document.getElementById("resultado").innerHTML = "Erro: " + err;
-        });
-    }
-    
-    function sair() {
-      localStorage.removeItem("userkey");
-      window.history.pushState({}, "", window.location.pathname);
-      document.getElementById("loginArea").style.display = "block";
-      document.getElementById("dadosUsuario").style.display = "none";
-    }
-    
-    const urlParams = new URLSearchParams(window.location.search);
-    const userkeyFromUrl = urlParams.get('userKey');
-    const userkeySalvo = localStorage.getItem("userkey");
-    
-    if (userkeyFromUrl) {
-      localStorage.setItem("userkey", userkeyFromUrl);
-      buscarDados(userkeyFromUrl);
-      window.history.pushState({}, "", window.location.pathname);
-    } 
-    else if (userkeySalvo) {
-      buscarDados(userkeySalvo);
-    }
-    else {
-      document.getElementById("loginArea").style.display = "block";
-      document.getElementById("dadosUsuario").style.display = "none";
-    }
-  &lt;/script&gt;
+&lt;style&gt;
+body{
+font-family:Arial;
+max-width:1000px;
+margin:40px auto;
+padding:20px;
+}
+
+.login-area{
+background:#e3f2fd;
+padding:20px;
+border-radius:8px;
+text-align:center;
+}
+
+.projeto{
+border:1px solid #ccc;
+padding:15px;
+border-radius:6px;
+margin-top:20px;
+background:#fafafa;
+}
+
+.arquivo{
+background:#eee;
+padding:10px;
+margin-top:10px;
+border-radius:4px;
+}
+
+.preview{
+margin-top:10px;
+border:1px solid #ccc;
+}
+
+iframe{
+width:100%;
+height:320px;
+border:none;
+background:white;
+}
+
+button{
+padding:6px 10px;
+margin:5px 0;
+cursor:pointer;
+}
+&lt;/style&gt;
+&lt;/head&gt;
+
+&lt;body&gt;
+
+&lt;div id="loginArea" class="login-area"&gt;
+&lt;h2&gt;Faça login para continuar&lt;/h2&gt;
+&lt;button onclick="abrirLogin()"&gt;Fazer Login&lt;/button&gt;
+&lt;/div&gt;
+
+&lt;div id="dadosUsuario" style="display:none"&gt;
+
+&lt;h1&gt;👤 Usuário&lt;/h1&gt;
+&lt;button onclick="sair()"&gt;Sair&lt;/button&gt;
+
+&lt;div id="usuario"&gt;&lt;/div&gt;
+
+&lt;h2&gt;📦 Projetos&lt;/h2&gt;
+&lt;div id="projetos"&gt;Carregando...&lt;/div&gt;
+
+&lt;/div&gt;
+
+&lt;script&gt;
+
+const apiUrl="https://code-hub-eta.vercel.app/api/userkey.js";
+
+const loginUrl="https://code.codehub.ct.ws/API/v2/continuar-conta?token=SEU_TOKEN_AQUI";
+
+function abrirLogin(){
+window.open(loginUrl,"_blank");
+}
+
+async function buscarDados(userkey){
+
+const res=await fetch(`${apiUrl}?userkey=${encodeURIComponent(userkey)}`);
+const data=await res.json();
+
+const nome=data.nome || "Não disponível";
+const email=data.email || "Não disponível";
+const uid=data.uid;
+
+document.getElementById("usuario").innerHTML=`
+&lt;p&gt;&lt;b&gt;Nome:&lt;/b&gt; ${nome}&lt;/p&gt;
+&lt;p&gt;&lt;b&gt;Email:&lt;/b&gt; ${email}&lt;/p&gt;
+&lt;p&gt;&lt;b&gt;UID:&lt;/b&gt; ${uid}&lt;/p&gt;
+`;
+
+buscarProjetos(uid);
+
+document.getElementById("loginArea").style.display="none";
+document.getElementById("dadosUsuario").style.display="block";
+
+}
+
+async function buscarProjetos(uid){
+
+const url=`https://corsproxy.io/?https://api.codehub.ct.ws/?uid=${uid}`;
+
+const res=await fetch(url);
+const projetos=await res.json();
+
+let html="";
+
+for(const projetoId in projetos){
+
+const projeto=projetos[projetoId];
+
+html+=`
+&lt;div class="projeto"&gt;
+
+&lt;b&gt;Projeto:&lt;/b&gt; ${projeto.name}&lt;br&gt;
+&lt;b&gt;Slug:&lt;/b&gt; ${projeto.slug}&lt;br&gt;
+
+&lt;b&gt;Arquivos:&lt;/b&gt;
+`;
+
+if(projeto.files){
+
+for(const fileId in projeto.files){
+
+const file=projeto.files[fileId];
+
+html+=`
+&lt;div class="arquivo"&gt;
+
+&lt;b&gt;${file.originalName || file.name}&lt;/b&gt;&lt;br&gt;
+
+&lt;button onclick='abrirArquivo(${JSON.stringify(file)})'&gt;
+Visualizar
+&lt;/button&gt;
+
+&lt;button onclick='window.open("${file.url || file.directUrl}","_blank")'&gt;
+Abrir externo
+&lt;/button&gt;
+
+&lt;div id="preview-${fileId}" class="preview"&gt;&lt;/div&gt;
+
+&lt;/div&gt;
+`;
+
+}
+
+}
+
+html+=`&lt;/div&gt;`;
+
+}
+
+document.getElementById("projetos").innerHTML=html;
+
+}
+
+function abrirArquivo(file){
+
+const previewId="preview-"+file.id;
+const container=document.getElementById(previewId);
+
+const url=file.url || file.directUrl;
+
+/* arquivos de código */
+
+if(file.content){
+
+let type="text/plain";
+
+if(file.language==="html") type="text/html";
+if(file.language==="css") type="text/css";
+if(file.language==="javascript") type="application/javascript";
+if(file.language==="json") type="application/json";
+
+const blob=new Blob([file.content],{type:type});
+
+const blobUrl=URL.createObjectURL(blob);
+
+container.innerHTML=`&lt;iframe src="${blobUrl}"&gt;&lt;/iframe&gt;`;
+
+}
+
+/* mídia */
+
+else{
+
+container.innerHTML=`&lt;iframe src="${url}"&gt;&lt;/iframe&gt;`;
+
+}
+
+}
+
+function sair(){
+
+localStorage.removeItem("userkey");
+
+window.history.pushState({}, "", window.location.pathname);
+
+document.getElementById("loginArea").style.display="block";
+document.getElementById("dadosUsuario").style.display="none";
+
+}
+
+const params=new URLSearchParams(window.location.search);
+
+const userkeyUrl=params.get("userKey");
+const userkeySalvo=localStorage.getItem("userkey");
+
+if(userkeyUrl){
+
+localStorage.setItem("userkey",userkeyUrl);
+
+buscarDados(userkeyUrl);
+
+window.history.pushState({}, "", window.location.pathname);
+
+}
+else if(userkeySalvo){
+
+buscarDados(userkeySalvo);
+
+}
+
+&lt;/script&gt;
+
 &lt;/body&gt;
 &lt;/html&gt;</pre>
     </div>
-    
-    <!-- Sistema de Autenticação Funcional -->
-    <div class="auth-demo">
-      <h3>🔐 Sistema de Autenticação - Login com UserKey</h3>
-      <p>Digite seu UserKey para fazer login e ver seus dados:</p>
-      
-      <input type="text" id="userkeyAuth" placeholder="Digite seu UserKey" style="width: 70%; padding: 10px; margin: 10px 0;">
-      <button class="auth-btn auth-login" onclick="fazerLoginAuth()">🔐 Login</button>
-      <button class="auth-btn auth-logout" id="logoutBtnAuth" style="display:none;" onclick="fazerLogoutAuth()">🚪 Sair</button>
-      
-      <div id="userInfoAuth" style="display:none; margin-top: 20px; padding: 15px; background: white; border-radius: 5px;">
-        <h4>👤 Dados do Usuário:</h4>
-        <p><strong>Nome:</strong> <span id="userNomeAuth"></span></p>
-        <p><strong>E-mail:</strong> <span id="userEmailAuth"></span></p>
-        <p><strong>UserKey:</strong> <span id="userKeyAuth"></span></p>
-      </div>
-      
-      <div id="errorAuth" style="display:none; margin-top: 10px; padding: 10px; background: #f8d7da; color: #721c24; border-radius: 5px;"></div>
-    </div>
-    
-    <h2>📖 Como Usar o Sistema de Autenticação</h2>
-    
-    <div class="note">
-      <strong>🔑 Endpoint da API:</strong><br>
-      <code>https://code-hub-eta.vercel.app/api/userkey.js</code>
-    </div>
-    
-    <h3>1️⃣ Como Funciona</h3>
-    <p>O sistema de autenticação permite que os usuários façam login usando um UserKey. O fluxo é:</p>
+
+    <h2>📖 Funcionalidades do Sistema</h2>
+
+    <h3>1️⃣ Autenticação</h3>
     <ul>
-      <li>Clique em "Fazer Login" para abrir a página de autenticação</li>
-      <li>Após o login, você será redirecionado com o UserKey na URL</li>
-      <li>O sistema captura automaticamente o UserKey e salva no localStorage</li>
-      <li>Os dados do usuário são buscados e exibidos</li>
-      <li>O UserKey é removido da URL por segurança</li>
+      <li>Login via UserKey com redirecionamento automático</li>
+      <li>Salvamento automático do UserKey no localStorage</li>
+      <li>Remoção do UserKey da URL por segurança</li>
+      <li>Persistência de sessão entre recarregamentos</li>
     </ul>
-    
-    <h3>2️⃣ Buscar Dados do Usuário</h3>
-    <pre><code>GET https://code-hub-eta.vercel.app/api/userkey.js?userkey=SEU_USERKEY</code></pre>
-    <p>Retorna os dados do usuário incluindo nome, email e token de autenticação.</p>
-    
-    <h3>3️⃣ Obter Token de Login</h3>
-    <pre><code>https://code.codehub.ct.ws/API/criar.app</code></pre>
-    <p>Acesse este link para criar seu token de autenticação.</p>
-    
-    <div class="success">
-      <strong>💡 Dica:</strong> Copie o código HTML acima e substitua "SEU_TOKEN_AQUI" pelo seu token gerado em <code>https://code.codehub.ct.ws/API/criar.app</code>
+
+    <h3>2️⃣ Visualização de Projetos</h3>
+    <ul>
+      <li>Lista todos os projetos do usuário autenticado</li>
+      <li>Exibe nome e slug de cada projeto</li>
+      <li>Lista todos os arquivos dentro de cada projeto</li>
+    </ul>
+
+    <h3>3️⃣ Visualização de Arquivos</h3>
+    <ul>
+      <li><strong>Preview inline:</strong> Visualiza arquivos diretamente no iframe</li>
+      <li><strong>Suporte a múltiplos formatos:</strong> HTML, CSS, JavaScript, JSON, imagens</li>
+      <li><strong>Abrir externo:</strong> Abre o arquivo em nova aba</li>
+      <li><strong>Blob URLs:</strong> Cria URLs temporárias para conteúdo de código</li>
+    </ul>
+
+    <div class="note">
+      <strong>🔑 Endpoints da API:</strong><br>
+      <code>https://code-hub-eta.vercel.app/api/userkey.js</code> - Busca dados do usuário<br>
+      <code>https://api.codehub.ct.ws/?uid={UID}</code> - Busca projetos do usuário
     </div>
-    
-    <h2>📝 Exemplo de Resposta da API</h2>
+
+    <h2>🚀 Como Usar</h2>
+
+    <div class="success">
+      <strong>Passo 1:</strong> Obtenha seu token em <code>https://code.codehub.ct.ws/API/criar.app</code><br>
+      <strong>Passo 2:</strong> Substitua "SEU_TOKEN_AQUI" no código pelo seu token<br>
+      <strong>Passo 3:</strong> Copie o código completo e cole em um arquivo HTML<br>
+      <strong>Passo 4:</strong> Abra no navegador e faça login<br>
+      <strong>Passo 5:</strong> Visualize seus projetos e arquivos!
+    </div>
+
+    <h2>📝 Exemplo de Resposta da API de Usuário</h2>
     <pre>{
   "authToken": "eyJ1aWQiOi...",
   "authTokenDecoded": {
@@ -273,86 +470,46 @@
   "nome": "Nome do Usuário",
   "uid": "abc123..."
 }</pre>
+
+    <h2>📝 Exemplo de Resposta da API de Projetos</h2>
+    <pre>{
+  "projeto_id": {
+    "name": "Meu Projeto",
+    "slug": "meu-projeto",
+    "files": {
+      "file_id": {
+        "id": "123",
+        "name": "index.html",
+        "originalName": "index.html",
+        "language": "html",
+        "content": "&lt;h1&gt;Olá Mundo&lt;/h1&gt;",
+        "url": "https://..."
+      }
+    }
+  }
+}</pre>
+
+    <div class="warning">
+      <strong>⚠️ Importante:</strong> O sistema utiliza um proxy CORS (<code>corsproxy.io</code>) para acessar a API de projetos. Em produção, considere configurar um proxy próprio ou habilitar CORS no servidor.
+    </div>
+
+    <h2>🔧 Personalização</h2>
+    <p>Você pode personalizar o sistema alterando:</p>
+    <ul>
+      <li><strong>Estilos CSS:</strong> Modifique as cores, tamanhos e layout</li>
+      <li><strong>Tipos de arquivo suportados:</strong> Adicione mais extensões no mapeamento de tipos</li>
+      <li><strong>Funcionalidades:</strong> Adicione download de arquivos, edição inline, etc.</li>
+    </ul>
   </div>
-  
+
   <script>
-    const apiUrl = "https://code-hub-eta.vercel.app/api/userkey.js";
-    
-    function copiarCodigo() {
-      const codigo = document.getElementById("codigoExemplo").innerText;
+    function copiarCodigoCompleto() {
+      const codigo = document.getElementById("codigoCompleto").innerText;
       navigator.clipboard.writeText(codigo).then(() => {
-        alert("✅ Código copiado com sucesso!");
+        alert("✅ Código completo copiado com sucesso!");
       }).catch(() => {
         alert("❌ Erro ao copiar código");
       });
-    }
-    
-    function fazerLoginAuth() {
-      const userkey = document.getElementById("userkeyAuth").value;
-      if (!userkey) {
-        mostrarErro("Digite um UserKey válido!");
-        return;
-      }
-      
-      fetch(`${apiUrl}?userkey=${encodeURIComponent(userkey)}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.nome) {
-            localStorage.setItem("userkey", userkey);
-            localStorage.setItem("userData", JSON.stringify(data));
-            
-            document.getElementById("userNomeAuth").textContent = data.nome;
-            document.getElementById("userEmailAuth").textContent = data.email;
-            document.getElementById("userKeyAuth").textContent = userkey;
-            
-            document.getElementById("userInfoAuth").style.display = "block";
-            document.getElementById("logoutBtnAuth").style.display = "inline-block";
-            document.getElementById("userkeyAuth").style.display = "none";
-            document.querySelector(".auth-login").style.display = "none";
-            document.getElementById("errorAuth").style.display = "none";
-          } else {
-            mostrarErro("UserKey não encontrado ou inválido!");
-          }
-        })
-        .catch(err => {
-          mostrarErro("Erro ao buscar dados: " + err);
-        });
-    }
-    
-    function fazerLogoutAuth() {
-      localStorage.removeItem("userkey");
-      localStorage.removeItem("userData");
-      
-      document.getElementById("userInfoAuth").style.display = "none";
-      document.getElementById("logoutBtnAuth").style.display = "none";
-      document.getElementById("userkeyAuth").style.display = "inline-block";
-      document.querySelector(".auth-login").style.display = "inline-block";
-      document.getElementById("userkeyAuth").value = "";
-      document.getElementById("errorAuth").style.display = "none";
-    }
-    
-    function mostrarErro(mensagem) {
-      const errorDiv = document.getElementById("errorAuth");
-      errorDiv.textContent = mensagem;
-      errorDiv.style.display = "block";
-      setTimeout(() => {
-        errorDiv.style.display = "none";
-      }, 3000);
-    }
-    
-    const userkeySalvo = localStorage.getItem("userkey");
-    const userDataSalvo = localStorage.getItem("userData");
-    
-    if (userkeySalvo && userDataSalvo) {
-      const data = JSON.parse(userDataSalvo);
-      document.getElementById("userNomeAuth").textContent = data.nome;
-      document.getElementById("userEmailAuth").textContent = data.email;
-      document.getElementById("userKeyAuth").textContent = userkeySalvo;
-      
-      document.getElementById("userInfoAuth").style.display = "block";
-      document.getElementById("logoutBtnAuth").style.display = "inline-block";
-      document.getElementById("userkeyAuth").style.display = "none";
-      document.querySelector(".auth-login").style.display = "none";
     }
   </script>
 </body>
