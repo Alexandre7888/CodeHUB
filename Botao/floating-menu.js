@@ -42,6 +42,20 @@ async function loadButtonsFromFile() {
                 url: "https://code.codehubct.ws/blog",
                 color: "#79a789", 
                 icon: "📘"
+            },
+            {
+                title: "mapsHUB",
+                description: "esse aplicativo de mapa oficial da CodeHUB",
+                url: "https://code.codehub.ct.ws/mapsHUB/",
+                color: "#27c877", 
+                icon: "🗺️"
+            },
+            {
+                title: "mensagensHUB",
+                description: "esse é o aplicativo oficial de mensagens",
+                url: "https://code.codehub.ct.ws/mensagens/",
+                color: "#13w657", 
+                icon: "🔑"
             }
         ];
     }
