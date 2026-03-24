@@ -35,6 +35,13 @@ async function loadButtonsFromFile() {
                 url: "https://code.codehub.ct.ws/API/criar.app",
                 color: "#25d455", 
                 icon: "🔑"
+            },
+            {
+                title: "nosso blog de ajuda",
+                description: "esse blog é o blog externo",
+                url: "https://code.codehubct.ws/blog",
+                color: "#79a789", 
+                icon: "📘"
             }
         ];
     }
