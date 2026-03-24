@@ -55,7 +55,7 @@ async function loadButtonsFromFile() {
                 description: "esse é o aplicativo oficial de mensagens",
                 url: "https://code.codehub.ct.ws/mensagens/",
                 color: "#13w657", 
-                icon: "🔑"
+                icon: "📨"
             }
         ];
     }
