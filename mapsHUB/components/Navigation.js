@@ -1,6 +1,7 @@
-function Navigation({ startPoint, endPoint, onStop, onUpdateStats, onRouteCalculated }) {
+function Navigation({ startPoint, endPoint, userHeading, onStop, onUpdateStats, onRouteCalculated }) {
     const [route, setRoute] = React.useState(null);
     const [steps, setSteps] = React.useState([]);
+    const [wrongWayWarningTimer, setWrongWayWarningTimer] = React.useState(0);
     const [currentStepIndex, setCurrentStepIndex] = React.useState(0);
     const [isCalculating, setIsCalculating] = React.useState(false);
     const [isDirectMode, setIsDirectMode] = React.useState(false); 
@@ -60,7 +61,12 @@ function Navigation({ startPoint, endPoint, onStop, onUpdateStats, onRouteCalcul
                     const firstStep = routeData.legs[0].steps[0];
                     const streetName = firstStep?.name ? `na ${firstStep.name}` : '';
                     const instruction = translateInstruction(firstStep?.maneuver?.type, firstStep?.maneuver?.modifier, streetName);
-                    speak(`Rota iniciada. ${instruction}`);
+                    
+                    if (routeData.isAdminRoute) {
+                         speak(`Rota manual do administrador iniciada. ${instruction}`);
+                    } else {
+                         speak(`Rota iniciada. ${instruction}`);
+                    }
                 }
             } else {
                 speak("Não foi possível traçar a rota.");
@@ -71,6 +77,45 @@ function Navigation({ startPoint, endPoint, onStop, onUpdateStats, onRouteCalcul
         calculate();
         
     }, [endPoint]); 
+
+    // TTS: Random periodic message "Respeite as leis do trânsito"
+    React.useEffect(() => {
+        const intervalId = setInterval(() => {
+            if (Math.random() > 0.3) {
+                speak("Lembre-se, respeite as leis do trânsito.");
+            }
+        }, 120000); // Every 2 minutes
+        return () => clearInterval(intervalId);
+    }, []);
+
+    // Wrong Way Detection for Admin Routes
+    React.useEffect(() => {
+        if (!route || !userHeading || !startPoint) return;
+        
+        // Only enforce strict direction if it's a known geometry and moving at speed (if available)
+        if (route.geometry && route.geometry.coordinates && route.geometry.coordinates.length > 1) {
+            // Find bearing of the route segment we are on
+            const path = route.geometry.coordinates;
+            // Let's just compare user heading with the general direction to the next point
+            let targetPt = path[Math.min(currentStepIndex + 1, path.length - 1)];
+            if (!targetPt) targetPt = path[path.length - 1];
+
+            const expectedBearing = calculateBearing(startPoint.lat, startPoint.lon, targetPt[1], targetPt[0]);
+            
+            // Normalize difference
+            let diff = Math.abs(userHeading - expectedBearing);
+            if (diff > 180) diff = 360 - diff;
+
+            // If diff is > 120 degrees, they are going backwards
+            if (diff > 120) {
+                if (Date.now() - wrongWayWarningTimer > 15000) { // Warn every 15 seconds max
+                    playAlertSound();
+                    speak("Atenção! Você está indo na contramão. Desrespeitando as leis de trânsito.");
+                    setWrongWayWarningTimer(Date.now());
+                }
+            }
+        }
+    }, [userHeading, startPoint, route, currentStepIndex]);
 
     // 2. Position Tracking
     React.useEffect(() => {
