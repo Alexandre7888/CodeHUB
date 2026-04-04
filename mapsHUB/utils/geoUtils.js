@@ -6,11 +6,11 @@ const PHOTON_API_URL = 'https://photon.komoot.io/api/';
 const OSRM_BASE_URL = 'https://router.project-osrm.org/route/v1';
 const PROXY_BASE_URL = 'https://proxy-api.trickle-app.host/?url=';
 
-// Search with Deep Fallback Strategies
+// Search with Location Bias
 async function searchPlaces(query, userLocation = null) {
     if (!query || query.length < 3) return [];
     
-    // Offline Check
+    // Offline fallback
     if (!navigator.onLine) {
         try {
             const savedPlaces = JSON.parse(localStorage.getItem('userPlaces') || '{}');
@@ -18,132 +18,123 @@ async function searchPlaces(query, userLocation = null) {
             if (savedPlaces.home && savedPlaces.home.title.toLowerCase().includes(query.toLowerCase())) results.push(savedPlaces.home);
             if (savedPlaces.car && savedPlaces.car.title.toLowerCase().includes(query.toLowerCase())) results.push(savedPlaces.car);
             return results;
-        } catch (e) { return []; }
+        } catch (e) {
+            return [];
+        }
     }
 
     let results = [];
 
-    // --- STRATEGY 1: Local Context (Photon with Bias) ---
-    // Fast, localized, prioritizes neighborhood
     try {
+        // STRATEGY: Use Photon (OSM) as primary.
+        // It provides the best "Google-like" fuzzy search for free.
         const params = new URLSearchParams({
             q: query,
-            limit: 10,
+            limit: 20, // Increased limit to find more candidates
             lang: 'pt'
         });
 
-        if (userLocation && userLocation.lat) {
+        // Add Location Bias (Soft)
+        if (userLocation && userLocation.lat && userLocation.lon) {
             params.append('lat', userLocation.lat);
             params.append('lon', userLocation.lon);
-            params.append('zoom', '16'); // Focus local
-            params.append('location_bias_scale', '0.8'); // Strong bias
+            // Lower zoom slightly to broaden the "neighborhood" concept
+            params.append('zoom', '14'); 
+            // 0.6 is good, keeps remote results possible
+            params.append('location_bias_scale', '0.6'); 
         }
         
         const response = await fetch(`${PHOTON_API_URL}?${params.toString()}`);
-        if (response.ok) {
-            const data = await response.json();
-            results = mapPhotonResults(data.features);
-        }
-    } catch (e) { console.warn("Local search failed", e); }
-
-    // --- STRATEGY 2: Deep Global Search (If Local failed) ---
-    // "Vasculhar o mapa" - No bias, global scope, higher limit
-    if (results.length === 0) {
-        console.log("Local search empty. Triggering Deep Global Search...");
+        if (!response.ok) throw new Error('Network response was not ok');
         
-        // 2a. Photon Global
+        const data = await response.json();
+        
+        results = data.features.map(f => {
+            const props = f.properties;
+            const coords = f.geometry.coordinates;
+            return {
+                lat: coords[1],
+                lon: coords[0],
+                // Formatting name: Name or Street, City
+                display_name: formatDisplayName(props), 
+                title: props.name || props.street || "Local sem nome",
+                type: props.osm_value || 'place',
+                address: {
+                    road: props.street,
+                    house_number: props.housenumber,
+                    city: props.city,
+                    state: props.state,
+                    country: props.country,
+                    postcode: props.postcode
+                },
+                osm_id: props.osm_id,
+                source: 'osm'
+            };
+        });
+
+    } catch (error) {
+        console.warn("Primary search failed, trying fallback:", error);
+        
+        // Fallback to Nominatim
         try {
-            const globalParams = new URLSearchParams({
+             const params = new URLSearchParams({
                 q: query,
-                limit: 15,
-                lang: 'pt'
+                format: 'json',
+                addressdetails: 1,
+                limit: 10,
+                'accept-language': 'pt-BR,pt;q=0.9,en;q=0.8'
             });
-            const globalRes = await fetch(`${PHOTON_API_URL}?${globalParams.toString()}`);
-            if (globalRes.ok) {
-                const data = await globalRes.json();
-                results = mapPhotonResults(data.features);
-            }
-        } catch (e) { console.warn("Photon Global failed", e); }
-
-        // 2b. Nominatim Global (Structured)
-        if (results.length === 0) {
-            try {
-                const nomParams = new URLSearchParams({
-                    q: query,
-                    format: 'json',
-                    addressdetails: 1,
-                    limit: 10,
-                    'accept-language': 'pt-BR,pt;q=0.9,en;q=0.8',
-                    dedupe: 0
-                });
-                const nomRes = await fetch(`${NOMINATIM_BASE_URL}?${nomParams.toString()}`);
-                if (nomRes.ok) {
-                    const nomData = await nomRes.json();
-                    results = nomData.map(mapNominatimResult);
-                }
-            } catch (e) { console.warn("Nominatim failed", e); }
-        }
-
-        // --- STRATEGY 3: "SCOUR" MODE (Recursive Simplification) ---
-        // If query is "McDonalds, Rua Augusta, Sao Paulo", and failed:
-        // Try 1: "McDonalds, Sao Paulo" (Skip street)
-        // Try 2: "McDonalds" (Just name, look everywhere)
-        
-        if (results.length === 0 && query.includes(',')) {
-            console.log("Activating SCOUR MODE (Recursive Retry)...");
-            const parts = query.split(',');
             
-            // Try First Part + Last Part (e.g. "Name, City")
-            if (parts.length >= 2) {
-                const simplifiedQuery = `${parts[0].trim()}, ${parts[parts.length-1].trim()}`;
-                if (simplifiedQuery.length > 5 && simplifiedQuery !== query) {
-                     try {
-                        const scourRes = await fetch(`${PHOTON_API_URL}?q=${encodeURIComponent(simplifiedQuery)}&lang=pt`);
-                        if (scourRes.ok) {
-                            const data = await scourRes.json();
-                            results = mapPhotonResults(data.features);
-                        }
-                     } catch(e) {}
-                }
+            // Viewbox bias if location known (Preference only, not strict)
+            if (userLocation) {
+                const viewbox = [
+                    (userLocation.lon - 0.5), 
+                    (userLocation.lat + 0.5), 
+                    (userLocation.lon + 0.5), 
+                    (userLocation.lat - 0.5)
+                ].join(',');
+                params.append('viewbox', viewbox);
+                // Removed 'bounded=1' to allow finding places outside the user's current area
             }
-            
-            // Try JUST First Part (Name Only - Broadest Search)
-            if (results.length === 0 && parts[0].trim().length > 3) {
-                try {
-                    const nameOnlyParams = new URLSearchParams({
-                        q: parts[0].trim(),
-                        limit: 20, // High limit to find the right one in list
-                        lang: 'pt'
-                    });
-                    // If we have user location, bias heavily even for name-only to find "nearest Starbucks"
-                    if (userLocation) {
-                        nameOnlyParams.append('lat', userLocation.lat);
-                        nameOnlyParams.append('lon', userLocation.lon);
-                        nameOnlyParams.append('location_bias_scale', '0.4'); // Mild bias
-                    }
-                    
-                    const nameRes = await fetch(`${PHOTON_API_URL}?${nameOnlyParams.toString()}`);
-                    if (nameRes.ok) {
-                        const data = await nameRes.json();
-                        results = mapPhotonResults(data.features);
-                    }
-                } catch(e) {}
+
+            const response = await fetch(`${NOMINATIM_BASE_URL}?${params.toString()}`);
+            if(response.ok) {
+                const nomData = await response.json();
+                results = nomData.map(item => ({
+                    lat: parseFloat(item.lat),
+                    lon: parseFloat(item.lon),
+                    display_name: item.display_name,
+                    title: item.name || item.display_name.split(',')[0],
+                    type: item.type,
+                    address: item.address,
+                    source: 'osm'
+                }));
             }
-        }
+        } catch(e) {}
     }
 
-    // --- POST-PROCESSING ---
-
-    // 1. Calculate Distances (Client Side Sort)
-    if (userLocation && userLocation.lat && results.length > 0) {
+    // HYBRID SORTING: Balance Distance vs Relevance
+    // If exact name match, prioritize it even if far. Otherwise, prioritize distance.
+    if (userLocation && userLocation.lat && userLocation.lon && results.length > 0) {
         results.forEach(item => {
             item.distance = calculateDistance(userLocation.lat, userLocation.lon, item.lat, item.lon);
         });
-        // Sort by distance
-        results.sort((a, b) => a.distance - b.distance);
+        
+        results.sort((a, b) => {
+            // Check for exact title matches (case-insensitive)
+            const queryLower = query.toLowerCase();
+            const aExact = a.title && a.title.toLowerCase() === queryLower;
+            const bExact = b.title && b.title.toLowerCase() === queryLower;
+            
+            if (aExact && !bExact) return -1;
+            if (!aExact && bExact) return 1;
+            
+            // Otherwise sort by distance
+            return a.distance - b.distance;
+        });
     }
     
-    // 2. De-duplicate
+    // De-duplicate results
     const seen = new Set();
     results = results.filter(item => {
         const key = item.osm_id || `${item.lat.toFixed(4)},${item.lon.toFixed(4)}`;
@@ -152,48 +143,8 @@ async function searchPlaces(query, userLocation = null) {
         return true;
     });
 
-    // 3. Fallback to Google (REMOVED: Incentivizing OSM Mapping)
-    if (results.length === 0) {
-        return [];
-    }
-
-    return results.slice(0, 15);
-}
-
-// Helpers for mapping API results
-function mapPhotonResults(features) {
-    if (!features) return [];
-    return features.map(f => {
-        const props = f.properties;
-        const coords = f.geometry.coordinates;
-        return {
-            lat: coords[1],
-            lon: coords[0],
-            display_name: formatDisplayName(props), 
-            title: props.name || props.street || "Local sem nome",
-            type: props.osm_value || 'place',
-            address: {
-                road: props.street,
-                city: props.city,
-                state: props.state,
-                country: props.country
-            },
-            osm_id: props.osm_id,
-            source: 'osm'
-        };
-    });
-}
-
-function mapNominatimResult(item) {
-    return {
-        lat: parseFloat(item.lat),
-        lon: parseFloat(item.lon),
-        display_name: item.display_name,
-        title: item.name || item.display_name.split(',')[0],
-        type: item.type,
-        address: item.address,
-        source: 'osm'
-    };
+    // Limit output
+    return results.slice(0, 10);
 }
 
 function formatDisplayName(props) {
@@ -307,6 +258,77 @@ async function saveRouteForOffline(routeData, startCoords, endPlace) {
     }
 }
 
+// Helper: Find an Admin drawn route if start and end are on it
+function findAdminRoute(startCoords, endCoords) {
+    try {
+        const cache = JSON.parse(localStorage.getItem('cache_admin_routes') || '{}');
+        const adminRoutes = cache.data || [];
+        
+        for (const route of adminRoutes) {
+            const pathsToTest = route.paths || (route.path ? [route.path] : []);
+            
+            for (const path of pathsToTest) {
+                if (!path || path.length < 2) continue;
+                
+                // Very simple check: Are both start and end near this polyline?
+                let startNear = false;
+                let endNear = false;
+                let startIndex = -1;
+                let endIndex = -1;
+                
+                for (let i = 0; i < path.length; i++) {
+                    const pt = { lat: path[i][0], lon: path[i][1] };
+                    if (!startNear && calculateDistance(startCoords.lat, startCoords.lon, pt.lat, pt.lon) < 0.5) {
+                        startNear = true;
+                        startIndex = i;
+                    }
+                    if (!endNear && calculateDistance(endCoords.lat, endCoords.lon, pt.lat, pt.lon) < 0.5) {
+                        endNear = true;
+                        endIndex = i;
+                    }
+                }
+                
+                if (startNear && endNear) {
+                    // Valid admin route found. Build a faux OSRM response.
+                    // Slice path from start to end
+                    const stepPath = startIndex <= endIndex 
+                        ? path.slice(startIndex, endIndex + 1)
+                        : path.slice(endIndex, startIndex + 1).reverse();
+                    
+                    const geojsonPath = stepPath.map(p => [p[1], p[0]]); // GeoJSON wants [lon, lat]
+                    const dist = calculateDistance(startCoords.lat, startCoords.lon, endCoords.lat, endCoords.lon) * 1000;
+                    
+                    return {
+                        code: 'Ok',
+                        isAdminRoute: true,
+                        routeDirection: route.direction,
+                        originalPath: path, // Full path to calculate bearing
+                        routes: [{
+                            distance: dist,
+                            duration: (dist / 40) * 3600,
+                            geometry: { coordinates: geojsonPath, type: 'LineString' },
+                            legs: [{
+                                steps: [{
+                                    maneuver: { type: 'depart', modifier: 'straight', location: [startCoords.lon, startCoords.lat] },
+                                    name: route.name || 'Rota Manual',
+                                    distance: dist,
+                                    duration: (dist / 40) * 3600,
+                                    mode: 'driving'
+                                }],
+                                distance: dist,
+                                duration: (dist / 40) * 3600
+                            }]
+                        }]
+                    };
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Error reading admin routes", e);
+    }
+    return null;
+}
+
 // Helper: Find a saved route that matches destination
 function findSavedRoute(startCoords, endCoords) {
     try {
@@ -365,6 +387,10 @@ function findSavedRoute(startCoords, endCoords) {
 
 async function getRoute(startCoords, endCoords, profile = 'driving') {
     const cacheKey = `cached_route_${startCoords.lat}_${startCoords.lon}_to_${endCoords.lat}_${endCoords.lon}`;
+
+    // 0. ADMIN ROUTE CHECK (Highest Priority Offline/Online)
+    const adminRoute = findAdminRoute(startCoords, endCoords);
+    if (adminRoute) return adminRoute.routes[0];
 
     // 1. OFFLINE MODE CHECK
     if (!navigator.onLine) {
