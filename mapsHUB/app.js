@@ -13,57 +13,13 @@ class ErrorBoundary extends React.Component {
     console.error('ErrorBoundary caught an error:', error, errorInfo.componentStack);
   }
 
-  handleReset() {
-    // Hard reset for the user
-    if (confirm("Isso apagará seus dados locais (favoritos e rotas salvas) para corrigir o erro. Continuar?")) {
-        localStorage.clear();
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                for(let registration of registrations) {
-                    registration.unregister();
-                }
-            });
-        }
-        window.location.reload();
-    }
-  }
-
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-          <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border border-gray-100">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <div className="icon-triangle-alert text-3xl text-red-600"></div>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Ops! Algo deu errado.</h1>
-            <p className="text-gray-500 mb-6 text-sm">O aplicativo encontrou um erro inesperado. Tente recarregar ou resetar se o problema persistir.</p>
-            
-            <div className="flex flex-col gap-3">
-                <button 
-                    onClick={() => window.location.reload()} 
-                    className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-colors shadow-lg shadow-blue-200 flex items-center justify-center gap-2"
-                >
-                    <div className="icon-refresh-cw"></div>
-                    Recarregar Página
-                </button>
-                
-                <button 
-                    onClick={this.handleReset} 
-                    className="w-full py-3 bg-white border border-gray-200 text-gray-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
-                >
-                    <div className="icon-trash"></div>
-                    Resetar Aplicativo (Correção Total)
-                </button>
-            </div>
-            
-            {this.state.error && (
-                <div className="mt-6 text-left bg-gray-100 p-3 rounded-lg overflow-hidden">
-                    <p className="text-[10px] text-gray-500 font-mono break-all">
-                        Erro: {this.state.error.toString()}
-                    </p>
-                </div>
-            )}
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-center p-8">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Ops! Algo deu errado.</h1>
+            <button onClick={() => window.location.reload()} className="px-4 py-2 bg-black text-white rounded">Recarregar Página</button>
           </div>
         </div>
       );
@@ -78,16 +34,12 @@ function App() {
     // --- STATE ---
     const [currentUser, setCurrentUser] = React.useState(null);
     const [osmSession, setOsmSession] = React.useState(null);
-    const [mapState, setMapState] = React.useState(() => {
-        try {
-            return JSON.parse(localStorage.getItem('mapState')) || {
-                center: [-23.5505, -46.6333],
-                zoom: 13
-            };
-        } catch(e) {
-            return { center: [-23.5505, -46.6333], zoom: 13 };
-        }
-    });
+    const savedMapState = JSON.parse(localStorage.getItem('mapState')) || {
+        center: [-23.5505, -46.6333],
+        zoom: 13
+    };
+
+    const [mapState, setMapState] = React.useState(savedMapState);
     const [userLocation, setUserLocation] = React.useState(null);
     const [userHeading, setUserHeading] = React.useState(0);
     const [userId] = React.useState(() => {
@@ -142,86 +94,81 @@ function App() {
     // --- EFFECTS ---
 
     React.useEffect(() => {
-        // Wrap initialization in a safety block
-        try {
-            loadData();
-            checkAuth();
+        loadData();
+        checkAuth();
+        
+        // OSM Auth Check
+        const checkOSM = async () => {
+            // 1. Check if returning from redirect
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get("code");
             
-            // OSM Auth Check
-            const checkOSM = async () => {
-                // 1. Check if returning from redirect
-                const params = new URLSearchParams(window.location.search);
-                const code = params.get("code");
-                
-                if (code) {
-                    // We are coming back from OSM
-                    const session = await processOSMCode(code);
-                    if (session) {
-                        setOsmSession(session);
-                        alert("Conectado ao OpenStreetMap com sucesso!");
-                    }
-                } else {
-                    // 2. Check local storage
-                    const session = getOSMSession();
-                    if (session) setOsmSession(session);
+            if (code) {
+                // We are coming back from OSM
+                const session = await processOSMCode(code);
+                if (session) {
+                    setOsmSession(session);
+                    alert("Conectado ao OpenStreetMap com sucesso!");
                 }
-            };
-            checkOSM();
-
-            const handleAuthEvent = (e) => {
-                console.log('Auth Event:', e.detail);
-                checkAuth();
-            };
-
-            window.addEventListener('auth-completed', handleAuthEvent);
-
-            // Listen for open-osm-mode (from edit button)
-            const handleOpenOsm = () => {
-                 setIsOsmMode(true);
-                 setIsSidebarOpen(false);
-            };
-            window.addEventListener('open-osm-mode', handleOpenOsm);
-            
-            // Network Listeners
-            const handleOnline = () => { setIsOnline(true); loadData(); };
-            const handleOffline = () => setIsOnline(false);
-            
-            window.addEventListener('online', handleOnline);
-            window.addEventListener('offline', handleOffline);
-            
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => {
-                         // console.log('SW Registered', reg);
-                    })
-                    .catch(err => console.log('SW Failed', err));
+            } else {
+                // 2. Check local storage
+                const session = getOSMSession();
+                if (session) setOsmSession(session);
             }
+        };
+        checkOSM();
 
-            if ("geolocation" in navigator) {
-                const watchId = navigator.geolocation.watchPosition(
-                    (pos) => {
-                        const newLoc = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-                        setUserLocation(newLoc);
-                        if (pos.coords.heading) {
-                            setUserHeading(pos.coords.heading);
-                        }
-                        updateUserLocation(userId, {
-                            lat: newLoc.lat,
-                            lon: newLoc.lon,
-                            heading: pos.coords.heading || 0,
-                            speed: pos.coords.speed || 0,
-                            name: currentUser ? currentUser.name : "Usuário App"
-                        });
-                        setErrorMessage(null);
-                    }, 
-                    err => console.warn("GPS Watch Warning:", err.message),
-                    { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 }
-                );
+        const handleAuthEvent = (e) => {
+            console.log('Auth Event:', e.detail);
+            checkAuth();
+        };
 
-                return () => navigator.geolocation.clearWatch(watchId);
-            }
-        } catch (error) {
-            console.error("Initialization Error:", error);
+        window.addEventListener('auth-completed', handleAuthEvent);
+
+        // Listen for open-osm-mode (from edit button)
+        const handleOpenOsm = () => {
+             setIsOsmMode(true);
+             setIsSidebarOpen(false);
+        };
+        window.addEventListener('open-osm-mode', handleOpenOsm);
+        
+        // Network Listeners
+        const handleOnline = () => { setIsOnline(true); loadData(); };
+        const handleOffline = () => setIsOnline(false);
+        
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => {
+                     // console.log('SW Registered', reg);
+                })
+                .catch(err => console.log('SW Failed', err));
+        }
+
+        if ("geolocation" in navigator) {
+            const watchId = navigator.geolocation.watchPosition(
+                (pos) => {
+                    const newLoc = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+                    setUserLocation(newLoc);
+                    if (pos.coords.heading) {
+                        setUserHeading(pos.coords.heading);
+                    }
+                    updateUserLocation(userId, {
+                        lat: newLoc.lat,
+                        lon: newLoc.lon,
+                        heading: pos.coords.heading || 0,
+                        speed: pos.coords.speed || 0,
+                        name: currentUser ? currentUser.name : "Usuário App"
+                    });
+                    setErrorMessage(null);
+                }, 
+                err => console.warn("GPS Watch Warning:", err.message),
+                { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 }
+            );
+
+            return () => navigator.geolocation.clearWatch(watchId);
         }
     }, []);
 
@@ -265,41 +212,37 @@ function App() {
     };
 
     const loadData = async () => {
-        try {
-            const [placesData, connectionsData, tourData] = await Promise.all([
-                fetchPlaces(),
-                fetchConnections(),
-                fetchTourPoints()
-            ]);
+        const [placesData, connectionsData, tourData] = await Promise.all([
+            fetchPlaces(),
+            fetchConnections(),
+            fetchTourPoints(),
+            fetchAdminRoutes() // Fetch and cache admin routes automatically
+        ]);
 
-            // Filter logic moved to displayMarkers to handle currentUser changes dynamically
-            if (placesData) {
-                // We keep all data in state, and filter in render
-                const allMarkers = Object.values(placesData).map(place => ({
-                    ...place,
-                    lat: parseFloat(place.lat),
-                    lon: parseFloat(place.lon),
-                    color: place.type === 'shop' ? 'green-500' : 'blue-500'
-                }));
-                setMarkers(allMarkers);
-            }
+        // Filter logic moved to displayMarkers to handle currentUser changes dynamically
+        if (placesData) {
+            // We keep all data in state, and filter in render
+            const allMarkers = Object.values(placesData).map(place => ({
+                ...place,
+                lat: parseFloat(place.lat),
+                lon: parseFloat(place.lon),
+                color: place.type === 'shop' ? 'green-500' : 'blue-500'
+            }));
+            setMarkers(allMarkers);
+        }
 
-            if (connectionsData) {
-                setConnections(Object.values(connectionsData));
-            }
+        if (connectionsData) {
+            setConnections(Object.values(connectionsData));
+        }
 
-            if (tourData) {
-                const tPoints = tourData.map(p => ({
-                    ...p,
-                    type: 'tour-point',
-                    title: 'Tour 360°',
-                    color: 'blue-400'
-                }));
-                setTourPoints(tPoints);
-            }
-        } catch (error) {
-            console.error("Data Load Error:", error);
-            // Non-critical, just log it. The map will work without data.
+        if (tourData) {
+            const tPoints = tourData.map(p => ({
+                ...p,
+                type: 'tour-point',
+                title: 'Tour 360°',
+                color: 'blue-400'
+            }));
+            setTourPoints(tPoints);
         }
     };
 
@@ -331,6 +274,10 @@ function App() {
         if (!showTourPoints) return [];
         
         let activeConns = [...connections];
+        
+        // Generate implicit connections from Tour Points logic (if they have links or sequences)
+        // For simplicity, we can just connect sequential points if they look like a sequence
+        // Or if we have explicit links in the point data (Editor saves links)
         
         const isAuthor = (item) => currentUser && (item.author === currentUser.name || item.author === 'User');
 
@@ -596,6 +543,7 @@ function App() {
                 <Navigation 
                     startPoint={userLocation}
                     endPoint={navDestination}
+                    userHeading={userHeading}
                     onStop={stopNavigation}
                     onUpdateStats={setNavStats}
                     onRouteCalculated={(geometry) => setCurrentRoutePath(geometry)}
@@ -707,8 +655,6 @@ function App() {
                         setShowTraffic={setShowTraffic}
                         showCrossData={showCrossData}
                         setShowCrossData={setShowCrossData}
-                        is3DMode={is3DMode}
-                        onToggle3D={() => setIs3DMode(!is3DMode)}
                     />
 
                     <UserPlaces 
