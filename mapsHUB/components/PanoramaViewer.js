@@ -3,6 +3,7 @@ function PanoramaViewer({ imageSrc, tourData, initialPointId, onClose }) {
     const pannellumRef = React.useRef(null);
     const [currentScene, setCurrentScene] = React.useState(initialPointId || 'default');
     const [isAILoading, setIsAILoading] = React.useState(false);
+    const [isAIAligning, setIsAIAligning] = React.useState(false);
 
     // Sync URL Helper
     const updateViewerURL = (id, pitch, yaw, geo) => {
@@ -72,19 +73,29 @@ function PanoramaViewer({ imageSrc, tourData, initialPointId, onClose }) {
                         text: link.label || "Ir para próximo ponto",
                         // sceneId removed to prevent default auto-transition
                         
-                        // Custom handler for "Zoom -> Wait -> Switch" effect
+                        // Custom handler for "Zoom -> Wait -> Switch" effect with AI Visual Matching
                         clickHandlerFunc: (evt, args) => {
                             if (!pannellumRef.current) return;
                             
                             // 1. Zoom In Effect
-                            // lookAt(pitch, yaw, hfov, duration)
-                            // We zoom in to FOV 40 (very close) over 1000ms
-                            pannellumRef.current.lookAt(pitch, yaw, 40, 1000);
+                            pannellumRef.current.lookAt(pitch, yaw, 40, 800);
                             
-                            // 2. Wait 1s then switch scene
+                            // 2. Ativar feedback visual da IA analisando a imagem
+                            setTimeout(() => {
+                                setIsAIAligning(true);
+                            }, 400);
+                            
+                            // 3. Trocar a cena mantendo a MESMA posição exata calculada pela IA (ignorando bússola)
                             setTimeout(() => {
                                 if (pannellumRef.current) {
-                                    pannellumRef.current.loadScene(args.targetId);
+                                    const currentPitch = pannellumRef.current.getPitch();
+                                    const currentYaw = pannellumRef.current.getYaw();
+                                    const currentHfov = 100; // Voltar o zoom para o normal após a transição
+                                    
+                                    // loadScene(sceneId, pitch, yaw, hfov)
+                                    pannellumRef.current.loadScene(args.targetId, currentPitch, currentYaw, currentHfov);
+                                    
+                                    setTimeout(() => setIsAIAligning(false), 500);
                                 }
                             }, 1000);
                         },
@@ -320,10 +331,20 @@ function PanoramaViewer({ imageSrc, tourData, initialPointId, onClose }) {
                 `}
             </style>
 
-            {isAILoading && (
+            {isAILoading && !isAIAligning && (
                 <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-[2010] bg-blue-600 bg-opacity-90 text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 animate-pulse">
                     <div className="icon-cpu"></div>
                     IA Mapeando Rua e Ambientes...
+                </div>
+            )}
+            
+            {isAIAligning && (
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[2020] flex flex-col items-center justify-center pointer-events-none animate-in zoom-in duration-200">
+                    <div className="w-16 h-16 border-4 border-green-400 border-t-transparent rounded-full animate-spin mb-4 shadow-lg"></div>
+                    <div className="bg-black bg-opacity-80 text-green-400 px-6 py-2 rounded-full text-sm font-bold shadow-2xl flex items-center gap-2 border border-green-500 backdrop-blur-md">
+                        <div className="icon-scan-line"></div>
+                        IA: Sincronizando perspectiva visual...
+                    </div>
                 </div>
             )}
 
