@@ -2,16 +2,15 @@
 
 const NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org/search';
 const NOMINATIM_REVERSE_URL = 'https://nominatim.openstreetmap.org/reverse';
-const PHOTON_API_URL = 'https://photon.komoot.io/api/';
 const OSRM_BASE_URL = 'https://router.project-osrm.org/route/v1';
 const PROXY_BASE_URL = 'https://proxy-api.trickle-app.host/?url=';
 
-// Search with Location Bias
-async function searchPlaces(query, userLocation = null) {
+async function searchPlaces(query) {
     if (!query || query.length < 3) return [];
     
-    // Offline fallback
+    // Offline fallback: Search in saved places (UserPlaces) or cached history
     if (!navigator.onLine) {
+        // Mock offline search in localStorage
         try {
             const savedPlaces = JSON.parse(localStorage.getItem('userPlaces') || '{}');
             const results = [];
@@ -23,143 +22,23 @@ async function searchPlaces(query, userLocation = null) {
         }
     }
 
-    let results = [];
-
     try {
-        // STRATEGY: Use Photon (OSM) as primary.
-        // It provides the best "Google-like" fuzzy search for free.
         const params = new URLSearchParams({
             q: query,
-            limit: 20, // Increased limit to find more candidates
-            lang: 'pt'
+            format: 'json',
+            addressdetails: 1,
+            limit: 5,
+            'accept-language': 'pt-BR,pt;q=0.9,en;q=0.8'
         });
-
-        // Add Location Bias (Soft)
-        if (userLocation && userLocation.lat && userLocation.lon) {
-            params.append('lat', userLocation.lat);
-            params.append('lon', userLocation.lon);
-            // Lower zoom slightly to broaden the "neighborhood" concept
-            params.append('zoom', '14'); 
-            // 0.6 is good, keeps remote results possible
-            params.append('location_bias_scale', '0.6'); 
-        }
         
-        const response = await fetch(`${PHOTON_API_URL}?${params.toString()}`);
+        const response = await fetch(`${NOMINATIM_BASE_URL}?${params.toString()}`);
         if (!response.ok) throw new Error('Network response was not ok');
         
-        const data = await response.json();
-        
-        results = data.features.map(f => {
-            const props = f.properties;
-            const coords = f.geometry.coordinates;
-            return {
-                lat: coords[1],
-                lon: coords[0],
-                // Formatting name: Name or Street, City
-                display_name: formatDisplayName(props), 
-                title: props.name || props.street || "Local sem nome",
-                type: props.osm_value || 'place',
-                address: {
-                    road: props.street,
-                    house_number: props.housenumber,
-                    city: props.city,
-                    state: props.state,
-                    country: props.country,
-                    postcode: props.postcode
-                },
-                osm_id: props.osm_id,
-                source: 'osm'
-            };
-        });
-
+        return await response.json();
     } catch (error) {
-        console.warn("Primary search failed, trying fallback:", error);
-        
-        // Fallback to Nominatim
-        try {
-             const params = new URLSearchParams({
-                q: query,
-                format: 'json',
-                addressdetails: 1,
-                limit: 10,
-                'accept-language': 'pt-BR,pt;q=0.9,en;q=0.8'
-            });
-            
-            // Viewbox bias if location known (Preference only, not strict)
-            if (userLocation) {
-                const viewbox = [
-                    (userLocation.lon - 0.5), 
-                    (userLocation.lat + 0.5), 
-                    (userLocation.lon + 0.5), 
-                    (userLocation.lat - 0.5)
-                ].join(',');
-                params.append('viewbox', viewbox);
-                // Removed 'bounded=1' to allow finding places outside the user's current area
-            }
-
-            const response = await fetch(`${NOMINATIM_BASE_URL}?${params.toString()}`);
-            if(response.ok) {
-                const nomData = await response.json();
-                results = nomData.map(item => ({
-                    lat: parseFloat(item.lat),
-                    lon: parseFloat(item.lon),
-                    display_name: item.display_name,
-                    title: item.name || item.display_name.split(',')[0],
-                    type: item.type,
-                    address: item.address,
-                    source: 'osm'
-                }));
-            }
-        } catch(e) {}
+        console.warn("Search error (likely offline or blocked):", error);
+        return [];
     }
-
-    // HYBRID SORTING: Balance Distance vs Relevance
-    // If exact name match, prioritize it even if far. Otherwise, prioritize distance.
-    if (userLocation && userLocation.lat && userLocation.lon && results.length > 0) {
-        results.forEach(item => {
-            item.distance = calculateDistance(userLocation.lat, userLocation.lon, item.lat, item.lon);
-        });
-        
-        results.sort((a, b) => {
-            // Check for exact title matches (case-insensitive)
-            const queryLower = query.toLowerCase();
-            const aExact = a.title && a.title.toLowerCase() === queryLower;
-            const bExact = b.title && b.title.toLowerCase() === queryLower;
-            
-            if (aExact && !bExact) return -1;
-            if (!aExact && bExact) return 1;
-            
-            // Otherwise sort by distance
-            return a.distance - b.distance;
-        });
-    }
-    
-    // De-duplicate results
-    const seen = new Set();
-    results = results.filter(item => {
-        const key = item.osm_id || `${item.lat.toFixed(4)},${item.lon.toFixed(4)}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-    });
-
-    // Limit output
-    return results.slice(0, 10);
-}
-
-function formatDisplayName(props) {
-    const parts = [];
-    if (props.name) parts.push(props.name);
-    if (props.street) parts.push(props.street);
-    
-    const context = [];
-    if (props.city) context.push(props.city);
-    else if (props.state) context.push(props.state);
-    
-    const main = parts.join(', ');
-    const ctx = context.join(', ');
-    
-    return ctx ? `${main} - ${ctx}` : main;
 }
 
 async function reverseGeocode(lat, lon) {
@@ -258,157 +137,104 @@ async function saveRouteForOffline(routeData, startCoords, endPlace) {
     }
 }
 
-// Helper: Find an Admin drawn route if start and end are on it
-function findAdminRoute(startCoords, endCoords) {
-    try {
-        const cache = JSON.parse(localStorage.getItem('cache_admin_routes') || '{}');
-        const adminRoutes = cache.data || [];
-        
-        for (const route of adminRoutes) {
-            const pathsToTest = route.paths || (route.path ? [route.path] : []);
-            
-            for (const path of pathsToTest) {
-                if (!path || path.length < 2) continue;
-                
-                // Very simple check: Are both start and end near this polyline?
-                let startNear = false;
-                let endNear = false;
-                let startIndex = -1;
-                let endIndex = -1;
-                
-                for (let i = 0; i < path.length; i++) {
-                    const pt = { lat: path[i][0], lon: path[i][1] };
-                    if (!startNear && calculateDistance(startCoords.lat, startCoords.lon, pt.lat, pt.lon) < 0.5) {
-                        startNear = true;
-                        startIndex = i;
-                    }
-                    if (!endNear && calculateDistance(endCoords.lat, endCoords.lon, pt.lat, pt.lon) < 0.5) {
-                        endNear = true;
-                        endIndex = i;
-                    }
-                }
-                
-                if (startNear && endNear) {
-                    // Valid admin route found. Build a faux OSRM response.
-                    // Slice path from start to end
-                    const stepPath = startIndex <= endIndex 
-                        ? path.slice(startIndex, endIndex + 1)
-                        : path.slice(endIndex, startIndex + 1).reverse();
-                    
-                    const geojsonPath = stepPath.map(p => [p[1], p[0]]); // GeoJSON wants [lon, lat]
-                    const dist = calculateDistance(startCoords.lat, startCoords.lon, endCoords.lat, endCoords.lon) * 1000;
-                    
-                    return {
-                        code: 'Ok',
-                        isAdminRoute: true,
-                        routeDirection: route.direction,
-                        originalPath: path, // Full path to calculate bearing
-                        routes: [{
-                            distance: dist,
-                            duration: (dist / 40) * 3600,
-                            geometry: { coordinates: geojsonPath, type: 'LineString' },
-                            legs: [{
-                                steps: [{
-                                    maneuver: { type: 'depart', modifier: 'straight', location: [startCoords.lon, startCoords.lat] },
-                                    name: route.name || 'Rota Manual',
-                                    distance: dist,
-                                    duration: (dist / 40) * 3600,
-                                    mode: 'driving'
-                                }],
-                                distance: dist,
-                                duration: (dist / 40) * 3600
-                            }]
-                        }]
-                    };
-                }
-            }
-        }
-    } catch (e) {
-        console.error("Error reading admin routes", e);
-    }
-    return null;
-}
-
 // Helper: Find a saved route that matches destination
 function findSavedRoute(startCoords, endCoords) {
     try {
         const savedRoutes = JSON.parse(localStorage.getItem('offline_routes') || '[]');
         
-        // Find route with matching destination (approx 200m radius)
+        // Find route with matching destination (approx 100m radius)
         const match = savedRoutes.find(r => {
             const distDest = calculateDistance(r.destinationCoords.lat, r.destinationCoords.lon, endCoords.lat, endCoords.lon);
-            return distDest < 0.2; 
+            return distDest < 0.1; 
         });
 
         if (match) {
-            // Found a route to the destination.
-            // Check if user is near the start OR anywhere along the path (Snap to Route)
-            const route = JSON.parse(JSON.stringify(match.route)); // Deep copy
+            // We found a route to this destination!
+            // But does it start near where we are?
+            const distStart = calculateDistance(r.startCoords.lat, r.startCoords.lon, startCoords.lat, startCoords.lon);
             
-            // 1. Check start
-            const distStart = calculateDistance(match.startCoords.lat, match.startCoords.lon, startCoords.lat, startCoords.lon);
-            if (distStart < 0.5) return route;
-
-            // 2. Check if user is along the path (within 100m of any point)
-            // This prevents "Straight Line" fallback if user restarts nav mid-route
-            if (route.geometry && route.geometry.coordinates) {
-                const path = route.geometry.coordinates; // [lon, lat]
-                // Simple scan (optimization: could use spatial index but array scan is fast enough for single route)
-                let nearestDist = Infinity;
-                let nearestIndex = -1;
-
-                for (let i = 0; i < path.length; i += 5) { // Check every 5th point for speed
-                    const p = path[i];
-                    const d = calculateDistance(startCoords.lat, startCoords.lon, p[1], p[0]);
-                    if (d < nearestDist) {
-                        nearestDist = d;
-                        nearestIndex = i;
-                    }
+            if (distStart < 0.5) {
+                // If we are within 500m of the saved start point, use the route directly
+                return match.route;
+            } else {
+                // If we are far from start, we can't fully reuse the geometry perfectly, 
+                // BUT it's better than a straight line if we are "on the way".
+                // For simplicity in this version, we return it anyway, 
+                // the user might see a "jump" line from current pos to start of route.
+                // We add a "connector" step.
+                
+                const route = JSON.parse(JSON.stringify(match.route)); // Deep copy
+                
+                // Prepend a "Navigate to start" segment logic visually? 
+                // Actually, let's just use it. The map component draws a line from user to route start automatically if needed by Leaflet logic, 
+                // or we can patch the geometry.
+                
+                // Let's patch geometry: Add current pos as first point
+                if (route.geometry && route.geometry.coordinates) {
+                    route.geometry.coordinates.unshift([startCoords.lon, startCoords.lat]);
                 }
-
-                if (nearestDist < 0.2) { // Within 200m of the route
-                    // Slice the route to start from nearest point
-                    // We don't slice strictly to keep context, but we return it as valid
-                    console.log("Snap to offline route successful");
-                    return route;
-                }
+                
+                return route;
             }
-            
-            // If we are far from start but have the geometry, return it anyway but warn?
-            // Better to return it than the straight line if it's the only option
-            console.log("Returning saved route despite distance (Best Effort)");
-            return route;
         }
     } catch (e) {
-        console.error("Error finding saved route:", e);
+        console.error(e);
     }
     return null;
 }
 
+// Helper to create a safe Firebase key based on rounded coordinates (~110m precision)
+function getSharedRouteKey(start, end) {
+    const format = (val) => Math.round(val * 1000).toString().replace('-', 'N');
+    return `route_${format(start.lat)}_${format(start.lon)}_${format(end.lat)}_${format(end.lon)}`;
+}
+
 async function getRoute(startCoords, endCoords, profile = 'driving') {
     const cacheKey = `cached_route_${startCoords.lat}_${startCoords.lon}_to_${endCoords.lat}_${endCoords.lon}`;
-
-    // 0. ADMIN ROUTE CHECK (Highest Priority Offline/Online)
-    const adminRoute = findAdminRoute(startCoords, endCoords);
-    if (adminRoute) return adminRoute.routes[0];
+    const sharedCacheKey = getSharedRouteKey(startCoords, endCoords);
 
     // 1. OFFLINE MODE CHECK
     if (!navigator.onLine) {
+        console.log("Offline: Checking for smart saved routes...");
+        
+        // A. Strict Cache
         const cachedStrict = localStorage.getItem(cacheKey);
         if (cachedStrict) return JSON.parse(cachedStrict);
 
+        // B. Smart/Fuzzy Saved Routes (The "Save Route" feature)
         const smartRoute = findSavedRoute(startCoords, endCoords);
-        if (smartRoute) return smartRoute;
+        if (smartRoute) {
+            console.log("Offline: Found saved route to destination.");
+            return smartRoute;
+        }
 
+        // C. Fallback
+        console.log("Offline: No saved route found. Using Direct Mode.");
         const direct = getDirectRoute(startCoords, endCoords);
         return direct.routes[0];
     }
 
-    // 2. ONLINE FETCH
+    // 2. CHECK SHARED SERVER CACHE (Fast path)
+    if (navigator.onLine && typeof getSharedRoute === 'function') {
+        try {
+            const sharedRoute = await getSharedRoute(sharedCacheKey);
+            if (sharedRoute) {
+                console.log("Rota carregada do cache global ultra-rápido!");
+                try { localStorage.setItem(cacheKey, JSON.stringify(sharedRoute)); } catch(e) {}
+                return sharedRoute;
+            }
+        } catch (e) {
+            console.warn("Falha ao verificar cache de rotas:", e);
+        }
+    }
+
+    // 3. ONLINE FETCH (Calculate if not found)
     try {
+        console.log("Calculando nova rota na API OSRM...");
         const start = `${startCoords.lon},${startCoords.lat}`;
         const end = `${endCoords.lon},${endCoords.lat}`;
         
+        // Using Trickle proxy to avoid CORS
         const targetUrl = `${OSRM_BASE_URL}/${profile}/${start};${end}?overview=full&geometries=geojson&steps=true&annotations=distance,duration`;
         const proxyUrl = `${PROXY_BASE_URL}${encodeURIComponent(targetUrl)}`;
         
@@ -418,12 +244,21 @@ async function getRoute(startCoords, endCoords, profile = 'driving') {
         const data = await response.json();
         if (data.code !== 'Ok' || !data.routes || data.routes.length === 0) throw new Error('No Route found');
         
+        const calculatedRoute = data.routes[0];
+
+        // Cache strictly local
         try {
-            localStorage.setItem(cacheKey, JSON.stringify(data.routes[0]));
+            localStorage.setItem(cacheKey, JSON.stringify(calculatedRoute));
         } catch (e) {}
+
+        // Save to Shared Server Cache in background
+        if (typeof saveSharedRoute === 'function') {
+            saveSharedRoute(sharedCacheKey, calculatedRoute).catch(e => console.warn(e));
+        }
         
-        return data.routes[0];
+        return calculatedRoute;
     } catch (error) {
+        // Fallback if API fails but we might have something saved
         const smartRoute = findSavedRoute(startCoords, endCoords);
         if (smartRoute) return smartRoute;
 
@@ -457,63 +292,18 @@ function calculateBearing(lat1, lon1, lat2, lon2) {
     return (brng * 180 / Math.PI + 360) % 360; 
 }
 
-// Error Message Helper
-function getGeoErrorMessage(error) {
-    switch(error.code) {
-        case error.PERMISSION_DENIED:
-            return "Permissão de localização negada.";
-        case error.POSITION_UNAVAILABLE:
-            return "Informações de localização indisponíveis.";
-        case error.TIMEOUT:
-            return "Tempo limite para obter localização esgotado.";
-        case error.UNKNOWN_ERROR:
-            return "Ocorreu um erro desconhecido ao obter localização.";
-        default:
-            return "Erro ao obter localização.";
-    }
-}
-
-// SOUND UTILS
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-function playAlertSound() {
-    if (audioContext.state === 'suspended') audioContext.resume();
-    
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(800, audioContext.currentTime); // Ding
-    oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.1);
-    
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-    
-    oscillator.start();
-    oscillator.stop(audioContext.currentTime + 0.3);
-}
-
 function speak(text) {
     if (!window.speechSynthesis) return;
     window.speechSynthesis.cancel(); 
-    
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'pt-BR';
-    utterance.rate = 1.05; // Slightly faster for natural flow
-    utterance.pitch = 1.0;
-    
-    // Priority for Google Voices (usually better quality)
+    utterance.rate = 1.1; 
     const voices = window.speechSynthesis.getVoices();
     const bestVoice = 
-        voices.find(v => v.name.includes('Google') && v.lang.includes('pt-BR')) || 
-        voices.find(v => v.name.includes('Luciana') && v.lang.includes('pt-BR')) || // iOS high quality
-        voices.find(v => v.lang.includes('pt-BR') && v.localService === false) || // Network voices often better
-        voices.find(v => v.lang.includes('pt-BR'));
-        
+        voices.find(v => v.lang.includes('pt-BR') && v.localService === true) || 
+        voices.find(v => v.lang.includes('pt-BR')) ||
+        voices.find(v => v.lang.includes('pt')) ||
+        voices.find(v => v.localService === true); 
     if (bestVoice) { utterance.voice = bestVoice; }
-    
     window.speechSynthesis.speak(utterance);
 }
