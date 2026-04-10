@@ -2,6 +2,16 @@ function PanoramaViewer({ imageSrc, tourData, initialPointId, onClose }) {
     const viewerRef = React.useRef(null);
     const pannellumRef = React.useRef(null);
     const [currentScene, setCurrentScene] = React.useState(initialPointId || 'default');
+    const [isAILoading, setIsAILoading] = React.useState(false);
+
+    // Sync URL Helper
+    const updateViewerURL = (id, pitch, yaw, geo) => {
+        const url = new URL(window.location);
+        if (id !== 'default') url.searchParams.set('id', id);
+        if (geo) url.searchParams.set('geo', `${geo.lat.toFixed(5)},${geo.lon.toFixed(5)}`);
+        url.searchParams.set('position', `${Math.round(pitch)},${Math.round(yaw)}`);
+        window.history.replaceState({}, '', url);
+    };
 
     // Helper to create the hotspot DOM element manually
     // This is more robust than relying on CSS classes alone
@@ -25,6 +35,18 @@ function PanoramaViewer({ imageSrc, tourData, initialPointId, onClose }) {
         
         div.appendChild(iconDiv);
         div.appendChild(tooltip);
+        return div;
+    };
+
+    const aiHotspotNode = (text, type = 'poi') => {
+        const div = document.createElement('div');
+        div.className = `ai-hotspot type-${type}`;
+        div.innerHTML = `
+            <div class="ai-marker">
+                ${type === 'street' ? '<div class="icon-map-pin"></div>' : '<div class="icon-info"></div>'}
+            </div>
+            <div class="ai-label">${text}</div>
+        `;
         return div;
     };
 
@@ -83,7 +105,9 @@ function PanoramaViewer({ imageSrc, tourData, initialPointId, onClose }) {
                 });
 
                 scenes[point.id] = {
-                    title: `Ponto #${tourData.findIndex(p => p.id === point.id) + 1}`,
+                    title: `Ponto 360°`,
+                    lat: point.lat,
+                    lon: point.lon,
                     type: 'equirectangular',
                     panorama: point.photo,
                     hotSpots: hotSpots
@@ -117,7 +141,7 @@ function PanoramaViewer({ imageSrc, tourData, initialPointId, onClose }) {
                     firstScene: firstSceneId,
                     sceneFadeDuration: 1000,
                     autoLoad: true,
-                    compass: true,
+                    compass: false,
                     showControls: true
                 },
                 scenes: scenes
@@ -125,9 +149,75 @@ function PanoramaViewer({ imageSrc, tourData, initialPointId, onClose }) {
 
             pannellumRef.current = pannellum.viewer(viewerRef.current, config);
             
-            pannellumRef.current.on('scenechange', (id) => {
+            // Read initial URL position if available
+            const urlParams = new URLSearchParams(window.location.search);
+            const posParam = urlParams.get('position');
+            if (posParam) {
+                const [p, y] = posParam.split(',').map(Number);
+                if (!isNaN(p) && !isNaN(y)) {
+                    config.default.pitch = p;
+                    config.default.yaw = y;
+                }
+            }
+
+            pannellumRef.current = pannellum.viewer(viewerRef.current, config);
+            
+            // Sync URL on movement
+            const handleViewChange = () => {
+                if (!pannellumRef.current) return;
+                const p = pannellumRef.current.getPitch();
+                const y = pannellumRef.current.getYaw();
+                const sId = pannellumRef.current.getScene();
+                const sData = scenes[sId];
+                updateViewerURL(sId, p, y, sData ? {lat: sData.lat, lon: sData.lon} : null);
+            };
+
+            // Pannellum viewchange/mouseup polling
+            const viewInterval = setInterval(handleViewChange, 1000);
+
+            // Processador de IA Geospacial Automático
+            pannellumRef.current.on('scenechange', async (id) => {
                 setCurrentScene(id);
+                handleViewChange();
+
+                // IA: Mapear Rua e POIs automaticamente
+                if (scenes[id] && scenes[id].lat) {
+                    setIsAILoading(true);
+                    try {
+                        const geo = await reverseGeocode(scenes[id].lat, scenes[id].lon);
+                        if (geo && geo.address && geo.address.road && pannellumRef.current) {
+                            // Coloca o nome da rua no "chão" da imagem (pitch -70)
+                            pannellumRef.current.addHotSpot({
+                                pitch: -75,
+                                yaw: 0,
+                                type: 'info',
+                                createTooltipFunc: (hotSpotDiv, args) => {
+                                    hotSpotDiv.appendChild(aiHotspotNode(args.text, 'street'));
+                                },
+                                createTooltipArgs: { text: geo.address.road }
+                            }, id);
+                            
+                            // Adicionar outro no sentido oposto da rua para visualização em ambos os lados
+                            pannellumRef.current.addHotSpot({
+                                pitch: -75,
+                                yaw: 180,
+                                type: 'info',
+                                createTooltipFunc: (hotSpotDiv, args) => {
+                                    hotSpotDiv.appendChild(aiHotspotNode(args.text, 'street'));
+                                },
+                                createTooltipArgs: { text: geo.address.road }
+                            }, id);
+                        }
+                        
+                    } catch (err) {}
+                    setIsAILoading(false);
+                }
             });
+
+            // Trigger manual scenechange logic for the first scene
+            setTimeout(() => {
+                if (pannellumRef.current) pannellumRef.current.fire('scenechange', firstSceneId);
+            }, 500);
 
         } catch (e) {
             console.error("Pannellum init error:", e);
@@ -203,8 +293,39 @@ function PanoramaViewer({ imageSrc, tourData, initialPointId, onClose }) {
                     visibility: visible !important;
                     z-index: 1000 !important;
                 }
+
+                /* AI Hotspots */
+                .ai-hotspot {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    pointer-events: none;
+                }
+                .ai-hotspot.type-street {
+                    transform: rotateX(40deg); /* Perspective to lay on floor */
+                    opacity: 0.8;
+                }
+                .ai-hotspot.type-street .ai-label {
+                    background: rgba(0,0,0,0.6);
+                    color: white;
+                    padding: 8px 24px;
+                    border-radius: 20px;
+                    font-size: 18px;
+                    font-weight: 800;
+                    text-transform: uppercase;
+                    letter-spacing: 2px;
+                    border: 2px solid rgba(255,255,255,0.4);
+                    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+                }
                 `}
             </style>
+
+            {isAILoading && (
+                <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-[2010] bg-blue-600 bg-opacity-90 text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 animate-pulse">
+                    <div className="icon-cpu"></div>
+                    IA Mapeando Rua e Ambientes...
+                </div>
+            )}
 
             <div className="absolute top-4 right-4 z-[2010]">
                 <button 
