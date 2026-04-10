@@ -308,65 +308,34 @@ async function saveTourPoint(point) {
     return dataToSave;
 }
 
-// --- ADMIN ROUTES API ---
+// --- SHARED ROUTES API ---
 
-async function fetchAdminRoutes() {
-    let localData = getLocalCache('admin_routes') || [];
-    if (!Array.isArray(localData)) localData = Object.values(localData);
-
-    if (navigator.onLine) {
-        try {
-            const response = await fetch(`${DB_URL}/admin_routes.json`);
-            if (response.ok) {
-                const data = await response.json();
-                let result = [];
-                if (data) {
-                     result = Object.entries(data).map(([key, val]) => ({ ...val, id: key }));
-                }
-                setLocalCache('admin_routes', result);
-                return result;
-            }
-        } catch (error) {
-            console.warn("Error fetching admin routes");
+// Fetch a cached route from other users to speed up calculation
+async function getSharedRoute(cacheKey) {
+    if (!navigator.onLine) return null;
+    try {
+        const response = await fetch(`${DB_URL}/shared_routes/${cacheKey}.json`);
+        if (response.ok) {
+            const data = await response.json();
+            return data;
         }
+    } catch (e) {
+        console.warn("Erro ao buscar rota compartilhada:", e);
     }
-    return localData;
+    return null;
 }
 
-async function saveAdminRoute(route) {
-    const id = route.id || `ar_${Date.now()}`;
-    const dataToSave = { ...route, id };
-
-    let currentCache = getLocalCache('admin_routes') || [];
-    if (!Array.isArray(currentCache)) currentCache = Object.values(currentCache);
-    
-    const index = currentCache.findIndex(p => p.id === id);
-    if (index >= 0) currentCache[index] = dataToSave;
-    else currentCache.push(dataToSave);
-    
-    setLocalCache('admin_routes', currentCache);
-
-    if (navigator.onLine) {
-        try {
-            await fetch(`${DB_URL}/admin_routes/${id}.json`, {
-                method: 'PUT',
-                body: JSON.stringify(dataToSave),
-                headers: { 'Content-Type': 'application/json' }
-            });
-        } catch (error) {}
-    }
-    return dataToSave;
-}
-
-async function deleteAdminRoute(id) {
-    let currentCache = getLocalCache('admin_routes') || [];
-    currentCache = currentCache.filter(r => r.id !== id);
-    setLocalCache('admin_routes', currentCache);
-
-    if (navigator.onLine) {
-        try {
-            await fetch(`${DB_URL}/admin_routes/${id}.json`, { method: 'DELETE' });
-        } catch (error) {}
+// Save a newly calculated route to the shared pool
+async function saveSharedRoute(cacheKey, routeData) {
+    if (!navigator.onLine) return;
+    try {
+        await fetch(`${DB_URL}/shared_routes/${cacheKey}.json`, {
+            method: 'PUT',
+            body: JSON.stringify(routeData),
+            headers: { 'Content-Type': 'application/json' }
+        });
+    } catch (e) {
+        console.warn("Erro ao salvar rota compartilhada:", e);
     }
 }
 
