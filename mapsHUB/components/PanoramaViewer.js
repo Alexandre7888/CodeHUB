@@ -103,6 +103,9 @@ function PanoramaViewer({ imageSrc, tourData, initialPointId, onClose }) {
 
                         // Use createTooltipFunc to fully control rendering
                         createTooltipFunc: (hotSpotDiv, args) => {
+                            // LIMPEZA IMPORTANTE: Evita que hotspots antigos fiquem "presos" flutuando na tela entre as cenas
+                            hotSpotDiv.innerHTML = '';
+                            
                             const node = hotspotNode(args.text);
                             hotSpotDiv.appendChild(node);
                             // Pannellum overrides styles, so we force some here or via CSS
@@ -110,6 +113,9 @@ function PanoramaViewer({ imageSrc, tourData, initialPointId, onClose }) {
                             hotSpotDiv.style.height = '0px';
                             hotSpotDiv.style.marginTop = '-30px'; // Center fix
                             hotSpotDiv.style.marginLeft = '-30px';
+                            
+                            // Adicionar identificador para ajudar na limpeza global
+                            hotSpotDiv.classList.add('custom-hotspot-container');
                         },
                         createTooltipArgs: { text: link.label || "Ir para próximo ponto" }
                     };
@@ -190,6 +196,14 @@ function PanoramaViewer({ imageSrc, tourData, initialPointId, onClose }) {
             pannellumRef.current.on('scenechange', async (id) => {
                 setCurrentScene(id);
                 handleViewChange();
+
+                // Forçar a limpeza das setas/hotspots flutuantes presos de cenas anteriores
+                document.querySelectorAll('.custom-hotspot-container').forEach(el => {
+                    if (el && !el.closest('.pnlm-panorama-info')) {
+                        // Limpa nós "órfãos" que o Pannellum não limpou nativamente
+                        el.innerHTML = ''; 
+                    }
+                });
 
                 // IA: Mapear Rua e POIs automaticamente
                 if (scenes[id] && scenes[id].lat) {

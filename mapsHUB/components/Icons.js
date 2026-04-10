@@ -31,12 +31,9 @@ function createMarkerHtml(type, color = "red-500") {
     // Added static opacity for "semi-transparent" look as requested
     
     if (type === 'tour-point') {
-        const isPending = color === 'yellow-400' || color === 'yellow-500';
+        // Ponto 360 invisível, foco total apenas nas linhas
         return `
-            <div class="map-pin relative flex items-center justify-center w-6 h-6 hover:opacity-100 transition-opacity duration-200">
-                <div class="absolute inset-0 ${isPending ? 'bg-yellow-400' : 'bg-blue-500'} rounded-full opacity-50 ${isPending ? 'animate-pulse' : ''}"></div>
-                <div class="relative w-4 h-4 ${isPending ? 'bg-yellow-500' : 'bg-blue-600'} rounded-full shadow-sm border border-white opacity-90"></div>
-            </div>
+            <div class="opacity-0 pointer-events-none w-1 h-1"></div>
         `;
     }
 

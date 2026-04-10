@@ -235,22 +235,65 @@ function LeafletMap({ center, zoom, markers = [], connections = [], routePath = 
         }
     }, [routePath]);
 
-    // Render Connections (360)
+    // Render Connections (360) / Linhas Street View
     React.useEffect(() => {
         if (!linesLayerRef.current || !mapInstanceRef.current) return;
         linesLayerRef.current.clearLayers();
 
+        // Extra: Criar linhas automáticas entre pontos 360 próximos (se não houver conexões manuais suficientes)
+        const tourPoints = markers.filter(m => m.type === 'tour-point');
+        const paths = [];
+        
+        // Desenhar Conexões Manuais
         connections.forEach(conn => {
             if (conn.from && conn.to) {
-                L.polyline([conn.from, conn.to], {
-                    color: '#93c5fd', 
-                    weight: 3,
-                    opacity: 0.6,
-                    dashArray: '5, 10'
-                }).addTo(linesLayerRef.current);
+                paths.push([conn.from, conn.to]);
             }
         });
-    }, [connections]);
+
+        // Desenhar Conexões Automáticas baseadas nos pontos (para formar a malha do Street View)
+        if (tourPoints.length > 1) {
+            const sorted = [...tourPoints].sort((a, b) => parseInt(a.id) - parseInt(b.id));
+            for (let i = 0; i < sorted.length - 1; i++) {
+                const p1 = L.latLng(sorted[i].lat, sorted[i].lon);
+                const p2 = L.latLng(sorted[i+1].lat, sorted[i+1].lon);
+                // Conectar apenas se a distância for menor que ~15 metros (evita cruzar casas e quarteirões longos)
+                if (p1.distanceTo(p2) < 15) { 
+                    paths.push([[sorted[i].lat, sorted[i].lon], [sorted[i+1].lat, sorted[i+1].lon]]);
+                }
+            }
+        }
+
+        paths.forEach(path => {
+            const polyline = L.polyline(path, {
+                color: '#3b82f6', // Azul Street View
+                weight: 8,
+                opacity: 0.7,
+                lineCap: 'round',
+                lineJoin: 'round',
+                className: 'cursor-pointer hover:opacity-100 transition-opacity'
+            }).addTo(linesLayerRef.current);
+
+            // Permitir clicar na linha para abrir o 360 mais próximo
+            polyline.on('click', (e) => {
+                L.DomEvent.stopPropagation(e);
+                const clickLatLon = e.latlng;
+                // Encontrar o ponto 360 mais próximo do clique
+                let nearest = null;
+                let minDist = Infinity;
+                tourPoints.forEach(p => {
+                    const d = clickLatLon.distanceTo(L.latLng(p.lat, p.lon));
+                    if (d < minDist) {
+                        minDist = d;
+                        nearest = p;
+                    }
+                });
+                if (nearest && onMarkerClickRef.current) {
+                    onMarkerClickRef.current(nearest);
+                }
+            });
+        });
+    }, [connections, markers]);
 
     return (
         <div className="map-container-3d relative w-full h-full">
