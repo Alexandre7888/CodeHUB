@@ -276,6 +276,34 @@ async function fetchTourPoints() {
     return localData;
 }
 
+// Update Tour Point Partially
+async function updateTourPoint(id, data) {
+    if (!id) return;
+    
+    // 1. Local Save
+    let currentCache = getLocalCache('tour_points') || [];
+    if (!Array.isArray(currentCache)) currentCache = Object.values(currentCache);
+    
+    const index = currentCache.findIndex(p => p.id === id);
+    if (index >= 0) {
+        currentCache[index] = { ...currentCache[index], ...data };
+        setLocalCache('tour_points', currentCache);
+    }
+
+    // 2. Network Save
+    if (navigator.onLine) {
+        try {
+            await fetch(`${DB_URL}/tour_points/${id}.json`, {
+                method: 'PATCH',
+                body: JSON.stringify(data),
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            console.warn("Network tour point patch failed");
+        }
+    }
+}
+
 // Save a Tour Point
 async function saveTourPoint(point) {
     const id = point.id || `tp_${Date.now()}`;
