@@ -28,18 +28,33 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-const CODEHUB_APP_TOKEN = "KytjBryAR2zS8sVaj3vd";
-
 function App() {
     // --- STATE ---
-    const [currentUser, setCurrentUser] = React.useState(null);
-    const [osmSession, setOsmSession] = React.useState(null);
-    const savedMapState = JSON.parse(localStorage.getItem('mapState')) || {
-        center: [-23.5505, -46.6333],
-        zoom: 13
-    };
+    const [mapState, setMapState] = React.useState(() => {
+        // Inicializa a partir da URL se disponível
+        const params = new URLSearchParams(window.location.search);
+        const geo = params.get('geo');
+        const z = params.get('z');
+        
+        let center = [-23.5505, -46.6333];
+        let zoom = 13;
 
-    const [mapState, setMapState] = React.useState(savedMapState);
+        if (geo) {
+            const parts = geo.split(',');
+            if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+                center = [parseFloat(parts[0]), parseFloat(parts[1])];
+            }
+        }
+        if (z && !isNaN(z)) zoom = parseInt(z, 10);
+
+        const saved = JSON.parse(localStorage.getItem('mapState'));
+        if (!geo && saved) {
+            center = saved.center;
+            zoom = saved.zoom;
+        }
+
+        return { center, zoom };
+    });
     const [userLocation, setUserLocation] = React.useState(null);
     const [userHeading, setUserHeading] = React.useState(0);
     const [userId] = React.useState(() => {
@@ -59,22 +74,19 @@ function App() {
     const [mapInstance, setMapInstance] = React.useState(null);
     
     // UI Modes
+    const [isAddingPlace, setIsAddingPlace] = React.useState(false);
     const [manualLocMode, setManualLocMode] = React.useState(false);
+    const [newPlacePos, setNewPlacePos] = React.useState(null);
     const [activeTour, setActiveTour] = React.useState(null); 
     
     // Layer & View States
-    const [mapStyle, setMapStyle] = React.useState('standard'); // Default to OSM Standard
+    const [mapStyle, setMapStyle] = React.useState('standard');
     const [showPlaces, setShowPlaces] = React.useState(true);
     const [showTourPoints, setShowTourPoints] = React.useState(true);
     const [showTraffic, setShowTraffic] = React.useState(false);
-    const [showCrossData, setShowCrossData] = React.useState(true); // Always ON as requested
     const [nearbyPreview, setNearbyPreview] = React.useState(null);
     const [is3DMode, setIs3DMode] = React.useState(false); 
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
-    
-    // OSM Contribution State
-    const [isOsmMode, setIsOsmMode] = React.useState(false);
-    const [showUserContributions, setShowUserContributions] = React.useState(false);
 
     // Navigation State
     const [isNavigating, setIsNavigating] = React.useState(false);
@@ -95,42 +107,6 @@ function App() {
 
     React.useEffect(() => {
         loadData();
-        checkAuth();
-        
-        // OSM Auth Check
-        const checkOSM = async () => {
-            // 1. Check if returning from redirect
-            const params = new URLSearchParams(window.location.search);
-            const code = params.get("code");
-            
-            if (code) {
-                // We are coming back from OSM
-                const session = await processOSMCode(code);
-                if (session) {
-                    setOsmSession(session);
-                    alert("Conectado ao OpenStreetMap com sucesso!");
-                }
-            } else {
-                // 2. Check local storage
-                const session = getOSMSession();
-                if (session) setOsmSession(session);
-            }
-        };
-        checkOSM();
-
-        const handleAuthEvent = (e) => {
-            console.log('Auth Event:', e.detail);
-            checkAuth();
-        };
-
-        window.addEventListener('auth-completed', handleAuthEvent);
-
-        // Listen for open-osm-mode (from edit button)
-        const handleOpenOsm = () => {
-             setIsOsmMode(true);
-             setIsSidebarOpen(false);
-        };
-        window.addEventListener('open-osm-mode', handleOpenOsm);
         
         // Network Listeners
         const handleOnline = () => { setIsOnline(true); loadData(); };
@@ -160,7 +136,7 @@ function App() {
                         lon: newLoc.lon,
                         heading: pos.coords.heading || 0,
                         speed: pos.coords.speed || 0,
-                        name: currentUser ? currentUser.name : "Usuário App"
+                        name: "Usuário App"
                     });
                     setErrorMessage(null);
                 }, 
@@ -189,60 +165,53 @@ function App() {
         return () => clearTimeout(timeout);
     }, [mapState, isNavigating]);
 
-    const checkAuth = () => {
-        if (window.limparURL && typeof window.limparURL.getDados === 'function') {
-            const data = window.limparURL.getDados();
-            if (data.temDados) {
-                setCurrentUser({ name: data.userName, token: data.userToken });
-            } else {
-                setCurrentUser(null);
-            }
-        }
-    };
-
-    const handleLogin = () => {
-        window.location.href = "https://code.codehub.ct.ws/API/continuar-conta?token=" + CODEHUB_APP_TOKEN;
-    };
-
-    const handleLogout = () => {
-        if (window.limparURL && typeof window.limparURL.limparDados === 'function') {
-            window.limparURL.limparDados();
-            setCurrentUser(null);
-        }
-    };
-
     const loadData = async () => {
         const [placesData, connectionsData, tourData] = await Promise.all([
             fetchPlaces(),
             fetchConnections(),
-            fetchTourPoints(),
-            fetchAdminRoutes() // Fetch and cache admin routes automatically
+            fetchTourPoints()
         ]);
 
-        // Filter logic moved to displayMarkers to handle currentUser changes dynamically
         if (placesData) {
-            // We keep all data in state, and filter in render
-            const allMarkers = Object.values(placesData).map(place => ({
-                ...place,
-                lat: parseFloat(place.lat),
-                lon: parseFloat(place.lon),
-                color: place.type === 'shop' ? 'green-500' : 'blue-500'
-            }));
-            setMarkers(allMarkers);
+            const approvedMarkers = Object.values(placesData)
+                .filter(p => p.status === 'approved')
+                .map(place => ({
+                    ...place,
+                    lat: parseFloat(place.lat),
+                    lon: parseFloat(place.lon),
+                    color: place.type === 'shop' ? 'green-500' : 'blue-500'
+                }));
+            setMarkers(approvedMarkers);
         }
 
         if (connectionsData) {
             setConnections(Object.values(connectionsData));
         }
 
+        let tPoints = [];
         if (tourData) {
-            const tPoints = tourData.map(p => ({
-                ...p,
-                type: 'tour-point',
-                title: 'Tour 360°',
-                color: 'blue-400'
-            }));
+            tPoints = tourData
+                .filter(p => p.status === 'approved') // Only show approved points
+                .map(p => ({
+                    ...p,
+                    type: 'tour-point',
+                    title: 'Tour 360°',
+                    color: 'blue-400'
+                }));
             setTourPoints(tPoints);
+        }
+
+        // Verificar URL para inicializar 360 diretamente
+        const params = new URLSearchParams(window.location.search);
+        const tourId = params.get('id');
+        if (tourId && tPoints.length > 0) {
+            const pointExists = tPoints.find(p => p.id === tourId);
+            if (pointExists) {
+                setActiveTour({
+                    startPointId: tourId,
+                    data: tPoints
+                });
+            }
         }
     };
 
@@ -269,56 +238,8 @@ function App() {
         setSelectedPlace(placeData);
     };
 
-    // Dynamic Connections for Tours (including pending for author)
-    const displayConnections = React.useMemo(() => {
-        if (!showTourPoints) return [];
-        
-        let activeConns = [...connections];
-        
-        // Generate implicit connections from Tour Points logic (if they have links or sequences)
-        // For simplicity, we can just connect sequential points if they look like a sequence
-        // Or if we have explicit links in the point data (Editor saves links)
-        
-        const isAuthor = (item) => currentUser && (item.author === currentUser.name || item.author === 'User');
-
-        const visiblePoints = tourPoints.filter(t => 
-            t.status === 'approved' || (t.status === 'pending' && isAuthor(t))
-        );
-
-        // Sort by ID is a rough approximation of sequence if created sequentially
-        // Better: look for 'links' array in point data
-        visiblePoints.forEach(p => {
-             if (p.links && p.links.length > 0) {
-                 p.links.forEach(link => {
-                     const target = visiblePoints.find(vp => vp.id === link.targetId);
-                     if (target) {
-                         activeConns.push({
-                             from: [p.lat, p.lon],
-                             to: [target.lat, target.lon],
-                             color: p.status === 'pending' ? '#eab308' : '#93c5fd', // Yellow for pending lines
-                             dashArray: p.status === 'pending' ? '5, 5' : null
-                         });
-                     }
-                 });
-             }
-        });
-
-        return activeConns;
-
-    }, [connections, tourPoints, showTourPoints, currentUser]);
-
     const handleMenuClick = () => {
         setIsSidebarOpen(true);
-    };
-    
-    const toggleOsmMode = () => {
-        setIsOsmMode(!isOsmMode);
-        setIsSidebarOpen(false);
-    };
-
-    const toggleContributions = () => {
-        setShowUserContributions(!showUserContributions);
-        setIsSidebarOpen(false);
     };
 
     const handleLocateMe = () => {
@@ -338,26 +259,42 @@ function App() {
         }
     };
 
+    const toggleAddPlaceMode = () => {
+        setIsAddingPlace(!isAddingPlace);
+        setManualLocMode(false);
+        setNewPlacePos(null);
+        setSelectedPlace(null);
+        setNearbyPreview(null);
+    };
+    
     const activateManualLocationMode = () => {
         setManualLocMode(true);
+        setIsAddingPlace(false);
         setErrorMessage(null);
         alert("Toque no mapa para definir sua localização atual.");
     };
 
-    const handleMapClick = async (e) => {
-        // Dispatch global event for OSM Editor (Decoupled logic)
-        if (isOsmMode) {
-            const event = new CustomEvent('map-click', { detail: e.latlng });
-            window.dispatchEvent(event);
-            return;
-        }
+    const handleMapMove = (center, zoom) => {
+        setMapState({ center, zoom });
+        // Atualiza URL em tempo real sem recarregar
+        const url = new URL(window.location);
+        url.searchParams.set('geo', `${center[0].toFixed(5)},${center[1].toFixed(5)}`);
+        url.searchParams.set('z', zoom);
+        window.history.replaceState({}, '', url);
+    };
 
+    const handleMapClick = async (e) => {
         if (isNavigating) return; 
 
         if (manualLocMode) {
             const newLoc = { lat: e.latlng.lat, lon: e.latlng.lng };
             setUserLocation(newLoc);
             setManualLocMode(false);
+            return;
+        }
+
+        if (isAddingPlace) {
+            setNewPlacePos(e.latlng);
             return;
         }
 
@@ -489,25 +426,8 @@ function App() {
     const displayMarkers = React.useMemo(() => {
         let list = [];
         
-        const isAuthor = (item) => currentUser && (item.author === currentUser.name || item.author === 'User'); // 'User' is fallback
-
-        // Filter Places
-        if (showPlaces) {
-            const visiblePlaces = markers.filter(m => 
-                m.status === 'approved' || (m.status === 'pending' && isAuthor(m))
-            ).map(m => m.status === 'pending' ? { ...m, color: 'yellow-500', title: `${m.title} (Pendente)` } : m);
-            
-            list = [...list, ...visiblePlaces];
-        }
-
-        // Filter Tour Points
-        if (showTourPoints) {
-            const visibleTours = tourPoints.filter(t => 
-                t.status === 'approved' || (t.status === 'pending' && isAuthor(t))
-            ).map(t => t.status === 'pending' ? { ...t, color: 'yellow-400', title: 'Tour (Em Análise)' } : t);
-            
-            list = [...list, ...visibleTours];
-        }
+        if (showPlaces) list = [...list, ...markers];
+        if (showTourPoints) list = [...list, ...tourPoints];
         
         if (selectedPlace && selectedPlace.id && selectedPlace.id.toString().startsWith('temp_')) {
              if (!list.find(m => m.id === selectedPlace.id)) {
@@ -526,8 +446,18 @@ function App() {
             });
         }
 
+        if (isAddingPlace && newPlacePos) {
+            list.push({
+                id: 'new_place_temp',
+                lat: newPlacePos.lat,
+                lon: newPlacePos.lng,
+                title: 'Novo Local',
+                type: 'plus-circle', 
+                color: 'orange-500'
+            });
+        }
         return list;
-    }, [markers, tourPoints, selectedPlace, showPlaces, showTourPoints, userLocation]);
+    }, [markers, tourPoints, selectedPlace, isAddingPlace, newPlacePos, showPlaces, showTourPoints, userLocation]);
 
     
     return (
@@ -543,7 +473,6 @@ function App() {
                 <Navigation 
                     startPoint={userLocation}
                     endPoint={navDestination}
-                    userHeading={userHeading}
                     onStop={stopNavigation}
                     onUpdateStats={setNavStats}
                     onRouteCalculated={(geometry) => setCurrentRoutePath(geometry)}
@@ -597,43 +526,24 @@ function App() {
             <Sidebar 
                 isOpen={isSidebarOpen} 
                 onClose={() => setIsSidebarOpen(false)} 
-                currentUser={currentUser}
-                onLogin={handleLogin}
-                onLogout={handleLogout}
-                osmSession={osmSession}
-                onOSMLogin={loginOSM}
-                onOSMLogout={logoutOSM}
-                onOpenOsmMode={toggleOsmMode}
-                onOpenContributions={toggleContributions}
-            />
-            
-            {showUserContributions && (
-                <UserContributions onClose={() => setShowUserContributions(false)} />
-            )}
-
-            <OsmContribution 
-                isActive={isOsmMode}
-                onClose={() => setIsOsmMode(false)}
-                userLocation={userLocation}
-                osmSession={osmSession}
-                onLoginReq={loginOSM}
+                onAddPlace={toggleAddPlaceMode}
             />
 
             <LeafletMap 
                 center={mapState.center} 
                 zoom={mapState.zoom} 
                 markers={displayMarkers}
-                connections={displayConnections}
+                connections={showTourPoints ? connections : []}
                 routePath={currentRoutePath}
                 mapStyle={mapStyle}
                 showTraffic={showTraffic}
-                showCrossData={showCrossData}
                 isNavigating={isNavigating}
                 is3DMode={is3DMode} 
                 heading={userHeading}
                 onMapLoad={setMapInstance}
                 onClick={handleMapClick}
                 onMarkerClick={handleMarkerClick}
+                onMapMove={handleMapMove}
             />
 
             {!isNavigating && (
@@ -641,7 +551,6 @@ function App() {
                     <SearchBox 
                         onSelectResult={handleSearchResult} 
                         onMenuClick={handleMenuClick}
-                        userLocation={userLocation}
                     />
 
                     <LayerControl 
@@ -653,8 +562,6 @@ function App() {
                         setShowTourPoints={setShowTourPoints}
                         showTraffic={showTraffic}
                         setShowTraffic={setShowTraffic}
-                        showCrossData={showCrossData}
-                        setShowCrossData={setShowCrossData}
                     />
 
                     <UserPlaces 
@@ -676,7 +583,13 @@ function App() {
                 <PanoramaViewer 
                     tourData={activeTour.data}
                     initialPointId={activeTour.startPointId}
-                    onClose={() => setActiveTour(null)}
+                    onClose={() => {
+                        setActiveTour(null);
+                        const url = new URL(window.location);
+                        url.searchParams.delete('id');
+                        url.searchParams.delete('position');
+                        window.history.replaceState({}, '', url);
+                    }}
                 />
             )}
 
@@ -708,6 +621,18 @@ function App() {
                 onToggle3D={() => setIs3DMode(!is3DMode)}
             />
 
+            {!isNavigating && (
+                <div className="absolute bottom-32 right-4 z-[999] flex flex-col gap-3 items-end">
+                    <button 
+                        onClick={toggleAddPlaceMode}
+                        className={`w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all ${isAddingPlace ? 'bg-red-500 text-white rotate-45' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                        title="Adicionar Local"
+                    >
+                        <div className="icon-plus text-2xl"></div>
+                    </button>
+                </div>
+            )}
+            
             <div className="absolute bottom-1 left-2 z-[500] text-[10px] text-gray-500 bg-white bg-opacity-50 px-2 rounded pointer-events-none">
                 © mapsHUB 2026
             </div>
