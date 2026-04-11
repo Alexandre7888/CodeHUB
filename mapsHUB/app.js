@@ -130,7 +130,11 @@ function App() {
                     localRoutes.forEach(r => routeMap.set(r.id, r));
                     cloudOfflineRoutes.forEach(r => routeMap.set(r.id, r));
                     const merged = Array.from(routeMap.values());
-                    localStorage.setItem('offline_routes', JSON.stringify(merged));
+                    try {
+                        localStorage.setItem('offline_routes', JSON.stringify(merged));
+                    } catch (e) {
+                        console.warn("Storage full for offline routes");
+                    }
                     saveUserOfflineRoutes(userId, merged);
                 }
 
@@ -138,8 +142,12 @@ function App() {
                 const allShared = await fetchAllSharedRoutes();
                 if (allShared) {
                     Object.keys(allShared).forEach(key => {
-                        // Salva localmente simulando o cache de rotas
-                        localStorage.setItem(`shared_route_cache_${key}`, JSON.stringify(allShared[key]));
+                        try {
+                            // Salva localmente simulando o cache de rotas
+                            localStorage.setItem(`shared_route_cache_${key}`, JSON.stringify(allShared[key]));
+                        } catch (e) {
+                            console.warn("Storage full for shared routes cache");
+                        }
                     });
                 }
             }
