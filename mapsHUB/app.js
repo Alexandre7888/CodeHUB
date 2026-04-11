@@ -687,18 +687,6 @@ function App() {
                 is3DMode={is3DMode}
                 onToggle3D={() => setIs3DMode(!is3DMode)}
             />
-
-            {!isNavigating && (
-                <div className="absolute bottom-32 right-4 z-[999] flex flex-col gap-3 items-end">
-                    <button 
-                        onClick={toggleAddPlaceMode}
-                        className={`w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all ${isAddingPlace ? 'bg-red-500 text-white rotate-45' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
-                        title="Adicionar Local"
-                    >
-                        <div className="icon-plus text-2xl"></div>
-                    </button>
-                </div>
-            )}
             
             <div className="absolute bottom-1 left-2 z-[500] text-[10px] text-gray-500 bg-white bg-opacity-50 px-2 rounded pointer-events-none">
                 © mapsHUB 2026
