@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mapshub-v8'; 
+const CACHE_NAME = 'mapshub-v9'; 
 const TILE_CACHE_NAME = 'mapshub-offline-tiles-v1';
 
 const ASSETS_TO_CACHE = [
@@ -25,138 +25,88 @@ const ASSETS_TO_CACHE = [
     './components/UserPlaces.js',
     './components/SavedRoutes.js',
     './components/OfflineManager.js',
-    './components/TourEditor.js',
-    'https://cdn.tailwindcss.com',
-    'https://resource.trickle.so/vendor_lib/unpkg/lucide-static@0.516.0/font/lucide.css',
-    // Explicitly cache the font file referenced by lucide.css
-    'https://resource.trickle.so/vendor_lib/unpkg/lucide-static@0.516.0/font/lucide.woff2',
-    'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-    'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
-    'https://resource.trickle.so/vendor_lib/unpkg/react@18/umd/react.production.min.js',
-    'https://resource.trickle.so/vendor_lib/unpkg/react-dom@18/umd/react-dom.production.min.js',
-    'https://resource.trickle.so/vendor_lib/unpkg/@babel/standalone/babel.min.js'
+    './components/TourEditor.js'
 ];
 
+// 🚀 INSTALL
 self.addEventListener('install', (event) => {
     self.skipWaiting();
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            console.log('[SW] Caching assets including icons');
-            // We use {cache: 'reload'} to ensure we get fresh assets on install
-            return cache.addAll(ASSETS_TO_CACHE.map(url => new Request(url, { mode: 'no-cors' })));
+        caches.open(CACHE_NAME).then(cache => {
+            return cache.addAll(ASSETS_TO_CACHE);
         })
     );
 });
 
+// 🔄 ACTIVATE
 self.addEventListener('activate', (event) => {
     event.waitUntil(self.clients.claim());
     event.waitUntil(
-        caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames.map((cache) => {
-                    if (cache !== CACHE_NAME && cache !== TILE_CACHE_NAME) {
-                        return caches.delete(cache);
+        caches.keys().then(names =>
+            Promise.all(
+                names.map(name => {
+                    if (name !== CACHE_NAME && name !== TILE_CACHE_NAME) {
+                        return caches.delete(name);
                     }
                 })
-            );
-        })
+            )
+        )
     );
 });
 
+// 🌐 FETCH
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
-    // 1. Tiles Strategy (Cache First with specific cache)
+    // 🗺️ TILES (cache-first)
     if (url.host.includes('tile.openstreetmap.org') || 
-        url.host.includes('arcgisonline.com') || 
-        url.host.includes('google.com')) {
-        
+        url.host.includes('arcgisonline.com')) {
+
         event.respondWith(
-            caches.open(TILE_CACHE_NAME).then((cache) => {
-                return cache.match(event.request).then((cachedResponse) => {
-                    if (cachedResponse) return cachedResponse;
-                    return fetch(event.request).then((response) => {
-                        if (response && response.status === 200) {
-                            cache.put(event.request, response.clone()).catch(() => {});
+            caches.open(TILE_CACHE_NAME).then(cache =>
+                cache.match(event.request).then(res =>
+                    res || fetch(event.request).then(net => {
+                        if (net.status === 200) {
+                            cache.put(event.request, net.clone());
                         }
-                        return response;
-                    }).catch(() => {
-                        // Offline tile fallback (transparent pixel)
-                        return new Response(
-                            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 
-                            { headers: { 'Content-Type': 'image/png' } }
-                        );
-                    });
-                });
-            })
+                        return net;
+                    }).catch(() => new Response('', { status: 200 }))
+                )
+            )
         );
         return;
     }
 
-    // 2. Navigation
+    // 📄 NAVEGAÇÃO (CORRIGIDO ✅)
     if (event.request.mode === 'navigate') {
         event.respondWith(
-            fetch(event.request).catch(() => caches.match('./index.html'))
-        );
-        return;
-    }
-
-    // 3. Fonts & Icons (Critical)
-    if (url.pathname.endsWith('.woff2') || url.pathname.endsWith('.ttf') || url.pathname.endsWith('.css')) {
-        event.respondWith(
-            caches.match(event.request).then(response => {
-                return response || fetch(event.request).then(fetchedResponse => {
-                    return caches.open(CACHE_NAME).then(cache => {
-                        cache.put(event.request, fetchedResponse.clone());
-                        return fetchedResponse;
-                    });
-                });
+            caches.match('./index.html').then(res => {
+                return res || fetch(event.request);
             })
         );
         return;
     }
 
-    // 4. Dynamic Caching for Everything Else (Images, Photos, Assets)
-    // Exclui requisições do Firebase RTDB pois elas já têm sua própria lógica de cache local via localStorage
-    if (event.request.method === 'GET' && !url.host.includes('firebaseio.com')) {
-        event.respondWith(
-            caches.match(event.request).then((cachedResponse) => {
-                // Se já tem no cache, retorna imediatamente
-                if (cachedResponse) return cachedResponse;
-                
-                // Se não, busca na rede, clona a resposta e salva no cache para uso futuro
-                return fetch(event.request).then((networkResponse) => {
-                    // Ignora respostas com erro ou inválidas (exceto opacas de CDN de imagens)
-                    if (!networkResponse || (networkResponse.status !== 200 && networkResponse.type !== 'opaque')) {
-                        return networkResponse;
-                    }
-                    
-                    const responseToCache = networkResponse.clone();
-                    caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(event.request, responseToCache).catch(() => {});
-                    });
-                    
-                    return networkResponse;
-                }).catch(() => {
-                    // Fallback offline
-                    if (event.request.destination === 'image') {
-                        return new Response(
-                            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 
-                            { headers: { 'Content-Type': 'image/png' } }
-                        );
-                    }
-                    if (url.pathname.includes('.json')) {
-                        return new Response('{}', { 
-                            status: 200, 
-                            headers: { 'Content-Type': 'application/json' } 
-                        });
-                    }
-                });
-            })
-        );
-        return;
-    }
+    // ⚡ CACHE FIRST (GERAL)
+    event.respondWith(
+        caches.match(event.request).then(res => {
+            if (res) return res;
 
-    // 5. Fallback Final (Para requisições não cobertas acima)
-    event.respondWith(fetch(event.request).catch(() => new Response('')));
+            return fetch(event.request).then(net => {
+                if (!net || net.status !== 200) return net;
+
+                const clone = net.clone();
+                caches.open(CACHE_NAME).then(cache => {
+                    cache.put(event.request, clone).catch(() => {});
+                });
+
+                return net;
+            }).catch(() => {
+                // fallback offline básico
+                if (event.request.destination === 'document') {
+                    return caches.match('./index.html');
+                }
+            });
+        })
+    );
 });
