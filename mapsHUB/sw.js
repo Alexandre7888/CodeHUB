@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mapshub-v10'; 
+const CACHE_NAME = 'mapshub-v8'; 
 const TILE_CACHE_NAME = 'mapshub-offline-tiles-v1';
 
 const ASSETS_TO_CACHE = [
@@ -28,42 +28,22 @@ const ASSETS_TO_CACHE = [
     './components/TourEditor.js',
     'https://cdn.tailwindcss.com',
     'https://resource.trickle.so/vendor_lib/unpkg/lucide-static@0.516.0/font/lucide.css',
+    // Explicitly cache the font file referenced by lucide.css
     'https://resource.trickle.so/vendor_lib/unpkg/lucide-static@0.516.0/font/lucide.woff2',
     'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
     'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
-    'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-    'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-    'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-    'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
     'https://resource.trickle.so/vendor_lib/unpkg/react@18/umd/react.production.min.js',
     'https://resource.trickle.so/vendor_lib/unpkg/react-dom@18/umd/react-dom.production.min.js',
-    'https://resource.trickle.so/vendor_lib/unpkg/@babel/standalone/babel.min.js',
-    'https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css',
-    'https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js'
+    'https://resource.trickle.so/vendor_lib/unpkg/@babel/standalone/babel.min.js'
 ];
 
 self.addEventListener('install', (event) => {
     self.skipWaiting();
     event.waitUntil(
-        caches.open(CACHE_NAME).then(async (cache) => {
-            console.log('[SW] Iniciando cache individual de assets (Tolerante a falhas)...');
-            // Busca cada asset individualmente para evitar que 1 erro cancele todo o processo (o que acontece com cache.addAll)
-            await Promise.all(
-                ASSETS_TO_CACHE.map(async (url) => {
-                    try {
-                        const req = new Request(url);
-                        const res = await fetch(req);
-                        if (res.ok || res.type === 'opaque') {
-                            await cache.put(req, res);
-                        } else {
-                            console.warn('[SW] Falha ao fazer cache do asset (Status não-200):', url);
-                        }
-                    } catch (err) {
-                        console.error('[SW] Falha de rede ao fazer cache de:', url, err);
-                    }
-                })
-            );
-            console.log('[SW] Cache inicial concluído.');
+        caches.open(CACHE_NAME).then((cache) => {
+            console.log('[SW] Caching assets including icons');
+            // We use {cache: 'reload'} to ensure we get fresh assets on install
+            return cache.addAll(ASSETS_TO_CACHE.map(url => new Request(url, { mode: 'no-cors' })));
         })
     );
 });
@@ -75,7 +55,6 @@ self.addEventListener('activate', (event) => {
             return Promise.all(
                 cacheNames.map((cache) => {
                     if (cache !== CACHE_NAME && cache !== TILE_CACHE_NAME) {
-                        console.log('[SW] Limpando cache antigo:', cache);
                         return caches.delete(cache);
                     }
                 })
@@ -85,66 +64,99 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-    if (event.request.method !== 'GET') return;
-    
     const url = new URL(event.request.url);
 
-    // 1. Ignorar chamadas de API do Firebase (deixamos o fetch nativo ou falhar se offline)
-    if (url.host.includes('firebaseio.com') || url.host.includes('nominatim.openstreetmap.org')) {
-        return; 
-    }
-
-    // 2. Cache estrito para Tiles de Mapa (OSM / Google)
-    if (url.host.includes('tile.openstreetmap.org') || url.host.includes('google.com') || url.host.includes('arcgisonline.com')) {
+    // 1. Tiles Strategy (Cache First with specific cache)
+    if (url.host.includes('tile.openstreetmap.org') || 
+        url.host.includes('arcgisonline.com') || 
+        url.host.includes('google.com')) {
+        
         event.respondWith(
-            caches.open(TILE_CACHE_NAME).then(async (cache) => {
-                const cached = await cache.match(event.request);
-                if (cached) return cached;
-                try {
-                    const res = await fetch(event.request);
-                    if (res && res.status === 200) {
-                        cache.put(event.request, res.clone()).catch(() => {});
-                    }
-                    return res;
-                } catch (e) {
-                    return new Response('', { status: 404 });
-                }
+            caches.open(TILE_CACHE_NAME).then((cache) => {
+                return cache.match(event.request).then((cachedResponse) => {
+                    if (cachedResponse) return cachedResponse;
+                    return fetch(event.request).then((response) => {
+                        if (response && response.status === 200) {
+                            cache.put(event.request, response.clone()).catch(() => {});
+                        }
+                        return response;
+                    }).catch(() => {
+                        // Offline tile fallback (transparent pixel)
+                        return new Response(
+                            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 
+                            { headers: { 'Content-Type': 'image/png' } }
+                        );
+                    });
+                });
             })
         );
         return;
     }
 
-    // 3. Estratégia CACHE-FIRST para todos os arquivos da aplicação e CDNs
-    event.respondWith(
-        caches.match(event.request, { ignoreSearch: true }).then(async (cachedResponse) => {
-            // Se encontrou no cache, retorna IMEDIATAMENTE (Garante funcionamento offline)
-            if (cachedResponse) {
-                return cachedResponse;
-            }
+    // 2. Navigation
+    if (event.request.mode === 'navigate') {
+        event.respondWith(
+            fetch(event.request).catch(() => caches.match('./index.html'))
+        );
+        return;
+    }
 
-            // Se não estava no cache prévio, tenta buscar na rede e já salva dinamicamente
-            try {
-                const networkResponse = await fetch(event.request);
+    // 3. Fonts & Icons (Critical)
+    if (url.pathname.endsWith('.woff2') || url.pathname.endsWith('.ttf') || url.pathname.endsWith('.css')) {
+        event.respondWith(
+            caches.match(event.request).then(response => {
+                return response || fetch(event.request).then(fetchedResponse => {
+                    return caches.open(CACHE_NAME).then(cache => {
+                        cache.put(event.request, fetchedResponse.clone());
+                        return fetchedResponse;
+                    });
+                });
+            })
+        );
+        return;
+    }
+
+    // 4. Dynamic Caching for Everything Else (Images, Photos, Assets)
+    // Exclui requisições do Firebase RTDB pois elas já têm sua própria lógica de cache local via localStorage
+    if (event.request.method === 'GET' && !url.host.includes('firebaseio.com')) {
+        event.respondWith(
+            caches.match(event.request).then((cachedResponse) => {
+                // Se já tem no cache, retorna imediatamente
+                if (cachedResponse) return cachedResponse;
                 
-                // Salva no cache apenas respostas válidas
-                if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
-                    const cache = await caches.open(CACHE_NAME);
-                    cache.put(event.request, networkResponse.clone()).catch(() => {});
-                }
-                
-                return networkResponse;
-            } catch (err) {
-                // Fallbacks puros de Offline
-                
-                // Se tentou navegar (ex: recarregar a página), entrega o index.html
-                if (event.request.mode === 'navigate') {
-                    const indexCache = await caches.match('./index.html');
-                    if (indexCache) return indexCache;
-                }
-                
-                // Se for um asset que falhou e não temos no cache
-                return new Response('', { status: 404, statusText: 'Offline' });
-            }
-        })
-    );
+                // Se não, busca na rede, clona a resposta e salva no cache para uso futuro
+                return fetch(event.request).then((networkResponse) => {
+                    // Ignora respostas com erro ou inválidas (exceto opacas de CDN de imagens)
+                    if (!networkResponse || (networkResponse.status !== 200 && networkResponse.type !== 'opaque')) {
+                        return networkResponse;
+                    }
+                    
+                    const responseToCache = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, responseToCache).catch(() => {});
+                    });
+                    
+                    return networkResponse;
+                }).catch(() => {
+                    // Fallback offline
+                    if (event.request.destination === 'image') {
+                        return new Response(
+                            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 
+                            { headers: { 'Content-Type': 'image/png' } }
+                        );
+                    }
+                    if (url.pathname.includes('.json')) {
+                        return new Response('{}', { 
+                            status: 200, 
+                            headers: { 'Content-Type': 'application/json' } 
+                        });
+                    }
+                });
+            })
+        );
+        return;
+    }
+
+    // 5. Fallback Final (Para requisições não cobertas acima)
+    event.respondWith(fetch(event.request).catch(() => new Response('')));
 });
