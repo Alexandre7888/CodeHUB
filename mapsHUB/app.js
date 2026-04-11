@@ -124,27 +124,41 @@ function App() {
         }
 
         if ("geolocation" in navigator) {
+            const handlePosition = (pos) => {
+                const newLoc = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+                setUserLocation(newLoc);
+                if (pos.coords.heading) {
+                    setUserHeading(pos.coords.heading);
+                }
+                updateUserLocation(userId, {
+                    lat: newLoc.lat,
+                    lon: newLoc.lon,
+                    heading: pos.coords.heading || 0,
+                    speed: pos.coords.speed || 0,
+                    name: "Usuário App"
+                });
+                setErrorMessage(null);
+            };
+
             const watchId = navigator.geolocation.watchPosition(
-                (pos) => {
-                    const newLoc = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-                    setUserLocation(newLoc);
-                    if (pos.coords.heading) {
-                        setUserHeading(pos.coords.heading);
-                    }
-                    updateUserLocation(userId, {
-                        lat: newLoc.lat,
-                        lon: newLoc.lon,
-                        heading: pos.coords.heading || 0,
-                        speed: pos.coords.speed || 0,
-                        name: "Usuário App"
-                    });
-                    setErrorMessage(null);
-                }, 
+                handlePosition, 
                 err => console.warn("GPS Watch Warning:", err.message),
                 { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 }
             );
 
-            return () => navigator.geolocation.clearWatch(watchId);
+            // Reforço para manter o GPS ativo em segundo plano (especialmente no PiP)
+            const bgIntervalId = setInterval(() => {
+                navigator.geolocation.getCurrentPosition(
+                    handlePosition,
+                    () => {},
+                    { enableHighAccuracy: true, maximumAge: 0 }
+                );
+            }, 3000);
+
+            return () => {
+                navigator.geolocation.clearWatch(watchId);
+                clearInterval(bgIntervalId);
+            };
         }
     }, []);
 
@@ -473,6 +487,7 @@ function App() {
                 <Navigation 
                     startPoint={userLocation}
                     endPoint={navDestination}
+                    heading={userHeading}
                     onStop={stopNavigation}
                     onUpdateStats={setNavStats}
                     onRouteCalculated={(geometry) => setCurrentRoutePath(geometry)}
