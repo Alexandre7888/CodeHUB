@@ -1,9 +1,25 @@
-function TourEditor({ currentUser }) {
+function TourEditor() {
     // State for Map & Points
-    const [startCoords, setStartCoords] = React.useState({ lat: -23.5505, lon: -46.6333 });
+    const [startCoords, setStartCoords] = React.useState(() => {
+        const params = new URLSearchParams(window.location.search);
+        const geo = params.get('geo');
+        if (geo) {
+            const parts = geo.split(',');
+            if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+                return { lat: parseFloat(parts[0]), lon: parseFloat(parts[1]) };
+            }
+        }
+        return { lat: -23.5505, lon: -46.6333 };
+    });
+    const [mapZoom, setMapZoom] = React.useState(() => {
+        const params = new URLSearchParams(window.location.search);
+        const z = params.get('z');
+        return (z && !isNaN(z)) ? parseInt(z, 10) : 19;
+    });
     const [isMapReady, setIsMapReady] = React.useState(false);
     const [points, setPoints] = React.useState([]); 
     const [selectedPointId, setSelectedPointId] = React.useState(null);
+    const [deletedPointIds, setDeletedPointIds] = React.useState([]);
     
     // Video Processing State
     const [isVideoMode, setIsVideoMode] = React.useState(false);
@@ -11,6 +27,8 @@ function TourEditor({ currentUser }) {
     const [isProcessingVideo, setIsProcessingVideo] = React.useState(false);
     const [framesToExtract, setFramesToExtract] = React.useState(0); // 0 = Auto
     const [placingFrameIndex, setPlacingFrameIndex] = React.useState(null); // Which frame we are currently placing
+    const [isPlayingGif, setIsPlayingGif] = React.useState(false);
+    const [gifFrameIndex, setGifFrameIndex] = React.useState(0);
     const isStudio = window.location.pathname.includes('studio.html');
     
     // State for Editor
@@ -29,6 +47,17 @@ function TourEditor({ currentUser }) {
     const markersRef = React.useRef({}); 
     const linesLayerRef = React.useRef(null);
     const imageCanvasRef = React.useRef(null);
+
+    // --- GIF PLAYBACK LOGIC ---
+    React.useEffect(() => {
+        let interval;
+        if (isPlayingGif && extractedFrames.length > 0) {
+            interval = setInterval(() => {
+                setGifFrameIndex(prev => (prev + 1) % extractedFrames.length);
+            }, 100); // 10 fps (muito mais rápido)
+        }
+        return () => clearInterval(interval);
+    }, [isPlayingGif, extractedFrames]);
 
     // --- MAP LOGIC ---
 
@@ -123,11 +152,17 @@ function TourEditor({ currentUser }) {
                 const p1 = sortedPoints[i];
                 const p2 = sortedPoints[i+1];
                 if (Math.abs(p1.lat - p2.lat) < 0.01) {
+                    // Linha branca de fundo para destaque
                     L.polyline([[p1.lat, p1.lon], [p2.lat, p2.lon]], { 
-                        color: '#3b82f6', 
-                        weight: 3, 
-                        opacity: 0.6,
-                        dashArray: '5, 5'
+                        color: 'white', 
+                        weight: 8, 
+                        opacity: 0.8
+                    }).addTo(linesLayerRef.current);
+                    // Linha azul principal (Rota)
+                    L.polyline([[p1.lat, p1.lon], [p2.lat, p2.lon]], { 
+                        color: '#2563eb', // blue-600
+                        weight: 5, 
+                        opacity: 1
                     }).addTo(linesLayerRef.current);
                 }
             }
@@ -199,7 +234,8 @@ function TourEditor({ currentUser }) {
                 blurs: [],
                 links: [],
                 status: isStudio ? 'pending' : 'approved', 
-                author: currentUser ? currentUser.name : (isStudio ? 'User' : 'Admin')
+                author: isStudio ? 'User' : 'Admin',
+                _isDirty: true
             };
             
             setPoints(prev => {
@@ -225,7 +261,7 @@ function TourEditor({ currentUser }) {
             blurs: [],
             links: [],
             status: isStudio ? 'pending' : 'approved',
-            author: currentUser ? currentUser.name : (isStudio ? 'User' : 'Admin')
+            author: isStudio ? 'User' : 'Admin'
         };
         setPoints(prev => [...prev, newPoint]);
         setSelectedPointId(newPoint.id);
@@ -249,7 +285,8 @@ function TourEditor({ currentUser }) {
         
         video.onloadedmetadata = async () => {
             const duration = video.duration;
-            const calculatedFrames = Math.min(Math.max(Math.floor(duration / 2), 5), 50);
+            // Limitar severamente o número de frames e reduzir a amostragem para acelerar o processamento
+            const calculatedFrames = Math.min(Math.max(Math.floor(duration / 3), 4), 15);
             const count = framesToExtract > 0 ? framesToExtract : calculatedFrames;
 
             const frames = [];
@@ -258,7 +295,8 @@ function TourEditor({ currentUser }) {
             
             const interval = duration / (count - 1 || 1);
             
-            const targetWidth = 1024; 
+            // Reduzir resolução alvo para processamento mais rápido
+            const targetWidth = 640; 
             const aspect = video.videoWidth / video.videoHeight;
             canvas.width = targetWidth;
             canvas.height = targetWidth / aspect;
@@ -273,15 +311,11 @@ function TourEditor({ currentUser }) {
                         r();
                     };
                     video.addEventListener('seeked', seekHandler);
-                    // Fallback to avoid hanging
-                    setTimeout(() => {
-                        video.removeEventListener('seeked', seekHandler);
-                        r();
-                    }, 500);
                 });
                 
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                // Qualidade JPEG reduzida
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
                 
                 frames.push({
                     id: i,
@@ -342,7 +376,7 @@ function TourEditor({ currentUser }) {
     };
 
     const updatePoint = (id, data) => {
-        setPoints(prev => prev.map(p => p.id === id ? { ...p, ...data } : p));
+        setPoints(prev => prev.map(p => p.id === id ? { ...p, ...data, _isDirty: true } : p));
     };
 
     const deletePoint = (id) => {
@@ -354,6 +388,7 @@ function TourEditor({ currentUser }) {
 
         if (confirm("Tem certeza que deseja remover este ponto?")) {
             setPoints(prev => prev.filter(p => p.id !== id));
+            setDeletedPointIds(prev => [...prev, id]);
             if (selectedPointId === id) setSelectedPointId(null);
         }
     };
@@ -640,44 +675,39 @@ function TourEditor({ currentUser }) {
     };
 
     const handleSaveTour = async () => {
-        if (points.length === 0) return;
+        const dirtyPoints = points.filter(p => p._isDirty);
         
-        // Filter: In Studio, only count/save MY points
-        const myPoints = isStudio 
-            ? points.filter(p => p.author === (currentUser ? currentUser.name : 'User'))
-            : points;
-
-        if (isStudio && myPoints.length === 0) {
-            alert("Você não tem novos pontos criados por você para salvar.");
+        if (dirtyPoints.length === 0 && deletedPointIds.length === 0) {
+            alert("Nenhuma alteração para salvar.");
             return;
         }
         
         const message = isStudio 
-            ? `Enviar ${myPoints.length} pontos seus para aprovação?` 
-            : `Salvar ${points.length} pontos do tour? Isso atualizará o mapa público.`;
+            ? `Enviar ${dirtyPoints.length} pontos alterados para aprovação?` 
+            : `Salvar ${dirtyPoints.length} pontos alterados do tour? Isso atualizará o mapa público.`;
             
         const confirmed = confirm(message);
         if (!confirmed) return;
 
         try {
-            const pointsToSave = myPoints.map(p => ({
-                ...p,
-                status: isStudio ? 'pending' : (p.status || 'approved'),
-                author: p.author || (currentUser ? currentUser.name : (isStudio ? 'User' : 'Admin'))
-            }));
+            const pointsToSave = dirtyPoints.map(p => {
+                const copy = { ...p };
+                delete copy._isDirty;
+                return {
+                    ...copy,
+                    status: isStudio ? 'pending' : (p.status || 'approved'),
+                    author: p.author || (isStudio ? 'User' : 'Admin')
+                };
+            });
 
-            const promises = pointsToSave.map(p => saveTourPoint(p));
-            await Promise.all(promises);
+            const savePromises = pointsToSave.map(p => saveTourPoint(p));
+            const deletePromises = deletedPointIds.map(id => typeof deleteTourPoint === 'function' ? deleteTourPoint(id) : Promise.resolve());
             
-            alert(isStudio ? "Seus pontos foram enviados para análise do Admin!" : "Tour salvo com sucesso!");
-            if(isStudio) {
-                // Only clear if successful submission
-                // Might want to reload data instead of clearing to empty to show "pending" state?
-                // But request was to clear/reset.
-                setPoints([]);
-                setExtractedFrames([]);
-                setIsMapReady(false);
-            }
+            await Promise.all([...savePromises, ...deletePromises]);
+            setDeletedPointIds([]);
+            setPoints(prev => prev.map(p => ({ ...p, _isDirty: false })));
+            
+            alert(isStudio ? "Alterações enviadas para análise do Admin!" : "Alterações salvas com sucesso!");
         } catch (e) {
             console.error(e);
             alert("Erro ao salvar tour. Verifique o console.");
@@ -800,6 +830,27 @@ function TourEditor({ currentUser }) {
                                 </div>
                                 
                                 {/* Filmstrip Preview */}
+                                {/* Playback GIF Mode */}
+                                <div className="mb-4 relative rounded-lg overflow-hidden bg-black aspect-video flex items-center justify-center">
+                                    {isPlayingGif ? (
+                                        <img src={extractedFrames[gifFrameIndex]?.image} className="w-full h-full object-contain" />
+                                    ) : (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 text-white">
+                                            <div className="icon-image text-4xl text-gray-600 mb-2"></div>
+                                            <span className="text-xs text-gray-400">Preview Desativado</span>
+                                        </div>
+                                    )}
+                                    <div className="absolute bottom-2 right-2">
+                                        <button 
+                                            onClick={() => setIsPlayingGif(!isPlayingGif)}
+                                            className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 shadow-lg ${isPlayingGif ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}`}
+                                        >
+                                            <div className={isPlayingGif ? "icon-square" : "icon-play"}></div>
+                                            {isPlayingGif ? "Parar GIF" : "Reproduzir como GIF"}
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <div className="flex gap-2 overflow-x-auto pb-2 h-20 snap-x">
                                     {extractedFrames.map((frame, idx) => (
                                         <div 
@@ -821,7 +872,7 @@ function TourEditor({ currentUser }) {
                                     ))}
                                 </div>
                                 <p className="text-[10px] text-gray-400 italic">
-                                    Dica: Se um ponto estiver selecionado, clicar na foto acima perguntará se deseja trocá-la.
+                                    Dica: Clique no mapa para posicionar a rota (linha azul) ligando os frames extraídos.
                                 </p>
 
                                 {placingFrameIndex === null && (
@@ -835,22 +886,9 @@ function TourEditor({ currentUser }) {
                             </div>
                         ) : (
                             <div>
-                                <div className="mb-3 flex items-center justify-between">
-                                    <div className="text-xs text-gray-500 flex items-center gap-2">
-                                        <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Config</span>
-                                        <span>Captura:</span>
-                                    </div>
-                                    <select 
-                                        value={framesToExtract} 
-                                        onChange={(e) => setFramesToExtract(Number(e.target.value))}
-                                        className="text-xs border border-gray-300 rounded p-1 bg-white"
-                                    >
-                                        <option value="0">Automático (Inteligente)</option>
-                                        <option value="5">5 Frames</option>
-                                        <option value="10">10 Frames</option>
-                                        <option value="20">20 Frames</option>
-                                        <option value="30">30 Frames</option>
-                                    </select>
+                                <div className="mb-2 text-xs text-gray-500">
+                                    <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase mr-2">Auto</span>
+                                    O cálculo de frames será feito automaticamente.
                                 </div>
                                 <label className="block w-full border-2 border-dashed border-purple-200 bg-purple-50 rounded-lg p-4 text-center cursor-pointer hover:bg-purple-100 transition-colors">
                                     <div className="icon-cloud-upload text-purple-400 mb-1 mx-auto"></div>
