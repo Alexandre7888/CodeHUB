@@ -92,6 +92,7 @@ function App() {
     const [nearbyPreview, setNearbyPreview] = React.useState(null);
     const [is3DMode, setIs3DMode] = React.useState(false); 
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+    const [isSavedRoutesOpen, setIsSavedRoutesOpen] = React.useState(false);
 
     // Navigation State
     const [isNavigating, setIsNavigating] = React.useState(false);
@@ -123,20 +124,8 @@ function App() {
             
             // Sincronizar Rotas do Usuário
             if (navigator.onLine) {
-                const cloudOfflineRoutes = await fetchUserOfflineRoutes(userId);
-                if (cloudOfflineRoutes) {
-                    const localRoutes = JSON.parse(localStorage.getItem('offline_routes') || '[]');
-                    const routeMap = new Map();
-                    localRoutes.forEach(r => routeMap.set(r.id, r));
-                    cloudOfflineRoutes.forEach(r => routeMap.set(r.id, r));
-                    const merged = Array.from(routeMap.values());
-                    try {
-                        localStorage.setItem('offline_routes', JSON.stringify(merged));
-                    } catch (e) {
-                        console.warn("Storage full for offline routes");
-                    }
-                    saveUserOfflineRoutes(userId, merged);
-                }
+                // Rotas offline (com Blob e geometria) agora vivem exclusivamente no IndexedDB 
+                // para evitar estouro de cota e lentidão no carregamento.
 
                 // Sincronizar banco de rotas globais para uso offline
                 const allShared = await fetchAllSharedRoutes();
@@ -437,7 +426,7 @@ function App() {
             if (route) {
                 const success = await saveRouteForOffline(route, userLocation, place, userId);
                 if (success) {
-                    alert("Rota salva com sucesso! \nAgora você pode navegar para este local mesmo offline.");
+                    alert("Rota salva com sucesso no seu dispositivo!\n\nVocê pode acessá-la a qualquer momento sem internet através do menu lateral > 'Rotas Salvas'.");
                 } else {
                     alert("Erro ao salvar rota (Armazenamento cheio?).");
                 }
@@ -595,6 +584,16 @@ function App() {
                 isOpen={isSidebarOpen} 
                 onClose={() => setIsSidebarOpen(false)} 
                 onAddPlace={toggleAddPlaceMode}
+                onOpenSavedRoutes={() => setIsSavedRoutesOpen(true)}
+            />
+            
+            <SavedRoutes 
+                isOpen={isSavedRoutesOpen}
+                onClose={() => setIsSavedRoutesOpen(false)}
+                onNavigate={(place) => {
+                    setIsSavedRoutesOpen(false);
+                    startNavigation(place);
+                }}
             />
 
             <LeafletMap 

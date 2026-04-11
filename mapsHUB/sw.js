@@ -1,11 +1,15 @@
-const CACHE_NAME = 'mapshub-v6'; // Version bump for icons and routing logic
+const CACHE_NAME = 'mapshub-v7'; 
 const TILE_CACHE_NAME = 'mapshub-offline-tiles-v1';
 
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
+    './admin.html',
+    './studio.html',
     './manifest.json',
     './app.js',
+    './admin.js',
+    './studio.js',
     './utils/geoUtils.js',
     './utils/imageUtils.js',
     './utils/firebase.js',
@@ -19,7 +23,9 @@ const ASSETS_TO_CACHE = [
     './components/NearbyPreview.js',
     './components/Navigation.js',
     './components/UserPlaces.js',
+    './components/SavedRoutes.js',
     './components/OfflineManager.js',
+    './components/TourEditor.js',
     'https://cdn.tailwindcss.com',
     'https://resource.trickle.so/vendor_lib/unpkg/lucide-static@0.516.0/font/lucide.css',
     // Explicitly cache the font file referenced by lucide.css
