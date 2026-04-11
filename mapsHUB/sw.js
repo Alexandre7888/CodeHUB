@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mapshub-v9'; 
+const CACHE_NAME = 'mapshub-v10'; 
 const TILE_CACHE_NAME = 'mapshub-offline-tiles-v1';
 
 const ASSETS_TO_CACHE = [
@@ -34,10 +34,10 @@ const ASSETS_TO_CACHE = [
     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
     'https://resource.trickle.so/vendor_lib/unpkg/react@18/umd/react.production.min.js',
     'https://resource.trickle.so/vendor_lib/unpkg/react-dom@18/umd/react-dom.production.min.js',
     'https://resource.trickle.so/vendor_lib/unpkg/@babel/standalone/babel.min.js',
-    'https://html2canvas.hertzen.com/dist/html2canvas.min.js',
     'https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css',
     'https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js'
 ];
@@ -45,10 +45,25 @@ const ASSETS_TO_CACHE = [
 self.addEventListener('install', (event) => {
     self.skipWaiting();
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            console.log('[SW] Fazendo download de todos os assets vitais e CDNs para o Cache...');
-            // Omitindo { mode: 'no-cors' } obrigatoriamente. A maioria dos CDNs modernos suporta CORS nativamente.
-            return cache.addAll(ASSETS_TO_CACHE);
+        caches.open(CACHE_NAME).then(async (cache) => {
+            console.log('[SW] Iniciando cache individual de assets (Tolerante a falhas)...');
+            // Busca cada asset individualmente para evitar que 1 erro cancele todo o processo (o que acontece com cache.addAll)
+            await Promise.all(
+                ASSETS_TO_CACHE.map(async (url) => {
+                    try {
+                        const req = new Request(url);
+                        const res = await fetch(req);
+                        if (res.ok || res.type === 'opaque') {
+                            await cache.put(req, res);
+                        } else {
+                            console.warn('[SW] Falha ao fazer cache do asset (Status não-200):', url);
+                        }
+                    } catch (err) {
+                        console.error('[SW] Falha de rede ao fazer cache de:', url, err);
+                    }
+                })
+            );
+            console.log('[SW] Cache inicial concluído.');
         })
     );
 });
@@ -60,7 +75,7 @@ self.addEventListener('activate', (event) => {
             return Promise.all(
                 cacheNames.map((cache) => {
                     if (cache !== CACHE_NAME && cache !== TILE_CACHE_NAME) {
-                        console.log('[SW] Apagando cache antigo:', cache);
+                        console.log('[SW] Limpando cache antigo:', cache);
                         return caches.delete(cache);
                     }
                 })
@@ -74,76 +89,62 @@ self.addEventListener('fetch', (event) => {
     
     const url = new URL(event.request.url);
 
-    // 1. Ignorar Firebase (pois já possui sua própria lógica de cache e indexDB)
-    if (url.host.includes('firebaseio.com')) return;
+    // 1. Ignorar chamadas de API do Firebase (deixamos o fetch nativo ou falhar se offline)
+    if (url.host.includes('firebaseio.com') || url.host.includes('nominatim.openstreetmap.org')) {
+        return; 
+    }
 
-    // 2. Cache de Tiles do Mapa (Estratégia específica)
-    if (url.host.includes('tile.openstreetmap.org') || 
-        url.host.includes('arcgisonline.com') || 
-        url.host.includes('google.com')) {
-        
+    // 2. Cache estrito para Tiles de Mapa (OSM / Google)
+    if (url.host.includes('tile.openstreetmap.org') || url.host.includes('google.com') || url.host.includes('arcgisonline.com')) {
         event.respondWith(
-            caches.open(TILE_CACHE_NAME).then((cache) => {
-                return cache.match(event.request).then((cachedResponse) => {
-                    if (cachedResponse) return cachedResponse;
-                    return fetch(event.request).then((response) => {
-                        if (response && response.status === 200) {
-                            cache.put(event.request, response.clone()).catch(() => {});
-                        }
-                        return response;
-                    }).catch(() => {
-                        return new Response(
-                            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 
-                            { headers: { 'Content-Type': 'image/png' } }
-                        );
-                    });
-                });
+            caches.open(TILE_CACHE_NAME).then(async (cache) => {
+                const cached = await cache.match(event.request);
+                if (cached) return cached;
+                try {
+                    const res = await fetch(event.request);
+                    if (res && res.status === 200) {
+                        cache.put(event.request, res.clone()).catch(() => {});
+                    }
+                    return res;
+                } catch (e) {
+                    return new Response('', { status: 404 });
+                }
             })
         );
         return;
     }
 
-    // 3. Estratégia CACHE-FIRST para Index, CDNs e Assets locais
+    // 3. Estratégia CACHE-FIRST para todos os arquivos da aplicação e CDNs
     event.respondWith(
-        caches.match(event.request).then((cachedResponse) => {
-            // Se encontrou no cache, retorna IMEDIATAMENTE (Cache-First)
+        caches.match(event.request, { ignoreSearch: true }).then(async (cachedResponse) => {
+            // Se encontrou no cache, retorna IMEDIATAMENTE (Garante funcionamento offline)
             if (cachedResponse) {
                 return cachedResponse;
             }
 
-            // Se não encontrou, tenta buscar na rede
-            return fetch(event.request).then((networkResponse) => {
-                // Só faz cache de respostas com sucesso (status 200) ou opacas (type 'opaque' se o navegador insistir em não-CORS para algumas imagens)
-                if (!networkResponse || (networkResponse.status !== 200 && networkResponse.type !== 'opaque')) {
-                    return networkResponse;
+            // Se não estava no cache prévio, tenta buscar na rede e já salva dinamicamente
+            try {
+                const networkResponse = await fetch(event.request);
+                
+                // Salva no cache apenas respostas válidas
+                if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
+                    const cache = await caches.open(CACHE_NAME);
+                    cache.put(event.request, networkResponse.clone()).catch(() => {});
                 }
-
-                // Salva a resposta dinamicamente para o próximo uso offline
-                const responseToCache = networkResponse.clone();
-                caches.open(CACHE_NAME).then((cache) => {
-                    cache.put(event.request, responseToCache).catch(() => {});
-                });
-
+                
                 return networkResponse;
-            }).catch(() => {
-                // Fallback de erro total (Offline puro)
+            } catch (err) {
+                // Fallbacks puros de Offline
                 
-                // Se tentou navegar para alguma página
-                if (event.request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('.html')) {
-                    return caches.match('./index.html');
+                // Se tentou navegar (ex: recarregar a página), entrega o index.html
+                if (event.request.mode === 'navigate') {
+                    const indexCache = await caches.match('./index.html');
+                    if (indexCache) return indexCache;
                 }
                 
-                // Se tentou carregar uma imagem que falhou offline
-                if (event.request.destination === 'image') {
-                    return new Response(
-                        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 
-                        { headers: { 'Content-Type': 'image/png' } }
-                    );
-                }
-                
-                // Outros arquivos
+                // Se for um asset que falhou e não temos no cache
                 return new Response('', { status: 404, statusText: 'Offline' });
-            });
+            }
         })
     );
 });
