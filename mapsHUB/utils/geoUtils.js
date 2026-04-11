@@ -108,81 +108,123 @@ function getDirectRoute(startCoords, endCoords) {
     };
 }
 
+// --- IndexedDB for Offline Routes ---
+const DB_NAME = 'mapsHubOfflineDB';
+const STORE_NAME = 'saved_routes';
+
+function initRouteDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, 1);
+        request.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+            }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+// Exported helpers for SavedRoutes.js UI
+window.getAllSavedRoutesMeta = async function() {
+    try {
+        const db = await initRouteDB();
+        return new Promise((resolve) => {
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const req = tx.objectStore(STORE_NAME).getAll();
+            req.onsuccess = () => {
+                // Retornar os metadados sem carregar o Blob gigante na memória
+                const list = req.result.map(item => ({
+                    id: item.id,
+                    destinationName: item.destinationName,
+                    destinationCoords: item.destinationCoords,
+                    timestamp: item.timestamp
+                }));
+                resolve(list);
+            };
+            req.onerror = () => resolve([]);
+        });
+    } catch (e) { return []; }
+};
+
+window.deleteSavedRoute = async function(id) {
+    try {
+        const db = await initRouteDB();
+        return new Promise((resolve) => {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            tx.objectStore(STORE_NAME).delete(id);
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => resolve(false);
+        });
+    } catch(e) { return false; }
+};
+
 // Helper: Save a specific route to offline storage
 async function saveRouteForOffline(routeData, startCoords, endPlace, userId = null) {
-    const routeId = endPlace.id || `route_${Date.now()}`;
-    const storageItem = {
-        id: routeId,
-        destinationName: endPlace.title || endPlace.display_name,
-        destinationCoords: { lat: endPlace.lat, lon: endPlace.lon },
-        startCoords: startCoords,
-        route: routeData,
-        timestamp: Date.now()
-    };
-    
-    // Save to a dedicated list of saved routes
     try {
-        const savedRoutes = JSON.parse(localStorage.getItem('offline_routes') || '[]');
-        // Remove old route to same destination if exists
-        const filtered = savedRoutes.filter(r => {
-            const d = calculateDistance(r.destinationCoords.lat, r.destinationCoords.lon, endPlace.lat, endPlace.lon);
-            return d > 0.1; // Keep if distance > 100m
-        });
-        filtered.push(storageItem);
-        localStorage.setItem('offline_routes', JSON.stringify(filtered));
+        const db = await initRouteDB();
+        const routeId = endPlace.id || `route_${Date.now()}`;
         
-        if (userId && typeof saveUserOfflineRoutes === 'function') {
-            saveUserOfflineRoutes(userId, filtered);
-        }
-        return true;
+        // Salva os dados massivos da geometria dentro de um Blob para usar no IndexedDB
+        const routeBlob = new Blob([JSON.stringify(routeData)], { type: 'application/json' });
+        
+        const storageItem = {
+            id: routeId,
+            destinationName: endPlace.title || endPlace.display_name,
+            destinationCoords: { lat: endPlace.lat, lon: endPlace.lon },
+            startCoords: startCoords,
+            routeBlob: routeBlob, // Secreto e sem limites do localStorage
+            timestamp: Date.now()
+        };
+        
+        return new Promise((resolve) => {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            tx.objectStore(STORE_NAME).put(storageItem);
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => resolve(false);
+        });
     } catch (e) {
-        console.warn("Storage full", e);
+        console.warn("IndexedDB Save Error", e);
         return false;
     }
 }
 
 // Helper: Find a saved route that matches destination
-function findSavedRoute(startCoords, endCoords) {
+async function findSavedRoute(startCoords, endCoords) {
     try {
-        const savedRoutes = JSON.parse(localStorage.getItem('offline_routes') || '[]');
+        const db = await initRouteDB();
+        const routes = await new Promise((resolve) => {
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const req = tx.objectStore(STORE_NAME).getAll();
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => resolve([]);
+        });
         
-        // Find route with matching destination (approx 100m radius)
-        const match = savedRoutes.find(r => {
+        // Procurar rota pro destino
+        const match = routes.find(r => {
             const distDest = calculateDistance(r.destinationCoords.lat, r.destinationCoords.lon, endCoords.lat, endCoords.lon);
             return distDest < 0.1; 
         });
 
         if (match) {
-            // We found a route to this destination!
-            // But does it start near where we are?
-            const distStart = calculateDistance(r.startCoords.lat, r.startCoords.lon, startCoords.lat, startCoords.lon);
+            // Extrair o JSON embutido no Blob (o arquivo 'secreto') salvo no IndexedDB
+            const text = await match.routeBlob.text();
+            const route = JSON.parse(text);
+
+            const distStart = calculateDistance(match.startCoords.lat, match.startCoords.lon, startCoords.lat, startCoords.lon);
             
             if (distStart < 0.5) {
-                // If we are within 500m of the saved start point, use the route directly
-                return match.route;
+                return route;
             } else {
-                // If we are far from start, we can't fully reuse the geometry perfectly, 
-                // BUT it's better than a straight line if we are "on the way".
-                // For simplicity in this version, we return it anyway, 
-                // the user might see a "jump" line from current pos to start of route.
-                // We add a "connector" step.
-                
-                const route = JSON.parse(JSON.stringify(match.route)); // Deep copy
-                
-                // Prepend a "Navigate to start" segment logic visually? 
-                // Actually, let's just use it. The map component draws a line from user to route start automatically if needed by Leaflet logic, 
-                // or we can patch the geometry.
-                
-                // Let's patch geometry: Add current pos as first point
                 if (route.geometry && route.geometry.coordinates) {
                     route.geometry.coordinates.unshift([startCoords.lon, startCoords.lat]);
                 }
-                
                 return route;
             }
         }
     } catch (e) {
-        console.error(e);
+        console.error("Error finding route in IndexedDB:", e);
     }
     return null;
 }
@@ -209,10 +251,10 @@ async function getRoute(startCoords, endCoords, profile = 'driving') {
         const syncGlobalCache = localStorage.getItem(`shared_route_cache_${sharedCacheKey}`);
         if (syncGlobalCache) return JSON.parse(syncGlobalCache);
 
-        // C. Smart/Fuzzy Saved Routes (The "Save Route" feature)
-        const smartRoute = findSavedRoute(startCoords, endCoords);
+        // C. Smart/Fuzzy Saved Routes (The "Save Route" feature) via IndexedDB/Blob
+        const smartRoute = await findSavedRoute(startCoords, endCoords);
         if (smartRoute) {
-            console.log("Offline: Found saved route to destination.");
+            console.log("Offline: Found saved route to destination in IndexedDB.");
             return smartRoute;
         }
 
@@ -267,7 +309,7 @@ async function getRoute(startCoords, endCoords, profile = 'driving') {
         return calculatedRoute;
     } catch (error) {
         // Fallback if API fails but we might have something saved
-        const smartRoute = findSavedRoute(startCoords, endCoords);
+        const smartRoute = await findSavedRoute(startCoords, endCoords);
         if (smartRoute) return smartRoute;
 
         const direct = getDirectRoute(startCoords, endCoords);
