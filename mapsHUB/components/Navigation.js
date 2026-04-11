@@ -1,23 +1,28 @@
-function Navigation({ startPoint, endPoint, userHeading, onStop, onUpdateStats, onRouteCalculated }) {
+function Navigation({ startPoint, endPoint, heading = 0, onStop, onUpdateStats, onRouteCalculated }) {
     const [route, setRoute] = React.useState(null);
     const [steps, setSteps] = React.useState([]);
-    const [wrongWayWarningTimer, setWrongWayWarningTimer] = React.useState(0);
     const [currentStepIndex, setCurrentStepIndex] = React.useState(0);
     const [isCalculating, setIsCalculating] = React.useState(false);
     const [isDirectMode, setIsDirectMode] = React.useState(false); 
     
     const [distanceTraveled, setDistanceTraveled] = React.useState(0);
-    const [pipWindow, setPipWindow] = React.useState(null);
-    const [isMiniMode, setIsMiniMode] = React.useState(false); // Fallback
+    const [isCanvasPipActive, setIsCanvasPipActive] = React.useState(false);
+    const [isMiniMode, setIsMiniMode] = React.useState(false); 
     
     // Refs
     const routeDestRef = React.useRef(null);
     const lastPosRef = React.useRef(startPoint);
     const hasStartedRef = React.useRef(false);
     const spokenStepsRef = React.useRef(new Set()); 
-    const mapContainerParentRef = React.useRef(null); // To remember where to put the map back
+    const instructionRef = React.useRef("Calculando...");
+    const distanceDisplayRef = React.useRef("0.0");
+    
+    // Refs para o Canvas PiP
+    const latestPosRef = React.useRef(startPoint);
+    const latestRouteRef = React.useRef(null);
+    const latestHeadingRef = React.useRef(0);
 
-    // 1. Route Calculation
+    // 1. Route Calculation Effect
     React.useEffect(() => {
         if (!endPoint || !startPoint) return;
         
@@ -30,7 +35,7 @@ function Navigation({ startPoint, endPoint, userHeading, onStop, onUpdateStats, 
             routeDestRef.current = destKey;
             
             if (!hasStartedRef.current) {
-                playAlertSound();
+                // Initial feedback
                 if (navigator.onLine) {
                     speak(`Calculando rota para ${endPoint.title || 'destino'}...`);
                 } else {
@@ -39,21 +44,27 @@ function Navigation({ startPoint, endPoint, userHeading, onStop, onUpdateStats, 
                 hasStartedRef.current = true;
             }
             
+            // This function now handles fallback to Direct Route internally
             const routeData = await getRoute(startPoint, endPoint);
             
             if (routeData) {
                 setRoute(routeData);
+                latestRouteRef.current = routeData;
                 setSteps(routeData.legs[0].steps);
                 
+                // Check if it's our "Direct Mode" shim
                 const isDirect = routeData.isDirect || false;
                 setIsDirectMode(isDirect);
 
                 if (routeData.geometry && routeData.geometry.coordinates) {
                     const latLonPath = routeData.geometry.coordinates.map(c => [c[1], c[0]]);
-                    if (onRouteCalculated) onRouteCalculated(latLonPath);
+                    if (onRouteCalculated) {
+                        // Garantir que a rota seja desenhada imediatamente com a linha azul
+                        onRouteCalculated(latLonPath);
+                    }
                 }
 
-                playAlertSound();
+                // Initial Announce
                 if (isDirect) {
                     const distKm = (routeData.distance / 1000).toFixed(1);
                     speak(`Rota direta offline ativada. O destino está a ${distKm} quilômetros. Siga a linha no mapa.`);
@@ -62,11 +73,14 @@ function Navigation({ startPoint, endPoint, userHeading, onStop, onUpdateStats, 
                     const streetName = firstStep?.name ? `na ${firstStep.name}` : '';
                     const instruction = translateInstruction(firstStep?.maneuver?.type, firstStep?.maneuver?.modifier, streetName);
                     
-                    if (routeData.isAdminRoute) {
-                         speak(`Rota manual do administrador iniciada. ${instruction}`);
-                    } else {
-                         speak(`Rota iniciada. ${instruction}`);
+                    const secondStep = routeData.legs[0].steps[1];
+                    let afterInstructionText = '';
+                    if (secondStep) {
+                        const secondStreetName = secondStep.name ? `na ${secondStep.name}` : '';
+                        afterInstructionText = ` Depois, ${translateInstruction(secondStep.maneuver.type, secondStep.maneuver.modifier, secondStreetName)}.`;
                     }
+                    
+                    speak(`Rota iniciada. ${instruction}.${afterInstructionText}`);
                 }
             } else {
                 speak("Não foi possível traçar a rota.");
@@ -78,66 +92,65 @@ function Navigation({ startPoint, endPoint, userHeading, onStop, onUpdateStats, 
         
     }, [endPoint]); 
 
-    // TTS: Random periodic message "Respeite as leis do trânsito"
-    React.useEffect(() => {
-        const intervalId = setInterval(() => {
-            if (Math.random() > 0.3) {
-                speak("Lembre-se, respeite as leis do trânsito.");
-            }
-        }, 120000); // Every 2 minutes
-        return () => clearInterval(intervalId);
-    }, []);
-
-    // Wrong Way Detection for Admin Routes
-    React.useEffect(() => {
-        if (!route || !userHeading || !startPoint) return;
-        
-        // Only enforce strict direction if it's a known geometry and moving at speed (if available)
-        if (route.geometry && route.geometry.coordinates && route.geometry.coordinates.length > 1) {
-            // Find bearing of the route segment we are on
-            const path = route.geometry.coordinates;
-            // Let's just compare user heading with the general direction to the next point
-            let targetPt = path[Math.min(currentStepIndex + 1, path.length - 1)];
-            if (!targetPt) targetPt = path[path.length - 1];
-
-            const expectedBearing = calculateBearing(startPoint.lat, startPoint.lon, targetPt[1], targetPt[0]);
-            
-            // Normalize difference
-            let diff = Math.abs(userHeading - expectedBearing);
-            if (diff > 180) diff = 360 - diff;
-
-            // If diff is > 120 degrees, they are going backwards
-            if (diff > 120) {
-                if (Date.now() - wrongWayWarningTimer > 15000) { // Warn every 15 seconds max
-                    playAlertSound();
-                    speak("Atenção! Você está indo na contramão. Desrespeitando as leis de trânsito.");
-                    setWrongWayWarningTimer(Date.now());
-                }
-            }
+    // Helper to translate and format instructions
+    const translateInstruction = (type, modifier, streetName) => {
+        const street = streetName || '';
+        switch(type) {
+            case 'turn':
+                if (modifier === 'left') return `Vire à esquerda ${street}`;
+                if (modifier === 'right') return `Vire à direita ${street}`;
+                if (modifier === 'slight left') return `Mantenha a esquerda ${street}`;
+                if (modifier === 'slight right') return `Mantenha a direita ${street}`;
+                if (modifier === 'sharp left') return `Curva acentuada à esquerda ${street}`;
+                if (modifier === 'sharp right') return `Curva acentuada à direita ${street}`;
+                return `Vire ${street}`;
+            case 'new name':
+                return `Siga em frente ${street}`;
+            case 'depart':
+                return `Saia em direção ${street}`;
+            case 'arrive':
+                return `Você chegou ao seu destino`;
+            case 'merge':
+                return `Entre na via ${street}`;
+            case 'roundabout':
+                return `Na rotatória, pegue a saída ${street}`;
+            default:
+                return `Siga em frente ${street}`;
         }
-    }, [userHeading, startPoint, route, currentStepIndex]);
+    };
 
-    // 2. Position Tracking
+    // 2. Position Tracking Effect
     React.useEffect(() => {
+        if (startPoint) {
+            latestPosRef.current = startPoint;
+        }
+        if (heading !== undefined) {
+            latestHeadingRef.current = heading;
+        }
+        
         if (!route || !startPoint) return;
 
+        // In Direct Mode, we recalculate distance/bearing constantly
         if (isDirectMode) {
             const dist = calculateDistance(startPoint.lat, startPoint.lon, endPoint.lat, endPoint.lon);
-            if (onUpdateStats) onUpdateStats({ distance: distanceTraveled }); 
+            
+            // Only speak updates occasionally or when very close?
+            // For now, just update UI
+            if (onUpdateStats) onUpdateStats({ distance: distanceTraveled }); // Keep simplified stats for now
 
+            // Check arrival (Direct Mode has larger radius)
             if (dist < 0.05 && !spokenStepsRef.current.has('arrival')) {
-                playAlertSound();
                 speak("Você está chegando próximo ao destino.");
                 spokenStepsRef.current.add('arrival');
             }
             if (dist < 0.02) {
-                 playAlertSound();
                  speak("Você chegou ao destino.");
                  onStop();
             }
             return;
         }
 
+        // Standard Turn-by-Turn Logic
         if (lastPosRef.current && steps.length > 0) {
              const dist = calculateDistance(
                  lastPosRef.current.lat, lastPosRef.current.lon,
@@ -174,8 +187,14 @@ function Navigation({ startPoint, endPoint, userHeading, onStop, onUpdateStats, 
                 const streetName = nextStep.name ? `na ${nextStep.name}` : '';
                 const instruction = translateInstruction(nextStep.maneuver.type, nextStep.maneuver.modifier, streetName);
                 
-                playAlertSound();
-                speak(`Em 50 metros, ${instruction}`);
+                const afterNextStep = steps[currentStepIndex + 2];
+                let afterInstructionText = '';
+                if (afterNextStep) {
+                    const afterStreetName = afterNextStep.name ? `na ${afterNextStep.name}` : '';
+                    afterInstructionText = ` Depois, ${translateInstruction(afterNextStep.maneuver.type, afterNextStep.maneuver.modifier, afterStreetName)}.`;
+                }
+                
+                speak(`Em 50 metros, ${instruction}.${afterInstructionText}`);
                 spokenStepsRef.current.add(currentStepIndex);
                 
                 if (distToTurn < 0.02) {
@@ -183,139 +202,249 @@ function Navigation({ startPoint, endPoint, userHeading, onStop, onUpdateStats, 
                 }
             } else {
                 const destName = endPoint.title || 'destino';
-                playAlertSound();
                 speak(`Você chegou em ${destName}.`);
                 onStop();
             }
         }
     };
 
-    const translateInstruction = (type, modifier, streetName) => {
-        const street = streetName || '';
-        switch(type) {
-            case 'turn':
-                if (modifier === 'left') return `Vire à esquerda ${street}`;
-                if (modifier === 'right') return `Vire à direita ${street}`;
-                if (modifier === 'slight left') return `Mantenha a esquerda ${street}`;
-                if (modifier === 'slight right') return `Mantenha a direita ${street}`;
-                if (modifier === 'sharp left') return `Curva acentuada à esquerda ${street}`;
-                if (modifier === 'sharp right') return `Curva acentuada à direita ${street}`;
-                return `Vire ${street}`;
-            case 'new name': return `Siga em frente ${street}`;
-            case 'depart': return `Saia em direção ${street}`;
-            case 'arrive': return `Você chegou ao seu destino`;
-            case 'merge': return `Entre na via ${street}`;
-            case 'roundabout': return `Na rotatória, pegue a saída ${street}`;
-            default: return `Siga em frente ${street}`;
-        }
-    };
+    const videoStreamRef = React.useRef(null);
+    const workerRef = React.useRef(null);
+    const audioCtxRef = React.useRef(null);
+    const pipKeepAliveRef = React.useRef(null);
 
-    // --- PiP Logic ---
-    const startPiP = async () => {
-        // Fallback if API not supported
-        if (!('documentPictureInPicture' in window)) {
-            setIsMiniMode(!isMiniMode);
+    React.useEffect(() => {
+        return () => {
+            if (workerRef.current) workerRef.current.terminate();
+            if (audioCtxRef.current) audioCtxRef.current.close();
+            if (pipKeepAliveRef.current) clearInterval(pipKeepAliveRef.current);
+        };
+    }, []);
+
+    const togglePiP = async () => {
+        if (isCanvasPipActive) {
+            if (document.pictureInPictureElement) {
+                await document.exitPictureInPicture();
+            }
+            setIsCanvasPipActive(false);
+            if (workerRef.current) workerRef.current.terminate();
+            if (audioCtxRef.current) audioCtxRef.current.close();
+            if (pipKeepAliveRef.current) clearInterval(pipKeepAliveRef.current);
             return;
         }
 
         try {
-            // 1. Open PiP Window
-            const pipWin = await window.documentPictureInPicture.requestWindow({
-                width: 400,
-                height: 600,
-            });
+            const mapDiv = document.querySelector('.leaflet-container') || document.getElementById('map') || document.body;
+            const canvas = document.getElementById("pip-canvas");
+            const video = document.getElementById("pip-video");
             
-            setPipWindow(pipWin);
-
-            // 2. Copy Styles
-            [...document.styleSheets].forEach((styleSheet) => {
-                try {
-                    const cssRules = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
-                    const style = document.createElement('style');
-                    style.textContent = cssRules;
-                    pipWin.document.head.appendChild(style);
-                } catch (e) {
-                    const link = document.createElement('link');
-                    link.rel = 'stylesheet';
-                    link.type = styleSheet.type;
-                    link.media = styleSheet.media;
-                    link.href = styleSheet.href;
-                    pipWin.document.head.appendChild(link);
-                }
-            });
-
-            // 3. Move Elements
-            // We need to move the Map and the Navigation Card
-            const mapContainer = document.querySelector('.map-container-3d');
-            const navCard = document.getElementById('nav-instruction-card');
-            
-            // Remember parent to put back
-            if (mapContainer) {
-                mapContainerParentRef.current = mapContainer.parentNode;
-                
-                // Create a container in PiP
-                const pipContainer = pipWin.document.createElement('div');
-                pipContainer.className = "w-full h-full relative flex flex-col";
-                pipContainer.style.background = "#f3f4f6";
-                pipWin.document.body.appendChild(pipContainer);
-
-                // Append Map
-                // Map needs to be 100% height
-                mapContainer.style.height = "100%";
-                mapContainer.style.flex = "1";
-                pipContainer.appendChild(mapContainer);
-
-                // Append Nav Card (create a wrapper for it at bottom)
-                if (navCard) {
-                    // Clone or Move? Moving allows React state updates to reflect live!
-                    // React Portal would be cleaner but complex to retrofit. Moving DOM works if event listeners are attached to node.
-                    // Leaflet attaches to node, so it works. React events on Nav Card might break if not careful.
-                    // Let's try moving NavCard.
-                    navCard.classList.remove('absolute', 'top-4', 'left-4', 'right-4', 'md:left-1/2', 'md:right-auto', 'md:transform', 'md:-translate-x-1/2', 'md:w-[400px]');
-                    navCard.classList.add('absolute', 'bottom-4', 'left-4', 'right-4'); // Stick to bottom in PiP
-                    pipContainer.appendChild(navCard);
-                }
-
-                // Force map resize update
-                const mapInstance = window.mapInstanceGlobal; // Hack: need access to map instance to invalidateSize
-                if (mapInstance) setTimeout(() => mapInstance.invalidateSize(), 100);
+            if (!mapDiv || !canvas || !video || !window.html2canvas) {
+                alert("Recursos para PiP não encontrados.");
+                setIsMiniMode(!isMiniMode);
+                return;
             }
 
-            // 4. Handle Close
-            pipWin.addEventListener('pagehide', () => {
-                const mapContainer = pipWin.document.querySelector('.map-container-3d');
-                const navCard = pipWin.document.getElementById('nav-instruction-card');
+            setIsCanvasPipActive(true);
+            const ctx = canvas.getContext("2d");
+            
+            const tileCache = {};
+            const getTile = (z, x, y) => {
+                const key = `${z}/${x}/${y}`;
+                if (tileCache[key]) return tileCache[key];
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.src = `https://tile.openstreetmap.org/${z}/${x}/${y}.png`;
+                tileCache[key] = img;
+                return img;
+            };
+
+            const latLonToTile = (lat, lon, zoom) => {
+                const x = (lon + 180) / 360 * Math.pow(2, zoom);
+                const y = (1 - Math.log(Math.tan(lat * Math.PI/180) + 1 / Math.cos(lat * Math.PI/180)) / Math.PI) / 2 * Math.pow(2, zoom);
+                return { x, y };
+            };
+
+            const updateFrame = () => {
+                if (!document.pictureInPictureElement && videoStreamRef.current) return;
                 
-                if (mapContainer && mapContainerParentRef.current) {
-                    mapContainerParentRef.current.appendChild(mapContainer);
-                    // Reset styles
-                    mapContainer.style.height = "100%";
-                    mapContainer.style.flex = "none";
-                }
+                // Dimensões fixas para o PiP
+                canvas.width = 400;
+                canvas.height = 600;
                 
-                if (navCard && mapContainerParentRef.current) {
-                    // Put Nav Card back in main app root or wherever Navigation.js renders
-                    // Navigation.js renders it, but we moved the DOM node. React might be confused.
-                    // Actually, if we just move it back to body, React might reconcile or we force reload.
-                    // Ideally, we move it back to a known container.
-                    const root = document.getElementById('root'); // Or better, Navigation container
-                    // Since React controls this node, moving it manually is risky.
-                    // Best effort: Append back to body for now or reload page if glitchy.
-                    // Correction: Navigation component renders the div. If we move it back, we need to strip the PiP specific classes.
-                    navCard.classList.add('absolute', 'top-4', 'left-4', 'right-4', 'md:left-1/2', 'md:right-auto', 'md:transform', 'md:-translate-x-1/2', 'md:w-[400px]');
-                    navCard.classList.remove('absolute', 'bottom-4', 'left-4', 'right-4');
-                    
-                    // We append it to the mapContainerParent temporarily so it's visible
-                    document.body.appendChild(navCard); 
+                // Fundo padrão
+                ctx.fillStyle = "#e5e7eb";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                if (!latestPosRef.current) return;
+
+                const lat = latestPosRef.current.lat;
+                const lon = latestPosRef.current.lon;
+                const zoomLvl = 16;
+                const tileSize = 256;
+
+                const center = latLonToTile(lat, lon, zoomLvl);
+                const startX = Math.floor(center.x);
+                const startY = Math.floor(center.y);
+                const offsetX = (center.x - startX) * tileSize;
+                
+                // Desloca o mapa um pouco para cima para o cursor ficar mais embaixo (como num GPS normal)
+                const offsetY = (center.y - startY) * tileSize - 100;
+
+                // 1. Desenhar Tiles
+                for (let x = -1; x <= 1; x++) {
+                    for (let y = -2; y <= 2; y++) {
+                        const tileX = startX + x;
+                        const tileY = startY + y;
+                        const img = getTile(zoomLvl, tileX, tileY);
+
+                        if (img.complete && img.naturalWidth > 0) {
+                            ctx.drawImage(
+                                img,
+                                canvas.width/2 + x*tileSize - offsetX,
+                                canvas.height/2 + y*tileSize - offsetY,
+                                tileSize,
+                                tileSize
+                            );
+                        }
+                    }
                 }
 
-                setPipWindow(null);
-                if (window.mapInstanceGlobal) setTimeout(() => window.mapInstanceGlobal.invalidateSize(), 100);
-            });
+                // 2. Desenhar Rota
+                if (latestRouteRef.current && latestRouteRef.current.geometry) {
+                    const coords = latestRouteRef.current.geometry.coordinates;
+                    
+                    ctx.beginPath();
+                    ctx.strokeStyle = "#3b82f6"; // blue-600
+                    ctx.lineWidth = 8;
+                    ctx.lineCap = "round";
+                    ctx.lineJoin = "round";
+                    
+                    let first = true;
+                    for (const coord of coords) {
+                        // coord[0] = lon, coord[1] = lat
+                        const pt = latLonToTile(coord[1], coord[0], zoomLvl);
+                        const px = canvas.width/2 + (pt.x - center.x) * tileSize;
+                        const py = canvas.height/2 + (pt.y - center.y) * tileSize + 100;
+                        
+                        if (first) {
+                            ctx.moveTo(px, py);
+                            first = false;
+                        } else {
+                            ctx.lineTo(px, py);
+                        }
+                    }
+                    ctx.stroke();
+                    
+                    // Linha interna mais clara
+                    ctx.beginPath();
+                    ctx.strokeStyle = "#60a5fa"; // blue-400
+                    ctx.lineWidth = 4;
+                    ctx.lineCap = "round";
+                    ctx.lineJoin = "round";
+                    first = true;
+                    for (const coord of coords) {
+                        const pt = latLonToTile(coord[1], coord[0], zoomLvl);
+                        const px = canvas.width/2 + (pt.x - center.x) * tileSize;
+                        const py = canvas.height/2 + (pt.y - center.y) * tileSize + 100;
+                        if (first) { ctx.moveTo(px, py); first = false; }
+                        else { ctx.lineTo(px, py); }
+                    }
+                    ctx.stroke();
+                }
+
+                // 3. Desenhar Marcador do Usuário
+                const markerX = canvas.width/2;
+                const markerY = canvas.height/2 + 100;
+
+                // Círculo de direção/precisão
+                ctx.fillStyle = "rgba(37, 99, 235, 0.2)";
+                ctx.beginPath();
+                ctx.arc(markerX, markerY, 24, 0, Math.PI*2);
+                ctx.fill();
+
+                // Ponto central
+                ctx.fillStyle = "#1d4ed8"; // blue-700
+                ctx.beginPath();
+                ctx.arc(markerX, markerY, 8, 0, Math.PI*2);
+                ctx.fill();
+                ctx.strokeStyle = "white";
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // 4. Desenhar HUD (Instruções e Distância)
+                // Fundo do HUD superior
+                ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+                ctx.fillRect(10, 10, canvas.width - 20, 80);
+                
+                ctx.fillStyle = "white";
+                ctx.font = "bold 20px sans-serif";
+                ctx.fillText(instructionRef.current || "Siga a rota", 24, 40, canvas.width - 48);
+                
+                ctx.font = "16px sans-serif";
+                ctx.fillStyle = "#4ade80"; // green-400
+                ctx.fillText(`${distanceDisplayRef.current} km restantes`, 24, 70);
+            };
+
+            updateFrame(); // Frame inicial
+
+            // Criar áudio silencioso para enganar o navegador e manter a aba ativa em segundo plano
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtxRef.current = new AudioContext();
+            const oscillator = audioCtxRef.current.createOscillator();
+            const gainNode = audioCtxRef.current.createGain();
+            gainNode.gain.value = 0; // Totalmente mudo
+            oscillator.connect(gainNode);
+            const audioDest = audioCtxRef.current.createMediaStreamDestination();
+            gainNode.connect(audioDest);
+            oscillator.start();
+            const audioTrack = audioDest.stream.getAudioTracks()[0];
+
+            const stream = canvas.captureStream(60); 
+            stream.addTrack(audioTrack); // Adiciona o áudio silencioso ao vídeo PiP
+
+            videoStreamRef.current = stream;
+            video.srcObject = stream;
+
+            await video.play();
+            await video.requestPictureInPicture();
+
+            // Web Worker para criar um "setInterval" imune à limitação de abas inativas do navegador
+            const workerCode = `
+                let interval;
+                self.onmessage = function(e) {
+                    if (e.data === 'start') {
+                        // 100ms é o suficiente para renderizar o GPS suavemente e economizar bateria em segundo plano
+                        interval = setInterval(() => { self.postMessage('tick'); }, 100);
+                    } else if (e.data === 'stop') {
+                        clearInterval(interval);
+                    }
+                };
+            `;
+            const blob = new Blob([workerCode], { type: 'application/javascript' });
+            workerRef.current = new Worker(URL.createObjectURL(blob));
+            workerRef.current.onmessage = () => { updateFrame(); };
+            workerRef.current.postMessage('start');
+
+            // 🔥 mantém vídeo ativo
+            pipKeepAliveRef.current = setInterval(() => {
+                if (video.paused) video.play();
+                if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+                    audioCtxRef.current.resume();
+                }
+            }, 1000);
+
+            video.addEventListener('leavepictureinpicture', () => {
+                setIsCanvasPipActive(false);
+                if (workerRef.current) workerRef.current.terminate();
+                if (audioCtxRef.current) audioCtxRef.current.close();
+                if (pipKeepAliveRef.current) clearInterval(pipKeepAliveRef.current);
+            }, { once: true });
 
         } catch (err) {
-            console.error("PiP Error:", err);
-            setIsMiniMode(!isMiniMode);
+            console.error("PiP error:", err);
+            alert("PiP via vídeo não suportado neste dispositivo/navegador.");
+            setIsCanvasPipActive(false);
+            setIsMiniMode(!isMiniMode); 
         }
     };
 
@@ -337,8 +466,11 @@ function Navigation({ startPoint, endPoint, userHeading, onStop, onUpdateStats, 
     let timeDisplay = "0";
 
     if (isDirectMode) {
+        // Direct Mode Display
         const distKm = calculateDistance(startPoint.lat, startPoint.lon, endPoint.lat, endPoint.lon);
         const bearing = calculateBearing(startPoint.lat, startPoint.lon, endPoint.lat, endPoint.lon);
+        
+        // Convert bearing to cardinal direction roughly
         const cardinals = ["Norte", "Nordeste", "Leste", "Sudeste", "Sul", "Sudoeste", "Oeste", "Noroeste"];
         const cardinalIndex = Math.round(bearing / 45) % 8;
         const direction = cardinals[cardinalIndex];
@@ -346,8 +478,9 @@ function Navigation({ startPoint, endPoint, userHeading, onStop, onUpdateStats, 
         currentInstruction = `Siga sentido ${direction}`;
         nextInstruction = "Linha reta até o destino";
         distanceDisplay = distKm.toFixed(1);
-        timeDisplay = (distKm / 40 * 60).toFixed(0); 
+        timeDisplay = (distKm / 40 * 60).toFixed(0); // Estimate based on 40km/h
     } else {
+        // Normal Mode Display
         const currentStep = steps[currentStepIndex];
         const streetName = currentStep?.name ? `na ${currentStep.name}` : '';
         currentInstruction = currentStep ? translateInstruction(currentStep.maneuver.type, currentStep.maneuver.modifier, streetName) : "Siga em frente";
@@ -360,13 +493,17 @@ function Navigation({ startPoint, endPoint, userHeading, onStop, onUpdateStats, 
         distanceDisplay = Math.max(0, distanceLeft).toFixed(1);
         timeDisplay = (route.duration / 60).toFixed(0);
     }
+    
+    // Atualiza as refs para o canvas ler
+    instructionRef.current = currentInstruction;
+    distanceDisplayRef.current = distanceDisplay;
 
     if (isMiniMode) {
         return (
             <div className="fixed bottom-24 right-4 z-[1200] bg-white rounded-xl shadow-2xl border-2 border-green-500 p-4 w-64 animate-in slide-in-from-bottom-4">
                  <div className="flex justify-between items-start mb-2">
                      <span className="font-bold text-green-700 text-xs uppercase">
-                        {isDirectMode ? 'Modo Bússola' : 'Navegação Ativa'}
+                        {isDirectMode ? 'Modo Bússola (Offline)' : 'Navegação Ativa'}
                      </span>
                      <button onClick={() => setIsMiniMode(false)} className="text-gray-400 hover:text-gray-600"><div className="icon-maximize-2 w-4 h-4"></div></button>
                  </div>
@@ -378,60 +515,61 @@ function Navigation({ startPoint, endPoint, userHeading, onStop, onUpdateStats, 
         );
     }
 
-    // Normal View (or PiP Content Wrapper)
     return (
-        <div id="nav-wrapper">
-             {/* The Card that moves to PiP */}
-             <div 
-                id="nav-instruction-card" 
-                className={`${pipWindow ? 'absolute bottom-4 left-4 right-4' : 'absolute top-4 left-4 right-4 md:left-1/2 md:right-auto md:transform md:-translate-x-1/2 md:w-[400px]'} z-[1000] flex flex-col gap-2 transition-all duration-300`}
-            >
-                <div className={`${isDirectMode ? 'bg-orange-600' : 'bg-green-600'} text-white p-4 rounded-xl shadow-xl animate-in slide-in-from-top-4 transition-colors`}>
-                    <div className="flex items-start gap-4">
-                        <div className="bg-white bg-opacity-20 p-3 rounded-lg">
-                            <div className={isDirectMode ? "icon-compass text-3xl" : "icon-navigation text-3xl"}></div>
+        <div className="absolute top-4 left-4 right-4 md:left-1/2 md:right-auto md:transform md:-translate-x-1/2 md:w-[400px] z-[1000] flex flex-col gap-2">
+            <div className={`${isDirectMode ? 'bg-orange-600' : 'bg-green-600'} text-white p-4 rounded-xl shadow-xl animate-in slide-in-from-top-4 transition-colors`}>
+                <div className="flex items-start gap-4">
+                    <div className="bg-white bg-opacity-20 p-3 rounded-lg">
+                        <div className={isDirectMode ? "icon-compass text-3xl" : "icon-navigation text-3xl"}></div>
+                    </div>
+                    <div className="flex-1">
+                        <div className="flex justify-between items-start">
+                             <h2 className="text-xl font-bold leading-tight mb-1">{currentInstruction}</h2>
+                             {isDirectMode && <span className="bg-orange-800 text-[10px] px-2 py-1 rounded font-bold uppercase">Offline</span>}
                         </div>
-                        <div className="flex-1">
-                            <div className="flex justify-between items-start">
-                                <h2 className="text-xl font-bold leading-tight mb-1">{currentInstruction}</h2>
-                                {isDirectMode && <span className="bg-orange-800 text-[10px] px-2 py-1 rounded font-bold uppercase">Offline</span>}
-                            </div>
-                            {nextInstruction && (
-                                <p className={`${isDirectMode ? 'text-orange-100 border-orange-500' : 'text-green-100 border-green-500'} text-sm flex items-center gap-1 mt-1 border-t pt-1`}>
-                                    <span className="opacity-75">Depois:</span> {nextInstruction}
-                                </p>
-                            )}
+                        {nextInstruction && (
+                            <p className={`${isDirectMode ? 'text-orange-100 border-orange-500' : 'text-green-100 border-green-500'} text-sm flex items-center gap-1 mt-1 border-t pt-1`}>
+                                <span className="opacity-75">Depois:</span> {nextInstruction}
+                            </p>
+                        )}
+                    </div>
+                </div>
+                
+                <div className={`mt-4 flex items-center justify-between border-t ${isDirectMode ? 'border-orange-500' : 'border-green-500'} pt-3`}>
+                    <div className="flex gap-4">
+                        <div className="text-center">
+                            <span className="block text-xl font-mono font-bold">{distanceDisplay}</span>
+                            <span className={`text-xs ${isDirectMode ? 'text-orange-200' : 'text-green-200'}`}>km restantes</span>
+                        </div>
+                        <div className="text-center">
+                            <span className="block text-xl font-mono font-bold">{timeDisplay}</span>
+                            <span className={`text-xs ${isDirectMode ? 'text-orange-200' : 'text-green-200'}`}>min est.</span>
                         </div>
                     </div>
                     
-                    <div className={`mt-4 flex items-center justify-between border-t ${isDirectMode ? 'border-orange-500' : 'border-green-500'} pt-3`}>
-                        <div className="flex gap-4">
-                            <div className="text-center">
-                                <span className="block text-xl font-mono font-bold">{distanceDisplay}</span>
-                                <span className={`text-xs ${isDirectMode ? 'text-orange-200' : 'text-green-200'}`}>km restantes</span>
-                            </div>
-                            <div className="text-center">
-                                <span className="block text-xl font-mono font-bold">{timeDisplay}</span>
-                                <span className={`text-xs ${isDirectMode ? 'text-orange-200' : 'text-green-200'}`}>min est.</span>
-                            </div>
-                        </div>
-                        
-                        <div className="flex gap-2">
-                             {!pipWindow && (
-                                <button onClick={startPiP} className="bg-white bg-opacity-20 text-white p-2 rounded-lg hover:bg-opacity-30" title="Modo PiP (Janela Flutuante)">
-                                    <div className="icon-picture-in-picture-2 w-5 h-5"></div>
-                                </button>
-                             )}
-                             <button 
-                                onClick={onStop} 
-                                className="bg-white text-red-600 px-4 py-2 rounded-lg font-bold text-sm hover:bg-red-50"
-                             >
-                                Sair
-                            </button>
-                        </div>
-                    </div>
+                    <button 
+                        onClick={onStop} 
+                        className="bg-white text-red-600 px-4 py-2 rounded-lg font-bold text-sm hover:bg-red-50"
+                    >
+                        Sair
+                    </button>
                 </div>
             </div>
+
+            <div className="flex gap-2 justify-end mt-2">
+                <button 
+                    onClick={togglePiP} 
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full shadow-lg hover:scale-105 transition-transform font-bold text-sm ${isCanvasPipActive ? 'bg-red-100 text-red-600 border border-red-200' : 'bg-gray-800 text-white hover:bg-gray-700'}`}
+                    title="Modo Flutuante (PiP)"
+                >
+                    <div className={isCanvasPipActive ? "icon-monitor-x" : "icon-picture-in-picture-2"}></div>
+                    {isCanvasPipActive ? "Fechar Janela Flutuante" : "Navegar Fora do App (PiP)"}
+                </button>
+            </div>
+
+            {/* Elementos ocultos para captura do mapa em vídeo/PiP */}
+            <canvas id="pip-canvas" className="hidden"></canvas>
+            <video id="pip-video" autoPlay muted playsInline className="hidden"></video>
         </div>
     );
 }

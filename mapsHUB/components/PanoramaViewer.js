@@ -1,3 +1,102 @@
+function MiniMapPicker({ center, onPlaceSelected, onClose }) {
+    const mapRef = React.useRef(null);
+    const [loading, setLoading] = React.useState(false);
+
+    React.useEffect(() => {
+        if (!mapRef.current) return;
+        
+        const map = L.map(mapRef.current, {
+            zoomControl: false
+        }).setView([center.lat, center.lon], 18);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19
+        }).addTo(map);
+        
+        // Controle de zoom
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        // Marcador do usuário (posição atual do 360)
+        const userIcon = L.divIcon({
+            className: 'bg-transparent',
+            html: `<div class="w-6 h-6 bg-blue-600 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white"><div class="icon-user text-xs"></div></div>`,
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+        });
+        L.marker([center.lat, center.lon], { icon: userIcon }).addTo(map)
+            .bindTooltip('Você está aqui', { permanent: true, direction: 'top', offset: [0, -10], className: 'font-bold text-xs' });
+
+        map.on('click', async (e) => {
+            setLoading(true);
+            try {
+                // Tenta achar comércios num raio pequeno do clique
+                const pois = await getNearbyOSMPlaces(e.latlng.lat, e.latlng.lng, 30);
+                if (pois && pois.length > 0) {
+                    // Pega o mais próximo
+                    onPlaceSelected(pois[0]);
+                } else {
+                    // Fallback para endereço
+                    const geo = await reverseGeocode(e.latlng.lat, e.latlng.lng);
+                    if (geo && geo.display_name) {
+                        const name = geo.display_name.split(',')[0];
+                        // Evita pegar apenas números de rua
+                        if (isNaN(parseInt(name))) {
+                            onPlaceSelected({
+                                name: name,
+                                type: 'poi',
+                                lat: e.latlng.lat,
+                                lon: e.latlng.lng
+                            });
+                        } else {
+                            alert("Nenhum estabelecimento comercial encontrado neste ponto exato. Tente clicar mais próximo da construção.");
+                        }
+                    } else {
+                        alert("Não foi possível identificar o local.");
+                    }
+                }
+            } catch(err) {
+                console.error(err);
+            }
+            setLoading(false);
+        });
+
+        return () => map.remove();
+    }, [center]);
+
+    return (
+        <div className="fixed inset-0 z-[4000] backdrop-blur-md bg-black bg-opacity-60 flex items-center justify-center p-4 animate-in fade-in">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl h-[70vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+                <div className="p-4 bg-gray-50 border-b flex justify-between items-center shrink-0">
+                    <div>
+                        <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                            <div className="icon-map text-blue-600"></div>
+                            Selecione no Mapa
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-1">Toque em qualquer loja, restaurante ou ponto de interesse.</p>
+                    </div>
+                    <button onClick={onClose} className="p-2 bg-gray-200 hover:bg-gray-300 rounded-full transition-colors">
+                        <div className="icon-x text-gray-600"></div>
+                    </button>
+                </div>
+                
+                <div className="flex-1 relative bg-gray-200">
+                    <div ref={mapRef} className="w-full h-full z-0"></div>
+                    {loading && (
+                        <div className="absolute inset-0 z-[1000] bg-white bg-opacity-70 backdrop-blur-sm flex flex-col items-center justify-center">
+                            <div className="icon-loader animate-spin text-blue-600 text-4xl mb-2"></div>
+                            <span className="font-bold text-gray-700">Identificando local...</span>
+                        </div>
+                    )}
+                    
+                    <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[500] bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg text-xs font-bold pointer-events-none opacity-90">
+                        Clique no mapa para escolher um local
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function PanoramaViewer({ imageSrc, tourData, initialPointId, onClose }) {
     const viewerRef = React.useRef(null);
     const pannellumRef = React.useRef(null);
@@ -10,6 +109,7 @@ function PanoramaViewer({ imageSrc, tourData, initialPointId, onClose }) {
     const [nearbyList, setNearbyList] = React.useState([]);
     const [isFetchingNearby, setIsFetchingNearby] = React.useState(false);
     const [placingNewPoi, setPlacingNewPoi] = React.useState(null);
+    const [showMapPicker, setShowMapPicker] = React.useState(false);
 
     // Sync URL Helper
     const updateViewerURL = (id, pitch, yaw, geo) => {
@@ -45,7 +145,7 @@ function PanoramaViewer({ imageSrc, tourData, initialPointId, onClose }) {
         return div;
     };
 
-    const aiHotspotNode = (text, type = 'poi', canDelete = false) => {
+    const aiHotspotNode = (text, type = 'poi', canDelete = false, isPendingAdd = false, isPendingMove = false) => {
         const div = document.createElement('div');
         div.className = `ai-hotspot type-${type}`;
         div.title = "Duplo clique para mover";
@@ -53,6 +153,8 @@ function PanoramaViewer({ imageSrc, tourData, initialPointId, onClose }) {
         div.style.cursor = 'pointer';
         div.innerHTML = `
             <div class="ai-marker relative flex items-center justify-center">
+                ${isPendingAdd ? '<span class="absolute -top-6 bg-green-500 text-white text-[9px] px-1.5 py-0.5 rounded whitespace-nowrap shadow-md z-10">Novo (Pendente)</span>' : ''}
+                ${isPendingMove ? '<span class="absolute -top-6 bg-orange-500 text-white text-[9px] px-1.5 py-0.5 rounded whitespace-nowrap shadow-md z-10">Movimento Pendente</span>' : ''}
                 ${type === 'street' ? '<div class="icon-map-pin text-2xl drop-shadow-md"></div>' : '<div class="icon-info text-2xl drop-shadow-md"></div>'}
                 ${canDelete ? '<div class="delete-poi-btn absolute -top-2 -right-4 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center shadow-lg hover:bg-red-700 hover:scale-110 transition-transform pointer-events-auto" title="Remover local"><div class="icon-trash text-[12px]"></div></div>' : ''}
             </div>
@@ -116,8 +218,8 @@ function PanoramaViewer({ imageSrc, tourData, initialPointId, onClose }) {
                             // Pannellum overrides styles, so we force some here or via CSS
                             hotSpotDiv.style.width = '0px'; // Prevent default box
                             hotSpotDiv.style.height = '0px';
-                            hotSpotDiv.style.marginTop = '-30px'; // Center fix
-                            hotSpotDiv.style.marginLeft = '-30px';
+                            hotSpotDiv.style.marginTop = '-50px'; // Center fix (ajustado para hitbox maior)
+                            hotSpotDiv.style.marginLeft = '-50px';
                             
                             // Adicionar identificador para ajudar na limpeza global
                             hotSpotDiv.classList.add('custom-hotspot-container');
@@ -281,7 +383,8 @@ function PanoramaViewer({ imageSrc, tourData, initialPointId, onClose }) {
             if (poi.pendingDelete) return; // Não renderiza os que estão aguardando aprovação de exclusão
 
             const duplicateCount = scenePois.filter(p => p.name === poi.name && !p.pendingDelete).length;
-            const canDelete = true; // Permite excluir qualquer local, sujeito à aprovação
+            // Só permite apagar locais específicos (lojas, restaurantes, POIs manuais), bloqueando ruas/avenidas
+            const canDelete = ['shop', 'restaurant', 'poi', 'amenity'].includes(poi.type);
             const isPendingAdd = !!poi.pendingAdd;
 
             try {
@@ -364,8 +467,8 @@ function PanoramaViewer({ imageSrc, tourData, initialPointId, onClose }) {
                 {`
                 .custom-hotspot {
                     position: relative;
-                    width: 60px;
-                    height: 60px;
+                    width: 100px; /* Aumentado para área de clique maior */
+                    height: 100px; /* Aumentado para área de clique maior */
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -646,10 +749,38 @@ function PanoramaViewer({ imageSrc, tourData, initialPointId, onClose }) {
                                     ))}
                                 </div>
                             )}
+                            
+                            {/* Always show map fallback button */}
+                            <div className="p-2 border-t border-gray-100 bg-gray-50 mt-1">
+                                <button 
+                                    onClick={() => {
+                                        setShowAddMenu(false);
+                                        setShowMapPicker(true);
+                                    }}
+                                    className="w-full bg-white border border-gray-300 text-gray-700 py-2 rounded-lg text-xs font-bold hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 shadow-sm"
+                                >
+                                    <div className="icon-map"></div>
+                                    Não encontrou? Buscar no Mapa
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
             </div>
+            
+            {showMapPicker && tourData && (
+                <MiniMapPicker 
+                    center={(() => {
+                        const pt = tourData.find(p => p.id === currentScene);
+                        return pt ? { lat: pt.lat, lon: pt.lon } : { lat: -23.5505, lon: -46.6333 };
+                    })()}
+                    onClose={() => setShowMapPicker(false)}
+                    onPlaceSelected={(place) => {
+                        setPlacingNewPoi(place);
+                        setShowMapPicker(false);
+                    }}
+                />
+            )}
             
             <div ref={viewerRef} className="w-full h-full bg-gray-900"></div>
             

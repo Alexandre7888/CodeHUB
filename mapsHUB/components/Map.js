@@ -215,19 +215,19 @@ function LeafletMap({ center, zoom, markers = [], connections = [], routePath = 
         if (routePath && routePath.length > 0) {
             // "Normal Blue Line" for Route
             
-            // White outline for contrast
+            // White outline for contrast (mais grossa)
             L.polyline(routePath, {
                 color: 'white',
-                weight: 8,
+                weight: 12,
                 opacity: 0.9,
                 lineCap: 'round',
                 lineJoin: 'round'
             }).addTo(routeLayerRef.current);
 
-            // Blue inner line
+            // Blue inner line (Azul mais vibrante e chamativo)
             L.polyline(routePath, {
-                color: '#2563eb', // Blue 600
-                weight: 5,
+                color: '#3b82f6', // Blue 500
+                weight: 8,
                 opacity: 1,
                 lineCap: 'round',
                 lineJoin: 'round'
