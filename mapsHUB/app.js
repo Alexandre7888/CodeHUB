@@ -30,8 +30,18 @@ class ErrorBoundary extends React.Component {
 
 function App() {
     // --- STATE ---
+    const [sessionId, setSessionId] = React.useState(() => {
+        const params = new URLSearchParams(window.location.search);
+        let sId = params.get('s');
+        if (!sId) {
+            sId = 'sess_' + Math.random().toString(36).substr(2, 9);
+            params.set('s', sId);
+            window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+        }
+        return sId;
+    });
+
     const [mapState, setMapState] = React.useState(() => {
-        // Inicializa a partir da URL se disponível
         const params = new URLSearchParams(window.location.search);
         const geo = params.get('geo');
         const z = params.get('z');
@@ -47,14 +57,9 @@ function App() {
         }
         if (z && !isNaN(z)) zoom = parseInt(z, 10);
 
-        const saved = JSON.parse(localStorage.getItem('mapState'));
-        if (!geo && saved) {
-            center = saved.center;
-            zoom = saved.zoom;
-        }
-
         return { center, zoom };
     });
+    const [isSessionLoaded, setIsSessionLoaded] = React.useState(false);
     const [userLocation, setUserLocation] = React.useState(null);
     const [userHeading, setUserHeading] = React.useState(0);
     const [userId] = React.useState(() => {
@@ -106,10 +111,46 @@ function App() {
     // --- EFFECTS ---
 
     React.useEffect(() => {
-        loadData();
+        const initSession = async () => {
+            const sessionData = await getSession(sessionId);
+            if (sessionData && sessionData.mapState) {
+                // Restore from session
+                const params = new URLSearchParams(window.location.search);
+                if (!params.get('geo')) {
+                    setMapState(sessionData.mapState);
+                }
+            }
+            
+            // Sincronizar Rotas do Usuário
+            if (navigator.onLine) {
+                const cloudOfflineRoutes = await fetchUserOfflineRoutes(userId);
+                if (cloudOfflineRoutes) {
+                    const localRoutes = JSON.parse(localStorage.getItem('offline_routes') || '[]');
+                    const routeMap = new Map();
+                    localRoutes.forEach(r => routeMap.set(r.id, r));
+                    cloudOfflineRoutes.forEach(r => routeMap.set(r.id, r));
+                    const merged = Array.from(routeMap.values());
+                    localStorage.setItem('offline_routes', JSON.stringify(merged));
+                    saveUserOfflineRoutes(userId, merged);
+                }
+
+                // Sincronizar banco de rotas globais para uso offline
+                const allShared = await fetchAllSharedRoutes();
+                if (allShared) {
+                    Object.keys(allShared).forEach(key => {
+                        // Salva localmente simulando o cache de rotas
+                        localStorage.setItem(`shared_route_cache_${key}`, JSON.stringify(allShared[key]));
+                    });
+                }
+            }
+
+            setIsSessionLoaded(true);
+            loadData();
+        };
+        initSession();
         
         // Network Listeners
-        const handleOnline = () => { setIsOnline(true); loadData(); };
+        const handleOnline = () => { setIsOnline(true); initSession(); };
         const handleOffline = () => setIsOnline(false);
         
         window.addEventListener('online', handleOnline);
@@ -172,12 +213,16 @@ function App() {
     }, [userLocation, isNavigating, is3DMode]);
 
     React.useEffect(() => {
-        if (isNavigating) return;
+        if (isNavigating || !isSessionLoaded) return;
         const timeout = setTimeout(() => {
-            localStorage.setItem('mapState', JSON.stringify(mapState));
+            // Save state to Session (Firebase + Local + Blob)
+            saveSession(sessionId, {
+                mapState,
+                timestamp: Date.now()
+            });
         }, 1000); 
         return () => clearTimeout(timeout);
-    }, [mapState, isNavigating]);
+    }, [mapState, isNavigating, isSessionLoaded, sessionId]);
 
     const loadData = async () => {
         const [placesData, connectionsData, tourData] = await Promise.all([
@@ -382,7 +427,7 @@ function App() {
             // Fetch route data
             const route = await getRoute(userLocation, place);
             if (route) {
-                const success = await saveRouteForOffline(route, userLocation, place);
+                const success = await saveRouteForOffline(route, userLocation, place, userId);
                 if (success) {
                     alert("Rota salva com sucesso! \nAgora você pode navegar para este local mesmo offline.");
                 } else {
