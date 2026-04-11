@@ -229,15 +229,8 @@ async function findSavedRoute(startCoords, endCoords) {
     return null;
 }
 
-// Helper to create a safe Firebase key based on rounded coordinates (~110m precision)
-function getSharedRouteKey(start, end) {
-    const format = (val) => Math.round(val * 1000).toString().replace('-', 'N');
-    return `route_${format(start.lat)}_${format(start.lon)}_${format(end.lat)}_${format(end.lon)}`;
-}
-
 async function getRoute(startCoords, endCoords, profile = 'driving') {
     const cacheKey = `cached_route_${startCoords.lat}_${startCoords.lon}_to_${endCoords.lat}_${endCoords.lon}`;
-    const sharedCacheKey = getSharedRouteKey(startCoords, endCoords);
 
     // 1. OFFLINE MODE CHECK
     if (!navigator.onLine) {
@@ -247,40 +240,23 @@ async function getRoute(startCoords, endCoords, profile = 'driving') {
         const cachedStrict = localStorage.getItem(cacheKey);
         if (cachedStrict) return JSON.parse(cachedStrict);
 
-        // B. Verificação no cache global sincronizado da Nuvem
-        const syncGlobalCache = localStorage.getItem(`shared_route_cache_${sharedCacheKey}`);
-        if (syncGlobalCache) return JSON.parse(syncGlobalCache);
-
-        // C. Smart/Fuzzy Saved Routes (The "Save Route" feature) via IndexedDB/Blob
+        // B. Smart/Fuzzy Saved Routes (The "Save Route" feature) via IndexedDB/Blob
         const smartRoute = await findSavedRoute(startCoords, endCoords);
         if (smartRoute) {
             console.log("Offline: Found saved route to destination in IndexedDB.");
             return smartRoute;
         }
 
-        // D. Fallback Bússola
+        // C. Fallback Bússola
         console.log("Offline: No saved route found. Using Direct Mode.");
         const direct = getDirectRoute(startCoords, endCoords);
         return direct.routes[0];
     }
 
-    // 2. CHECK SHARED SERVER CACHE (Fast path)
-    if (navigator.onLine && typeof getSharedRoute === 'function') {
-        try {
-            const sharedRoute = await getSharedRoute(sharedCacheKey);
-            if (sharedRoute) {
-                console.log("Rota carregada do cache global ultra-rápido!");
-                try { localStorage.setItem(cacheKey, JSON.stringify(sharedRoute)); } catch(e) {}
-                return sharedRoute;
-            }
-        } catch (e) {
-            console.warn("Falha ao verificar cache de rotas:", e);
-        }
-    }
-
-    // 3. ONLINE FETCH (Calculate if not found)
+    // 2. STRICT ONLINE FETCH
+    // Never use fuzzy coordinate matching or shared server caching for online route calculation
     try {
-        console.log("Calculando nova rota na API OSRM...");
+        console.log("Calculando rota exata na API OSRM...");
         const start = `${startCoords.lon},${startCoords.lat}`;
         const end = `${endCoords.lon},${endCoords.lat}`;
         
@@ -296,15 +272,10 @@ async function getRoute(startCoords, endCoords, profile = 'driving') {
         
         const calculatedRoute = data.routes[0];
 
-        // Cache strictly local
+        // Cache strictly local for offline fallback only
         try {
             localStorage.setItem(cacheKey, JSON.stringify(calculatedRoute));
         } catch (e) {}
-
-        // Save to Shared Server Cache in background
-        if (typeof saveSharedRoute === 'function') {
-            saveSharedRoute(sharedCacheKey, calculatedRoute).catch(e => console.warn(e));
-        }
         
         return calculatedRoute;
     } catch (error) {
