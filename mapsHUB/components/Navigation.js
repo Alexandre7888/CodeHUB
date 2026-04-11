@@ -213,25 +213,47 @@ function Navigation({ startPoint, endPoint, heading = 0, onStop, onUpdateStats, 
     const audioCtxRef = React.useRef(null);
     const pipKeepAliveRef = React.useRef(null);
 
+    const cleanupPiP = () => {
+        setIsCanvasPipActive(false);
+        if (workerRef.current) {
+            workerRef.current.terminate();
+            workerRef.current = null;
+        }
+        if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+            try { audioCtxRef.current.close(); } catch(e) {}
+            audioCtxRef.current = null;
+        }
+        if (pipKeepAliveRef.current) {
+            clearInterval(pipKeepAliveRef.current);
+            pipKeepAliveRef.current = null;
+        }
+        if (videoStreamRef.current) {
+            videoStreamRef.current.getTracks().forEach(t => t.stop());
+            videoStreamRef.current = null;
+        }
+        const video = document.getElementById("pip-video");
+        if (video) {
+            video.srcObject = null;
+        }
+    };
+
     React.useEffect(() => {
         return () => {
-            if (workerRef.current) workerRef.current.terminate();
-            if (audioCtxRef.current) audioCtxRef.current.close();
-            if (pipKeepAliveRef.current) clearInterval(pipKeepAliveRef.current);
+            cleanupPiP();
         };
     }, []);
 
     const togglePiP = async () => {
         if (isCanvasPipActive) {
             if (document.pictureInPictureElement) {
-                await document.exitPictureInPicture();
+                try { await document.exitPictureInPicture(); } catch(e) {}
             }
-            setIsCanvasPipActive(false);
-            if (workerRef.current) workerRef.current.terminate();
-            if (audioCtxRef.current) audioCtxRef.current.close();
-            if (pipKeepAliveRef.current) clearInterval(pipKeepAliveRef.current);
+            cleanupPiP();
             return;
         }
+
+        // Limpeza de segurança antes de abrir um novo
+        cleanupPiP();
 
         try {
             const mapDiv = document.querySelector('.leaflet-container') || document.getElementById('map') || document.body;
@@ -434,10 +456,7 @@ function Navigation({ startPoint, endPoint, heading = 0, onStop, onUpdateStats, 
             }, 1000);
 
             video.addEventListener('leavepictureinpicture', () => {
-                setIsCanvasPipActive(false);
-                if (workerRef.current) workerRef.current.terminate();
-                if (audioCtxRef.current) audioCtxRef.current.close();
-                if (pipKeepAliveRef.current) clearInterval(pipKeepAliveRef.current);
+                cleanupPiP();
             }, { once: true });
 
         } catch (err) {
