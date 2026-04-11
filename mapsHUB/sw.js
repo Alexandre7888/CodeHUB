@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mapshub-v7'; 
+const CACHE_NAME = 'mapshub-v8'; 
 const TILE_CACHE_NAME = 'mapshub-offline-tiles-v1';
 
 const ASSETS_TO_CACHE = [
@@ -116,18 +116,47 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // 4. Default Cache First
-    event.respondWith(
-        caches.match(event.request).then((response) => {
-            return response || fetch(event.request).catch(() => {
-                // API Fallbacks
-                if (url.pathname.includes('.json')) {
-                    return new Response('{}', { 
-                        status: 200, 
-                        headers: { 'Content-Type': 'application/json' } 
+    // 4. Dynamic Caching for Everything Else (Images, Photos, Assets)
+    // Exclui requisições do Firebase RTDB pois elas já têm sua própria lógica de cache local via localStorage
+    if (event.request.method === 'GET' && !url.host.includes('firebaseio.com')) {
+        event.respondWith(
+            caches.match(event.request).then((cachedResponse) => {
+                // Se já tem no cache, retorna imediatamente
+                if (cachedResponse) return cachedResponse;
+                
+                // Se não, busca na rede, clona a resposta e salva no cache para uso futuro
+                return fetch(event.request).then((networkResponse) => {
+                    // Ignora respostas com erro ou inválidas (exceto opacas de CDN de imagens)
+                    if (!networkResponse || (networkResponse.status !== 200 && networkResponse.type !== 'opaque')) {
+                        return networkResponse;
+                    }
+                    
+                    const responseToCache = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, responseToCache).catch(() => {});
                     });
-                }
-            });
-        })
-    );
+                    
+                    return networkResponse;
+                }).catch(() => {
+                    // Fallback offline
+                    if (event.request.destination === 'image') {
+                        return new Response(
+                            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 
+                            { headers: { 'Content-Type': 'image/png' } }
+                        );
+                    }
+                    if (url.pathname.includes('.json')) {
+                        return new Response('{}', { 
+                            status: 200, 
+                            headers: { 'Content-Type': 'application/json' } 
+                        });
+                    }
+                });
+            })
+        );
+        return;
+    }
+
+    // 5. Fallback Final (Para requisições não cobertas acima)
+    event.respondWith(fetch(event.request).catch(() => new Response('')));
 });
