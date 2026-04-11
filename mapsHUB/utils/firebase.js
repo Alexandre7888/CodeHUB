@@ -285,21 +285,27 @@ async function updateTourPoint(id, data) {
     if (!Array.isArray(currentCache)) currentCache = Object.values(currentCache);
     
     const index = currentCache.findIndex(p => p.id === id);
+    let updatedObj = null;
+    
     if (index >= 0) {
-        currentCache[index] = { ...currentCache[index], ...data };
+        updatedObj = { ...currentCache[index], ...data };
+        currentCache[index] = updatedObj;
         setLocalCache('tour_points', currentCache);
+    } else {
+        // Se não existir localmente, evitamos sobrescrever com dados parciais
+        return;
     }
 
-    // 2. Network Save
+    // 2. Network Save - Usa PUT com o objeto completo para evitar o "merge" problemático de arrays do Firebase
     if (navigator.onLine) {
         try {
             await fetch(`${DB_URL}/tour_points/${id}.json`, {
-                method: 'PATCH',
-                body: JSON.stringify(data),
+                method: 'PUT',
+                body: JSON.stringify(updatedObj),
                 headers: { 'Content-Type': 'application/json' }
             });
         } catch (error) {
-            console.warn("Network tour point patch failed");
+            console.warn("Network tour point update failed");
         }
     }
 }
@@ -336,7 +342,106 @@ async function saveTourPoint(point) {
     return dataToSave;
 }
 
+// Delete a Tour Point
+async function deleteTourPoint(id) {
+    // 1. Local Delete
+    let currentCache = getLocalCache('tour_points') || [];
+    if (!Array.isArray(currentCache)) currentCache = Object.values(currentCache);
+    currentCache = currentCache.filter(c => c.id !== id);
+    setLocalCache('tour_points', currentCache);
+
+    // 2. Network Delete
+    if (navigator.onLine) {
+        try {
+            await fetch(`${DB_URL}/tour_points/${id}.json`, { method: 'DELETE' });
+        } catch (error) {
+            console.warn("Network tour point delete failed");
+        }
+    }
+}
+
+// --- SESSION MANAGEMENT ---
+
+async function saveSession(sessionId, data) {
+    // Save to local storage for offline use
+    localStorage.setItem(`session_${sessionId}`, JSON.stringify(data));
+    
+    // Also save as Blob URL locally (as requested)
+    try {
+        const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        localStorage.setItem(`session_blob_${sessionId}`, url);
+    } catch(e) {}
+
+    if (navigator.onLine) {
+        try {
+            await fetch(`${DB_URL}/sessions/${sessionId}.json`, {
+                method: 'PUT',
+                body: JSON.stringify(data),
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (e) {
+            console.warn("Falha ao salvar sessão na nuvem, salvo localmente.");
+        }
+    }
+}
+
+async function getSession(sessionId) {
+    if (navigator.onLine) {
+        try {
+            const response = await fetch(`${DB_URL}/sessions/${sessionId}.json`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data) {
+                    localStorage.setItem(`session_${sessionId}`, JSON.stringify(data));
+                    return data;
+                }
+            }
+        } catch (e) {
+            console.warn("Falha ao carregar sessão da nuvem.");
+        }
+    }
+    
+    // Fallback to local storage
+    const localData = localStorage.getItem(`session_${sessionId}`);
+    return localData ? JSON.parse(localData) : null;
+}
+
 // --- SHARED ROUTES API ---
+
+// Fetch all shared routes to cache locally for offline use
+async function fetchAllSharedRoutes() {
+    if (!navigator.onLine) return null;
+    try {
+        const response = await fetch(`${DB_URL}/shared_routes.json`);
+        if (response.ok) {
+            return await response.json();
+        }
+    } catch (e) {
+        console.warn("Erro ao buscar todas rotas compartilhadas:", e);
+    }
+    return null;
+}
+
+async function saveUserOfflineRoutes(userId, routes) {
+    if (!navigator.onLine) return;
+    try {
+        await fetch(`${DB_URL}/users/${userId}/offline_routes.json`, {
+            method: 'PUT',
+            body: JSON.stringify(routes),
+            headers: { 'Content-Type': 'application/json' }
+        });
+    } catch(e) {}
+}
+
+async function fetchUserOfflineRoutes(userId) {
+    if (!navigator.onLine) return null;
+    try {
+        const response = await fetch(`${DB_URL}/users/${userId}/offline_routes.json`);
+        if (response.ok) return await response.json();
+    } catch(e) {}
+    return null;
+}
 
 // Fetch a cached route from other users to speed up calculation
 async function getSharedRoute(cacheKey) {

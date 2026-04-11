@@ -109,7 +109,7 @@ function getDirectRoute(startCoords, endCoords) {
 }
 
 // Helper: Save a specific route to offline storage
-async function saveRouteForOffline(routeData, startCoords, endPlace) {
+async function saveRouteForOffline(routeData, startCoords, endPlace, userId = null) {
     const routeId = endPlace.id || `route_${Date.now()}`;
     const storageItem = {
         id: routeId,
@@ -130,6 +130,10 @@ async function saveRouteForOffline(routeData, startCoords, endPlace) {
         });
         filtered.push(storageItem);
         localStorage.setItem('offline_routes', JSON.stringify(filtered));
+        
+        if (userId && typeof saveUserOfflineRoutes === 'function') {
+            saveUserOfflineRoutes(userId, filtered);
+        }
         return true;
     } catch (e) {
         console.warn("Storage full", e);
@@ -197,18 +201,22 @@ async function getRoute(startCoords, endCoords, profile = 'driving') {
     if (!navigator.onLine) {
         console.log("Offline: Checking for smart saved routes...");
         
-        // A. Strict Cache
+        // A. Strict Cache Local
         const cachedStrict = localStorage.getItem(cacheKey);
         if (cachedStrict) return JSON.parse(cachedStrict);
 
-        // B. Smart/Fuzzy Saved Routes (The "Save Route" feature)
+        // B. Verificação no cache global sincronizado da Nuvem
+        const syncGlobalCache = localStorage.getItem(`shared_route_cache_${sharedCacheKey}`);
+        if (syncGlobalCache) return JSON.parse(syncGlobalCache);
+
+        // C. Smart/Fuzzy Saved Routes (The "Save Route" feature)
         const smartRoute = findSavedRoute(startCoords, endCoords);
         if (smartRoute) {
             console.log("Offline: Found saved route to destination.");
             return smartRoute;
         }
 
-        // C. Fallback
+        // D. Fallback Bússola
         console.log("Offline: No saved route found. Using Direct Mode.");
         const direct = getDirectRoute(startCoords, endCoords);
         return direct.routes[0];
