@@ -68,13 +68,6 @@ function PlaceDetail({ place, onClose, onDirections }) {
         if(place.onSaveOffline) place.onSaveOffline();
     };
 
-    const handleEdit = () => {
-        // Dispatch event to open OSM Editor with this place data
-        const event = new CustomEvent('edit-place', { detail: place });
-        window.dispatchEvent(event);
-        onClose();
-    };
-
     return (
         <>
             {showPano && (
@@ -128,16 +121,6 @@ function PlaceDetail({ place, onClose, onDirections }) {
                              {isUploading ? <div className="icon-loader animate-spin"></div> : <div className="icon-camera"></div>}
                              <input type="file" className="hidden" accept="image/*" multiple onChange={handlePhotoUpload} disabled={isUploading} />
                         </label>
-                    </div>
-
-                    <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-                        <button 
-                            onClick={handleEdit}
-                            className="w-full bg-white border border-gray-200 text-blue-600 py-3 px-3 rounded-lg flex items-center justify-center gap-2 text-xs font-bold hover:bg-blue-50 whitespace-nowrap"
-                        >
-                            <div className="icon-edit-3"></div>
-                            Sugerir Edição ou Corrigir Dados
-                        </button>
                     </div>
 
                     {/* Photos Section */}
