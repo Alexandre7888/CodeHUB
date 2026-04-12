@@ -76,38 +76,6 @@ function formatAddress(item) {
     return parts.join(', ');
 }
 
-// Create a Direct/Compass Route (Fallback for Offline)
-function getDirectRoute(startCoords, endCoords) {
-    const dist = calculateDistance(startCoords.lat, startCoords.lon, endCoords.lat, endCoords.lon);
-    
-    return {
-        code: 'Ok',
-        routes: [{
-            distance: dist * 1000,
-            duration: (dist / 40) * 3600, // Assume 40km/h avg speed
-            geometry: {
-                coordinates: [
-                    [startCoords.lon, startCoords.lat],
-                    [endCoords.lon, endCoords.lat]
-                ],
-                type: 'LineString'
-            },
-            legs: [{
-                steps: [{
-                    maneuver: { type: 'depart', modifier: 'straight', location: [startCoords.lon, startCoords.lat] },
-                    name: 'Direção Direta (Offline)',
-                    distance: dist * 1000,
-                    duration: (dist / 40) * 3600,
-                    mode: 'direct'
-                }],
-                distance: dist * 1000,
-                duration: (dist / 40) * 3600
-            }]
-        }],
-        isDirect: true
-    };
-}
-
 // --- IndexedDB for Offline Routes ---
 const DB_NAME = 'mapsHubOfflineDB';
 const STORE_NAME = 'saved_routes';
@@ -229,32 +197,167 @@ async function findSavedRoute(startCoords, endCoords) {
     return null;
 }
 
+// --- Offline Dijkstra Routing Engine ---
+async function calculateOfflineRoute(startCoords, endCoords) {
+    try {
+        const cache = await caches.open('mapshub-offline-tiles-v1');
+        const keys = await cache.keys();
+        const roadKeys = keys.filter(k => k.url.includes('offline-roads-'));
+        
+        if (roadKeys.length === 0) return null;
+
+        const graph = new Map();
+        
+        for (const req of roadKeys) {
+            const res = await cache.match(req);
+            const data = await res.json();
+            if (data && data.elements) {
+                data.elements.forEach(el => {
+                    if (el.type === 'way' && el.geometry) {
+                        const isOneway = el.tags && el.tags.oneway === 'yes';
+                        for (let i = 0; i < el.geometry.length - 1; i++) {
+                            const p1 = el.geometry[i];
+                            const p2 = el.geometry[i+1];
+                            const id1 = `${p1.lat},${p1.lon}`;
+                            const id2 = `${p2.lat},${p2.lon}`;
+                            const dist = calculateDistance(p1.lat, p1.lon, p2.lat, p2.lon);
+
+                            if (!graph.has(id1)) graph.set(id1, { lat: p1.lat, lon: p1.lon, edges: [] });
+                            if (!graph.has(id2)) graph.set(id2, { lat: p2.lat, lon: p2.lon, edges: [] });
+
+                            graph.get(id1).edges.push({ to: id2, dist });
+                            if (!isOneway) {
+                                graph.get(id2).edges.push({ to: id1, dist });
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        if (graph.size === 0) return null;
+
+        // Encontrar os nós mais próximos no grafo
+        let startNodeId = null;
+        let endNodeId = null;
+        let minStartDist = Infinity;
+        let minEndDist = Infinity;
+
+        graph.forEach((node, id) => {
+            const dStart = calculateDistance(startCoords.lat, startCoords.lon, node.lat, node.lon);
+            const dEnd = calculateDistance(endCoords.lat, endCoords.lon, node.lat, node.lon);
+            if (dStart < minStartDist) { minStartDist = dStart; startNodeId = id; }
+            if (dEnd < minEndDist) { minEndDist = dEnd; endNodeId = id; }
+        });
+
+        // Se estiver muito longe da malha viária baixada, falha
+        if (!startNodeId || !endNodeId || minStartDist > 2 || minEndDist > 2) return null;
+
+        // Algoritmo de Dijkstra para encontrar o caminho mais curto
+        const distances = new Map();
+        const previous = new Map();
+        const unvisited = new Set();
+
+        graph.forEach((_, id) => {
+            distances.set(id, Infinity);
+            unvisited.add(id);
+        });
+        distances.set(startNodeId, 0);
+
+        while (unvisited.size > 0) {
+            let minNode = null;
+            let minDist = Infinity;
+            unvisited.forEach(id => {
+                const d = distances.get(id);
+                if (d < minDist) { minDist = d; minNode = id; }
+            });
+
+            if (!minNode || minDist === Infinity) break;
+            if (minNode === endNodeId) break;
+
+            unvisited.delete(minNode);
+
+            const node = graph.get(minNode);
+            node.edges.forEach(edge => {
+                if (unvisited.has(edge.to)) {
+                    const alt = minDist + edge.dist;
+                    if (alt < distances.get(edge.to)) {
+                        distances.set(edge.to, alt);
+                        previous.set(edge.to, minNode);
+                    }
+                }
+            });
+        }
+
+        if (!previous.has(endNodeId) && startNodeId !== endNodeId) return null; // Sem caminho
+
+        // Reconstruir o caminho
+        const pathCoords = [];
+        let curr = endNodeId;
+        while (curr) {
+            const node = graph.get(curr);
+            pathCoords.unshift([node.lon, node.lat]); // OSRM usa [lon, lat]
+            curr = previous.get(curr);
+        }
+
+        // Conectar exatamente o ponto do usuário ao grafo da rua
+        pathCoords.unshift([startCoords.lon, startCoords.lat]);
+        pathCoords.push([endCoords.lon, endCoords.lat]);
+
+        const totalDistMeters = (distances.get(endNodeId) + minStartDist + minEndDist) * 1000;
+        const durationSecs = (totalDistMeters / 40000) * 3600;
+
+        return {
+            distance: totalDistMeters,
+            duration: durationSecs,
+            geometry: {
+                coordinates: pathCoords,
+                type: 'LineString'
+            },
+            legs: [{
+                steps: [{
+                    maneuver: { type: 'depart', modifier: 'straight', location: [startCoords.lon, startCoords.lat] },
+                    name: 'Rota Offline (Ruas)',
+                    distance: totalDistMeters,
+                    duration: durationSecs,
+                    mode: 'driving'
+                }],
+                distance: totalDistMeters,
+                duration: durationSecs
+            }],
+            isOfflineGraph: true
+        };
+
+    } catch (e) {
+        console.error("Erro no cálculo de rota offline:", e);
+        return null;
+    }
+}
+
 async function getRoute(startCoords, endCoords, profile = 'driving') {
     const cacheKey = `cached_route_${startCoords.lat}_${startCoords.lon}_to_${endCoords.lat}_${endCoords.lon}`;
 
     // 1. OFFLINE MODE CHECK
     if (!navigator.onLine) {
-        console.log("Offline: Checking for smart saved routes...");
+        console.log("Offline: Resolvendo rota...");
         
-        // A. Strict Cache Local
+        // A. Cache Estrito Local
         const cachedStrict = localStorage.getItem(cacheKey);
         if (cachedStrict) return JSON.parse(cachedStrict);
 
-        // B. Smart/Fuzzy Saved Routes (The "Save Route" feature) via IndexedDB/Blob
-        const smartRoute = await findSavedRoute(startCoords, endCoords);
-        if (smartRoute) {
-            console.log("Offline: Found saved route to destination in IndexedDB.");
-            return smartRoute;
+        // B. Cálculo real com grafo de ruas (Malha viária baixada)
+        const offlineGraphRoute = await calculateOfflineRoute(startCoords, endCoords);
+        if (offlineGraphRoute) {
+            console.log("Offline: Caminho calculado usando malha de ruas reais baixada.");
+            return offlineGraphRoute;
         }
 
-        // C. Fallback Bússola
-        console.log("Offline: No saved route found. Using Direct Mode.");
-        const direct = getDirectRoute(startCoords, endCoords);
-        return direct.routes[0];
+        // C. Sem fallback simulado. Falha se não achar as ruas reais.
+        console.error("Offline: Não foi possível traçar a rota real usando os mapas baixados. A área pode não ter sido baixada completamente.");
+        return null;
     }
 
     // 2. STRICT ONLINE FETCH
-    // Never use fuzzy coordinate matching or shared server caching for online route calculation
     try {
         console.log("Calculando rota exata na API OSRM...");
         const start = `${startCoords.lon},${startCoords.lat}`;
@@ -279,12 +382,11 @@ async function getRoute(startCoords, endCoords, profile = 'driving') {
         
         return calculatedRoute;
     } catch (error) {
-        // Fallback if API fails but we might have something saved
+        // Tenta rota salva localmente se a API falhar (ex: bloqueio de rede instável)
         const smartRoute = await findSavedRoute(startCoords, endCoords);
         if (smartRoute) return smartRoute;
 
-        const direct = getDirectRoute(startCoords, endCoords);
-        return direct.routes[0];
+        return null; // Força falha para evitar rota simulada em linha reta
     }
 }
 
