@@ -3,8 +3,6 @@ function Navigation({ startPoint, endPoint, heading = 0, onStop, onUpdateStats, 
     const [steps, setSteps] = React.useState([]);
     const [currentStepIndex, setCurrentStepIndex] = React.useState(0);
     const [isCalculating, setIsCalculating] = React.useState(false);
-    const [isDirectMode, setIsDirectMode] = React.useState(false); 
-    
     const [distanceTraveled, setDistanceTraveled] = React.useState(0);
     const [isCanvasPipActive, setIsCanvasPipActive] = React.useState(false);
     const [isMiniMode, setIsMiniMode] = React.useState(false); 
@@ -52,22 +50,17 @@ function Navigation({ startPoint, endPoint, heading = 0, onStop, onUpdateStats, 
                 latestRouteRef.current = routeData;
                 setSteps(routeData.legs[0].steps);
                 
-                // Check if it's our "Direct Mode" shim
-                const isDirect = routeData.isDirect || false;
-                setIsDirectMode(isDirect);
+                const isOfflineGraph = routeData.isOfflineGraph || false;
 
                 if (routeData.geometry && routeData.geometry.coordinates) {
                     const latLonPath = routeData.geometry.coordinates.map(c => [c[1], c[0]]);
                     if (onRouteCalculated) {
-                        // Garantir que a rota seja desenhada imediatamente com a linha azul
                         onRouteCalculated(latLonPath);
                     }
                 }
 
-                // Initial Announce
-                if (isDirect) {
-                    const distKm = (routeData.distance / 1000).toFixed(1);
-                    speak(`Rota direta offline ativada. O destino está a ${distKm} quilômetros. Siga a linha no mapa.`);
+                if (isOfflineGraph) {
+                    speak(`Rota offline calculada pelas ruas. Siga a linha azul no mapa.`);
                 } else {
                     const firstStep = routeData.legs[0].steps[0];
                     const streetName = firstStep?.name ? `na ${firstStep.name}` : '';
@@ -83,7 +76,9 @@ function Navigation({ startPoint, endPoint, heading = 0, onStop, onUpdateStats, 
                     speak(`Rota iniciada. ${instruction}.${afterInstructionText}`);
                 }
             } else {
-                speak("Não foi possível traçar a rota.");
+                alert("Não foi possível calcular a rota real (pelas ruas). Se você estiver offline, verifique se baixou a malha de ruas desta área completamente.");
+                speak("Erro ao traçar rota. Baixe os mapas da região.");
+                onStop();
             }
             setIsCalculating(false);
         };
@@ -129,26 +124,6 @@ function Navigation({ startPoint, endPoint, heading = 0, onStop, onUpdateStats, 
         }
         
         if (!route || !startPoint) return;
-
-        // In Direct Mode, we recalculate distance/bearing constantly
-        if (isDirectMode) {
-            const dist = calculateDistance(startPoint.lat, startPoint.lon, endPoint.lat, endPoint.lon);
-            
-            // Only speak updates occasionally or when very close?
-            // For now, just update UI
-            if (onUpdateStats) onUpdateStats({ distance: distanceTraveled }); // Keep simplified stats for now
-
-            // Check arrival (Direct Mode has larger radius)
-            if (dist < 0.05 && !spokenStepsRef.current.has('arrival')) {
-                speak("Você está chegando próximo ao destino.");
-                spokenStepsRef.current.add('arrival');
-            }
-            if (dist < 0.02) {
-                 speak("Você chegou ao destino.");
-                 onStop();
-            }
-            return;
-        }
 
         // Standard Turn-by-Turn Logic
         if (lastPosRef.current && steps.length > 0) {
@@ -484,34 +459,18 @@ function Navigation({ startPoint, endPoint, heading = 0, onStop, onUpdateStats, 
     let distanceDisplay = "0.0";
     let timeDisplay = "0";
 
-    if (isDirectMode) {
-        // Direct Mode Display
-        const distKm = calculateDistance(startPoint.lat, startPoint.lon, endPoint.lat, endPoint.lon);
-        const bearing = calculateBearing(startPoint.lat, startPoint.lon, endPoint.lat, endPoint.lon);
-        
-        // Convert bearing to cardinal direction roughly
-        const cardinals = ["Norte", "Nordeste", "Leste", "Sudeste", "Sul", "Sudoeste", "Oeste", "Noroeste"];
-        const cardinalIndex = Math.round(bearing / 45) % 8;
-        const direction = cardinals[cardinalIndex];
-
-        currentInstruction = `Siga sentido ${direction}`;
-        nextInstruction = "Linha reta até o destino";
-        distanceDisplay = distKm.toFixed(1);
-        timeDisplay = (distKm / 40 * 60).toFixed(0); // Estimate based on 40km/h
-    } else {
-        // Normal Mode Display
-        const currentStep = steps[currentStepIndex];
-        const streetName = currentStep?.name ? `na ${currentStep.name}` : '';
-        currentInstruction = currentStep ? translateInstruction(currentStep.maneuver.type, currentStep.maneuver.modifier, streetName) : "Siga em frente";
-        
-        const nextStep = steps[currentStepIndex + 1];
-        const nextStreetName = nextStep?.name ? `na ${nextStep.name}` : '';
-        nextInstruction = nextStep ? translateInstruction(nextStep.maneuver.type, nextStep.maneuver.modifier, nextStreetName) : null;
-        
-        const distanceLeft = (route.distance / 1000) - distanceTraveled;
-        distanceDisplay = Math.max(0, distanceLeft).toFixed(1);
-        timeDisplay = (route.duration / 60).toFixed(0);
-    }
+    // Normal Mode Display
+    const currentStep = steps[currentStepIndex];
+    const streetName = currentStep?.name ? `na ${currentStep.name}` : '';
+    currentInstruction = currentStep ? translateInstruction(currentStep.maneuver.type, currentStep.maneuver.modifier, streetName) : "Siga em frente";
+    
+    const nextStep = steps[currentStepIndex + 1];
+    const nextStreetName = nextStep?.name ? `na ${nextStep.name}` : '';
+    nextInstruction = nextStep ? translateInstruction(nextStep.maneuver.type, nextStep.maneuver.modifier, nextStreetName) : null;
+    
+    const distanceLeft = (route.distance / 1000) - distanceTraveled;
+    distanceDisplay = Math.max(0, distanceLeft).toFixed(1);
+    timeDisplay = (route.duration / 60).toFixed(0);
     
     // Atualiza as refs para o canvas ler
     instructionRef.current = currentInstruction;
@@ -522,7 +481,7 @@ function Navigation({ startPoint, endPoint, heading = 0, onStop, onUpdateStats, 
             <div className="fixed bottom-24 right-4 z-[1200] bg-white rounded-xl shadow-2xl border-2 border-green-500 p-4 w-64 animate-in slide-in-from-bottom-4">
                  <div className="flex justify-between items-start mb-2">
                      <span className="font-bold text-green-700 text-xs uppercase">
-                        {isDirectMode ? 'Modo Bússola (Offline)' : 'Navegação Ativa'}
+                        Navegação Ativa
                      </span>
                      <button onClick={() => setIsMiniMode(false)} className="text-gray-400 hover:text-gray-600"><div className="icon-maximize-2 w-4 h-4"></div></button>
                  </div>
@@ -536,33 +495,32 @@ function Navigation({ startPoint, endPoint, heading = 0, onStop, onUpdateStats, 
 
     return (
         <div className="absolute top-4 left-4 right-4 md:left-1/2 md:right-auto md:transform md:-translate-x-1/2 md:w-[400px] z-[1000] flex flex-col gap-2">
-            <div className={`${isDirectMode ? 'bg-orange-600' : 'bg-green-600'} text-white p-4 rounded-xl shadow-xl animate-in slide-in-from-top-4 transition-colors`}>
+            <div className="bg-green-600 text-white p-4 rounded-xl shadow-xl animate-in slide-in-from-top-4 transition-colors">
                 <div className="flex items-start gap-4">
                     <div className="bg-white bg-opacity-20 p-3 rounded-lg">
-                        <div className={isDirectMode ? "icon-compass text-3xl" : "icon-navigation text-3xl"}></div>
+                        <div className="icon-navigation text-3xl"></div>
                     </div>
                     <div className="flex-1">
                         <div className="flex justify-between items-start">
                              <h2 className="text-xl font-bold leading-tight mb-1">{currentInstruction}</h2>
-                             {isDirectMode && <span className="bg-orange-800 text-[10px] px-2 py-1 rounded font-bold uppercase">Offline</span>}
                         </div>
                         {nextInstruction && (
-                            <p className={`${isDirectMode ? 'text-orange-100 border-orange-500' : 'text-green-100 border-green-500'} text-sm flex items-center gap-1 mt-1 border-t pt-1`}>
+                            <p className="text-green-100 border-green-500 text-sm flex items-center gap-1 mt-1 border-t pt-1">
                                 <span className="opacity-75">Depois:</span> {nextInstruction}
                             </p>
                         )}
                     </div>
                 </div>
                 
-                <div className={`mt-4 flex items-center justify-between border-t ${isDirectMode ? 'border-orange-500' : 'border-green-500'} pt-3`}>
+                <div className="mt-4 flex items-center justify-between border-t border-green-500 pt-3">
                     <div className="flex gap-4">
                         <div className="text-center">
                             <span className="block text-xl font-mono font-bold">{distanceDisplay}</span>
-                            <span className={`text-xs ${isDirectMode ? 'text-orange-200' : 'text-green-200'}`}>km restantes</span>
+                            <span className="text-xs text-green-200">km restantes</span>
                         </div>
                         <div className="text-center">
                             <span className="block text-xl font-mono font-bold">{timeDisplay}</span>
-                            <span className={`text-xs ${isDirectMode ? 'text-orange-200' : 'text-green-200'}`}>min est.</span>
+                            <span className="text-xs text-green-200">min est.</span>
                         </div>
                     </div>
                     

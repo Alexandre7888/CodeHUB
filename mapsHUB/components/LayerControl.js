@@ -80,7 +80,7 @@ function LayerControl({
                                 <div className="p-1.5 bg-red-100 text-red-600 rounded">
                                     <div className="icon-car w-4 h-4"></div>
                                 </div>
-                                <span className="text-sm font-medium">Trânsito (Simulado)</span>
+                                <span className="text-sm font-medium">Trânsito (Tempo Real)</span>
                             </div>
                             <div className="relative">
                                 <input type="checkbox" checked={showTraffic} onChange={(e) => setShowTraffic && setShowTraffic(e.target.checked)} className="sr-only peer" />
