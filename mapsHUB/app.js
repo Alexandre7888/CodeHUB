@@ -518,6 +518,8 @@ function App() {
     
     return (
         <div className="relative w-full h-screen overflow-hidden bg-gray-200">
+            <StartupPrompt />
+            
             {!isOnline && (
                 <div className="absolute top-0 left-0 w-full bg-gray-800 text-white text-xs py-1 text-center z-[2000] font-medium flex items-center justify-center gap-2">
                     <div className="icon-wifi-off w-3 h-3"></div>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mapshub-v8'; 
+const CACHE_NAME = 'mapshub-v9'; 
 const TILE_CACHE_NAME = 'mapshub-offline-tiles-v1';
 
 const ASSETS_TO_CACHE = [
@@ -28,10 +28,12 @@ const ASSETS_TO_CACHE = [
     './components/TourEditor.js',
     'https://cdn.tailwindcss.com',
     'https://resource.trickle.so/vendor_lib/unpkg/lucide-static@0.516.0/font/lucide.css',
-    // Explicitly cache the font file referenced by lucide.css
     'https://resource.trickle.so/vendor_lib/unpkg/lucide-static@0.516.0/font/lucide.woff2',
     'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
     'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+    'https://html2canvas.hertzen.com/dist/html2canvas.min.js',
+    'https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css',
+    'https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js',
     'https://resource.trickle.so/vendor_lib/unpkg/react@18/umd/react.production.min.js',
     'https://resource.trickle.so/vendor_lib/unpkg/react-dom@18/umd/react-dom.production.min.js',
     'https://resource.trickle.so/vendor_lib/unpkg/@babel/standalone/babel.min.js'
@@ -40,10 +42,16 @@ const ASSETS_TO_CACHE = [
 self.addEventListener('install', (event) => {
     self.skipWaiting();
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            console.log('[SW] Caching assets including icons');
-            // We use {cache: 'reload'} to ensure we get fresh assets on install
-            return cache.addAll(ASSETS_TO_CACHE.map(url => new Request(url, { mode: 'no-cors' })));
+        caches.open(CACHE_NAME).then(async (cache) => {
+            console.log('[SW] Caching assets for offline start');
+            // Caching files using normal requests so they can be reliably read by Babel offline
+            for (let url of ASSETS_TO_CACHE) {
+                try {
+                    await cache.add(new Request(url));
+                } catch (e) {
+                    console.warn('[SW] Failed to cache:', url, e);
+                }
+            }
         })
     );
 });
