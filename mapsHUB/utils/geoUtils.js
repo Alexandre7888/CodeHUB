@@ -8,15 +8,40 @@ const PROXY_BASE_URL = 'https://proxy-api.trickle-app.host/?url=';
 async function searchPlaces(query) {
     if (!query || query.length < 3) return [];
     
-    // Offline fallback: Search in saved places (UserPlaces) or cached history
+    // Offline fallback: Search in saved places (UserPlaces) or downloaded POIs
     if (!navigator.onLine) {
-        // Mock offline search in localStorage
         try {
-            const savedPlaces = JSON.parse(localStorage.getItem('userPlaces') || '{}');
             const results = [];
-            if (savedPlaces.home && savedPlaces.home.title.toLowerCase().includes(query.toLowerCase())) results.push(savedPlaces.home);
-            if (savedPlaces.car && savedPlaces.car.title.toLowerCase().includes(query.toLowerCase())) results.push(savedPlaces.car);
-            return results;
+            const q = query.toLowerCase();
+            
+            // 1. Saved User Places
+            const savedPlaces = JSON.parse(localStorage.getItem('userPlaces') || '{}');
+            if (savedPlaces.home && savedPlaces.home.title.toLowerCase().includes(q)) results.push(savedPlaces.home);
+            if (savedPlaces.car && savedPlaces.car.title.toLowerCase().includes(q)) results.push(savedPlaces.car);
+            
+            // 2. Downloaded Offline POIs
+            const db = await initRouteDB();
+            const tx = db.transaction('offline_pois', 'readonly');
+            const store = tx.objectStore('offline_pois');
+            const allPois = await new Promise((resolve) => {
+                const req = store.getAll();
+                req.onsuccess = () => resolve(req.result || []);
+                req.onerror = () => resolve([]);
+            });
+            
+            allPois.forEach(poi => {
+                if (poi.name.toLowerCase().includes(q)) {
+                    results.push({
+                        lat: poi.lat,
+                        lon: poi.lon,
+                        display_name: poi.name,
+                        address: { road: "Local Offline" },
+                        type: 'poi'
+                    });
+                }
+            });
+            
+            return results.slice(0, 10); // Limita a 10 resultados offline
         } catch (e) {
             return [];
         }
@@ -82,17 +107,51 @@ const STORE_NAME = 'saved_routes';
 
 function initRouteDB() {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, 1);
+        const request = indexedDB.open(DB_NAME, 3);
         request.onupgradeneeded = (e) => {
             const db = e.target.result;
             if (!db.objectStoreNames.contains(STORE_NAME)) {
                 db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+            }
+            if (!db.objectStoreNames.contains('offline_pois')) {
+                db.createObjectStore('offline_pois', { keyPath: 'id' });
+            }
+            if (!db.objectStoreNames.contains('offline_tiles')) {
+                db.createObjectStore('offline_tiles', { keyPath: 'url' });
             }
         };
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
     });
 }
+
+// Helper: IndexedDB para Tiles (Mapas Offline)
+window.saveTileToDB = async function(url, base64Data) {
+    try {
+        const db = await initRouteDB();
+        return new Promise((resolve) => {
+            const tx = db.transaction('offline_tiles', 'readwrite');
+            tx.objectStore('offline_tiles').put({ url: url, data: base64Data, timestamp: Date.now() });
+            tx.oncomplete = () => resolve(true);
+            tx.onerror = () => resolve(false);
+        });
+    } catch(e) { return false; }
+};
+
+window.getTileFromDB = async function(url) {
+    try {
+        const db = await initRouteDB();
+        return new Promise((resolve) => {
+            const tx = db.transaction('offline_tiles', 'readonly');
+            const req = tx.objectStore('offline_tiles').get(url);
+            req.onsuccess = () => {
+                if (req.result) resolve(req.result.data);
+                else resolve(null);
+            };
+            req.onerror = () => resolve(null);
+        });
+    } catch(e) { return null; }
+};
 
 // Exported helpers for SavedRoutes.js UI
 window.getAllSavedRoutesMeta = async function() {
@@ -200,6 +259,11 @@ async function findSavedRoute(startCoords, endCoords) {
 // --- Offline Dijkstra Routing Engine ---
 async function calculateOfflineRoute(startCoords, endCoords) {
     try {
+        // Obter chaves do IndexedDB ou localStorage se usar lá
+        // Os arquivos de ruas continuam no cache via SW ou localStorage
+        // Para simplificar, manter a leitura que já existe no Cache API para o Overpass JSON de ruas, 
+        // ou ajustar, como pedido pelo user, tudo pro DB
+        
         const cache = await caches.open('mapshub-offline-tiles-v1');
         const keys = await cache.keys();
         const roadKeys = keys.filter(k => k.url.includes('offline-roads-'));
@@ -222,12 +286,15 @@ async function calculateOfflineRoute(startCoords, endCoords) {
                             const id2 = `${p2.lat},${p2.lon}`;
                             const dist = calculateDistance(p1.lat, p1.lon, p2.lat, p2.lon);
 
-                            if (!graph.has(id1)) graph.set(id1, { lat: p1.lat, lon: p1.lon, edges: [] });
-                            if (!graph.has(id2)) graph.set(id2, { lat: p2.lat, lon: p2.lon, edges: [] });
+                            // Ignorar distâncias zero ou nós duplicados para reduzir o grafo
+                            if (dist > 0.0001) {
+                                if (!graph.has(id1)) graph.set(id1, { lat: p1.lat, lon: p1.lon, edges: [] });
+                                if (!graph.has(id2)) graph.set(id2, { lat: p2.lat, lon: p2.lon, edges: [] });
 
-                            graph.get(id1).edges.push({ to: id2, dist });
-                            if (!isOneway) {
-                                graph.get(id2).edges.push({ to: id1, dist });
+                                graph.get(id1).edges.push({ to: id2, dist });
+                                if (!isOneway) {
+                                    graph.get(id2).edges.push({ to: id1, dist });
+                                }
                             }
                         }
                     }
@@ -253,38 +320,48 @@ async function calculateOfflineRoute(startCoords, endCoords) {
         // Se estiver muito longe da malha viária baixada, falha
         if (!startNodeId || !endNodeId || minStartDist > 2 || minEndDist > 2) return null;
 
-        // Algoritmo de Dijkstra para encontrar o caminho mais curto
-        const distances = new Map();
+        // OTIMIZAÇÃO: Algoritmo A* (A-Star) para velocidade absurda no cálculo de rotas offline
+        const gScore = new Map();
+        const fScore = new Map();
         const previous = new Map();
-        const unvisited = new Set();
+        const openSet = new Set();
 
         graph.forEach((_, id) => {
-            distances.set(id, Infinity);
-            unvisited.add(id);
+            gScore.set(id, Infinity);
+            fScore.set(id, Infinity);
         });
-        distances.set(startNodeId, 0);
 
-        while (unvisited.size > 0) {
-            let minNode = null;
-            let minDist = Infinity;
-            unvisited.forEach(id => {
-                const d = distances.get(id);
-                if (d < minDist) { minDist = d; minNode = id; }
+        const startNode = graph.get(startNodeId);
+        const endNode = graph.get(endNodeId);
+
+        gScore.set(startNodeId, 0);
+        fScore.set(startNodeId, calculateDistance(startNode.lat, startNode.lon, endNode.lat, endNode.lon));
+        openSet.add(startNodeId);
+
+        while (openSet.size > 0) {
+            let current = null;
+            let minF = Infinity;
+            openSet.forEach(id => {
+                const f = fScore.get(id);
+                if (f < minF) { minF = f; current = id; }
             });
 
-            if (!minNode || minDist === Infinity) break;
-            if (minNode === endNodeId) break;
+            if (!current || minF === Infinity) break;
+            if (current === endNodeId) break;
 
-            unvisited.delete(minNode);
+            openSet.delete(current);
 
-            const node = graph.get(minNode);
+            const node = graph.get(current);
             node.edges.forEach(edge => {
-                if (unvisited.has(edge.to)) {
-                    const alt = minDist + edge.dist;
-                    if (alt < distances.get(edge.to)) {
-                        distances.set(edge.to, alt);
-                        previous.set(edge.to, minNode);
-                    }
+                const tentativeG = gScore.get(current) + edge.dist;
+                if (tentativeG < gScore.get(edge.to)) {
+                    previous.set(edge.to, current);
+                    gScore.set(edge.to, tentativeG);
+                    
+                    const neighbor = graph.get(edge.to);
+                    const h = calculateDistance(neighbor.lat, neighbor.lon, endNode.lat, endNode.lon);
+                    fScore.set(edge.to, tentativeG + h);
+                    openSet.add(edge.to);
                 }
             });
         }
@@ -300,18 +377,31 @@ async function calculateOfflineRoute(startCoords, endCoords) {
             curr = previous.get(curr);
         }
 
-        // Conectar exatamente o ponto do usuário ao grafo da rua
-        pathCoords.unshift([startCoords.lon, startCoords.lat]);
-        pathCoords.push([endCoords.lon, endCoords.lat]);
+        // Otimização: Interpolação para evitar que o ponto pareça fora da rua quando o zoom é muito grande
+        // Pega as coordenadas exatas do nó de entrada e saída na malha
+        const startNodeCoords = graph.get(startNodeId);
+        const endNodeCoords = graph.get(endNodeId);
+        
+        pathCoords.unshift([startNodeCoords.lon, startNodeCoords.lat]); // Ponto exato da rua
+        pathCoords.unshift([startCoords.lon, startCoords.lat]); // Ponto do GPS
+        
+        pathCoords.push([endNodeCoords.lon, endNodeCoords.lat]); // Ponto exato da rua
+        pathCoords.push([endCoords.lon, endCoords.lat]); // Destino
+        
+        // Remove duplicatas consecutivas
+        const cleanPath = pathCoords.filter((coord, idx, arr) => {
+            if (idx === 0) return true;
+            return coord[0] !== arr[idx-1][0] || coord[1] !== arr[idx-1][1];
+        });
 
-        const totalDistMeters = (distances.get(endNodeId) + minStartDist + minEndDist) * 1000;
-        const durationSecs = (totalDistMeters / 40000) * 3600;
+        const totalDistMeters = (gScore.get(endNodeId) + minStartDist + minEndDist) * 1000;
+        const durationSecs = (totalDistMeters / 40000) * 3600; // Assume 40km/h
 
         return {
             distance: totalDistMeters,
             duration: durationSecs,
             geometry: {
-                coordinates: pathCoords,
+                coordinates: cleanPath,
                 type: 'LineString'
             },
             legs: [{
