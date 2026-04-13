@@ -75,17 +75,43 @@ function Navigation({ startPoint, endPoint, heading = 0, onStop, onUpdateStats, 
                     
                     speak(`Rota iniciada. ${instruction}.${afterInstructionText}`);
                 }
+                setIsCalculating(false);
             } else {
-                alert("Não foi possível calcular a rota real (pelas ruas). Se você estiver offline, verifique se baixou a malha de ruas desta área completamente.");
-                speak("Erro ao traçar rota. Baixe os mapas da região.");
-                onStop();
+                // Tentativas infinitas: se falhar, aguarda 5 segundos e tenta novamente silenciosamente
+                if (!document.getElementById('retry-toast')) {
+                    const toast = document.createElement('div');
+                    toast.id = 'retry-toast';
+                    toast.className = 'fixed top-32 left-1/2 transform -translate-x-1/2 bg-orange-600 text-white px-4 py-2 rounded-full text-xs font-bold z-[3000] shadow-lg flex items-center gap-2';
+                    toast.innerHTML = '<div class="icon-loader animate-spin"></div> Buscando malha viária offline...';
+                    document.body.appendChild(toast);
+                }
+                
+                setTimeout(() => {
+                    setIsCalculating(false);
+                    if (routeDestRef.current === destKey) { // Se o destino não mudou
+                        routeDestRef.current = null; // Força re-cálculo
+                        setRoute(null); // Trigger useEffect again by clearing state indirectly via dependency or just calling calculate
+                        calculate();
+                    }
+                }, 5000);
             }
-            setIsCalculating(false);
         };
         
         calculate();
         
-    }, [endPoint]); 
+    }, [endPoint, startPoint]); 
+    
+    // Cleanup retry toast
+    React.useEffect(() => {
+        if (route) {
+            const toast = document.getElementById('retry-toast');
+            if (toast) toast.remove();
+        }
+        return () => {
+            const toast = document.getElementById('retry-toast');
+            if (toast) toast.remove();
+        };
+    }, [route]);
 
     // Helper to translate and format instructions
     const translateInstruction = (type, modifier, streetName) => {

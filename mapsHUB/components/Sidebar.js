@@ -1,4 +1,4 @@
-function Sidebar({ isOpen, onClose, onOpenStudio, onAddPlace, onOpenSavedRoutes, onOpenAdmin }) {
+function Sidebar({ isOpen, onClose, onOpenStudio, onAddPlace, onOpenSavedRoutes, onOpenAdmin, onUpdateApp }) {
     if (!isOpen) return null;
 
     return (
@@ -62,6 +62,14 @@ function Sidebar({ isOpen, onClose, onOpenStudio, onAddPlace, onOpenSavedRoutes,
                     >
                         <div className="icon-download-cloud text-xl text-green-600"></div>
                         <span className="font-medium">Rotas Salvas (Offline)</span>
+                    </button>
+
+                    <button 
+                        onClick={() => { onClose(); if(onUpdateApp) onUpdateApp(); }}
+                        className="w-full text-left px-6 py-3 hover:bg-gray-50 flex items-center gap-4 text-gray-700 transition-colors"
+                    >
+                        <div className="icon-refresh-cw text-xl text-blue-600"></div>
+                        <span className="font-medium">Atualizar Aplicativo</span>
                     </button>
 
                     <button className="w-full text-left px-6 py-3 hover:bg-gray-50 flex items-center gap-4 text-gray-700 transition-colors">

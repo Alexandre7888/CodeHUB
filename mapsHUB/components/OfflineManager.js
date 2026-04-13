@@ -10,8 +10,9 @@ const OfflineManager = React.forwardRef(({ mapInstance, onDownloadComplete }, re
     const [isDownloading, setIsDownloading] = React.useState(false);
     const [progress, setProgress] = React.useState(0);
     const [totalTiles, setTotalTiles] = React.useState(0);
-    const [status, setStatus] = React.useState(null); // 'idle', 'estimating', 'confirm', 'downloading', 'downloading_roads', 'done', 'error'
-    const [depth, setDepth] = React.useState(1); // Default depth lowered to 1 for storage optimization
+    const [status, setStatus] = React.useState(null); // 'idle', 'selecting', 'estimating', 'confirm', 'downloading', 'downloading_roads', 'downloading_pois', 'done', 'error'
+    const [depth, setDepth] = React.useState(2); // Usaremos um zoom máximo de +2 por padrão no quadrado
+    const selectorRef = React.useRef(null);
 
     // Calculate tiles for a specific zoom level within bounds
     const calculateTilesForZoom = (bounds, zoom) => {
@@ -24,17 +25,37 @@ const OfflineManager = React.forwardRef(({ mapInstance, onDownloadComplete }, re
         return { count: xCount * yCount, min, max, zoom };
     };
 
+    const getBoundsFromSelector = () => {
+        if (!mapInstance || !selectorRef.current) return mapInstance.getBounds();
+        
+        const rect = selectorRef.current.getBoundingClientRect();
+        const mapContainer = mapInstance.getContainer().getBoundingClientRect();
+        
+        const nwPoint = L.point(rect.left - mapContainer.left, rect.top - mapContainer.top);
+        const sePoint = L.point(rect.right - mapContainer.left, rect.bottom - mapContainer.top);
+        
+        const nwLatLon = mapInstance.containerPointToLatLng(nwPoint);
+        const seLatLon = mapInstance.containerPointToLatLng(sePoint);
+        
+        return L.latLngBounds(nwLatLon, seLatLon);
+    };
+
     const estimateDownload = React.useCallback(() => {
         if (!mapInstance) return;
         
+        // Ao clicar para baixar, ativamos o modo de seleção com o quadrado
+        setStatus('selecting');
+    }, [mapInstance]);
+
+    const confirmSelectionAndEstimate = () => {
         setStatus('estimating');
-        const bounds = mapInstance.getBounds();
+        const bounds = getBoundsFromSelector();
         const currentZoom = mapInstance.getZoom();
-        const maxZoom = 19; // Leaflet/OSM max
+        // OTIMIZAÇÃO EXTREMA: Reduzir zoom máximo real para 17. O Leaflet esticará as imagens nos zooms 18 e 19.
+        // O nível 18 e 19 representam ~90% de todas as imagens. Ignorá-los deixa o download segundos em vez de minutos.
+        const maxZoom = 17; 
         
         let total = 0;
-        // Calculate total for current zoom up to limit
-        // We limit depth to avoid massive downloads
         const targetZoom = Math.min(currentZoom + depth, maxZoom);
         
         for (let z = currentZoom; z <= targetZoom; z++) {
@@ -44,25 +65,17 @@ const OfflineManager = React.forwardRef(({ mapInstance, onDownloadComplete }, re
         
         setTotalTiles(total);
         setStatus('confirm');
-    }, [mapInstance, depth]);
+    };
 
     React.useImperativeHandle(ref, () => ({
         estimateDownload
     }));
 
-    // Re-estimate when depth changes if we are in confirm state
-    React.useEffect(() => {
-        if (status === 'confirm') {
-            estimateDownload();
-        }
-    }, [depth, estimateDownload]);
-
     const startDownload = async () => {
         if (!mapInstance) return;
         
-        // Hard limit warning
-        if (totalTiles > 2000) {
-            if (!confirm(`Atenção: Você selecionou ${totalTiles} blocos. Isso pode demorar vários minutos e ocupar espaço. Deseja continuar?`)) {
+        if (totalTiles > 3000) {
+            if (!confirm(`Atenção: A área selecionada possui ${totalTiles} blocos. Isso pode demorar e usar muito espaço no dispositivo. Deseja continuar?`)) {
                 return;
             }
         }
@@ -71,12 +84,11 @@ const OfflineManager = React.forwardRef(({ mapInstance, onDownloadComplete }, re
         setIsDownloading(true);
         setProgress(0);
 
-        const bounds = mapInstance.getBounds();
+        const bounds = getBoundsFromSelector();
         const currentZoom = mapInstance.getZoom();
-        const maxZoom = 19;
+        const maxZoom = 17; // Limite de 17 para o download
         const targetZoom = Math.min(currentZoom + depth, maxZoom);
 
-        // Generate list of all tiles to fetch
         const tilesToFetch = [];
         for (let z = currentZoom; z <= targetZoom; z++) {
             const { min, max } = calculateTilesForZoom(bounds, z);
@@ -89,27 +101,30 @@ const OfflineManager = React.forwardRef(({ mapInstance, onDownloadComplete }, re
         }
 
         let completed = 0;
-        const cacheName = 'mapshub-offline-tiles-v1';
         
         try {
-            const cache = await caches.open(cacheName);
-            
-            // Process in chunks of 20 for better speed/stability
-            const chunkSize = 20;
+            // Process in chunks of 50 for much better speed
+            const chunkSize = 50;
             for (let i = 0; i < tilesToFetch.length; i += chunkSize) {
                 const chunk = tilesToFetch.slice(i, i + chunkSize);
                 await Promise.all(chunk.map(async (url) => {
                     try {
-                        // Attempt fetch with cors mode
                         const response = await fetch(url, { mode: 'cors' });
                         if (response.ok) {
-                            await cache.put(url, response);
+                            const blob = await response.blob();
+                            const base64 = await new Promise((resolve) => {
+                                const reader = new FileReader();
+                                reader.onloadend = () => resolve(reader.result);
+                                reader.readAsDataURL(blob);
+                            });
+                            if (window.saveTileToDB) {
+                                await window.saveTileToDB(url, base64);
+                            }
                         }
                     } catch (e) {
                         console.warn('Failed to fetch tile:', url);
                     } finally {
                         completed++;
-                        // Update progress less frequently to save renders
                         if (completed % 5 === 0 || completed === tilesToFetch.length) {
                              setProgress(Math.round((completed / tilesToFetch.length) * 100));
                         }
@@ -121,15 +136,15 @@ const OfflineManager = React.forwardRef(({ mapInstance, onDownloadComplete }, re
             setStatus('downloading_roads');
             setProgress(0);
             try {
-                // Adiciona uma margem extra de ~2km nas bordas para garantir rotas que começam fora da tela exata
-                const buffer = 0.02;
+                // Aumenta a margem extra para ~15km nas bordas para garantir rotas longas
+                const buffer = 0.15;
                 const s = bounds.getSouth() - buffer;
                 const w = bounds.getWest() - buffer;
                 const n = bounds.getNorth() + buffer;
                 const e = bounds.getEast() + buffer;
                 
-                // Dividir a área em um grid 2x2 para processamento seguro (4 partes)
-                const gridSize = 2;
+                // Dividir a área em um grid 4x4 para lidar com a área muito maior (16 partes)
+                const gridSize = 4;
                 const latStep = (n - s) / gridSize;
                 const lonStep = (e - w) / gridSize;
                 const chunks = [];
@@ -149,28 +164,47 @@ const OfflineManager = React.forwardRef(({ mapInstance, onDownloadComplete }, re
                 const allElements = [];
                 const seenIds = new Set();
                 
-                for (const chunk of chunks) {
-                    const query = `[out:json][timeout:60];(way["highway"](${chunk.s},${chunk.w},${chunk.n},${chunk.e}););out body geom;`;
-                    const targetUrl = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
-                    const proxyUrl = `https://proxy-api.trickle-app.host/?url=${encodeURIComponent(targetUrl)}`;
-                    try {
-                        const roadRes = await fetch(proxyUrl);
-                        if (roadRes.ok) {
-                            const data = await roadRes.json();
-                            if (data.elements) {
-                                data.elements.forEach(el => {
-                                    if (!seenIds.has(el.id)) {
-                                        seenIds.add(el.id);
-                                        allElements.push(el);
+                // Processar chunks em lotes de 4 para baixar "parte por parte" mais rápido (em paralelo)
+                const chunkBatches = [];
+                for (let i = 0; i < chunks.length; i += 4) {
+                    chunkBatches.push(chunks.slice(i, i + 4));
+                }
+
+                for (const batch of chunkBatches) {
+                    await Promise.all(batch.map(async (chunk) => {
+                        const query = `[out:json][timeout:30];(way["highway"~"motorway|trunk|primary|secondary|tertiary|unclassified|residential"](${chunk.s},${chunk.w},${chunk.n},${chunk.e}););out body geom qt;`;
+                        const targetUrl = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+                        const proxyUrl = `https://proxy-api.trickle-app.host/?url=${encodeURIComponent(targetUrl)}`;
+                        
+                        let success = false;
+                        let retries = 2; 
+                        
+                        while (!success && retries >= 0) {
+                            try {
+                                const roadRes = await fetch(proxyUrl);
+                                if (roadRes.ok) {
+                                    const data = await roadRes.json();
+                                    if (data.elements) {
+                                        data.elements.forEach(el => {
+                                            if (!seenIds.has(el.id)) {
+                                                seenIds.add(el.id);
+                                                allElements.push(el);
+                                            }
+                                        });
                                     }
-                                });
+                                    success = true;
+                                } else {
+                                    throw new Error(`Status ${roadRes.status}`);
+                                }
+                            } catch(e) {
+                                retries--;
+                                if (retries >= 0) await new Promise(r => setTimeout(r, 1000));
                             }
                         }
-                    } catch(e) {
-                        console.warn("Falha ao baixar chunk viário:", e);
-                    }
-                    roadsCompleted++;
-                    setProgress(Math.round((roadsCompleted / chunks.length) * 100));
+                        
+                        roadsCompleted++;
+                        setProgress(Math.round((roadsCompleted / chunks.length) * 100));
+                    }));
                 }
                 
                 // Combinar e salvar
@@ -184,11 +218,59 @@ const OfflineManager = React.forwardRef(({ mapInstance, onDownloadComplete }, re
                     
                     // Salvar a referência no localStorage para uso futuro pelo roteador offline
                     const savedAreas = JSON.parse(localStorage.getItem('offline_road_areas') || '[]');
+                    // Remove duplicatas ou áreas sobrepostas para evitar lixo
                     savedAreas.push({ key: roadKey, bounds: {s, w, n, e}, timestamp: Date.now() });
                     localStorage.setItem('offline_road_areas', JSON.stringify(savedAreas));
                 }
             } catch (roadErr) {
                 console.warn("Falha ao baixar malha viária:", roadErr);
+            }
+
+            // Etapa 3: Baixar os POIs (nomes de locais) para busca offline
+            setStatus('downloading_pois');
+            setProgress(0);
+            try {
+                // Margem normal
+                const s = bounds.getSouth();
+                const w = bounds.getWest();
+                const n = bounds.getNorth();
+                const e = bounds.getEast();
+                
+                const poiQuery = `[out:json][timeout:30];(node["name"](${s},${w},${n},${e});way["name"](${s},${w},${n},${e}););out center qt;`;
+                const poiTargetUrl = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(poiQuery)}`;
+                const poiProxyUrl = `https://proxy-api.trickle-app.host/?url=${encodeURIComponent(poiTargetUrl)}`;
+                
+                const poiRes = await fetch(poiProxyUrl);
+                if (poiRes.ok) {
+                    const data = await poiRes.json();
+                    if (data.elements) {
+                        const dbReq = indexedDB.open('mapsHubOfflineDB', 2);
+                        dbReq.onsuccess = (eDB) => {
+                            const db = eDB.target.result;
+                            const tx = db.transaction('offline_pois', 'readwrite');
+                            const store = tx.objectStore('offline_pois');
+                            
+                            data.elements.forEach(el => {
+                                if (el.tags && el.tags.name) {
+                                    const lat = el.lat || (el.center && el.center.lat);
+                                    const lon = el.lon || (el.center && el.center.lon);
+                                    if (lat && lon) {
+                                        store.put({
+                                            id: el.id.toString(),
+                                            name: el.tags.name,
+                                            lat: lat,
+                                            lon: lon,
+                                            tags: el.tags
+                                        });
+                                    }
+                                }
+                            });
+                        };
+                    }
+                }
+                setProgress(100);
+            } catch (poiErr) {
+                console.warn("Falha ao baixar POIs:", poiErr);
             }
 
             setStatus('done');
@@ -207,8 +289,45 @@ const OfflineManager = React.forwardRef(({ mapInstance, onDownloadComplete }, re
 
     if (status === 'idle' || status === null) return null;
 
+    if (status === 'selecting') {
+        return (
+            <>
+                <div className="fixed inset-0 pointer-events-none z-[1000] flex flex-col items-center justify-center">
+                    <div 
+                        ref={selectorRef}
+                        className="w-[80%] md:w-[400px] aspect-square border-4 border-blue-500 border-dashed bg-blue-500 bg-opacity-10 rounded-xl relative pointer-events-none shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]"
+                    >
+                        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-3 py-1 text-xs font-bold rounded-full whitespace-nowrap shadow-md">
+                            Área de Download
+                        </div>
+                    </div>
+                </div>
+                
+                <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-[1001] bg-white rounded-xl shadow-2xl border border-gray-200 p-4 flex flex-col items-center animate-in slide-in-from-bottom-4 w-[90%] max-w-sm">
+                    <h3 className="font-bold text-gray-800 text-center mb-1">Ajuste a Área</h3>
+                    <p className="text-xs text-gray-500 text-center mb-4">Arraste o mapa ou use o zoom para enquadrar no quadrado a área que deseja usar sem internet.</p>
+                    
+                    <div className="flex gap-2 w-full">
+                        <button 
+                            onClick={confirmSelectionAndEstimate}
+                            className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-bold shadow hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <div className="icon-check w-4 h-4"></div> Confirmar
+                        </button>
+                        <button 
+                            onClick={() => setStatus('idle')}
+                            className="px-4 py-3 bg-gray-100 text-gray-600 font-bold rounded-lg hover:bg-gray-200 transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </>
+        );
+    }
+
     return (
-        <div className="absolute top-24 right-16 z-[1000] bg-white rounded-xl shadow-xl border border-gray-200 p-4 w-80 animate-in fade-in slide-in-from-right-4">
+        <div className="absolute top-24 right-4 md:right-16 z-[1001] bg-white rounded-xl shadow-2xl border border-gray-200 p-4 w-[90%] md:w-80 max-w-sm animate-in fade-in slide-in-from-right-4">
             <div className="flex justify-between items-center mb-2">
                 <h3 className="font-bold text-gray-800 flex items-center gap-2">
                     <div className="icon-download-cloud text-blue-600"></div>
@@ -222,61 +341,38 @@ const OfflineManager = React.forwardRef(({ mapInstance, onDownloadComplete }, re
             {status === 'confirm' && (
                 <div className="space-y-4">
                     <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-100">
-                        <p className="mb-2">A área visível será salva no seu dispositivo.</p>
+                        <p className="mb-2">A área dentro do quadrado será salva no dispositivo, incluindo ruas e nomes de locais para busca.</p>
                         <div className="flex justify-between items-center font-bold text-gray-800">
-                            <span>Total de Blocos:</span>
+                            <span>Tamanho estimado (Blocos):</span>
                             <span>{totalTiles}</span>
                         </div>
                     </div>
                     
-                    <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Detalhe do Zoom (Profundidade)</label>
-                        <div className="flex gap-2">
-                            <button 
-                                onClick={() => setDepth(0)}
-                                className={`flex-1 py-1 text-xs border rounded transition-colors ${depth === 0 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300'}`}
-                            >
-                                Só Atual
-                            </button>
-                            <button 
-                                onClick={() => setDepth(2)}
-                                className={`flex-1 py-1 text-xs border rounded transition-colors ${depth === 2 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300'}`}
-                            >
-                                +2 Níveis
-                            </button>
-                            <button 
-                                onClick={() => setDepth(4)}
-                                className={`flex-1 py-1 text-xs border rounded transition-colors ${depth === 4 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300'}`}
-                            >
-                                +4 Níveis
-                            </button>
-                        </div>
-                        <p className="text-[10px] text-gray-400 mt-1">Quanto maior o nível, mais detalhes ao aproximar (e maior o download).</p>
-                    </div>
-
                     <div className="flex gap-2 pt-2 border-t border-gray-100">
                         <button 
                             onClick={startDownload}
                             className="flex-1 bg-green-600 text-white py-2.5 rounded-lg text-sm font-bold hover:bg-green-700 shadow-sm flex items-center justify-center gap-2"
                         >
                             <div className="icon-download"></div>
-                            Baixar
+                            Salvar Área (Atualizar)
                         </button>
                         <button 
-                            onClick={() => setStatus('idle')}
+                            onClick={() => setStatus('selecting')}
                             className="px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 text-gray-600"
                         >
-                            Cancelar
+                            Voltar
                         </button>
                     </div>
                 </div>
             )}
 
-            {(status === 'downloading' || status === 'downloading_roads') && (
+            {(status === 'downloading' || status === 'downloading_roads' || status === 'downloading_pois') && (
                 <div className="space-y-4 py-2">
-                    <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600 font-medium">
-                            {status === 'downloading_roads' ? 'Baixando dados de ruas e direções...' : 'Baixando mapa (imagens)...'}
+                    <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="text-gray-600 font-bold">
+                            {status === 'downloading' && 'Baixando imagens do mapa...'}
+                            {status === 'downloading_roads' && 'Baixando malha viária...'}
+                            {status === 'downloading_pois' && 'Baixando locais de busca...'}
                         </span>
                         <span className="text-blue-600 font-bold font-mono">{progress}%</span>
                     </div>
@@ -294,11 +390,11 @@ const OfflineManager = React.forwardRef(({ mapInstance, onDownloadComplete }, re
 
             {status === 'done' && (
                 <div className="text-center py-4 bg-green-50 rounded-lg border border-green-100">
-                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2 shadow-inner">
                         <div className="icon-check text-green-600 text-xl font-bold"></div>
                     </div>
-                    <h4 className="font-bold text-green-800 mb-1">Mapa Salvo!</h4>
-                    <p className="text-xs text-green-700 px-4">Imagens do mapa e dados de ruas (coordenadas e sentidos) salvos para uso offline.</p>
+                    <h4 className="font-bold text-green-800 mb-1">Área Offline Salva!</h4>
+                    <p className="text-xs text-green-700 px-2">Imagens, malha viária rápida e nomes de locais foram guardados no dispositivo e já podem ser buscados sem internet.</p>
                 </div>
             )}
 

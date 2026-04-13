@@ -29,7 +29,8 @@ function LeafletMap({ center, zoom, markers = [], connections = [], routePath = 
             fadeAnimation: true,
             markerZoomAnimation: true,
             preferCanvas: true,
-            zoomAnimation: true
+            zoomAnimation: true,
+            maxZoom: 23
         }).setView(center, zoom);
 
         L.control.attribution({ position: 'bottomright' }).addTo(map);
@@ -82,9 +83,43 @@ function LeafletMap({ center, zoom, markers = [], connections = [], routePath = 
             labelLayerRef.current = null;
         }
 
+        // Definir camada customizada do Leaflet que busca no IndexedDB antes de ir pra rede
+        if (!L.TileLayer.OfflineDB) {
+            L.TileLayer.OfflineDB = L.TileLayer.extend({
+                createTile: function (coords, done) {
+                    var tile = document.createElement('img');
+                    var url = this.getTileUrl(coords);
+                    tile.crossOrigin = 'anonymous';
+
+                    if (window.getTileFromDB) {
+                        window.getTileFromDB(url).then(base64 => {
+                            if (base64) {
+                                tile.src = base64;
+                                done(null, tile);
+                            } else {
+                                tile.onload = function() { done(null, tile); };
+                                tile.onerror = function() { done(null, tile); };
+                                tile.src = url;
+                            }
+                        }).catch(() => {
+                            tile.onload = function() { done(null, tile); };
+                            tile.onerror = function() { done(null, tile); };
+                            tile.src = url;
+                        });
+                    } else {
+                        tile.onload = function() { done(null, tile); };
+                        tile.onerror = function() { done(null, tile); };
+                        tile.src = url;
+                    }
+                    return tile;
+                }
+            });
+        }
+
         let tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
         let options = {
-            maxZoom: 19,
+            maxZoom: 23, // Permite zoom super profundo
+            maxNativeZoom: 17, // OTIMIZAÇÃO: Limita o zoom nativo a 17 e estica o resto. Reduz o tamanho do download em 95%!
             attribution: '&copy; OpenStreetMap contributors',
             crossOrigin: true
         };
@@ -92,19 +127,20 @@ function LeafletMap({ center, zoom, markers = [], connections = [], routePath = 
         if (mapStyle === 'satellite' || mapStyle === 'hybrid') {
             tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
             options = {
-                maxZoom: 19,
+                maxZoom: 23,
+                maxNativeZoom: 19,
                 attribution: 'Tiles &copy; Esri &mdash; Source: Esri',
                 crossOrigin: true
             };
         }
 
-        tileLayerRef.current = L.tileLayer(tileUrl, options).addTo(mapInstanceRef.current);
+        tileLayerRef.current = new L.TileLayer.OfflineDB(tileUrl, options).addTo(mapInstanceRef.current);
         tileLayerRef.current.bringToBack();
 
         // If Hybrid, add Label Overlay
         if (mapStyle === 'hybrid') {
             const labelUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
-            labelLayerRef.current = L.tileLayer(labelUrl, {
+            labelLayerRef.current = new L.TileLayer.OfflineDB(labelUrl, {
                 maxZoom: 19,
                 zIndex: 400 
             }).addTo(mapInstanceRef.current);
@@ -214,9 +250,8 @@ function LeafletMap({ center, zoom, markers = [], connections = [], routePath = 
 
         if (routePath && routePath.length > 0) {
             // "Normal Blue Line" for Route
-            
-            // White outline for contrast (mais grossa)
-            L.polyline(routePath, {
+            // Cria a linha inicialmente vazia ou apenas com o primeiro ponto
+            const bgLine = L.polyline([routePath[0]], {
                 color: 'white',
                 weight: 12,
                 opacity: 0.9,
@@ -224,14 +259,54 @@ function LeafletMap({ center, zoom, markers = [], connections = [], routePath = 
                 lineJoin: 'round'
             }).addTo(routeLayerRef.current);
 
-            // Blue inner line (Azul mais vibrante e chamativo)
-            L.polyline(routePath, {
+            const fgLine = L.polyline([routePath[0]], {
                 color: '#3b82f6', // Blue 500
                 weight: 8,
                 opacity: 1,
                 lineCap: 'round',
                 lineJoin: 'round'
             }).addTo(routeLayerRef.current);
+
+            let isCancelled = false;
+            let currentIndex = 1;
+            const totalPoints = routePath.length;
+
+            // Finaliza a animação imediatamente se o usuário der zoom ou arrastar o mapa
+            // para evitar que a linha fique presa numa posição antiga
+            const finishAnimationInstantly = () => {
+                isCancelled = true;
+                bgLine.setLatLngs(routePath);
+                fgLine.setLatLngs(routePath);
+            };
+
+            mapInstanceRef.current.once('zoomstart', finishAnimationInstantly);
+            mapInstanceRef.current.once('dragstart', finishAnimationInstantly);
+
+            const animateRoute = () => {
+                if (isCancelled || currentIndex >= totalPoints) {
+                    finishAnimationInstantly();
+                    return;
+                }
+                
+                const speed = Math.max(5, Math.floor(totalPoints / 10));
+                currentIndex = Math.min(currentIndex + speed, totalPoints);
+                
+                const currentSlice = routePath.slice(0, currentIndex);
+                bgLine.setLatLngs(currentSlice);
+                fgLine.setLatLngs(currentSlice);
+                
+                requestAnimationFrame(animateRoute);
+            };
+            
+            requestAnimationFrame(animateRoute);
+
+            return () => {
+                isCancelled = true;
+                if (mapInstanceRef.current) {
+                    mapInstanceRef.current.off('zoomstart', finishAnimationInstantly);
+                    mapInstanceRef.current.off('dragstart', finishAnimationInstantly);
+                }
+            };
         }
     }, [routePath]);
 
