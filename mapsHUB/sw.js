@@ -74,34 +74,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
-    // 1. Tiles Strategy (Cache First with specific cache)
-    if (url.host.includes('tile.openstreetmap.org') || 
-        url.host.includes('arcgisonline.com') || 
-        url.host.includes('google.com')) {
-        
-        event.respondWith(
-            caches.open(TILE_CACHE_NAME).then((cache) => {
-                return cache.match(event.request).then((cachedResponse) => {
-                    if (cachedResponse) return cachedResponse;
-                    return fetch(event.request).then((response) => {
-                        if (response && response.status === 200) {
-                            cache.put(event.request, response.clone()).catch(() => {});
-                        }
-                        return response;
-                    }).catch(() => {
-                        // Offline tile fallback (transparent pixel)
-                        return new Response(
-                            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 
-                            { headers: { 'Content-Type': 'image/png' } }
-                        );
-                    });
-                });
-            })
-        );
-        return;
-    }
-
-    // 2. Navigation
+    // 1. Navigation
     if (event.request.mode === 'navigate') {
         event.respondWith(
             fetch(event.request).catch(() => caches.match('./index.html'))

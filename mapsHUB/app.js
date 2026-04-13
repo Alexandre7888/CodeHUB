@@ -315,6 +315,31 @@ function App() {
         }
     };
 
+    const handleUpdateApp = async () => {
+        if (confirm("Deseja baixar a versão mais recente do aplicativo? Isso atualizará o código e a interface, mas manterá seus mapas salvos.")) {
+            try {
+                if ('caches' in window) {
+                    const keys = await caches.keys();
+                    for (const key of keys) {
+                        if (key !== 'mapshub-offline-tiles-v1') {
+                            await caches.delete(key);
+                        }
+                    }
+                }
+                if ('serviceWorker' in navigator) {
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    for (let reg of regs) {
+                        await reg.unregister();
+                    }
+                }
+                alert("Aplicativo atualizado com sucesso! A página será reiniciada.");
+                window.location.reload(true);
+            } catch(e) {
+                alert("Erro ao atualizar o aplicativo.");
+            }
+        }
+    };
+
     const toggleAddPlaceMode = () => {
         setIsAddingPlace(!isAddingPlace);
         setManualLocMode(false);
@@ -587,6 +612,7 @@ function App() {
                 onClose={() => setIsSidebarOpen(false)} 
                 onAddPlace={toggleAddPlaceMode}
                 onOpenSavedRoutes={() => setIsSavedRoutesOpen(true)}
+                onUpdateApp={handleUpdateApp}
             />
             
             <SavedRoutes 
