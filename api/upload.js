@@ -1,55 +1,71 @@
 export default async function handler(req, res) {
-  // CORS
+  // CORS aberto
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-
-  if (req.method !== "POST") {
-    return res.status(405).end();
-  }
+  const { upload, atualiza, file } = req.query;
 
   try {
-    // 🔥 pega o body manualmente
-    let body = "";
 
-    for await (const chunk of req) {
-      body += chunk;
+    // 📤 UPLOAD NOVO
+    if (upload) {
+      const base64 = "data:text/plain;base64," + upload;
+
+      const ikRes = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
+        method: "POST",
+        headers: {
+          Authorization: "Basic " + Buffer.from(process.env.IMAGEKIT_PRIVATE_KEY + ":").toString("base64"),
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: new URLSearchParams({
+          file: base64,
+          fileName: "arquivo.txt"
+        })
+      });
+
+      const ikData = await ikRes.json();
+
+      return res.status(200).json({
+        fileId: ikData.fileId,
+        url: ikData.url
+      });
     }
 
-    const data = JSON.parse(body);
+    // 🔄 ATUALIZAR (deleta e envia novo)
+    if (atualiza && file) {
+      const base64 = "data:text/plain;base64," + file;
 
-    const { fileBase64, fileName } = data;
+      // deleta antigo
+      await fetch(`https://api.imagekit.io/v1/files/${atualiza}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: "Basic " + Buffer.from(process.env.IMAGEKIT_PRIVATE_KEY + ":").toString("base64")
+        }
+      });
 
-    if (!fileBase64) {
-      return res.status(400).json({ error: "fileBase64 faltando" });
+      // envia novo
+      const ikRes = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
+        method: "POST",
+        headers: {
+          Authorization: "Basic " + Buffer.from(process.env.IMAGEKIT_PRIVATE_KEY + ":").toString("base64"),
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: new URLSearchParams({
+          file: base64,
+          fileName: "arquivo.txt"
+        })
+      });
+
+      const ikData = await ikRes.json();
+
+      return res.status(200).json({
+        fileId: ikData.fileId,
+        url: ikData.url
+      });
     }
 
-    const ikRes = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
-      method: "POST",
-      headers: {
-        Authorization: "Basic " + Buffer.from(process.env.IMAGEKIT_PRIVATE_KEY + ":").toString("base64"),
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
-      body: new URLSearchParams({
-        file: fileBase64,
-        fileName: fileName || "teste.txt"
-      })
-    });
-
-    const ikData = await ikRes.json();
-
-    return res.status(200).json({
-      url: ikData.url,
-      fileId: ikData.fileId
-    });
+    return res.status(400).json({ error: "Use ?upload= ou ?atualiza=" });
 
   } catch (e) {
-    return res.status(500).json({
-      error: e.message
-    });
+    return res.status(500).json({ error: e.message });
   }
 }
