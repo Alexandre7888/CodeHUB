@@ -1,4 +1,5 @@
 export default async function handler(req, res) {
+  // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -8,11 +9,20 @@ export default async function handler(req, res) {
   }
 
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Use POST" });
+    return res.status(405).end();
   }
 
   try {
-    const { fileBase64, fileName } = req.body;
+    // 🔥 pega o body manualmente
+    let body = "";
+
+    for await (const chunk of req) {
+      body += chunk;
+    }
+
+    const data = JSON.parse(body);
+
+    const { fileBase64, fileName } = data;
 
     if (!fileBase64) {
       return res.status(400).json({ error: "fileBase64 faltando" });
@@ -32,13 +42,6 @@ export default async function handler(req, res) {
 
     const ikData = await ikRes.json();
 
-    if (!ikRes.ok) {
-      return res.status(500).json({
-        error: "ImageKit erro",
-        details: ikData
-      });
-    }
-
     return res.status(200).json({
       url: ikData.url,
       fileId: ikData.fileId
@@ -46,8 +49,7 @@ export default async function handler(req, res) {
 
   } catch (e) {
     return res.status(500).json({
-      error: "Erro interno",
-      message: e.message
+      error: e.message
     });
   }
 }
