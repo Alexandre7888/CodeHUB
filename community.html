@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔥 DevConnect - Nome do Firebase Auth</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        /* MESMO CSS DA VERSÃO ANTERIOR - mantido igual */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #FFA000 0%, #F57C00 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        #loginArea {
+            padding: 40px;
+            text-align: center;
+        }
+
+        .auth-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-width: 300px;
+            margin: 30px auto 0;
+        }
+
+        .auth-btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            color: white;
+        }
+
+        .google-btn {
+            background: #db4437;
+        }
+
+        .google-btn:hover {
+            background: #c53929;
+            transform: translateY(-2px);
+        }
+
+        .github-btn {
+            background: #333;
+        }
+
+        .github-btn:hover {
+            background: #24292e;
+            transform: translateY(-2px);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .loading i {
+            font-size: 2em;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Área do Chat - MESMO ESTILO */
+        #chatArea {
+            display: none;
+        }
+
+        .chat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 25px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-label {
+            font-size: 0.8em;
+            color: #666;
+        }
+
+        #currentUserDisplay {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .logout-btn:hover {
+            background: #c82333;
+        }
+
+        .messages-container {
+            padding: 25px;
+            height: 450px;
+            overflow-y: auto;
+            background: #fafafa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 12px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .message-content {
+            flex: 1;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-bottom: 5px;
+        }
+
+        .message-user {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .message-time {
+            font-size: 0.75em;
+            color: #999;
+        }
+
+        .message-text {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 15px;
+            border-top-left-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            color: #333;
+            line-height: 1.4;
+        }
+
+        .my-message {
+            flex-direction: row-reverse;
+        }
+
+        .my-message .message-text {
+            background: linear-gradient(135deg, #FFA000 0%, #F57C00 100%);
+            color: white;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 5px;
+        }
+
+        .input-area {
+            padding: 20px 25px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+        }
+
+        #messageInput {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 1em;
+        }
+
+        #messageInput:focus {
+            outline: none;
+            border-color: #FFA000;
+        }
+
+        .send-btn {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #FFA000 0%, #F57C00 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 60px 20px;
+        }
+
+        .empty-state i {
+            font-size: 4em;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <i class="fas fa-fire"></i>
+                DevConnect
+            </h1>
+            <p>Seu nome vem direto do Firebase Authentication!</p>
+        </div>
+
+        <!-- Área de Login Rápido -->
+        <div id="loginArea">
+            <div class="welcome-card">
+                <h2>🚀 Quase lá!</h2>
+                <p>Escolha como entrar (é rapidinho):</p>
+                
+                <div class="auth-buttons">
+                    <button class="auth-btn google-btn" onclick="window.loginGoogle()">
+                        <i class="fab fa-google"></i>
+                        Entrar com Google
+                    </button>
+                    <button class="auth-btn github-btn" onclick="window.loginGitHub()">
+                        <i class="fab fa-github"></i>
+                        Entrar com GitHub
+                    </button>
+                </div>
+                
+                <div id="loadingMessage" class="loading" style="display: none;">
+                    <i class="fas fa-spinner"></i>
+                    <p>Conectando...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Área do Chat -->
+        <div id="chatArea">
+            <div class="chat-header">
+                <div class="user-badge">
+                    <img id="userAvatar" class="user-avatar" src="" alt="Avatar">
+                    <div class="user-details">
+                        <span class="user-label">Logado como:</span>
+                        <span id="currentUserDisplay"></span>
+                    </div>
+                </div>
+                
+                <button class="logout-btn" onclick="window.logout()">
+                    <i class="fas fa-sign-out-alt"></i> Sair
+                </button>
+            </div>
+
+            <div class="messages-container" id="messagesContainer">
+                <div class="empty-state">
+                    <i class="fas fa-comments"></i>
+                    <h3>Chat vazio</h3>
+                    <p>Seja o primeiro a enviar uma mensagem! 💬</p>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <input 
+                    type="text" 
+                    id="messageInput" 
+                    placeholder="Digite sua mensagem..." 
+                    maxlength="500"
+                    onkeypress="if(event.key === 'Enter') window.enviarMensagem()"
+                >
+                <button class="send-btn" onclick="window.enviarMensagem()">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { 
+            getAuth, 
+            signInWithPopup, 
+            GoogleAuthProvider, 
+            GithubAuthProvider,
+            signOut,
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { 
+            getDatabase, 
+            ref, 
+            push, 
+            onChildAdded 
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
+            authDomain: "html-15e80.firebaseapp.com",
+            databaseURL: "https://html-15e80-default-rtdb.firebaseio.com",
+            projectId: "html-15e80",
+            storageBucket: "html-15e80.firebasestorage.app",
+            messagingSenderId: "1068148640439",
+            appId: "1:1068148640439:web:1ac651348e624f6be41b32"
+        };
+
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const database = getDatabase(app);
+
+        // Provedores
+        const googleProvider = new GoogleAuthProvider();
+        const githubProvider = new GithubAuthProvider();
+
+        // Variáveis globais
+        let usuarioAtual = null;
+        let mensagensRef = ref(database, 'forum/mensagens');
+        let primeiroCarregamento = true;
+
+        // Tornar funções disponíveis globalmente
+        window.loginGoogle = loginGoogle;
+        window.loginGitHub = loginGitHub;
+        window.logout = logout;
+        window.enviarMensagem = enviarMensagem;
+
+        // Funções de Login
+        async function loginGoogle() {
+            mostrarLoading(true);
+            try {
+                const result = await signInWithPopup(auth, googleProvider);
+                // O nome do usuário já vem no result.user.displayName
+                console.log('✅ Login com Google:', result.user.displayName);
+            } catch (error) {
+                console.error('Erro no login:', error);
+                alert('Erro ao fazer login: ' + error.message);
+            }
+            mostrarLoading(false);
+        }
+
+        async function loginGitHub() {
+            mostrarLoading(true);
+            try {
+                const result = await signInWithPopup(auth, githubProvider);
+                console.log('✅ Login com GitHub:', result.user.displayName);
+            } catch (error) {
+                console.error('Erro no login:', error);
+                alert('Erro ao fazer login: ' + error.message);
+            }
+            mostrarLoading(false);
+        }
+
+        async function logout() {
+            try {
+                await signOut(auth);
+                console.log('👋 Logout realizado');
+            } catch (error) {
+                console.error('Erro no logout:', error);
+            }
+        }
+
+        function mostrarLoading(mostrar) {
+            document.getElementById('loadingMessage').style.display = mostrar ? 'block' : 'none';
+        }
+
+        // Observar estado de autenticação
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // USUÁRIO LOGADO - PEGA O NOME DO FIREBASE AUTH AUTOMATICAMENTE
+                usuarioAtual = user;
+                
+                // Pega o nome (displayName) ou email se não tiver nome
+                const nomeExibicao = user.displayName || user.email?.split('@')[0] || 'Usuário';
+                
+                console.log('🎉 Usuário autenticado:', nomeExibicao);
+                console.log('📧 Email:', user.email);
+                console.log('🖼️ Avatar:', user.photoURL);
+                
+                // Mostrar chat, esconder login
+                document.getElementById('loginArea').style.display = 'none';
+                document.getElementById('chatArea').style.display = 'block';
+                
+                // Atualizar interface com os dados do Firebase Auth
+                document.getElementById('currentUserDisplay').textContent = nomeExibicao;
+                document.getElementById('userAvatar').src = user.photoURL || 'https://via.placeholder.com/40';
+                
+                // Iniciar escuta de mensagens (se ainda não iniciou)
+                if (primeiroCarregamento) {
+                    iniciarEscutaMensagens();
+                }
+            } else {
+                // USUÁRIO DESLOGADO
+                usuarioAtual = null;
+                document.getElementById('loginArea').style.display = 'block';
+                document.getElementById('chatArea').style.display = 'none';
+                primeiroCarregamento = true;
+            }
+        });
+
+        // Iniciar escuta de mensagens
+        function iniciarEscutaMensagens() {
+            onChildAdded(mensagensRef, (snapshot) => {
+                const mensagem = snapshot.val();
+                adicionarMensagemNaTela(mensagem, snapshot.key);
+            });
+        }
+
+        // Adicionar mensagem na tela
+        function adicionarMensagemNaTela(mensagem, id) {
+            const container = document.getElementById('messagesContainer');
+            
+            if (primeiroCarregamento) {
+                container.innerHTML = '';
+                primeiroCarregamento = false;
+            }
+            
+            const mensagemDiv = document.createElement('div');
+            mensagemDiv.className = 'message';
+            
+            // Verificar se é mensagem do usuário atual
+            const isMyMessage = mensagem.userId === usuarioAtual?.uid;
+            if (isMyMessage) {
+                mensagemDiv.classList.add('my-message');
+            }
+            
+            const avatarUrl = mensagem.avatar || 'https://via.placeholder.com/40';
+            const hora = new Date(mensagem.timestamp).toLocaleTimeString('pt-BR', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            mensagemDiv.innerHTML = `
+                <img class="message-avatar" src="${avatarUrl}" alt="${mensagem.usuario}">
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="message-user">${mensagem.usuario}</span>
+                        <span class="message-time">${hora}</span>
+                    </div>
+                    <div class="message-text">${escapeHtml(mensagem.texto)}</div>
+                </div>
+            `;
+            
+            container.appendChild(mensagemDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Enviar mensagem
+        function enviarMensagem() {
+            const input = document.getElementById('messageInput');
+            const texto = input.value.trim();
+            
+            if (!texto) return;
+            if (!usuarioAtual) {
+                alert('Você precisa estar logado!');
+                return;
+            }
+            
+            // PEGA OS DADOS DO FIREBASE AUTH
+            const nomeUsuario = usuarioAtual.displayName || usuarioAtual.email?.split('@')[0] || 'Usuário';
+            const avatarUsuario = usuarioAtual.photoURL || 'https://via.placeholder.com/40';
+            const userId = usuarioAtual.uid;
+            
+            const novaMensagemRef = push(mensagensRef);
+            
+            push(novaMensagemRef, {
+                usuario: nomeUsuario,      // Nome que vem do Firebase Auth
+                userId: userId,             // ID único do usuário
+                avatar: avatarUsuario,      // Foto do perfil (se tiver)
+                texto: texto,
+                timestamp: Date.now()
+            });
+            
+            input.value = '';
+            input.focus();
+        }
+
+        // Escapar HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        console.log('🔥 Sistema pronto! Faça login para começar.');
+    </script>
+</body>
+</html>
