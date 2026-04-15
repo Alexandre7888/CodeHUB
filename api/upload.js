@@ -1,22 +1,23 @@
 export default async function handler(req, res) {
-  // 🌐 CORS aberto para todos
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  // responde preflight
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
 
   if (req.method !== "POST") {
-    return res.status(405).end();
+    return res.status(405).json({ error: "Use POST" });
   }
 
   try {
     const { fileBase64, fileName } = req.body;
 
-    // upload para ImageKit
+    if (!fileBase64) {
+      return res.status(400).json({ error: "fileBase64 faltando" });
+    }
+
     const ikRes = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
       method: "POST",
       headers: {
@@ -25,35 +26,28 @@ export default async function handler(req, res) {
       },
       body: new URLSearchParams({
         file: fileBase64,
-        fileName: fileName
+        fileName: fileName || "teste.txt"
       })
     });
 
     const ikData = await ikRes.json();
 
-    // salvar no Firebase
-    const firebaseRes = await fetch(
-      "https://html-785e3-default-rtdb.firebaseio.com/files.json",
-      {
-        method: "POST",
-        body: JSON.stringify({
-          fileId: ikData.fileId,
-          url: ikData.url,
-          name: fileName,
-          createdAt: Date.now()
-        })
-      }
-    );
-
-    const firebaseData = await firebaseRes.json();
+    if (!ikRes.ok) {
+      return res.status(500).json({
+        error: "ImageKit erro",
+        details: ikData
+      });
+    }
 
     return res.status(200).json({
-      id: firebaseData.name,
-      fileId: ikData.fileId,
-      url: ikData.url
+      url: ikData.url,
+      fileId: ikData.fileId
     });
 
   } catch (e) {
-    return res.status(500).json({ error: "erro" });
+    return res.status(500).json({
+      error: "Erro interno",
+      message: e.message
+    });
   }
 }
