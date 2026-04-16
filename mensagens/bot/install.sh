@@ -1,20 +1,22 @@
 #!/bin/bash
 # ============================================
-# SISTEMA DE BOTS - COMANDOS SHELL PRONTOS
+# SISTEMA BOT FIREBASE - COMPLETO
+# Um arquivo único que faz tudo
 # ============================================
 
 clear
-echo "╔════════════════════════════════════════╗"
-echo "║   🤖 SISTEMA DE BOTS - INSTALADOR      ║"
-echo "╚════════════════════════════════════════╝"
+echo "╔══════════════════════════════════════════════════════════╗"
+echo "║           🤖 SISTEMA BOT FIREBASE COMPLETO              ║"
+echo "║                  Instalador Universal                    ║"
+echo "╚══════════════════════════════════════════════════════════╝"
 echo ""
 
-INSTALL_DIR="/opt/botcmd"
+INSTALL_DIR="/opt/botsystem"
 mkdir -p $INSTALL_DIR
 cd $INSTALL_DIR
 
 # ============================================
-# INSTALAR NODE.JS (UNIVERSAL)
+# INSTALAR NODE.JS PORTÁTIL
 # ============================================
 echo "[1/4] Instalando Node.js..."
 if ! command -v node &> /dev/null; then
@@ -26,516 +28,345 @@ fi
 export PATH=$PATH:$INSTALL_DIR/nodejs/bin
 
 # ============================================
-# CRIAR SISTEMA
+# CRIAR SISTEMA COMPLETO
 # ============================================
 echo "[2/4] Criando sistema..."
 
-# package.json
 cat > package.json << 'EOF'
 {
-  "name": "botcmd",
+  "name": "bot-system",
   "version": "1.0.0",
   "dependencies": {
-    "ws": "^8.14.2",
-    "sqlite3": "^5.1.6",
-    "axios": "^1.6.2"
+    "firebase": "^10.7.0"
   }
 }
 EOF
 
-# Instalar dependências
 ./nodejs/bin/npm install --silent
 
 # ============================================
-# SERVIDOR WEBSOCKET + SQLITE
+# ARQUIVO PRINCIPAL: bot.js
 # ============================================
-cat > server.js << 'EOF'
-const WebSocket = require('ws');
-const sqlite3 = require('sqlite3').verbose();
+cat > bot.js << 'BOTEOF'
+#!/usr/bin/env node
+
+const { initializeApp } = require('firebase/app');
+const { getDatabase, ref, set, push, onValue, get, update } = require('firebase/database');
 const fs = require('fs');
+const path = require('path');
 
-// Banco de dados
-const db = new sqlite3.Database('./bots.db');
+// Configuração Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyBzRLpZJDMeFASIjje4SJBfTInIEO-GKVI",
+  databaseURL: "https://html-785e3-default-rtdb.firebaseio.com"
+};
 
-db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS bots (
-        id TEXT PRIMARY KEY,
-        name TEXT,
-        avatar TEXT,
-        created INTEGER
-    )`);
-    
-    db.run(`CREATE TABLE IF NOT EXISTS groups (
-        id TEXT PRIMARY KEY,
-        name TEXT
-    )`);
-    
-    db.run(`CREATE TABLE IF NOT EXISTS bot_groups (
-        bot_id TEXT,
-        group_id TEXT,
-        joined INTEGER
-    )`);
-    
-    db.run(`CREATE TABLE IF NOT EXISTS messages (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        group_id TEXT,
-        bot_id TEXT,
-        bot_name TEXT,
-        text TEXT,
-        timestamp INTEGER
-    )`);
-});
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-// Servidor WebSocket
-const wss = new WebSocket.Server({ port: 8080 });
-const clients = new Map();
+// Banco local
+const DB_FILE = path.join(__dirname, 'bots.json');
+let localDB = { bots: [], activeBot: null };
 
-wss.on('connection', (ws) => {
-    const clientId = Date.now() + '_' + Math.random().toString(36);
-    clients.set(clientId, { ws, groups: new Set() });
+if (fs.existsSync(DB_FILE)) {
+  localDB = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+}
+
+function saveLocal() {
+  fs.writeFileSync(DB_FILE, JSON.stringify(localDB, null, 2));
+}
+
+function formatTime() {
+  return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function generateId() {
+  return 'bot_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+}
+
+// ============================================
+// COMANDOS
+// ============================================
+
+const args = process.argv.slice(2);
+const cmd = args[0];
+
+async function criarBot() {
+  const name = args[1] || 'Bot_' + Date.now();
+  const avatar = args[2] || 'https://i.imgur.com/6VBx3io.png';
+  
+  const botId = generateId();
+  const bot = { id: botId, name, avatar, created: Date.now() };
+  
+  localDB.bots.push(bot);
+  saveLocal();
+  
+  await set(ref(db, `users/${botId}`), {
+    id: botId, name, avatar,
+    status: { state: 'online', lastChanged: Date.now() }
+  });
+  await set(ref(db, `bots/${botId}/messageCount`), 0);
+  
+  console.log('✅ Bot criado!');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('🆔 ID:', botId);
+  console.log('📛 Nome:', name);
+  console.log('🖼️  Avatar:', avatar);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('');
+  console.log('📋 Use: botcmd usar', botId);
+}
+
+function listarBots() {
+  if (localDB.bots.length === 0) {
+    console.log('⚠️ Nenhum bot criado.');
+    console.log('Use: botcmd criar [nome] [url_foto]');
+    return;
+  }
+  
+  console.log('📋 SEUS BOTS:');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  
+  localDB.bots.forEach((bot, i) => {
+    const active = localDB.activeBot === bot.id ? ' ★ (ATIVO)' : '';
+    console.log(`${i+1}. ${bot.name}${active}`);
+    console.log(`   ID: ${bot.id}`);
+    console.log(`   Avatar: ${bot.avatar}`);
+    console.log('');
+  });
+}
+
+function usarBot() {
+  const botId = args[1];
+  
+  if (!botId) {
+    console.log('❌ Digite o ID do bot!');
+    console.log('Use: botcmd usar [ID]');
+    return;
+  }
+  
+  const bot = localDB.bots.find(b => b.id === botId);
+  if (!bot) {
+    console.log('❌ Bot não encontrado!');
+    return;
+  }
+  
+  localDB.activeBot = botId;
+  saveLocal();
+  console.log('✅ Bot ativado:', bot.name);
+  console.log('🆔 ID:', bot.id);
+}
+
+async function entrarGrupo() {
+  if (!localDB.activeBot) {
+    console.log('❌ Selecione um bot primeiro!');
+    console.log('Use: botcmd usar [ID]');
+    return;
+  }
+  
+  const groupId = args[1];
+  if (!groupId) {
+    console.log('❌ Digite o ID do grupo!');
+    console.log('Use: botcmd entrar [ID_GRUPO]');
+    return;
+  }
+  
+  const bot = localDB.bots.find(b => b.id === localDB.activeBot);
+  
+  await set(ref(db, `groups/${groupId}/members/${bot.id}`), {
+    id: bot.id, name: bot.name, role: 'member', joinedAt: Date.now()
+  });
+  await set(ref(db, `bots/${bot.id}/groups/${groupId}`), Date.now());
+  
+  if (!bot.groups) bot.groups = [];
+  if (!bot.groups.includes(groupId)) {
+    bot.groups.push(groupId);
+    saveLocal();
+  }
+  
+  console.log('✅ Entrou no grupo:', groupId);
+}
+
+async function enviarMsg() {
+  if (!localDB.activeBot) {
+    console.log('❌ Selecione um bot primeiro!');
+    return;
+  }
+  
+  const groupId = args[1];
+  const text = args.slice(2).join(' ');
+  
+  if (!groupId || !text) {
+    console.log('❌ Uso: botcmd msg [ID_GRUPO] [MENSAGEM]');
+    return;
+  }
+  
+  const bot = localDB.bots.find(b => b.id === localDB.activeBot);
+  const timestamp = Date.now();
+  
+  await push(ref(db, `groups/${groupId}/messages`), {
+    senderId: bot.id,
+    senderName: bot.name,
+    text, timestamp,
+    time: formatTime(),
+    type: 'text',
+    readBy: { [bot.id]: timestamp }
+  });
+  
+  await update(ref(db, `bots/${bot.id}`), { messageCount: (bot.messageCount || 0) + 1 });
+  
+  console.log('✅ Mensagem enviada!');
+  console.log(`📤 "${text}"`);
+}
+
+function ouvirMsgs() {
+  const groupId = args[1];
+  
+  if (!groupId) {
+    console.log('❌ Digite o ID do grupo!');
+    console.log('Use: botcmd ouvir [ID_GRUPO]');
+    return;
+  }
+  
+  console.log(`👂 Ouvindo mensagens do grupo ${groupId}...`);
+  console.log('Pressione CTRL+C para parar\n');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  
+  onValue(ref(db, `groups/${groupId}/messages`), (snap) => {
+    console.clear();
+    console.log(`💬 MENSAGENS - Grupo: ${groupId}`);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
     
-    console.log('📱 Novo cliente conectado');
+    const msgs = [];
+    snap.forEach(m => msgs.push(m.val()));
+    msgs.sort((a, b) => a.timestamp - b.timestamp);
     
-    ws.on('message', (data) => {
-        try {
-            const msg = JSON.parse(data);
-            
-            // Broadcast para grupos
-            if (msg.type === 'message') {
-                const stmt = db.prepare(`INSERT INTO messages (group_id, bot_id, bot_name, text, timestamp) VALUES (?, ?, ?, ?, ?)`);
-                stmt.run(msg.groupId, msg.botId, msg.botName, msg.text, Date.now());
-                stmt.finalize();
-                
-                clients.forEach((client, id) => {
-                    if (client.groups.has(msg.groupId) && client.ws.readyState === WebSocket.OPEN) {
-                        client.ws.send(JSON.stringify(msg));
-                    }
-                });
-            }
-            
-            // Entrar em grupo
-            if (msg.type === 'join') {
-                const client = clients.get(clientId);
-                if (client) {
-                    client.groups.add(msg.groupId);
-                    client.ws.send(JSON.stringify({ type: 'joined', groupId: msg.groupId }));
-                }
-            }
-            
-            // Criar bot
-            if (msg.type === 'create_bot') {
-                const stmt = db.prepare(`INSERT OR REPLACE INTO bots (id, name, avatar, created) VALUES (?, ?, ?, ?)`);
-                stmt.run(msg.botId, msg.name, msg.avatar, Date.now());
-                stmt.finalize();
-                ws.send(JSON.stringify({ type: 'bot_created', botId: msg.botId }));
-            }
-        } catch(e) {
-            console.error('Erro:', e);
-        }
+    msgs.forEach(m => {
+      const prefix = m.senderId === localDB.activeBot ? '📤' : '📥';
+      console.log(`${prefix} [${m.time}] ${m.senderName}: ${m.text}`);
     });
     
-    ws.on('close', () => {
-        clients.delete(clientId);
-        console.log('📱 Cliente desconectado');
-    });
-});
+    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('👂 Ouvindo... (CTRL+C para sair)');
+  });
+  
+  process.on('SIGINT', () => {
+    console.log('\n\n✅ Parou de ouvir.');
+    process.exit(0);
+  });
+}
 
-console.log('🚀 Servidor rodando na porta 8080');
-EOF
+async function listarGrupos() {
+  if (!localDB.activeBot) {
+    console.log('❌ Selecione um bot primeiro!');
+    return;
+  }
+  
+  const bot = localDB.bots.find(b => b.id === localDB.activeBot);
+  
+  const snap = await get(ref(db, `bots/${bot.id}/groups`));
+  const groups = snap.val() || {};
+  
+  console.log('👥 GRUPOS DO BOT:');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  
+  Object.keys(groups).forEach(g => {
+    console.log(`  📍 ${g}`);
+  });
+  
+  if (Object.keys(groups).length === 0) {
+    console.log('  Nenhum grupo ainda.');
+    console.log('  Use: botcmd entrar [ID_GRUPO]');
+  }
+}
+
+function help() {
+  console.log('🤖 BOT SYSTEM - COMANDOS');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('');
+  console.log('📱 GERENCIAR BOTS:');
+  console.log('  botcmd criar [nome] [url_foto]  - Criar novo bot');
+  console.log('  botcmd listar                    - Listar todos os bots');
+  console.log('  botcmd usar [id]                 - Selecionar um bot');
+  console.log('');
+  console.log('👥 GRUPOS:');
+  console.log('  botcmd entrar [id_grupo]         - Entrar em um grupo');
+  console.log('  botcmd grupos                    - Listar grupos do bot');
+  console.log('');
+  console.log('💬 MENSAGENS:');
+  console.log('  botcmd msg [grupo] [mensagem]    - Enviar mensagem');
+  console.log('  botcmd ouvir [grupo]             - Ouvir mensagens em tempo real');
+  console.log('');
+  console.log('📋 EXEMPLOS:');
+  console.log('  botcmd criar MeuBot https://i.imgur.com/foto.png');
+  console.log('  botcmd usar bot_1234567890_abc');
+  console.log('  botcmd entrar grupo_123');
+  console.log('  botcmd msg grupo_123 "Olá mundo!"');
+  console.log('  botcmd ouvir grupo_123');
+  console.log('');
+}
+
+// Executar comando
+(async () => {
+  switch(cmd) {
+    case 'criar': await criarBot(); break;
+    case 'listar': listarBots(); break;
+    case 'usar': usarBot(); break;
+    case 'entrar': await entrarGrupo(); break;
+    case 'grupos': await listarGrupos(); break;
+    case 'msg': await enviarMsg(); break;
+    case 'ouvir': ouvirMsgs(); break;
+    case 'help':
+    case 'ajuda':
+    case '': help(); break;
+    default:
+      console.log('❌ Comando desconhecido!');
+      console.log('Use: botcmd help');
+  }
+  process.exit(0);
+})();
+BOTEOF
+
+chmod +x bot.js
 
 # ============================================
-# COMANDOS SHELL
+# CRIAR COMANDO GLOBAL
 # ============================================
-cat > botcmd.sh << 'EOF'
+echo "[3/4] Criando comando global..."
+
+cat > /usr/local/bin/botcmd << 'CMDEOF'
 #!/bin/bash
+export PATH=$PATH:/opt/botsystem/nodejs/bin
+cd /opt/botsystem
+node bot.js "$@"
+CMDEOF
 
-INSTALL_DIR="/opt/botcmd"
-export PATH=$PATH:$INSTALL_DIR/nodejs/bin
-cd $INSTALL_DIR
-
-# Cores
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-CYAN='\033[0;36m'
-NC='\033[0m'
-
-# Arquivo de configuração
-CONFIG_FILE="$INSTALL_DIR/config.json"
-[ -f "$CONFIG_FILE" ] || echo '{"bots":[],"active_bot":null}' > "$CONFIG_FILE"
-
-# ============================================
-# FUNÇÕES
-# ============================================
-
-criar_bot() {
-    echo -e "${CYAN}┌─────────────────────────────────────┐${NC}"
-    echo -e "${CYAN}│         🤖 CRIAR NOVO BOT           │${NC}"
-    echo -e "${CYAN}└─────────────────────────────────────┘${NC}"
-    echo ""
-    
-    read -p "📝 Nome do bot: " bot_name
-    read -p "🖼️  URL da foto (opcional - Enter para padrão): " bot_avatar
-    
-    if [ -z "$bot_avatar" ]; then
-        bot_avatar="https://i.imgur.com/6VBx3io.png"
-    fi
-    
-    bot_id="bot_$(date +%s)_$(openssl rand -hex 3)"
-    
-    # Salvar local
-    config=$(cat "$CONFIG_FILE")
-    new_bot="{\"id\":\"$bot_id\",\"name\":\"$bot_name\",\"avatar\":\"$bot_avatar\"}"
-    echo "$config" | jq ".bots += [$new_bot]" > "$CONFIG_FILE"
-    
-    echo ""
-    echo -e "${GREEN}✅ Bot criado com sucesso!${NC}"
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "🆔 ${YELLOW}ID:${NC} $bot_id"
-    echo -e "📛 ${YELLOW}Nome:${NC} $bot_name"
-    echo -e "🖼️  ${YELLOW}Avatar:${NC} $bot_avatar"
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo ""
-    echo -e "${CYAN}📋 Comando para usar este bot:${NC}"
-    echo -e "${YELLOW}botcmd usar $bot_id${NC}"
-    echo ""
-}
-
-listar_bots() {
-    echo -e "${CYAN}┌─────────────────────────────────────┐${NC}"
-    echo -e "${CYAN}│           📋 SEUS BOTS              │${NC}"
-    echo -e "${CYAN}└─────────────────────────────────────┘${NC}"
-    echo ""
-    
-    bots=$(cat "$CONFIG_FILE" | jq -r '.bots[] | "\(.id)|\(.name)|\(.avatar)"' 2>/dev/null)
-    
-    if [ -z "$bots" ]; then
-        echo -e "${YELLOW}⚠️  Nenhum bot criado ainda.${NC}"
-        echo -e "Use: ${GREEN}botcmd criar${NC}"
-        return
-    fi
-    
-    count=1
-    echo "$bots" | while IFS='|' read -r id name avatar; do
-        active_mark=""
-        active_bot=$(cat "$CONFIG_FILE" | jq -r '.active_bot')
-        if [ "$active_bot" == "$id" ]; then
-            active_mark="${GREEN}★${NC} "
-        fi
-        echo -e "${active_mark}${count}) ${GREEN}$name${NC}"
-        echo -e "   ID: ${YELLOW}$id${NC}"
-        echo -e "   Avatar: $avatar"
-        echo ""
-        count=$((count + 1))
-    done
-}
-
-usar_bot() {
-    bot_id="$1"
-    
-    if [ -z "$bot_id" ]; then
-        listar_bots
-        echo ""
-        read -p "🆔 Digite o ID do bot: " bot_id
-    fi
-    
-    # Verificar se existe
-    existe=$(cat "$CONFIG_FILE" | jq -r ".bots[] | select(.id==\"$bot_id\") | .id")
-    
-    if [ -z "$existe" ]; then
-        echo -e "${RED}❌ Bot não encontrado!${NC}"
-        return
-    fi
-    
-    # Ativar bot
-    config=$(cat "$CONFIG_FILE")
-    echo "$config" | jq ".active_bot = \"$bot_id\"" > "$CONFIG_FILE"
-    
-    bot_name=$(cat "$CONFIG_FILE" | jq -r ".bots[] | select(.id==\"$bot_id\") | .name")
-    
-    echo -e "${GREEN}✅ Bot ativado: $bot_name${NC}"
-}
-
-entrar_grupo() {
-    active_bot=$(cat "$CONFIG_FILE" | jq -r '.active_bot')
-    
-    if [ "$active_bot" == "null" ] || [ -z "$active_bot" ]; then
-        echo -e "${RED}❌ Nenhum bot ativo!${NC}"
-        echo -e "Use: ${YELLOW}botcmd usar${NC}"
-        return
-    fi
-    
-    echo -e "${CYAN}┌─────────────────────────────────────┐${NC}"
-    echo -e "${CYAN}│         👥 ENTRAR EM GRUPO          │${NC}"
-    echo -e "${CYAN}└─────────────────────────────────────┘${NC}"
-    echo ""
-    
-    read -p "🆔 ID do grupo: " group_id
-    read -p "📛 Nome do grupo (opcional): " group_name
-    
-    if [ -z "$group_name" ]; then
-        group_name="Grupo $group_id"
-    fi
-    
-    # Conectar via WebSocket e entrar
-    node -e "
-    const WebSocket = require('ws');
-    const ws = new WebSocket('ws://localhost:8080');
-    
-    ws.on('open', () => {
-        ws.send(JSON.stringify({
-            type: 'join',
-            groupId: '$group_id',
-            botId: '$active_bot'
-        }));
-        setTimeout(() => process.exit(0), 1000);
-    });
-    " 2>/dev/null
-    
-    echo -e "${GREEN}✅ Entrou no grupo: $group_name${NC}"
-    echo -e "${YELLOW}ID: $group_id${NC}"
-}
-
-enviar_mensagem() {
-    active_bot=$(cat "$CONFIG_FILE" | jq -r '.active_bot')
-    
-    if [ "$active_bot" == "null" ] || [ -z "$active_bot" ]; then
-        echo -e "${RED}❌ Nenhum bot ativo!${NC}"
-        echo -e "Use: ${YELLOW}botcmd usar${NC}"
-        return
-    fi
-    
-    bot_name=$(cat "$CONFIG_FILE" | jq -r ".bots[] | select(.id==\"$active_bot\") | .name")
-    
-    echo -e "${CYAN}┌─────────────────────────────────────┐${NC}"
-    echo -e "${CYAN}│        💬 ENVIAR MENSAGEM           │${NC}"
-    echo -e "${CYAN}└─────────────────────────────────────┘${NC}"
-    echo ""
-    echo -e "🤖 Bot ativo: ${GREEN}$bot_name${NC}"
-    echo ""
-    
-    read -p "🆔 ID do grupo: " group_id
-    read -p "📝 Mensagem: " message
-    
-    if [ -z "$message" ]; then
-        echo -e "${RED}❌ Mensagem vazia!${NC}"
-        return
-    fi
-    
-    # Enviar via WebSocket
-    node -e "
-    const WebSocket = require('ws');
-    const ws = new WebSocket('ws://localhost:8080');
-    
-    ws.on('open', () => {
-        ws.send(JSON.stringify({
-            type: 'message',
-            groupId: '$group_id',
-            botId: '$active_bot',
-            botName: '$bot_name',
-            text: '$message'
-        }));
-        setTimeout(() => process.exit(0), 1000);
-    });
-    " 2>/dev/null
-    
-    echo -e "${GREEN}✅ Mensagem enviada!${NC}"
-    echo -e "📤 \"$message\""
-}
-
-ouvir_mensagens() {
-    echo -e "${CYAN}┌─────────────────────────────────────┐${NC}"
-    echo -e "${CYAN}│       👂 OUVINDO MENSAGENS          │${NC}"
-    echo -e "${CYAN}└─────────────────────────────────────┘${NC}"
-    echo ""
-    
-    read -p "🆔 ID do grupo: " group_id
-    
-    echo -e "${YELLOW}👂 Ouvindo mensagens do grupo $group_id...${NC}"
-    echo -e "${YELLOW}Pressione CTRL+C para parar${NC}"
-    echo ""
-    
-    node -e "
-    const WebSocket = require('ws');
-    const ws = new WebSocket('ws://localhost:8080');
-    
-    ws.on('open', () => {
-        ws.send(JSON.stringify({
-            type: 'join',
-            groupId: '$group_id'
-        }));
-    });
-    
-    ws.on('message', (data) => {
-        const msg = JSON.parse(data);
-        if (msg.type === 'message' && msg.groupId === '$group_id') {
-            const time = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-            console.log(\`[\\x1b[36m\${time}\\x1b[0m] \\x1b[32m\${msg.botName}:\\x1b[0m \${msg.text}\`);
-        }
-    });
-    
-    ws.on('error', () => {
-        console.log('\\x1b[31m❌ Servidor não está rodando!\\x1b[0m');
-        console.log('Execute primeiro: \\x1b[33mbotcmd iniciar\\x1b[0m');
-        process.exit(1);
-    });
-    
-    process.on('SIGINT', () => process.exit(0));
-    "
-}
-
-iniciar_servidor() {
-    echo -e "${CYAN}🚀 Iniciando servidor...${NC}"
-    
-    # Verificar se já está rodando
-    if pgrep -f "node.*server.js" > /dev/null; then
-        echo -e "${YELLOW}⚠️  Servidor já está rodando!${NC}"
-        return
-    fi
-    
-    cd "$INSTALL_DIR"
-    nohup ./nodejs/bin/node server.js > server.log 2>&1 &
-    
-    sleep 2
-    
-    if pgrep -f "node.*server.js" > /dev/null; then
-        echo -e "${GREEN}✅ Servidor iniciado com sucesso!${NC}"
-        echo -e "${BLUE}📡 WebSocket: ws://localhost:8080${NC}"
-    else
-        echo -e "${RED}❌ Erro ao iniciar servidor!${NC}"
-        echo -e "Verifique o log: ${YELLOW}cat $INSTALL_DIR/server.log${NC}"
-    fi
-}
-
-parar_servidor() {
-    echo -e "${YELLOW}🛑 Parando servidor...${NC}"
-    pkill -f "node.*server.js"
-    echo -e "${GREEN}✅ Servidor parado!${NC}"
-}
-
-status_servidor() {
-    if pgrep -f "node.*server.js" > /dev/null; then
-        echo -e "${GREEN}✅ Servidor ONLINE${NC}"
-        echo -e "${BLUE}📡 WebSocket: ws://localhost:8080${NC}"
-    else
-        echo -e "${RED}❌ Servidor OFFLINE${NC}"
-        echo -e "Use: ${YELLOW}botcmd iniciar${NC}"
-    fi
-}
-
-# ============================================
-# MENU PRINCIPAL
-# ============================================
-
-case "$1" in
-    criar)
-        criar_bot
-        ;;
-    listar|bots)
-        listar_bots
-        ;;
-    usar)
-        usar_bot "$2"
-        ;;
-    entrar|grupo)
-        entrar_grupo
-        ;;
-    enviar|msg)
-        enviar_mensagem
-        ;;
-    ouvir|listen)
-        ouvir_mensagens
-        ;;
-    iniciar|start)
-        iniciar_servidor
-        ;;
-    parar|stop)
-        parar_servidor
-        ;;
-    status)
-        status_servidor
-        ;;
-    ajuda|help|"")
-        echo -e "${CYAN}╔══════════════════════════════════════════════════════════╗${NC}"
-        echo -e "${CYAN}║              🤖 BOTCMD - COMANDOS DISPONÍVEIS            ║${NC}"
-        echo -e "${CYAN}╚══════════════════════════════════════════════════════════╝${NC}"
-        echo ""
-        echo -e "${YELLOW}📱 GERENCIAR BOTS:${NC}"
-        echo -e "  ${GREEN}botcmd criar${NC}        - Criar um novo bot"
-        echo -e "  ${GREEN}botcmd listar${NC}        - Listar todos os bots"
-        echo -e "  ${GREEN}botcmd usar [ID]${NC}     - Ativar um bot"
-        echo ""
-        echo -e "${YELLOW}👥 GRUPOS:${NC}"
-        echo -e "  ${GREEN}botcmd entrar${NC}        - Entrar em um grupo"
-        echo ""
-        echo -e "${YELLOW}💬 MENSAGENS:${NC}"
-        echo -e "  ${GREEN}botcmd enviar${NC}        - Enviar mensagem"
-        echo -e "  ${GREEN}botcmd ouvir${NC}         - Ouvir mensagens em tempo real"
-        echo ""
-        echo -e "${YELLOW}⚙️  SERVIDOR:${NC}"
-        echo -e "  ${GREEN}botcmd iniciar${NC}       - Iniciar servidor"
-        echo -e "  ${GREEN}botcmd parar${NC}         - Parar servidor"
-        echo -e "  ${GREEN}botcmd status${NC}        - Ver status do servidor"
-        echo ""
-        echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-        echo -e "${YELLOW}💡 Dica: Sempre inicie o servidor primeiro!${NC}"
-        echo -e "    ${GREEN}botcmd iniciar${NC}"
-        echo ""
-        ;;
-    *)
-        echo -e "${RED}❌ Comando desconhecido!${NC}"
-        echo -e "Use: ${YELLOW}botcmd ajuda${NC}"
-        ;;
-esac
-EOF
-
-chmod +x botcmd.sh
-
-# ============================================
-# INSTALAR JQ (para JSON)
-# ============================================
-echo "[3/4] Instalando jq..."
-if ! command -v jq &> /dev/null; then
-    wget -q https://github.com/jqlang/jq/releases/download/jq-1.7/jq-linux-amd64 -O /usr/local/bin/jq
-    chmod +x /usr/local/bin/jq
-fi
-
-# ============================================
-# CRIAR LINK GLOBAL
-# ============================================
-echo "[4/4] Configurando comando global..."
-ln -sf $INSTALL_DIR/botcmd.sh /usr/local/bin/botcmd
-
-# ============================================
-# INICIAR SERVIDOR
-# ============================================
-cd $INSTALL_DIR
-nohup ./nodejs/bin/node server.js > server.log 2>&1 &
+chmod +x /usr/local/bin/botcmd
 
 # ============================================
 # FINALIZAR
 # ============================================
-IP=$(ip route get 1 2>/dev/null | awk '{print $NF;exit}' || hostname -I 2>/dev/null | awk '{print $1}')
+echo "[4/4] Finalizando..."
 
 echo ""
 echo "╔══════════════════════════════════════════════════════════╗"
-echo "║              ✅ INSTALAÇÃO CONCLUÍDA!                     ║"
+echo "║              ✅ INSTALAÇÃO CONCLUÍDA!                    ║"
 echo "╚══════════════════════════════════════════════════════════╝"
 echo ""
-echo -e "${GREEN}🤖 SISTEMA DE BOTS INSTALADO COM SUCESSO!${NC}"
+echo "🤖 SISTEMA BOT FIREBASE INSTALADO!"
 echo ""
-echo -e "${CYAN}📋 COMANDOS DISPONÍVEIS:${NC}"
-echo -e "  ${YELLOW}botcmd ajuda${NC}     - Ver todos os comandos"
-echo -e "  ${YELLOW}botcmd criar${NC}     - Criar um bot"
-echo -e "  ${YELLOW}botcmd entrar${NC}    - Entrar em grupo"
-echo -e "  ${YELLOW}botcmd enviar${NC}    - Enviar mensagem"
-echo -e "  ${YELLOW}botcmd ouvir${NC}     - Ouvir mensagens"
+echo "📋 COMANDOS:"
+echo "  botcmd help                     - Ver todos os comandos"
 echo ""
-echo -e "${CYAN}🚀 COMEÇAR AGORA:${NC}"
-echo -e "  1. ${GREEN}botcmd criar${NC}     # Crie seu primeiro bot"
-echo -e "  2. ${GREEN}botcmd entrar${NC}    # Entre em um grupo"
-echo -e "  3. ${GREEN}botcmd enviar${NC}    # Envie mensagens"
+echo "🚀 COMEÇAR AGORA:"
+echo "  1. botcmd criar MeuBot          - Criar seu primeiro bot"
+echo "  2. botcmd listar                - Ver seus bots"
+echo "  3. botcmd usar [ID]             - Ativar o bot"
+echo "  4. botcmd entrar [ID_GRUPO]     - Entrar em um grupo"
+echo "  5. botcmd msg [GRUPO] \"Olá\"     - Enviar mensagem"
+echo "  6. botcmd ouvir [GRUPO]         - Ouvir mensagens"
 echo ""
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "💡 Execute agora: botcmd help"
 echo ""
