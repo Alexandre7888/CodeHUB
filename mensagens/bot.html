@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🤖 Documentação - Bot Server 24/7</title>
+    <title>🤖 Bot Server Linux - Documentação Oficial</title>
     <style>
         * {
             margin: 0;
@@ -13,7 +13,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            background: linear-gradient(135deg, #0a0f1a 0%, #1a2332 100%);
             color: #e2e8f0;
             min-height: 100vh;
             padding: 20px;
@@ -27,16 +27,30 @@
         header {
             text-align: center;
             padding: 40px 20px;
-            background: rgba(30, 41, 59, 0.8);
+            background: rgba(26, 35, 50, 0.9);
             border-radius: 20px;
             margin-bottom: 30px;
             border: 1px solid #3b82f6;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
 
         h1 {
             font-size: 2.5em;
             color: #60a5fa;
             margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .linux-badge {
+            background: linear-gradient(135deg, #f0c14b, #e8a317);
+            color: #0a0f1a;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.5em;
+            font-weight: bold;
         }
 
         .subtitle {
@@ -45,7 +59,7 @@
         }
 
         .section {
-            background: rgba(30, 41, 59, 0.6);
+            background: rgba(26, 35, 50, 0.8);
             border-radius: 16px;
             padding: 30px;
             margin-bottom: 30px;
@@ -67,7 +81,7 @@
         }
 
         .code-block {
-            background: #0f172a;
+            background: #0a0f1a;
             border: 1px solid #3b82f6;
             border-radius: 12px;
             padding: 20px;
@@ -102,37 +116,25 @@
             background: #2563eb;
         }
 
-        .command-list {
+        .distro-grid {
             display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
+            margin: 20px 0;
         }
 
-        .command-item {
-            background: #1e293b;
-            padding: 20px;
+        .distro-card {
+            background: #1a2332;
+            padding: 15px;
             border-radius: 12px;
-            border-left: 4px solid #3b82f6;
+            text-align: center;
+            border: 1px solid #334155;
         }
 
-        .command-name {
+        .distro-name {
             color: #60a5fa;
             font-weight: bold;
-            font-size: 1.2em;
             margin-bottom: 10px;
-        }
-
-        .command-desc {
-            color: #cbd5e1;
-            margin-bottom: 10px;
-        }
-
-        .command-code {
-            background: #0f172a;
-            padding: 15px;
-            border-radius: 8px;
-            color: #a5b4fc;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
         }
 
         .step {
@@ -177,71 +179,13 @@
             margin: 15px 0;
         }
 
-        .editor-panel {
-            background: #1e293b;
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 20px;
-        }
-
-        textarea {
-            width: 100%;
-            min-height: 200px;
-            background: #0f172a;
+        .info {
+            background: #1e3a5f;
             border: 1px solid #3b82f6;
-            border-radius: 8px;
+            color: #93c5fd;
             padding: 15px;
-            color: #a5b4fc;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            margin: 10px 0;
-            resize: vertical;
-        }
-
-        input {
-            width: 100%;
-            padding: 12px;
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            color: white;
-            font-size: 14px;
-            margin: 10px 0;
-        }
-
-        button {
-            background: #3b82f6;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: bold;
-            transition: all 0.3s;
-            margin: 5px;
-        }
-
-        button:hover {
-            background: #2563eb;
-            transform: translateY(-2px);
-        }
-
-        .btn-success {
-            background: #10b981;
-        }
-
-        .btn-success:hover {
-            background: #059669;
-        }
-
-        .btn-warning {
-            background: #eab308;
-            color: #0f172a;
-        }
-
-        .btn-danger {
-            background: #ef4444;
+            border-radius: 12px;
+            margin: 15px 0;
         }
 
         table {
@@ -257,80 +201,158 @@
         }
 
         th {
-            background: #1e293b;
+            background: #1a2332;
             color: #60a5fa;
         }
 
         .url-highlight {
-            background: #1e293b;
+            background: #1a2332;
             padding: 5px 10px;
             border-radius: 6px;
             color: #60a5fa;
             font-family: monospace;
         }
 
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #334155;
+        .command-list {
+            display: grid;
+            gap: 15px;
         }
 
-        .tab {
-            padding: 10px 20px;
-            background: transparent;
-            border: none;
-            color: #94a3b8;
-            cursor: pointer;
-            font-size: 16px;
+        .command-item {
+            background: #1a2332;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #3b82f6;
         }
 
-        .tab.active {
+        .command-name {
             color: #60a5fa;
-            border-bottom: 2px solid #60a5fa;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 10px;
         }
 
-        .tab-content {
-            display: none;
+        .command-code {
+            background: #0a0f1a;
+            padding: 15px;
+            border-radius: 8px;
+            color: #a5b4fc;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
         }
 
-        .tab-content.active {
-            display: block;
+        .btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            background: #2563eb;
+        }
+
+        .btn-success {
+            background: #10b981;
+        }
+
+        .btn-warning {
+            background: #eab308;
+            color: #0a0f1a;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🤖 Bot Server 24/7</h1>
-            <p class="subtitle">Documentação Completa de Instalação e Configuração</p>
+            <h1>
+                🐧 Bot Server Linux
+                <span class="linux-badge">24/7</span>
+            </h1>
+            <p class="subtitle">Documentação Oficial - Instalação em Servidores Linux</p>
             <p style="margin-top: 15px;">
-                <span class="url-highlight">https://code.codehub.ct.ws/mensagens/bot/bot-serve.zip</span>
+                📦 <span class="url-highlight">https://code.codehub.ct.ws/mensagens/bot/bot-serve.zip</span>
+            </p>
+            <p style="margin-top: 10px; color: #94a3b8;">
+                ✅ Compatível com: Ubuntu, Debian, CentOS, Fedora, Arch Linux, Alpine
             </p>
         </header>
 
         <!-- Instalação Rápida -->
         <div class="section">
-            <h2>🚀 Instalação Rápida (Um Comando)</h2>
+            <h2>🚀 Instalação Rápida - Um Comando</h2>
             <div class="code-block">
                 <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
-                <pre>cd ~ && wget https://code.codehub.ct.ws/mensagens/bot/bot-serve.zip && unzip -o bot-serve.zip -d bot-terminal && cd bot-terminal && npm install && node bot.js</pre>
+                <pre>curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - && sudo apt install -y nodejs && cd ~ && wget https://code.codehub.ct.ws/mensagens/bot/bot-serve.zip && unzip -o bot-serve.zip -d bot-terminal && cd bot-terminal && npm install && node bot.js</pre>
             </div>
-            <p class="success">✅ Cole este comando no terminal do seu servidor Linux e pressione Enter!</p>
+            <p class="success">✅ Cole este comando no terminal do seu servidor Linux (Ubuntu/Debian) e pressione Enter!</p>
         </div>
 
-        <!-- Passo a Passo -->
+        <!-- Distribuições Linux -->
         <div class="section">
-            <h2>📋 Instalação Passo a Passo</h2>
+            <h2>🐧 Instalação por Distribuição Linux</h2>
+            
+            <div class="distro-grid">
+                <div class="distro-card">
+                    <div class="distro-name">Ubuntu / Debian</div>
+                    <button class="btn" onclick="showDistro('ubuntu')">Ver Comandos</button>
+                </div>
+                <div class="distro-card">
+                    <div class="distro-name">CentOS / RHEL</div>
+                    <button class="btn" onclick="showDistro('centos')">Ver Comandos</button>
+                </div>
+                <div class="distro-card">
+                    <div class="distro-name">Fedora</div>
+                    <button class="btn" onclick="showDistro('fedora')">Ver Comandos</button>
+                </div>
+                <div class="distro-card">
+                    <div class="distro-name">Arch Linux</div>
+                    <button class="btn" onclick="showDistro('arch')">Ver Comandos</button>
+                </div>
+                <div class="distro-card">
+                    <div class="distro-name">Alpine Linux</div>
+                    <button class="btn" onclick="showDistro('alpine')">Ver Comandos</button>
+                </div>
+            </div>
+
+            <div id="distroCommands" style="margin-top: 20px;"></div>
+        </div>
+
+        <!-- Passo a Passo Detalhado -->
+        <div class="section">
+            <h2>📋 Instalação Passo a Passo (Linux)</h2>
             
             <div class="step">
                 <div class="step-number">1</div>
                 <div class="step-content">
-                    <h3>Instalar Node.js</h3>
+                    <h3>Atualizar Sistema e Instalar Dependências</h3>
                     <div class="code-block">
                         <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
-                        <pre>curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt install -y nodejs</pre>
+                        <pre># Ubuntu/Debian
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y wget unzip curl
+
+# CentOS/RHEL
+sudo yum update -y
+sudo yum install -y wget unzip curl
+
+# Fedora
+sudo dnf update -y
+sudo dnf install -y wget unzip curl
+
+# Arch Linux
+sudo pacman -Syu --noconfirm
+sudo pacman -S --noconfirm wget unzip curl
+
+# Alpine Linux
+apk update && apk upgrade
+apk add wget unzip curl</pre>
                     </div>
                 </div>
             </div>
@@ -338,7 +360,36 @@ sudo apt install -y nodejs</pre>
             <div class="step">
                 <div class="step-number">2</div>
                 <div class="step-content">
-                    <h3>Baixar o Bot</h3>
+                    <h3>Instalar Node.js 18+</h3>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
+                        <pre># Ubuntu/Debian
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# CentOS/RHEL/Fedora
+curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
+sudo yum install -y nodejs
+
+# Arch Linux
+sudo pacman -S --noconfirm nodejs npm
+
+# Alpine Linux
+apk add nodejs npm</pre>
+                    </div>
+                    <p>Verificar instalação:</p>
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
+                        <pre>node --version
+npm --version</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>Baixar o Bot Server</h3>
                     <div class="code-block">
                         <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
                         <pre>cd ~
@@ -348,7 +399,7 @@ wget https://code.codehub.ct.ws/mensagens/bot/bot-serve.zip</pre>
             </div>
 
             <div class="step">
-                <div class="step-number">3</div>
+                <div class="step-number">4</div>
                 <div class="step-content">
                     <h3>Extrair Arquivos</h3>
                     <div class="code-block">
@@ -360,9 +411,9 @@ cd bot-terminal</pre>
             </div>
 
             <div class="step">
-                <div class="step-number">4</div>
+                <div class="step-number">5</div>
                 <div class="step-content">
-                    <h3>Instalar Dependências</h3>
+                    <h3>Instalar Dependências NPM</h3>
                     <div class="code-block">
                         <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
                         <pre>npm install</pre>
@@ -371,7 +422,7 @@ cd bot-terminal</pre>
             </div>
 
             <div class="step">
-                <div class="step-number">5</div>
+                <div class="step-number">6</div>
                 <div class="step-content">
                     <h3>Iniciar o Bot</h3>
                     <div class="code-block">
@@ -382,47 +433,142 @@ cd bot-terminal</pre>
             </div>
         </div>
 
+        <!-- Rodar 24/7 -->
+        <div class="section">
+            <h2>⚡ Rodar 24/7 em Servidor Linux</h2>
+            
+            <h3>Opção 1: PM2 (Recomendado)</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
+                <pre># Instalar PM2
+npm install -g pm2
+
+# Iniciar bot
+cd ~/bot-terminal
+pm2 start bot.js --name bot-server
+
+# Salvar configuração
+pm2 save
+
+# Iniciar com sistema
+pm2 startup
+
+# Ver status
+pm2 status
+
+# Ver logs
+pm2 logs bot-server</pre>
+            </div>
+
+            <h3>Opção 2: Systemd (Serviço do Sistema)</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
+                <pre># Criar arquivo de serviço
+sudo nano /etc/systemd/system/bot-server.service</pre>
+            </div>
+            <p>Cole o conteúdo:</p>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
+                <pre>[Unit]
+Description=Bot Server 24/7
+After=network.target
+
+[Service]
+Type=simple
+User=$USER
+WorkingDirectory=/home/$USER/bot-terminal
+ExecStart=/usr/bin/node /home/$USER/bot-terminal/bot.js
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target</pre>
+            </div>
+            <p>Ativar serviço:</p>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
+                <pre>sudo systemctl daemon-reload
+sudo systemctl start bot-server
+sudo systemctl enable bot-server
+sudo systemctl status bot-server</pre>
+            </div>
+
+            <h3>Opção 3: Screen</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
+                <pre># Instalar screen
+sudo apt install screen -y
+
+# Criar sessão
+screen -S bot
+
+# Iniciar bot
+cd ~/bot-terminal && node bot.js
+
+# Desconectar: Ctrl+A, depois D
+# Reconectar: screen -r bot</pre>
+            </div>
+
+            <h3>Opção 4: Forever</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
+                <pre># Instalar forever
+npm install -g forever
+
+# Iniciar bot
+cd ~/bot-terminal
+forever start bot.js
+
+# Ver processos
+forever list
+
+# Parar bot
+forever stop bot.js</pre>
+            </div>
+        </div>
+
         <!-- Comandos do Sistema -->
         <div class="section">
-            <h2>💻 Comandos do Sistema</h2>
+            <h2>💻 Comandos de Gerenciamento</h2>
             <table>
                 <thead>
                     <tr>
                         <th>Comando</th>
                         <th>Descrição</th>
-                        <th>Ação</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td><code>node bot.js</code></td>
-                        <td>Iniciar bot em modo interativo</td>
-                        <td><button class="copy-btn" onclick="copyCode(this)" style="position: static;">Copiar</button></td>
-                    </tr>
-                    <tr>
-                        <td><code>pm2 start bot.js --name bot-terminal</code></td>
-                        <td>Iniciar bot 24/7 com PM2</td>
-                        <td><button class="copy-btn" onclick="copyCode(this)" style="position: static;">Copiar</button></td>
-                    </tr>
-                    <tr>
-                        <td><code>pm2 stop bot-terminal</code></td>
-                        <td>Parar o bot</td>
-                        <td><button class="copy-btn" onclick="copyCode(this)" style="position: static;">Copiar</button></td>
-                    </tr>
-                    <tr>
-                        <td><code>pm2 restart bot-terminal</code></td>
-                        <td>Reiniciar o bot</td>
-                        <td><button class="copy-btn" onclick="copyCode(this)" style="position: static;">Copiar</button></td>
-                    </tr>
-                    <tr>
-                        <td><code>pm2 logs bot-terminal</code></td>
-                        <td>Ver logs em tempo real</td>
-                        <td><button class="copy-btn" onclick="copyCode(this)" style="position: static;">Copiar</button></td>
-                    </tr>
-                    <tr>
                         <td><code>pm2 status</code></td>
-                        <td>Verificar status do bot</td>
-                        <td><button class="copy-btn" onclick="copyCode(this)" style="position: static;">Copiar</button></td>
+                        <td>Verificar se o bot está rodando</td>
+                    </tr>
+                    <tr>
+                        <td><code>pm2 logs bot-server</code></td>
+                        <td>Ver logs em tempo real</td>
+                    </tr>
+                    <tr>
+                        <td><code>pm2 stop bot-server</code></td>
+                        <td>Parar o bot</td>
+                    </tr>
+                    <tr>
+                        <td><code>pm2 restart bot-server</code></td>
+                        <td>Reiniciar o bot</td>
+                    </tr>
+                    <tr>
+                        <td><code>pm2 delete bot-server</code></td>
+                        <td>Remover o bot do PM2</td>
+                    </tr>
+                    <tr>
+                        <td><code>pm2 monit</code></td>
+                        <td>Monitorar CPU/Memória</td>
+                    </tr>
+                    <tr>
+                        <td><code>htop</code></td>
+                        <td>Ver processos do sistema</td>
+                    </tr>
+                    <tr>
+                        <td><code>netstat -tulpn | grep node</code></td>
+                        <td>Ver portas usadas pelo Node</td>
                     </tr>
                 </tbody>
             </table>
@@ -430,116 +576,54 @@ cd bot-terminal</pre>
 
         <!-- Atualização -->
         <div class="section">
-            <h2>🔄 Atualizar o Bot</h2>
+            <h2>🔄 Atualizar o Bot no Linux</h2>
+            
+            <h3>Atualização com PM2:</h3>
             <div class="code-block">
                 <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
-                <pre>pm2 stop bot-terminal && cd ~ && rm -rf bot-terminal && wget https://code.codehub.ct.ws/mensagens/bot/bot-serve.zip && unzip -o bot-serve.zip -d bot-terminal && cd bot-terminal && npm install && pm2 restart bot-terminal || pm2 start bot.js --name bot-terminal</pre>
+                <pre>pm2 stop bot-server && \
+cd ~ && rm -rf bot-terminal && \
+wget https://code.codehub.ct.ws/mensagens/bot/bot-serve.zip && \
+unzip -o bot-serve.zip -d bot-terminal && \
+cd bot-terminal && npm install && \
+pm2 start bot.js --name bot-server && \
+pm2 save</pre>
+            </div>
+
+            <h3>Atualização sem PM2:</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
+                <pre>cd ~ && rm -rf bot-terminal && \
+wget https://code.codehub.ct.ws/mensagens/bot/bot-serve.zip && \
+unzip -o bot-serve.zip -d bot-terminal && \
+cd bot-terminal && npm install && \
+node bot.js</pre>
             </div>
         </div>
 
-        <!-- Editor de Comandos Personalizados -->
+        <!-- Comandos Personalizados -->
         <div class="section">
-            <h2>📝 Editor de Comandos Personalizados</h2>
+            <h2>📝 Criar Comandos Personalizados</h2>
             
-            <div class="tabs">
-                <button class="tab active" onclick="showTab('criar')">Criar Comando</button>
-                <button class="tab" onclick="showTab('exemplos')">Exemplos Prontos</button>
-                <button class="tab" onclick="showTab('exportar')">Exportar</button>
+            <div class="info">
+                <strong>📁 Local do arquivo:</strong> <code>~/bot-terminal/comandos.js</code>
             </div>
 
-            <div id="criar" class="tab-content active">
-                <div class="editor-panel">
-                    <h3>➕ Criar Novo Comando</h3>
-                    
-                    <label>Nome do Comando:</label>
-                    <input type="text" id="commandName" placeholder="Ex: !oi" value="!oi">
-                    
-                    <label>Código JavaScript:</label>
-                    <textarea id="commandCode">if (msg.text.toLowerCase() === '!oi' || msg.text.toLowerCase() === 'oi') {
-    reply('👋 Olá ' + msg.senderName + '! Tudo bem?');
-}</textarea>
-                    
-                    <button onclick="generateCommand()" class="btn-success">✨ Gerar Comando</button>
-                    <button onclick="testCommand()">🧪 Testar Comando</button>
-                    <button onclick="saveCommand()">💾 Salvar no Arquivo</button>
-                    
-                    <div id="commandOutput" style="margin-top: 20px;"></div>
-                </div>
+            <h3>Editar comandos:</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
+                <pre>nano ~/bot-terminal/comandos.js</pre>
             </div>
 
-            <div id="exemplos" class="tab-content">
-                <h3>📚 Exemplos de Comandos</h3>
-                <div class="command-list">
-                    <div class="command-item">
-                        <div class="command-name">!ping</div>
-                        <div class="command-desc">Teste de conexão com o bot</div>
-                        <div class="command-code">
-if (msg.text.toLowerCase() === '!ping') {
-    reply('🏓 Pong! Bot online!');
-}
-                        </div>
-                        <button onclick="useExample('ping')" style="margin-top: 10px;">Usar este comando</button>
-                    </div>
-
-                    <div class="command-item">
-                        <div class="command-name">!hora</div>
-                        <div class="command-desc">Mostra a hora atual do servidor</div>
-                        <div class="command-code">
-if (msg.text.toLowerCase() === '!hora') {
-    const agora = new Date();
-    reply('🕐 Hora atual: ' + agora.toLocaleTimeString('pt-BR'));
-}
-                        </div>
-                        <button onclick="useExample('hora')" style="margin-top: 10px;">Usar este comando</button>
-                    </div>
-
-                    <div class="command-item">
-                        <div class="command-name">!dado</div>
-                        <div class="command-desc">Rola um dado de 6 lados</div>
-                        <div class="command-code">
-if (msg.text.toLowerCase() === '!dado') {
-    const resultado = Math.floor(Math.random() * 6) + 1;
-    reply('🎲 Você rolou um ' + resultado + '!');
-}
-                        </div>
-                        <button onclick="useExample('dado')" style="margin-top: 10px;">Usar este comando</button>
-                    </div>
-
-                    <div class="command-item">
-                        <div class="command-name">!info</div>
-                        <div class="command-desc">Informações do bot</div>
-                        <div class="command-code">
-if (msg.text.toLowerCase() === '!info') {
-    reply('🤖 Bot: ' + bot.name + '\n📅 Online 24/7\n💬 Comandos: !ping, !hora, !dado');
-}
-                        </div>
-                        <button onclick="useExample('info')" style="margin-top: 10px;">Usar este comando</button>
-                    </div>
-
-                    <div class="command-item">
-                        <div class="command-name">!moeda</div>
-                        <div class="command-desc">Cara ou coroa</div>
-                        <div class="command-code">
-if (msg.text.toLowerCase() === '!moeda') {
-    const resultado = Math.random() < 0.5 ? 'Cara' : 'Coroa';
-    reply('🪙 Resultado: ' + resultado + '!');
-}
-                        </div>
-                        <button onclick="useExample('moeda')" style="margin-top: 10px;">Usar este comando</button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="exportar" class="tab-content">
-                <h3>📤 Exportar Comandos</h3>
-                <p>Copie o código abaixo e cole no arquivo <code>comandos.js</code> do seu servidor:</p>
-                <textarea id="exportCommands" style="min-height: 400px;" readonly>
-module.exports = [
+            <h3>Exemplo de comando:</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
+                <pre>module.exports = [
   {
     name: '!oi',
     code: `
 if (msg.text.toLowerCase() === '!oi' || msg.text.toLowerCase() === 'oi') {
-  reply('👋 Olá ' + msg.senderName + '!');
+  reply('👋 Olá ' + msg.senderName + '! Tudo bem?');
 }
     `
   },
@@ -547,115 +631,116 @@ if (msg.text.toLowerCase() === '!oi' || msg.text.toLowerCase() === 'oi') {
     name: '!ping',
     code: `
 if (msg.text.toLowerCase() === '!ping') {
-  reply('🏓 Pong!');
+  reply('🏓 Pong! Bot online 24/7 no Linux!');
 }
     `
   }
-];
-                </textarea>
-                <button onclick="copyExport()" class="btn-success">📋 Copiar Código</button>
-                <button onclick="downloadCommands()">💾 Baixar comandos.js</button>
+];</pre>
             </div>
+
+            <p class="warning">⚠️ Após editar, reinicie o bot: <code>pm2 restart bot-server</code></p>
         </div>
 
-        <!-- Variáveis Disponíveis -->
+        <!-- Troubleshooting Linux -->
         <div class="section">
-            <h2>📖 Variáveis Disponíveis nos Comandos</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Variável</th>
-                        <th>Descrição</th>
-                        <th>Exemplo</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><code>msg.text</code></td>
-                        <td>Texto da mensagem recebida</td>
-                        <td>"!oi"</td>
-                    </tr>
-                    <tr>
-                        <td><code>msg.senderName</code></td>
-                        <td>Nome de quem enviou</td>
-                        <td>"João"</td>
-                    </tr>
-                    <tr>
-                        <td><code>msg.senderId</code></td>
-                        <td>ID do remetente</td>
-                        <td>"user_123"</td>
-                    </tr>
-                    <tr>
-                        <td><code>msg.timestamp</code></td>
-                        <td>Momento do envio</td>
-                        <td>1702345678901</td>
-                    </tr>
-                    <tr>
-                        <td><code>reply(texto)</code></td>
-                        <td>Função para responder</td>
-                        <td>reply('Olá!')</td>
-                    </tr>
-                    <tr>
-                        <td><code>bot</code></td>
-                        <td>Objeto com dados do bot</td>
-                        <td>bot.name, bot.id</td>
-                    </tr>
-                    <tr>
-                        <td><code>grupo</code></td>
-                        <td>ID do grupo atual</td>
-                        <td>"grupo_456"</td>
-                    </tr>
-                    <tr>
-                        <td><code>db</code></td>
-                        <td>Referência do Firebase</td>
-                        <td>db.ref('...')</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Instalação Termux -->
-        <div class="section">
-            <h2>📱 Instalação no Termux (Android)</h2>
-            <div class="code-block">
-                <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
-                <pre>pkg update -y && pkg install nodejs-lts wget unzip -y && cd ~ && wget https://code.codehub.ct.ws/mensagens/bot/bot-serve.zip && unzip -o bot-serve.zip -d bot-terminal && cd bot-terminal && npm install && node bot.js</pre>
-            </div>
-            <p class="warning">⚠️ No Termux, execute <code>termux-wake-lock</code> para manter o bot rodando em segundo plano!</p>
-        </div>
-
-        <!-- Troubleshooting -->
-        <div class="section">
-            <h2>🔧 Solução de Problemas</h2>
+            <h2>🔧 Solução de Problemas (Linux)</h2>
             
-            <h3>Erro: "node: command not found"</h3>
+            <h3>Erro: "EACCES: permission denied"</h3>
             <div class="code-block">
                 <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
-                <pre>sudo apt update && sudo apt install nodejs npm -y</pre>
+                <pre>sudo chown -R $USER:$USER ~/bot-terminal
+chmod -R 755 ~/bot-terminal</pre>
             </div>
 
-            <h3>Erro: "wget: command not found"</h3>
+            <h3>Erro: Porta já em uso</h3>
             <div class="code-block">
                 <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
-                <pre>sudo apt install wget -y</pre>
+                <pre># Ver processo na porta
+sudo lsof -i :3000
+# Matar processo
+sudo kill -9 [PID]</pre>
             </div>
 
-            <h3>Erro: "unzip: command not found"</h3>
+            <h3>Erro: Cannot find module</h3>
             <div class="code-block">
                 <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
-                <pre>sudo apt install unzip -y</pre>
+                <pre>cd ~/bot-terminal
+rm -rf node_modules package-lock.json
+npm install</pre>
             </div>
 
-            <h3>Erro de permissão</h3>
+            <h3>Firewall bloqueando</h3>
             <div class="code-block">
                 <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
-                <pre>sudo chown -R $USER:$USER ~/bot-terminal</pre>
+                <pre># Ubuntu/Debian (ufw)
+sudo ufw allow 3000
+
+# CentOS/RHEL (firewalld)
+sudo firewall-cmd --permanent --add-port=3000/tcp
+sudo firewall-cmd --reload</pre>
+            </div>
+        </div>
+
+        <!-- Backup -->
+        <div class="section">
+            <h2>💾 Backup e Restauração</h2>
+            
+            <h3>Fazer backup dos bots:</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
+                <pre>cp ~/bot-terminal/bots_local.json ~/backup-bots-$(date +%Y%m%d).json</pre>
+            </div>
+
+            <h3>Backup dos comandos:</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
+                <pre>cp ~/bot-terminal/comandos.js ~/backup-comandos-$(date +%Y%m%d).js</pre>
+            </div>
+
+            <h3>Restaurar backup:</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
+                <pre>cp ~/backup-bots-*.json ~/bot-terminal/bots_local.json
+pm2 restart bot-server</pre>
+            </div>
+        </div>
+
+        <!-- Monitoramento -->
+        <div class="section">
+            <h2>📊 Monitoramento do Servidor</h2>
+            
+            <h3>Ver uso de recursos:</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
+                <pre># CPU e Memória
+htop
+
+# Apenas processos Node
+ps aux | grep node
+
+# Uso de disco
+df -h
+
+# Memória disponível
+free -h</pre>
+            </div>
+
+            <h3>Logs do sistema:</h3>
+            <div class="code-block">
+                <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
+                <pre># Logs do PM2
+pm2 logs bot-server --lines 100
+
+# Logs do systemd
+sudo journalctl -u bot-server -f
+
+# Logs do sistema
+tail -f /var/log/syslog</pre>
             </div>
         </div>
     </div>
 
     <script>
-        // Função para copiar código
         function copyCode(button) {
             const codeBlock = button.parentElement;
             const code = codeBlock.querySelector('pre').innerText;
@@ -668,147 +753,73 @@ if (msg.text.toLowerCase() === '!ping') {
             });
         }
 
-        // Função para mostrar tabs
-        function showTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
-        }
-
-        // Usar exemplo de comando
-        function useExample(type) {
-            const examples = {
-                ping: {
-                    name: '!ping',
-                    code: `if (msg.text.toLowerCase() === '!ping') {\n    reply('🏓 Pong! Bot online!');\n}`
-                },
-                hora: {
-                    name: '!hora',
-                    code: `if (msg.text.toLowerCase() === '!hora') {\n    const agora = new Date();\n    reply('🕐 Hora atual: ' + agora.toLocaleTimeString('pt-BR'));\n}`
-                },
-                dado: {
-                    name: '!dado',
-                    code: `if (msg.text.toLowerCase() === '!dado') {\n    const resultado = Math.floor(Math.random() * 6) + 1;\n    reply('🎲 Você rolou um ' + resultado + '!');\n}`
-                },
-                info: {
-                    name: '!info',
-                    code: `if (msg.text.toLowerCase() === '!info') {\n    reply('🤖 Bot: ' + bot.name + '\\n📅 Online 24/7\\n💬 Comandos: !ping, !hora, !dado');\n}`
-                },
-                moeda: {
-                    name: '!moeda',
-                    code: `if (msg.text.toLowerCase() === '!moeda') {\n    const resultado = Math.random() < 0.5 ? 'Cara' : 'Coroa';\n    reply('🪙 Resultado: ' + resultado + '!');\n}`
-                }
+        function showDistro(distro) {
+            const commands = {
+                ubuntu: `
+<h3>🐧 Ubuntu / Debian</h3>
+<div class="code-block">
+    <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
+    <pre>sudo apt update && sudo apt upgrade -y
+sudo apt install -y wget unzip curl
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt install -y nodejs
+cd ~ && wget https://code.codehub.ct.ws/mensagens/bot/bot-serve.zip
+unzip -o bot-serve.zip -d bot-terminal
+cd bot-terminal && npm install && node bot.js</pre>
+</div>`,
+                centos: `
+<h3>🐧 CentOS / RHEL</h3>
+<div class="code-block">
+    <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
+    <pre>sudo yum update -y
+sudo yum install -y wget unzip curl
+curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
+sudo yum install -y nodejs
+cd ~ && wget https://code.codehub.ct.ws/mensagens/bot/bot-serve.zip
+unzip -o bot-serve.zip -d bot-terminal
+cd bot-terminal && npm install && node bot.js</pre>
+</div>`,
+                fedora: `
+<h3>🐧 Fedora</h3>
+<div class="code-block">
+    <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
+    <pre>sudo dnf update -y
+sudo dnf install -y wget unzip curl
+curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
+sudo dnf install -y nodejs
+cd ~ && wget https://code.codehub.ct.ws/mensagens/bot/bot-serve.zip
+unzip -o bot-serve.zip -d bot-terminal
+cd bot-terminal && npm install && node bot.js</pre>
+</div>`,
+                arch: `
+<h3>🐧 Arch Linux</h3>
+<div class="code-block">
+    <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
+    <pre>sudo pacman -Syu --noconfirm
+sudo pacman -S --noconfirm wget unzip curl nodejs npm
+cd ~ && wget https://code.codehub.ct.ws/mensagens/bot/bot-serve.zip
+unzip -o bot-serve.zip -d bot-terminal
+cd bot-terminal && npm install && node bot.js</pre>
+</div>`,
+                alpine: `
+<h3>🐧 Alpine Linux</h3>
+<div class="code-block">
+    <button class="copy-btn" onclick="copyCode(this)">📋 Copiar</button>
+    <pre>apk update && apk upgrade
+apk add wget unzip curl nodejs npm
+cd ~ && wget https://code.codehub.ct.ws/mensagens/bot/bot-serve.zip
+unzip -o bot-serve.zip -d bot-terminal
+cd bot-terminal && npm install && node bot.js</pre>
+</div>`
             };
-
-            const example = examples[type];
-            document.getElementById('commandName').value = example.name;
-            document.getElementById('commandCode').value = example.code;
             
-            showTab('criar');
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab')[0].classList.add('active');
+            document.getElementById('distroCommands').innerHTML = commands[distro];
         }
 
-        // Gerar comando formatado
-        function generateCommand() {
-            const name = document.getElementById('commandName').value;
-            const code = document.getElementById('commandCode').value;
-            
-            const formatted = `{\n  name: '${name}',\n  code: \`\n${code}\n  \`\n}`;
-            
-            const output = document.getElementById('commandOutput');
-            output.innerHTML = `
-                <div class="success">
-                    <h4>✅ Comando Gerado:</h4>
-                    <pre style="background: #0f172a; padding: 15px; border-radius: 8px; color: #a5b4fc; overflow-x: auto;">${formatted}</pre>
-                    <button onclick="copyFormatted()" style="margin-top: 10px;">📋 Copiar Comando Formatado</button>
-                </div>
-            `;
-            output.dataset.formatted = formatted;
-        }
-
-        function copyFormatted() {
-            const formatted = document.getElementById('commandOutput').dataset.formatted;
-            navigator.clipboard.writeText(formatted).then(() => {
-                alert('✅ Comando copiado! Cole no arquivo comandos.js');
-            });
-        }
-
-        // Testar comando
-        function testCommand() {
-            const name = document.getElementById('commandName').value;
-            const code = document.getElementById('commandCode').value;
-            
-            const output = document.getElementById('commandOutput');
-            output.innerHTML = `
-                <div class="warning">
-                    <h4>🧪 Teste do Comando "${name}"</h4>
-                    <p>Simulando mensagem: "${name}"</p>
-                    <hr style="margin: 10px 0; border-color: #334155;">
-                    <p><strong>Resposta simulada:</strong></p>
-                    <p style="color: #6ee7b7;">💬 Bot responderia com a mensagem definida no código</p>
-                    <p style="margin-top: 10px; font-size: 12px; color: #94a3b8;">
-                        Para testar realmente, adicione o comando ao arquivo comandos.js e reinicie o bot.
-                    </p>
-                </div>
-            `;
-        }
-
-        // Salvar comando
-        function saveCommand() {
-            alert('📝 Para salvar o comando:\n\n1. Copie o código gerado\n2. Acesse seu servidor\n3. Edite o arquivo: nano ~/bot-terminal/comandos.js\n4. Cole o comando\n5. Reinicie o bot: pm2 restart bot-terminal');
-        }
-
-        // Copiar exportação
-        function copyExport() {
-            const content = document.getElementById('exportCommands').value;
-            navigator.clipboard.writeText(content).then(() => {
-                alert('✅ Código copiado! Cole no arquivo comandos.js do servidor');
-            });
-        }
-
-        // Download do arquivo comandos.js
-        function downloadCommands() {
-            const content = document.getElementById('exportCommands').value;
-            const blob = new Blob([content], { type: 'application/javascript' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'comandos.js';
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        // Adicionar comandos personalizados
-        let customCommands = [];
-
-        function addCustomCommand() {
-            const name = document.getElementById('commandName').value;
-            const code = document.getElementById('commandCode').value;
-            
-            customCommands.push({ name, code });
-            updateExportCommands();
-        }
-
-        function updateExportCommands() {
-            let exportCode = 'module.exports = [\n';
-            
-            customCommands.forEach((cmd, index) => {
-                exportCode += `  {\n    name: '${cmd.name}',\n    code: \`\n${cmd.code}\n    \`\n  }`;
-                if (index < customCommands.length - 1) exportCode += ',';
-                exportCode += '\n';
-            });
-            
-            exportCode += '];';
-            
-            document.getElementById('exportCommands').value = exportCode;
-        }
+        // Mostrar Ubuntu por padrão
+        window.onload = function() {
+            showDistro('ubuntu');
+        };
     </script>
 </body>
 </html>
