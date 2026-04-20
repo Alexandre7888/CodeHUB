@@ -5,40 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- SEO -->
-<meta name="keywords" content="CodeHUB, editor de código online, IDE online, programar no navegador, editor HTML, editor CSS, editor JavaScript, desenvolvimento web online, criar sites online, editor de código grátis, IDE para iniciantes, editor responsivo, ferramenta de programação, codar no navegador, editor com terminal, escrever código online, depuração online, editor de código rápido, desenvolvimento colaborativo, criar projetos web, editor frontend, plataforma de codar online, editor de programação, IDE web, editor de scripts, editor JS, editor CSS3, editor HTML5, criar páginas web, prototipagem online, editor web interativo, IDE colaborativa, editor de código com login, projetos online, editor de apps web, editor multiplataforma, editor com versionamento, editor de projetos HTML CSS JS, editor de código para estudantes, IDE para web developers, editor de código com templates, editor de projetos compartilháveis, editor para iniciantes em web, editor rápido e leve, editor de código com terminal integrado, editor de desenvolvimento web, editor de protótipos web, plataforma de aprendizado de programação, editor de sites responsivos, editor de HTML CSS JS online, criar sites responsivos online, editor de front-end, editor com Firebase, editor para projetos pessoais, IDE web gratuita, editor para codar online, editor de código interativo, editor de projetos colaborativos, editor de sites e aplicações, editor para estudantes de programação, editor de código com suporte a frameworks, editor de desenvolvimento ágil, IDE de aprendizado online, editor de projetos rápidos, editor de código para educação, editor de páginas web, editor de apps HTML CSS JS">
-  <meta name="author" content="CodeHUB nome: Alexandre Braatz Junior, fundador da plataforma">
+  <meta name="keywords" content="CodeHUB, editor de código online, IDE online, programar no navegador, editor HTML, editor CSS, editor JavaScript, desenvolvimento web online, criar sites online, editor de código grátis, IDE para iniciantes, editor responsivo, ferramenta de programação, codar no navegador, editor com terminal, escrever código online, depuração online, editor de código rápido, desenvolvimento colaborativo, criar projetos web, editor frontend, plataforma de codar online, editor de programação, IDE web, editor de scripts, editor JS, editor CSS3, editor HTML5, criar páginas web, prototipagem online, editor web interativo, IDE colaborativa, editor de código com login, projetos online, editor de apps web, editor multiplataforma, editor com versionamento, editor de projetos HTML CSS JS, editor de código para estudantes, IDE para web developers, editor de código com templates, editor de projetos compartilháveis, editor para iniciantes em web, editor rápido e leve, editor de código com terminal integrado, editor de desenvolvimento web, editor de protótipos web, plataforma de aprendizado de programação, editor de sites responsivos, editor de HTML CSS JS online, criar sites responsivos online, editor de front-end, editor com Firebase, editor para projetos pessoais, IDE web gratuita, editor para codar online, editor de código interativo, editor de projetos colaborativos, editor de sites e aplicações, editor para estudantes de programação, editor de código com suporte a frameworks, editor de desenvolvimento ágil, IDE de aprendizado online, editor de projetos rápidos, editor de código para educação, editor de páginas web, editor de apps HTML CSS JS">
+  <meta name="author" content="CodeHUB - Alexandre Braatz Junior, fundador da plataforma">
+  <meta name="google-site-verification" content="d5deNmIStRgPPphEkAypCTSv-E_1gi9ba16et47RSmA" />
 
   <title>CodeHUB - Editor de Código Online</title>
-<script type="module" src="https://code.codehub.ct.ws/client.js"></script>
   <link rel="icon" type="image/png" href="https://alexandre7888.github.io/CodeHUB/InShot_20250807_112151490.jpg">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="google-site-verification" content="d5deNmIStRgPPphEkAypCTSv-E_1gi9ba16et47RSmA" />
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-X4VF1LWB0F"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
 
-  gtag('config', 'G-X4VF1LWB0F');
-</script>
-<script src="https://alexandre7888.github.io/CodeHUB/protecao.js"></script>
-<script src="https://alexandre7888.github.io/CodeHUB/Botao/floating-menu.js"></script>
-  <script src="https://alexandre7888.github.io/CodeHUB/protecao.js"></script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-XQE93JQ3RB');
-</script>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-X4VF1LWB0F"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
+    gtag('config', 'G-X4VF1LWB0F');
+    gtag('config', 'G-XQE93JQ3RB');
     gtag('config', 'G-7RYPMEN60E');
   </script>
-  <title>Meus Projetos - CodeHub</title>
+
+  <!-- Scripts Externos -->
+  <script src="https://alexandre7888.github.io/CodeHUB/protecao.js"></script>
+  <script src="https://alexandre7888.github.io/CodeHUB/Botao/floating-menu.js"></script>
+  <script type="module" src="https://code.codehub.ct.ws/client.js"></script>
+  <script src="https://assistente-ia--socialkoala6579904.on.websim.com/embed.js"></script>
+
   <style>
     /* Loading Screen Styles */
     #loading-screen {
@@ -93,7 +83,7 @@
       100% { box-shadow: 0 0 40px rgba(255,149,0,0.8), 0 0 80px rgba(255,149,0,0.5); }
     }
 
-    /* Main App Styles (hidden initially) */
+    /* Main App Styles */
     #app-content {
       display: none;
     }
@@ -107,6 +97,7 @@
       --light-color: #f8f9fa;
       --dark-color: #212529;
       --gray-color: #6c757d;
+      --discord-color: #5865F2;
     }
 
     * {
@@ -138,6 +129,37 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo-area h1 {
+      font-size: 1.5rem;
+    }
+
+    .discord-mini-btn {
+      background: var(--discord-color);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .discord-mini-btn:hover {
+      background: #4752c4;
+      transform: scale(1.05);
     }
 
     .user-info {
@@ -210,6 +232,11 @@
       flex-direction: column;
     }
 
+    .project-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+
     .project-name {
       font-size: 1.25rem;
       font-weight: 700;
@@ -254,11 +281,95 @@
       color: white;
     }
 
+    /* Discord Widget Floating Button */
+    .discord-widget-container {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      z-index: 1000;
+    }
+
+    .discord-toggle-btn {
+      background: var(--discord-color);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 50px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 16px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+    }
+
+    .discord-toggle-btn:hover {
+      transform: scale(1.05);
+      background: #4752c4;
+    }
+
+    .discord-widget {
+      position: fixed;
+      bottom: 80px;
+      left: 20px;
+      width: 350px;
+      height: 500px;
+      background: #2c2f33;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+      z-index: 999;
+      display: none;
+      animation: slideInLeft 0.3s ease;
+    }
+
+    .discord-widget iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .discord-widget-header {
+      background: #23272a;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: white;
+    }
+
+    .discord-widget-header h4 {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .close-widget-btn {
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-size: 20px;
+      padding: 0 5px;
+    }
+
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-100px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
     /* Modal styles */
     .modal {
       display: none;
       position: fixed;
-      z-index: 1000;
+      z-index: 1100;
       left: 0;
       top: 0;
       width: 100%;
@@ -357,7 +468,7 @@
       flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
-      z-index: 999;
+      z-index: 1100;
     }
 
     .cookie-banner p {
@@ -415,6 +526,13 @@
         justify-content: center;
         margin-top: 1rem;
       }
+
+      .discord-widget {
+        width: calc(100% - 40px);
+        left: 20px;
+        right: 20px;
+        height: 70vh;
+      }
     }
   </style>
 </head>
@@ -425,11 +543,16 @@
     <h1>Carregando...</h1>
   </div>
 
-  <!-- Main App Content (hidden initially) -->
+  <!-- Main App Content -->
   <div id="app-content">
     <header>
       <div class="header-content">
-        <h1>Meus Projetos</h1>
+        <div class="logo-area">
+          <h1>🚀 CodeHUB</h1>
+          <button class="discord-mini-btn" onclick="toggleDiscordWidget()">
+            💬 Discord
+          </button>
+        </div>
         <div class="user-info">
           <span id="username"></span>
           <button class="logout-btn" onclick="logout()">
@@ -444,7 +567,7 @@
 
     <div class="container">
       <div class="projects-header">
-        <h2>Seus Projetos</h2>
+        <h2>📁 Seus Projetos</h2>
         <button class="new-project-btn" onclick="openNewProjectModal()">
           <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="18" height="18">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
@@ -462,7 +585,7 @@
     <div id="new-project-modal" class="modal">
       <div class="modal-content">
         <div class="modal-header">
-          <h3>Criar Novo Projeto</h3>
+          <h3>✨ Criar Novo Projeto</h3>
           <button type="button" class="close-btn" onclick="closeNewProjectModal()">&times;</button>
         </div>
         <form id="project-form">
@@ -472,15 +595,37 @@
           </div>
           <div class="form-actions">
             <button type="button" class="cancel-btn" onclick="closeNewProjectModal()">Cancelar</button>
-            <button type="submit" class="confirm-btn">Criar</button>
+            <button type="submit" class="confirm-btn">Criar Projeto</button>
           </div>
         </form>
       </div>
     </div>
 
+    <!-- Discord Floating Widget -->
+    <div class="discord-widget-container">
+      <button class="discord-toggle-btn" onclick="toggleDiscordWidget()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3847-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C2.8084 7.6658 2.0395 10.8955 2.4158 14.0786a.067.067 0 00.0272.0445 19.8759 19.8759 0 004.9823 2.5107.077.077 0 00.0734-.0214c.3826-.5123.7262-1.0535 1.0192-1.6236a.076.076 0 00-.0412-.1055 13.148 13.148 0 01-1.5605-.7442.076.076 0 01-.0185-.1248l.3104-.242c.0159-.0125.0387-.0125.0546 0 3.2693 1.4904 6.804 1.4904 10.0389 0 .0159-.0125.0387-.0125.0546 0l.3104.242c.0459.036.0509.1011.0185.1248a13.221 13.221 0 01-1.5605.7442.076.076 0 00-.0412.1055c.293.5702.6366 1.1113 1.0192 1.6236a.077.077 0 00.0734.0214 19.873 19.873 0 004.9823-2.5107.067.067 0 00.0272-.0445c.439-3.7629-.3292-6.9926-1.4134-9.6821a.069.069 0 00-.0321-.0277zM8.6338 13.086c-.9845 0-1.7951-.905-1.7951-2.0087 0-1.1038.7912-2.0087 1.7951-2.0087 1.0125 0 1.823.9137 1.7951 2.0087 0 1.1038-.7912 2.0087-1.7951 2.0087zm6.7324 0c-.9845 0-1.7951-.905-1.7951-2.0087 0-1.1038.7912-2.0087 1.7951-2.0087 1.0125 0 1.823.9137 1.7951 2.0087 0 1.1038-.7912 2.0087-1.7951 2.0087z"/>
+        </svg>
+        Conectar ao Discord
+      </button>
+      
+      <div id="discordWidget" class="discord-widget">
+        <div class="discord-widget-header">
+          <h4>💬 Comunidade CodeHUB</h4>
+          <button class="close-widget-btn" onclick="toggleDiscordWidget()">✕</button>
+        </div>
+        <iframe src="https://discord.com/widget?id=1406804799734677667&theme=dark" 
+                allowtransparency="true" 
+                frameborder="0"
+                sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts">
+        </iframe>
+      </div>
+    </div>
+
     <!-- Cookie Banner -->
     <div id="cookie-banner" class="cookie-banner" style="display: none;">
-      <p>Nós usamos cookies para melhorar sua experiência. Ao continuar navegando, você concorda com o uso de cookies.</p>
+      <p>🍪 Nós usamos cookies para melhorar sua experiência. Ao continuar navegando, você concorda com o uso de cookies.</p>
       <div class="cookie-banner-buttons">
         <button class="cookie-btn cookie-accept" onclick="acceptCookies()">Aceitar</button>
         <button class="cookie-btn cookie-reject" onclick="rejectCookies()">Recusar</button>
@@ -527,7 +672,7 @@
     let index = 0;
     const loaderInterval = setInterval(() => {
       index = (index + 1) % imagens.length;
-      codefoxImage.src = imagens[index];
+      if (codefoxImage) codefoxImage.src = imagens[index];
     }, 2000);
 
     // Função para mostrar o conteúdo principal
@@ -550,12 +695,10 @@
       return name && name.trim().length > 0 && name.length <= 50;
     }
 
-    // Quando o DOM estiver carregado
+    // Configurar o formulário
     document.addEventListener('DOMContentLoaded', () => {
-      // Verificar cookies
       checkCookies();
 
-      // Configurar o formulário
       const projectForm = document.getElementById('project-form');
       if (projectForm) {
         projectForm.addEventListener('submit', (e) => {
@@ -578,7 +721,9 @@
             displayName: user.displayName || user.email?.split('@')[0] || 'usuário'
           };
 
-          document.getElementById('username').textContent = userData.displayName;
+          const usernameSpan = document.getElementById('username');
+          if (usernameSpan) usernameSpan.textContent = userData.displayName;
+          
           loadProjects(user.uid);
         } catch (error) {
           console.error("Erro ao carregar dados do usuário:", error);
@@ -600,33 +745,34 @@
             projectsContainer.innerHTML = '';
             const projects = snapshot.val() || {};
 
+            if (Object.keys(projects).length === 0) {
+              projectsContainer.innerHTML = `
+                <div style="grid-column:1/-1; text-align:center; padding:40px; background:white; border-radius:10px;">
+                  <p style="color:#666;">Você ainda não tem projetos. Clique em "Novo Projeto" para começar!</p>
+                </div>
+              `;
+            }
+
             for (const [projectId, project] of Object.entries(projects)) {
               if (!projectId || !project) continue;
 
               const projectCard = document.createElement('div');
               projectCard.className = 'project-card';
               projectCard.innerHTML = `
-                <div class="project-name">${project.name || 'Projeto sem nome'}</div>
-                <div class="project-domain">${project.owner || userData?.displayName || 'usuário'}/${project.slug || 'sem-slug'}</div>
+                <div class="project-name">📄 ${escapeHtml(project.name || 'Projeto sem nome')}</div>
+                <div class="project-domain">👤 ${escapeHtml(project.owner || userData?.displayName || 'usuário')}/${escapeHtml(project.slug || 'sem-slug')}</div>
                 <div class="project-actions">
                   <button class="action-btn edit-btn" onclick="window.location.href='editor.html?projectId=${projectId}'">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                    </svg>
-                    Abrir
+                    ✏️ Abrir
                   </button>
                   <button class="action-btn delete-btn" onclick="deleteProject('${projectId}')">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                    </svg>
-                    Excluir
+                    🗑️ Excluir
                   </button>
                 </div>
               `;
               projectsContainer.appendChild(projectCard);
             }
 
-            // Mostrar conteúdo principal após carregar projetos
             showAppContent();
           } catch (error) {
             console.error("Erro ao renderizar projetos:", error);
@@ -642,15 +788,30 @@
       }
     }
 
-    // Funções do modal
-    function openNewProjectModal() {
-      document.getElementById('new-project-modal').style.display = 'block';
-      document.getElementById('project-name').focus();
+    // Função para escapar HTML
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
     }
 
-    function closeNewProjectModal() {
-      document.getElementById('new-project-modal').style.display = 'none';
-      document.getElementById('project-name').value = '';
+    // Funções do modal
+    window.openNewProjectModal = function() {
+      const modal = document.getElementById('new-project-modal');
+      if (modal) {
+        modal.style.display = 'block';
+        const input = document.getElementById('project-name');
+        if (input) input.focus();
+      }
+    }
+
+    window.closeNewProjectModal = function() {
+      const modal = document.getElementById('new-project-modal');
+      if (modal) {
+        modal.style.display = 'none';
+        const input = document.getElementById('project-name');
+        if (input) input.value = '';
+      }
     }
 
     // Criar novo projeto
@@ -664,12 +825,10 @@
       }
 
       try {
-        // Mostrar loading novamente
         loadingScreen.style.display = 'flex';
         loadingScreen.style.opacity = '1';
         appContent.style.display = 'none';
 
-        // Criar slug para URL
         const slug = projectName.toLowerCase()
           .replace(/\s+/g, '-')
           .replace(/[^\w\-]+/g, '')
@@ -688,15 +847,13 @@
           throw new Error('Não foi possível gerar um ID para o projeto');
         }
 
-        // Sanitiza o nome do arquivo
         const mainFileName = sanitizeFilename('index.html');
 
-        // Dados do projeto - agora incluindo o nome do usuário como owner
         const projectData = {
           name: projectName,
           slug: slug,
-          owner: userData.displayName || userData.username, // Adiciona o nome do usuário como dono
-          ownerId: user.uid, // Adiciona o ID do usuário
+          owner: userData.displayName || userData.username,
+          ownerId: user.uid,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           files: {
@@ -705,13 +862,19 @@
 <html>
 <head>
   <title>${projectName}</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+    .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+    h1 { color: #667eea; }
   </style>
 </head>
 <body>
-  <h1>${projectName}</h1>
-  <p>Comece a editar seu código aqui!</p>
+  <div class="container">
+    <h1>🚀 ${escapeHtml(projectName)}</h1>
+    <p>Comece a editar seu código aqui!</p>
+  </div>
 </body>
 </html>`,
               language: 'html',
@@ -721,7 +884,6 @@
           }
         };
 
-        // Tentativa de salvar com timeout
         await Promise.race([
           set(newProjectRef, projectData),
           new Promise((_, reject) => 
@@ -729,22 +891,19 @@
           )
         ]);
 
-        // Fecha o modal e redireciona
         closeNewProjectModal();
-        window.location.href = `https://codehub.ct.ws/editor.php?projectId=${projectId}`;
+        window.location.href = `editor.html?projectId=${projectId}`;
 
       } catch (error) {
         console.error("Erro detalhado ao criar projeto:", error);
         alert(`Ocorreu um erro ao criar o projeto. ${error.message}`);
-
-        // Voltar para o app content mesmo com erro
         showAppContent();
       }
     }
 
     // Excluir projeto
-    function deleteProject(projectId) {
-      if (confirm('Tem certeza que deseja excluir este projeto?')) {
+    window.deleteProject = function(projectId) {
+      if (confirm('Tem certeza que deseja excluir este projeto? Esta ação não pode ser desfeita.')) {
         try {
           const user = auth.currentUser;
           if (!user || !user.uid) {
@@ -752,6 +911,9 @@
           }
 
           remove(ref(database, `projects/${user.uid}/${projectId}`))
+            .then(() => {
+              alert('Projeto excluído com sucesso!');
+            })
             .catch(error => {
               console.error("Erro ao excluir projeto:", error);
               alert('Erro ao excluir projeto. Por favor, tente novamente.');
@@ -764,7 +926,7 @@
     }
 
     // Logout
-    function logout() {
+    window.logout = function() {
       signOut(auth).then(() => {
         window.location.href = 'auth.html';
       }).catch(error => {
@@ -773,50 +935,47 @@
       });
     }
 
-    // Cookie functions
-    function checkCookies() {
-      if (localStorage.getItem('cookiesAccepted') === null) {
-        document.getElementById('cookie-banner').style.display = 'flex';
+    // Discord Widget Functions
+    window.toggleDiscordWidget = function() {
+      const widget = document.getElementById('discordWidget');
+      if (widget) {
+        if (widget.style.display === 'none' || widget.style.display === '') {
+          widget.style.display = 'block';
+        } else {
+          widget.style.display = 'none';
+        }
       }
     }
 
-    function acceptCookies() {
+    // Cookie functions
+    function checkCookies() {
+      if (localStorage.getItem('cookiesAccepted') === null) {
+        const banner = document.getElementById('cookie-banner');
+        if (banner) banner.style.display = 'flex';
+      }
+    }
+
+    window.acceptCookies = function() {
       localStorage.setItem('cookiesAccepted', 'true');
-      document.getElementById('cookie-banner').style.display = 'none';
-      // Ativar Google Analytics se necessário
-      gtag('consent', 'update', {
-        'analytics_storage': 'granted'
-      });
+      const banner = document.getElementById('cookie-banner');
+      if (banner) banner.style.display = 'none';
+      if (typeof gtag !== 'undefined') {
+        gtag('consent', 'update', {
+          'analytics_storage': 'granted'
+        });
+      }
     }
 
-    function rejectCookies() {
+    window.rejectCookies = function() {
       localStorage.setItem('cookiesAccepted', 'false');
-      document.getElementById('cookie-banner').style.display = 'none';
-      // Desativar Google Analytics se necessário
-      gtag('consent', 'update', {
-        'analytics_storage': 'denied'
-      });
+      const banner = document.getElementById('cookie-banner');
+      if (banner) banner.style.display = 'none';
+      if (typeof gtag !== 'undefined') {
+        gtag('consent', 'update', {
+          'analytics_storage': 'denied'
+        });
+      }
     }
-
-    // Expor funções para o escopo global
-    window.openNewProjectModal = openNewProjectModal;
-    window.closeNewProjectModal = closeNewProjectModal;
-    window.deleteProject = deleteProject;
-    window.logout = logout;
-    window.acceptCookies = acceptCookies;
-    window.rejectCookies = rejectCookies;
   </script>
-<script src="https://assistente-ia--socialkoala6579904.on.websim.com/embed.js"></script>
-  <script src="https://alexandre7888.github.io/CodeHUB/protecao.js"></script>
-
-
-  <script src="https://alexandre7888.github.io/CodeHUB/protecao.js"></script>
-  <script>
-<iframe src="https://discord.com/widget?id=1406804799734677667&theme=dark" 
-        width="350" height="500" 
-        allowtransparency="true" 
-        frameborder="0">
-</iframe>
-        
 </body>
 </html>
