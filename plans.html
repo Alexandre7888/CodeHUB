@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodeHUB - Planos e Assinaturas</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 40px;
+    }
+    
+    .header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+    
+    .plans {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
+      margin-bottom: 40px;
+    }
+    
+    .plan-card {
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      text-align: center;
+      transition: transform 0.3s, box-shadow 0.3s;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .plan-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    }
+    
+    .plan-card.popular {
+      border: 2px solid #ff9800;
+    }
+    
+    .popular-badge {
+      position: absolute;
+      top: 20px;
+      right: -30px;
+      background: #ff9800;
+      color: white;
+      padding: 5px 30px;
+      transform: rotate(45deg);
+      font-size: 12px;
+    }
+    
+    .plan-name {
+      font-size: 1.8em;
+      color: #333;
+      margin-bottom: 10px;
+    }
+    
+    .plan-price {
+      font-size: 3em;
+      color: #667eea;
+      margin: 20px 0;
+    }
+    
+    .plan-price span {
+      font-size: 0.5em;
+      color: #999;
+    }
+    
+    .plan-storage {
+      font-size: 1.2em;
+      color: #4caf50;
+      margin: 10px 0;
+    }
+    
+    .plan-features {
+      list-style: none;
+      margin: 20px 0;
+      text-align: left;
+    }
+    
+    .plan-features li {
+      padding: 8px 0;
+      color: #666;
+    }
+    
+    .plan-features li:before {
+      content: "✓";
+      color: #4caf50;
+      margin-right: 10px;
+      font-weight: bold;
+    }
+    
+    .buy-btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 25px;
+      font-size: 1.1em;
+      cursor: pointer;
+      transition: background 0.3s;
+      width: 100%;
+    }
+    
+    .buy-btn:hover {
+      background: #5a67d8;
+    }
+    
+    .current-plan {
+      background: #e8f5e9;
+      border-radius: 15px;
+      padding: 20px;
+      margin-top: 30px;
+    }
+    
+    .current-plan h3 {
+      color: #2e7d32;
+      margin-bottom: 10px;
+    }
+    
+    .refund-section {
+      background: white;
+      border-radius: 15px;
+      padding: 20px;
+      margin-top: 30px;
+    }
+    
+    .refund-section h3 {
+      color: #f44336;
+      margin-bottom: 15px;
+    }
+    
+    .refund-btn {
+      background: #f44336;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    
+    .refund-btn:hover {
+      background: #d32f2f;
+    }
+    
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      max-width: 500px;
+      text-align: center;
+    }
+    
+    .modal-content input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    
+    .modal-buttons button {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    
+    .confirm-btn {
+      background: #4caf50;
+      color: white;
+    }
+    
+    .cancel-btn {
+      background: #f44336;
+      color: white;
+    }
+    
+    .notification {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 15px 20px;
+      border-radius: 10px;
+      color: white;
+      display: none;
+      z-index: 1100;
+      animation: slideIn 0.3s ease;
+    }
+    
+    .notification.success { background: #4caf50; }
+    .notification.error { background: #f44336; }
+    .notification.info { background: #2196f3; }
+    
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 50px;
+      color: white;
+    }
+    
+    @media (max-width: 768px) {
+      .plans { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🚀 Escolha seu Plano</h1>
+      <p>Mais armazenamento, mais projetos, mais liberdade!</p>
+    </div>
+    
+    <div id="loading" class="loading">
+      <h2>Carregando...</h2>
+    </div>
+    
+    <div id="plans-container" style="display: none;"></div>
+    
+    <div id="current-plan-container" style="display: none;"></div>
+    
+    <div id="refund-section" style="display: none;" class="refund-section">
+      <h3>🔄 Solicitar Reembolso</h3>
+      <p>Reembolso disponível apenas para compras realizadas nos últimos 7 dias e para usuários no Brasil.</p>
+      <button class="refund-btn" onclick="requestRefund()">Solicitar Reembolso</button>
+    </div>
+  </div>
+  
+  <div id="locationModal" class="modal">
+    <div class="modal-content">
+      <h3>📍 Verificando Localização</h3>
+      <p>Para solicitar reembolso, precisamos confirmar que você está no Brasil.</p>
+      <button onclick="checkLocation()" class="confirm-btn">Permitir Localização</button>
+      <button onclick="closeLocationModal()" class="cancel-btn">Cancelar</button>
+    </div>
+  </div>
+  
+  <div id="refundModal" class="modal">
+    <div class="modal-content">
+      <h3>🔄 Solicitar Reembolso</h3>
+      <p>Selecione a compra para reembolso:</p>
+      <select id="purchaseSelect"></select>
+      <p style="margin-top: 15px;">Motivo:</p>
+      <textarea id="refundReason" rows="3" style="width:100%; padding:10px;"></textarea>
+      <div class="modal-buttons">
+        <button onclick="confirmRefund()" class="confirm-btn">Confirmar Reembolso</button>
+        <button onclick="closeRefundModal()" class="cancel-btn">Cancelar</button>
+      </div>
+    </div>
+  </div>
+  
+  <div id="notification" class="notification"></div>
+  
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
+      authDomain: "html-15e80.firebaseapp.com",
+      databaseURL: "https://html-15e80-default-rtdb.firebaseio.com",
+      projectId: "html-15e80",
+      storageBucket: "html-15e80.appspot.com",
+      messagingSenderId: "1068148640439",
+      appId: "1:1068148640439:web:1ac651348e624f6be41b32"
+    };
+    
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const auth = firebase.auth();
+    
+    // Planos disponíveis (em MB)
+    const PLANS = {
+      free: { name: "Grátis", price: 0, storage: 5, storageBytes: 5 * 1024 * 1024, features: ["5GB de armazenamento", "Projetos ilimitados", "Editor Monaco", "Suporte básico"] },
+      basic: { name: "Básico", price: 9, storage: 8, storageBytes: 8 * 1024 * 1024, features: ["8GB de armazenamento", "Projetos ilimitados", "Editor Monaco", "Suporte prioritário", "Exportar projetos"] },
+      pro: { name: "Profissional", price: 89, storage: 20, storageBytes: 20 * 1024 * 1024, features: ["20GB de armazenamento", "Projetos ilimitados", "Editor Monaco", "Suporte 24/7", "Exportar projetos", "Colaboração em tempo real", "Backup automático"] }
+    };
+    
+    let currentUser = null;
+    let userPlan = 'free';
+    let userPurchases = [];
+    
+    // Mostrar notificação
+    function showNotification(message, type = 'info') {
+      const notification = document.getElementById('notification');
+      notification.textContent = message;
+      notification.className = `notification ${type}`;
+      notification.style.display = 'block';
+      
+      setTimeout(() => {
+        notification.style.display = 'none';
+      }, 5000);
+    }
+    
+    // Verificar localização do usuário
+    async function getUserCountry() {
+      try {
+        const response = await fetch('https://ipapi.co/json/');
+        const data = await response.json();
+        return data.country_code;
+      } catch (error) {
+        console.error('Erro ao obter localização:', error);
+        return null;
+      }
+    }
+    
+    // Verificar localização para reembolso
+    async function checkLocation() {
+      const country = await getUserCountry();
+      if (country === 'BR') {
+        closeLocationModal();
+        showRefundPurchases();
+      } else {
+        showNotification('Reembolso disponível apenas para usuários no Brasil.', 'error');
+        closeLocationModal();
+      }
+    }
+    
+    // Mostrar compras para reembolso
+    function showRefundPurchases() {
+      const purchases = userPurchases.filter(p => {
+        const purchaseDate = new Date(p.date);
+        const now = new Date();
+        const diffDays = (now - purchaseDate) / (1000 * 60 * 60 * 24);
+        return diffDays <= 7 && p.status === 'completed';
+      });
+      
+      if (purchases.length === 0) {
+        showNotification('Nenhuma compra elegível para reembolso nos últimos 7 dias.', 'info');
+        return;
+      }
+      
+      const select = document.getElementById('purchaseSelect');
+      select.innerHTML = purchases.map(p => `
+        <option value="${p.id}">
+          ${p.plan} - R$ ${p.price} - ${new Date(p.date).toLocaleDateString('pt-BR')}
+        </option>
+      `).join('');
+      
+      document.getElementById('refundModal').style.display = 'flex';
+    }
+    
+    // Confirmar reembolso
+    async function confirmRefund() {
+      const purchaseId = document.getElementById('purchaseSelect').value;
+      const reason = document.getElementById('refundReason').value;
+      
+      if (!purchaseId) {
+        showNotification('Selecione uma compra.', 'error');
+        return;
+      }
+      
+      const purchase = userPurchases.find(p => p.id === purchaseId);
+      
+      // Salvar solicitação de reembolso
+      const refundRef = db.ref(`refunds/${currentUser.uid}/${purchaseId}`);
+      await refundRef.set({
+        purchaseId: purchaseId,
+        plan: purchase.plan,
+        price: purchase.price,
+        reason: reason,
+        date: new Date().toISOString(),
+        status: 'pending'
+      });
+      
+      showNotification('Solicitação de reembolso enviada! Aguarde aprovação do administrador.', 'success');
+      closeRefundModal();
+    }
+    
+    // Processar pagamento (simulação com API)
+    async function processPayment(planKey, plan) {
+      showNotification('Processando pagamento...', 'info');
+      
+      // Gerar ID único da compra
+      const purchaseId = `${currentUser.uid}_${Date.now()}`;
+      
+      // Salvar compra pendente
+      const purchaseRef = db.ref(`purchases/${currentUser.uid}/${purchaseId}`);
+      await purchaseRef.set({
+        id: purchaseId,
+        plan: plan.name,
+        planKey: planKey,
+        price: plan.price,
+        storage: plan.storageBytes,
+        date: new Date().toISOString(),
+        status: 'pending'
+      });
+      
+      // Simular pagamento bem-sucedido (na prática, integrar com gateway real)
+      setTimeout(async () => {
+        // Atualizar status da compra
+        await purchaseRef.update({ status: 'completed' });
+        
+        // Atualizar plano do usuário
+        await db.ref(`users/${currentUser.uid}/plan`).set({
+          name: plan.name,
+          storage: plan.storageBytes,
+          updatedAt: new Date().toISOString()
+        });
+        
+        // Atualizar limite de armazenamento
+        await db.ref(`users/${currentUser.uid}/storage/limit`).set(plan.storageBytes);
+        
+        showNotification(`Pagamento confirmado! Seu plano ${plan.name} está ativo.`, 'success');
+        
+        // Recarregar página para atualizar informações
+        setTimeout(() => {
+          location.reload();
+        }, 2000);
+      }, 2000);
+    }
+    
+    // Renderizar planos
+    function renderPlans() {
+      const container = document.getElementById('plans-container');
+      
+      container.innerHTML = Object.entries(PLANS).map(([key, plan]) => `
+        <div class="plan-card ${key === 'pro' ? 'popular' : ''}">
+          ${key === 'pro' ? '<div class="popular-badge">MAIS POPULAR</div>' : ''}
+          <div class="plan-name">${plan.name}</div>
+          <div class="plan-price">R$ ${plan.price}<span>/mês</span></div>
+          <div class="plan-storage">📦 ${plan.storage}GB de armazenamento</div>
+          <ul class="plan-features">
+            ${plan.features.map(f => `<li>${f}</li>`).join('')}
+          </ul>
+          <button class="buy-btn" onclick="selectPlan('${key}')">
+            ${key === 'free' ? 'Plano Atual' : 'Assinar Agora'}
+          </button>
+        </div>
+      `).join('');
+      
+      container.style.display = 'grid';
+    }
+    
+    // Selecionar plano
+    async function selectPlan(planKey) {
+      const plan = PLANS[planKey];
+      
+      if (planKey === 'free') {
+        showNotification('Você já está no plano grátis!', 'info');
+        return;
+      }
+      
+      if (planKey === userPlan) {
+        showNotification('Este já é seu plano atual!', 'info');
+        return;
+      }
+      
+      const confirm = window.confirm(`Confirmar assinatura do plano ${plan.name} por R$ ${plan.price}/mês?`);
+      if (confirm) {
+        await processPayment(planKey, plan);
+      }
+    }
+    
+    // Carregar dados do usuário
+    async function loadUserData() {
+      const userRef = db.ref(`users/${currentUser.uid}`);
+      const snapshot = await userRef.once('value');
+      const data = snapshot.val();
+      
+      if (data && data.plan) {
+        userPlan = data.plan.name === 'Básico' ? 'basic' : (data.plan.name === 'Profissional' ? 'pro' : 'free');
+      }
+      
+      // Carregar compras
+      const purchasesRef = db.ref(`purchases/${currentUser.uid}`);
+      const purchasesSnapshot = await purchasesRef.once('value');
+      userPurchases = [];
+      purchasesSnapshot.forEach(child => {
+        userPurchases.push(child.val());
+      });
+      userPurchases.sort((a, b) => new Date(b.date) - new Date(a.date));
+      
+      // Mostrar plano atual
+      const currentPlanContainer = document.getElementById('current-plan-container');
+      const currentPlan = PLANS[userPlan];
+      currentPlanContainer.innerHTML = `
+        <div class="current-plan">
+          <h3>📋 Seu Plano Atual: ${currentPlan.name}</h3>
+          <p>💾 Armazenamento: ${currentPlan.storage}GB</p>
+          <p>📅 Próxima cobrança: ${new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString('pt-BR')}</p>
+        </div>
+      `;
+      currentPlanContainer.style.display = 'block';
+      
+      // Mostrar seção de reembolso apenas para planos pagos
+      if (userPlan !== 'free') {
+        document.getElementById('refund-section').style.display = 'block';
+      }
+    }
+    
+    // Inicializar
+    function initialize() {
+      auth.onAuthStateChanged(async user => {
+        if (!user) {
+          window.location.href = 'auth.html';
+          return;
+        }
+        
+        currentUser = user;
+        
+        await loadUserData();
+        renderPlans();
+        
+        document.getElementById('loading').style.display = 'none';
+      });
+    }
+    
+    // Funções globais para os botões
+    window.selectPlan = selectPlan;
+    window.requestRefund = () => {
+      document.getElementById('locationModal').style.display = 'flex';
+    };
+    window.checkLocation = checkLocation;
+    window.closeLocationModal = () => {
+      document.getElementById('locationModal').style.display = 'none';
+    };
+    window.closeRefundModal = () => {
+      document.getElementById('refundModal').style.display = 'none';
+    };
+    window.confirmRefund = confirmRefund;
+    
+    initialize();
+  </script>
+</body>
+</html>
