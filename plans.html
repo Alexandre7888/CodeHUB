@@ -109,9 +109,8 @@
     }
     
     .plan-name { font-size: 1.8em; color: #333; margin-bottom: 10px; }
-    .plan-price-usd { font-size: 1.2em; color: #999; text-decoration: line-through; margin-bottom: 5px; }
-    .plan-price-brl { font-size: 2.5em; color: #667eea; margin: 10px 0; }
-    .plan-price-brl small { font-size: 0.4em; color: #999; }
+    .plan-price { font-size: 2.5em; color: #667eea; margin: 10px 0; }
+    .plan-price small { font-size: 0.4em; color: #999; }
     .plan-storage { font-size: 1.2em; color: #4caf50; margin: 10px 0; }
     
     .plan-features {
@@ -147,6 +146,7 @@
     }
     
     .buy-btn:hover { background: #5a67d8; transform: scale(1.02); }
+    .buy-btn:disabled { background: #ccc; cursor: not-allowed; }
     
     /* Dedo Animado */
     .finger-pointer {
@@ -177,11 +177,6 @@
       padding: 30px;
       margin-top: 30px;
       text-align: center;
-    }
-    
-    .support-section h3 {
-      color: #333;
-      margin-bottom: 20px;
     }
     
     .call-btn {
@@ -345,16 +340,6 @@
     }
     
     .loading { text-align: center; padding: 50px; color: white; }
-    .payment-qr { text-align: center; padding: 20px; }
-    .payment-qr img { max-width: 200px; margin: 10px auto; }
-    .copy-pix-btn {
-      background: #00bcd4;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 5px;
-      cursor: pointer;
-    }
     
     .warning-box {
       background: #fff3cd;
@@ -385,6 +370,13 @@
     @keyframes progress {
       0% { width: 0%; }
       100% { width: 100%; }
+    }
+    
+    .current-plan {
+      background: rgba(255,255,255,0.95);
+      border-radius: 15px;
+      padding: 20px;
+      margin-top: 30px;
     }
     
     @media (max-width: 768px) {
@@ -480,7 +472,7 @@
   
   <div id="notification" class="notification"></div>
   
-  <!-- Dedo Animado (Canvas) -->
+  <!-- Dedo Animado -->
   <div id="fingerPointer" class="finger-pointer" style="display: none;">
     <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M50 10 L50 60 M50 60 L40 50 M50 60 L60 50" stroke="#ff9800" stroke-width="4" stroke-linecap="round"/>
@@ -506,17 +498,17 @@
     const auth = firebase.auth();
     const db = firebase.database();
     
+    // API de pagamento
     const PAYMENT_API = "https://code-hub-eta.vercel.app/api/payment.js";
     
-    // Planos
-    const PLANS_USD = {
-      basic: { name: "Básico", usd: 9, storage: 8, storageBytes: 8 * 1024 * 1024,
-        features: ["8GB de armazenamento", "Projetos ilimitados", "Suporte prioritário"] },
-      pro: { name: "Profissional", usd: 89, storage: 20, storageBytes: 20 * 1024 * 1024,
-        features: ["20GB de armazenamento", "Projetos ilimitados", "Suporte 24/7", "Colaboração em tempo real"] }
+    // Planos em REAIS
+    const PLANS = {
+      basic: { name: "Básico", price: 9, priceCents: 900, storage: 8, storageBytes: 8 * 1024 * 1024,
+        features: ["8GB de armazenamento", "Projetos ilimitados", "Suporte prioritário", "Exportar projetos"] },
+      pro: { name: "Profissional", price: 89, priceCents: 8900, storage: 20, storageBytes: 20 * 1024 * 1024,
+        features: ["20GB de armazenamento", "Projetos ilimitados", "Suporte 24/7", "Colaboração em tempo real", "Backup automático"] }
     };
     
-    let exchangeRate = 5.70;
     let currentUser = null;
     let userPlan = 'free';
     let userPurchases = [];
@@ -528,8 +520,6 @@
     let localStream = null;
     let peerConnection = null;
     let isCallActive = false;
-    let ringInterval = null;
-    let ringAudio = null;
     
     // Dedo animado
     let fingerInterval = null;
@@ -552,13 +542,11 @@
       finger.style.left = (rect.left + rect.width/2 - 30) + 'px';
       finger.style.top = (rect.top - 40) + 'px';
       
-      // Piscar o botão
       buttonElement.style.transform = 'scale(1.05)';
       setTimeout(() => {
         buttonElement.style.transform = 'scale(1)';
       }, 600);
       
-      // Esconder dedo após 2 segundos
       setTimeout(() => {
         finger.style.display = 'none';
       }, 2000);
@@ -629,16 +617,13 @@
     async function startCall() {
       const statusDiv = document.getElementById('callStatus');
       
-      // TTS inicial
       statusDiv.className = 'call-status ringing';
       statusDiv.innerHTML = '🔊 "Ligando para o suporte urgentemente..."';
       await speakText("Ligando para o suporte urgentemente. Vamos dar um jeito no seu problema!");
       
       statusDiv.innerHTML = '📞 Chamando... tuuuu tuuuu tuuuu';
       
-      // Tocar ringtone
       playRingtone(async () => {
-        // Verificar se admin está online
         const adminRef = db.ref('admin/status');
         const snapshot = await adminRef.once('value');
         const isAdminOnline = snapshot.val() === 'online';
@@ -666,7 +651,6 @@
         document.getElementById('localVideo').srcObject = localStream;
         document.getElementById('videoContainer').classList.add('active');
         
-        // Configurar signaling no Firebase
         const callRef = db.ref(`calls/${currentUser.uid}`);
         await callRef.set({
           type: 'offer',
@@ -675,11 +659,9 @@
           status: 'waiting'
         });
         
-        // Escutar resposta
         callRef.on('value', (snapshot) => {
           const data = snapshot.val();
           if (data && data.type === 'answer') {
-            // Processar answer do admin
             showNotification('Chamada conectada!', 'success');
           }
         });
@@ -702,28 +684,12 @@
       document.getElementById('callStatus').style.display = 'none';
       isCallActive = false;
       
-      // Limpar signaling
       if (currentUser) {
         db.ref(`calls/${currentUser.uid}`).remove();
       }
     }
     
-    // === Pagamento ===
-    async function fetchExchangeRate() {
-      try {
-        const response = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL');
-        const data = await response.json();
-        exchangeRate = parseFloat(data.USDBRL.bid);
-        document.getElementById('exchangeRate').innerHTML = `💱 Dólar: R$ ${exchangeRate.toFixed(2)} | 1 USD = R$ ${exchangeRate.toFixed(2)}`;
-      } catch (error) {
-        console.error('Erro ao buscar cotação:', error);
-      }
-    }
-    
-    function usdToBrl(usd) {
-      return Math.round(usd * exchangeRate);
-    }
-    
+    // === PAGAMENTO REAL ===
     async function loadUserData() {
       if (!currentUser) return;
       const userRef = db.ref(`users/${currentUser.uid}`);
@@ -763,7 +729,7 @@
             await confirmPurchase(orderId, planKey);
             document.getElementById('processingModal').style.display = 'none';
             showNotification('✅ Pagamento confirmado! Plano ativado.', 'success');
-            location.reload();
+            setTimeout(() => location.reload(), 1500);
           } else if (attempts >= 60) {
             clearInterval(checkInterval);
             showNotification('⏰ Pagamento ainda não confirmado. Verifique mais tarde.', 'warning');
@@ -791,7 +757,6 @@
       
       try {
         const orderId = `ORDER_${currentUser.uid}_${Date.now()}`;
-        const priceBrl = usdToBrl(plan.usd);
         
         const response = await fetch(PAYMENT_API, {
           method: "POST",
@@ -800,7 +765,7 @@
             order_nsu: orderId,
             items: [{
               quantity: 1,
-              price: priceBrl,
+              price: plan.priceCents,
               description: `Assinatura ${plan.name} - CodeHUB - ${plan.storage}GB`
             }],
             redirect_success: window.location.href + `?payment_success=true&plan=${planKey}&order=${orderId}`,
@@ -816,7 +781,7 @@
             id: orderId,
             plan: plan.name,
             planKey: planKey,
-            price: priceBrl,
+            price: plan.price,
             storage: plan.storageBytes,
             date: new Date().toISOString(),
             status: 'pending'
@@ -827,39 +792,26 @@
           document.getElementById('processingModal').style.display = 'flex';
           startPaymentCheck(orderId, planKey);
           window.open(data.url, '_blank');
-        } else if (data.qr_code) {
-          paymentContent.innerHTML = `
-            <div class="warning-box"><h4>⚠️ Atenção!</h4><p>Após o pagamento, aguarde até 5 minutos para confirmação.</p></div>
-            <div class="payment-qr">
-              <p>📱 Escaneie o QR Code para pagar via PIX</p>
-              <img src="${data.qr_code}" alt="QR Code PIX">
-              <button class="copy-pix-btn" onclick="copyPixCode('${data.pix_code}')">Copiar código</button>
-              <button onclick="startPaymentAfterPix('${orderId}', '${planKey}')" class="confirm-btn" style="margin-top:10px;">✅ Já paguei</button>
-            </div>
-          `;
+        } else {
+          paymentContent.innerHTML = '<p>❌ Erro ao gerar pagamento. Tente novamente.</p>';
+          showNotification('Erro ao gerar pagamento', 'error');
         }
       } catch (error) {
-        paymentContent.innerHTML = '<p>❌ Erro ao gerar pagamento. Tente novamente.</p>';
+        console.error('Erro no pagamento:', error);
+        paymentContent.innerHTML = '<p>❌ Erro de conexão. Tente novamente.</p>';
+        showNotification('Erro de conexão', 'error');
       }
     }
     
-    function startPaymentAfterPix(orderId, planKey) {
-      document.getElementById('paymentModal').style.display = 'none';
-      document.getElementById('processingModal').style.display = 'flex';
-      startPaymentCheck(orderId, planKey);
-    }
-    
     async function confirmPurchase(orderId, planKey) {
-      const plan = PLANS_USD[planKey];
+      const plan = PLANS[planKey];
       if (!plan) return false;
       
-      const priceBrl = usdToBrl(plan.usd);
       const purchase = {
         id: orderId,
         plan: plan.name,
         planKey: planKey,
-        price: priceBrl,
-        priceUsd: plan.usd,
+        price: plan.price,
         storage: plan.storageBytes,
         date: new Date().toISOString(),
         status: 'completed'
@@ -874,36 +826,31 @@
     
     function renderPlans() {
       const container = document.getElementById('plans-container');
-      container.innerHTML = Object.entries(PLANS_USD).map(([key, plan]) => {
-        const brlPrice = usdToBrl(plan.usd);
-        return `
-          <div class="plan-card ${key === 'pro' ? 'popular' : ''}">
-            ${key === 'pro' ? '<div class="popular-badge">MAIS POPULAR</div>' : ''}
-            <div class="plan-name">${plan.name}</div>
-            <div class="plan-price-usd">$${plan.usd} USD</div>
-            <div class="plan-price-brl">R$ ${brlPrice}<small>/mês</small></div>
-            <div class="plan-storage">📦 ${plan.storage}GB de armazenamento</div>
-            <ul class="plan-features">${plan.features.map(f => `<li>${f}</li>`).join('')}</ul>
-            <button class="buy-btn" onclick="selectPlan('${key}')">
-              ${userPlan === key ? '✅ Plano Atual' : `Assinar R$ ${brlPrice}/mês`}
-            </button>
-          </div>
-        `;
-      }).join('');
+      container.innerHTML = Object.entries(PLANS).map(([key, plan]) => `
+        <div class="plan-card ${key === 'pro' ? 'popular' : ''}">
+          ${key === 'pro' ? '<div class="popular-badge">MAIS POPULAR</div>' : ''}
+          <div class="plan-name">${plan.name}</div>
+          <div class="plan-price">R$ ${plan.price}<small>/mês</small></div>
+          <div class="plan-storage">📦 ${plan.storage}GB de armazenamento</div>
+          <ul class="plan-features">${plan.features.map(f => `<li>${f}</li>`).join('')}</ul>
+          <button class="buy-btn" onclick="selectPlan('${key}')">
+            ${userPlan === key ? '✅ Plano Atual' : `Assinar R$ ${plan.price}/mês`}
+          </button>
+        </div>
+      `).join('');
       container.style.display = 'grid';
       
-      // Iniciar animação do dedo após renderizar
       setTimeout(() => startFingerAnimation(), 1000);
     }
     
     function updateCurrentPlanDisplay() {
       const container = document.getElementById('current-plan-container');
-      const currentPlan = PLANS_USD[userPlan] || { name: 'Grátis', storage: 5 };
+      const currentPlan = PLANS[userPlan] || { name: 'Grátis', storage: 5 };
       const usedMB = (userStorage.used / (1024 * 1024)).toFixed(2);
       const limitMB = userStorage.limit / (1024 * 1024);
       
       container.innerHTML = `
-        <div class="support-section">
+        <div class="current-plan">
           <h3>📋 Plano Atual: ${currentPlan.name}</h3>
           <p>💾 Armazenamento: ${usedMB}MB / ${limitMB}GB usado</p>
           <div style="background:#e0e0e0; border-radius:10px; margin-top:10px; overflow:hidden;">
@@ -921,9 +868,8 @@
         startFingerAnimation();
         return;
       }
-      const plan = PLANS_USD[planKey];
-      const brlPrice = usdToBrl(plan.usd);
-      if (confirm(`Confirmar assinatura do plano ${plan.name} por R$ ${brlPrice}/mês?`)) {
+      const plan = PLANS[planKey];
+      if (confirm(`Confirmar assinatura do plano ${plan.name} por R$ ${plan.price}/mês?`)) {
         await processPayment(planKey, plan);
       }
       startFingerAnimation();
@@ -971,6 +917,7 @@
     }
     
     function switchTab(tab) {
+      stopFingerAnimation();
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       
@@ -981,7 +928,6 @@
       } else {
         document.querySelectorAll('.tab-btn')[1].classList.add('active');
         document.getElementById('support-tab').classList.add('active');
-        stopFingerAnimation();
       }
     }
     
@@ -996,8 +942,6 @@
     window.closeProcessingModal = () => { document.getElementById('processingModal').style.display = 'none'; if (checkInterval) clearInterval(checkInterval); };
     window.closeRefundModal = () => document.getElementById('refundModal').style.display = 'none';
     window.closePaymentModal = () => document.getElementById('paymentModal').style.display = 'none';
-    window.copyPixCode = (code) => { navigator.clipboard.writeText(code); showNotification('Código copiado!', 'success'); };
-    window.startPaymentAfterPix = startPaymentAfterPix;
     
     // Autenticação
     auth.onAuthStateChanged(async (user) => {
@@ -1006,10 +950,25 @@
         return;
       }
       currentUser = user;
-      await fetchExchangeRate();
       await loadUserData();
       renderPlans();
       document.getElementById('loading').style.display = 'none';
+      
+      // Verificar retorno de pagamento
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('payment_success') === 'true') {
+        const planKey = urlParams.get('plan');
+        const orderId = urlParams.get('order');
+        const pending = sessionStorage.getItem('pending_purchase');
+        if (pending) {
+          const pendingData = JSON.parse(pending);
+          if (pendingData.id === orderId) {
+            document.getElementById('processingModal').style.display = 'flex';
+            startPaymentCheck(orderId, planKey);
+            window.history.replaceState({}, '', window.location.pathname);
+          }
+        }
+      }
     });
   </script>
 </body>
