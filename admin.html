@@ -37,7 +37,118 @@
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; }
     .modal-content { background: #2d2d2d; padding: 30px; border-radius: 10px; max-width: 500px; width: 90%; }
     .modal-buttons { display: flex; gap: 10px; margin-top: 20px; }
-    @media (max-width: 768px) { th, td { padding: 8px; font-size: 12px; } }
+    
+    /* Video Call */
+    .call-notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #ff9800;
+      padding: 15px 20px;
+      border-radius: 10px;
+      z-index: 1000;
+      animation: pulse 0.5s infinite;
+      cursor: pointer;
+    }
+    
+    .video-container {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 350px;
+      background: #1e1e1e;
+      border-radius: 10px;
+      overflow: hidden;
+      z-index: 1001;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    
+    .video-container.active {
+      display: block;
+    }
+    
+    .video-header {
+      background: #333;
+      padding: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .video-header button {
+      background: #f44336;
+      border: none;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    #localVideo, #remoteVideo {
+      width: 100%;
+      background: #000;
+    }
+    
+    .answer-call-btn {
+      background: #4caf50;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); background: #ff5722; }
+    }
+    
+    .online-toggle {
+      background: #333;
+      padding: 10px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .toggle-switch {
+      width: 50px;
+      height: 26px;
+      background: #555;
+      border-radius: 13px;
+      cursor: pointer;
+      position: relative;
+      transition: 0.3s;
+    }
+    
+    .toggle-switch.active {
+      background: #4caf50;
+    }
+    
+    .toggle-switch::after {
+      content: '';
+      width: 22px;
+      height: 22px;
+      background: white;
+      border-radius: 50%;
+      position: absolute;
+      top: 2px;
+      left: 3px;
+      transition: 0.3s;
+    }
+    
+    .toggle-switch.active::after {
+      left: 25px;
+    }
+    
+    @media (max-width: 768px) {
+      th, td { padding: 8px; font-size: 12px; }
+      .video-container { width: 280px; }
+    }
   </style>
 </head>
 <body>
@@ -50,11 +161,18 @@
       <button onclick="loginAdmin()">Entrar</button>
     </div>
     <div id="adminContent" style="display: none;">
+      <div class="online-toggle">
+        <span>📞 Status para ligações:</span>
+        <div id="onlineToggle" class="toggle-switch" onclick="toggleOnlineStatus()"></div>
+        <span id="statusText">Offline</span>
+      </div>
+      
       <button class="refresh-btn" onclick="loadAllData()">🔄 Atualizar</button>
       <div class="stats" id="stats"></div>
       <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('users')">👥 Usuários</button>
         <button class="tab-btn" onclick="switchTab('refunds')">🔄 Reembolsos</button>
+        <button class="tab-btn" onclick="switchTab('calls')">📞 Chamadas</button>
       </div>
       <div id="users-tab" class="tab-content active">
         <div class="search-box"><input type="text" id="userSearch" placeholder="Buscar usuário..." onkeyup="filterUsers()"></div>
@@ -63,8 +181,22 @@
       <div id="refunds-tab" class="tab-content">
         <div id="refunds-table"></div>
       </div>
+      <div id="calls-tab" class="tab-content">
+        <div id="calls-table"></div>
+      </div>
     </div>
   </div>
+  
+  <!-- Video Container WebRTC -->
+  <div id="videoContainer" class="video-container">
+    <div class="video-header">
+      <span>📞 Chamada com Usuário</span>
+      <button onclick="hangUp()">✕ Desligar</button>
+    </div>
+    <video id="localVideo" autoplay muted playsinline></video>
+    <video id="remoteVideo" autoplay playsinline></video>
+  </div>
+  
   <div id="refundModal" class="modal">
     <div class="modal-content">
       <h3>Processar Reembolso</h3>
@@ -75,6 +207,7 @@
       </div>
     </div>
   </div>
+  
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
@@ -93,7 +226,107 @@
     let allUsers = [];
     let allRefunds = [];
     let currentRefund = null;
-    const ADMIN_EMAIL = "admin@codehub.com"; // Altere para seu email
+    let isOnline = false;
+    let localStream = null;
+    let peerConnection = null;
+    let currentCallUser = null;
+    
+    const ADMIN_EMAIL = "admin@codehub.com";
+    
+    // WebRTC
+    async function toggleOnlineStatus() {
+      isOnline = !isOnline;
+      const toggle = document.getElementById('onlineToggle');
+      const statusText = document.getElementById('statusText');
+      
+      if (isOnline) {
+        toggle.classList.add('active');
+        statusText.textContent = 'Online - Disponível para ligações';
+        await db.ref('admin/status').set('online');
+        
+        // Escutar chamadas
+        db.ref('calls').on('child_added', (snapshot) => {
+          const call = snapshot.val();
+          if (call.type === 'offer' && call.status === 'waiting') {
+            showCallNotification(call, snapshot.key);
+          }
+        });
+      } else {
+        toggle.classList.remove('active');
+        statusText.textContent = 'Offline';
+        await db.ref('admin/status').set('offline');
+        db.ref('calls').off();
+      }
+    }
+    
+    function showCallNotification(call, callId) {
+      const notification = document.createElement('div');
+      notification.className = 'call-notification';
+      notification.innerHTML = `
+        <strong>📞 Chamada recebida!</strong><br>
+        Usuário ${call.userId.substring(0, 15)}... está ligando.<br>
+        <button class="answer-call-btn" onclick="answerCall('${callId}', '${call.userId}')">Atender</button>
+        <button onclick="rejectCall('${callId}')" style="background:#f44336; color:white; border:none; padding:4px 8px; border-radius:4px; margin-left:5px;">Recusar</button>
+      `;
+      document.body.appendChild(notification);
+      
+      // Tocar som
+      const audio = new Audio('https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3');
+      audio.play();
+      
+      setTimeout(() => {
+        if (notification.parentNode) notification.remove();
+      }, 30000);
+    }
+    
+    async function answerCall(callId, userId) {
+      document.querySelectorAll('.call-notification').forEach(n => n.remove());
+      currentCallUser = userId;
+      
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        document.getElementById('localVideo').srcObject = localStream;
+        document.getElementById('videoContainer').classList.add('active');
+        
+        // Responder chamada
+        await db.ref(`calls/${userId}`).update({
+          type: 'answer',
+          status: 'connected',
+          answeredAt: Date.now()
+        });
+        
+        showNotification('Chamada conectada!', 'success');
+      } catch (error) {
+        console.error('Erro ao atender:', error);
+      }
+    }
+    
+    function rejectCall(callId) {
+      db.ref(`calls/${callId}`).remove();
+      document.querySelectorAll('.call-notification').forEach(n => n.remove());
+      showNotification('Chamada recusada', 'info');
+    }
+    
+    function hangUp() {
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+      }
+      if (peerConnection) peerConnection.close();
+      document.getElementById('videoContainer').classList.remove('active');
+      
+      if (currentCallUser) {
+        db.ref(`calls/${currentCallUser}`).remove();
+        currentCallUser = null;
+      }
+    }
+    
+    function showNotification(message, type) {
+      const notif = document.createElement('div');
+      notif.style.cssText = `position:fixed; bottom:20px; right:20px; background:${type === 'success' ? '#4caf50' : '#2196f3'}; color:white; padding:10px 20px; border-radius:5px; z-index:1000;`;
+      notif.textContent = message;
+      document.body.appendChild(notif);
+      setTimeout(() => notif.remove(), 3000);
+    }
     
     async function loginAdmin() {
       const email = document.getElementById('adminEmail').value;
@@ -120,6 +353,7 @@
       updateStats();
       renderUsersTable();
       renderRefundsTable();
+      renderCallsTable();
     }
     
     async function loadUsers() {
@@ -148,6 +382,28 @@
         });
       });
       allRefunds.sort((a, b) => new Date(b.date) - new Date(a.date));
+    }
+    
+    async function renderCallsTable() {
+      const callsRef = db.ref('calls');
+      const snapshot = await callsRef.once('value');
+      const calls = [];
+      snapshot.forEach(child => {
+        calls.push({ ...child.val(), id: child.key });
+      });
+      
+      document.getElementById('calls-table').innerHTML = `
+        <table><thead><tr><th>Usuário</th><th>Tipo</th><th>Status</th><th>Data</th><th>Ações</th></tr></thead>
+        <tbody>${calls.map(c => `
+          <tr>
+            <td style="font-family:monospace">${c.userId?.substring(0,20)}...</td>
+            <td>${c.type}</td>
+            <td><span class="status-badge status-${c.status === 'waiting' ? 'pending' : 'completed'}">${c.status}</span></td>
+            <td>${new Date(c.timestamp).toLocaleString()}</td>
+            <td>${c.status === 'waiting' ? `<button class="btn-approve" onclick="answerCall('${c.id}','${c.userId}')">Atender</button>` : ''}</td>
+          </tr>
+        `).join('')}</tbody></table>
+      `;
     }
     
     function updateStats() {
@@ -179,13 +435,12 @@
       document.getElementById('refunds-table').innerHTML = `
         <table><thead><tr><th>Usuário</th><th>Plano</th><th>Valor</th><th>Motivo</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead>
         <tbody>${allRefunds.map(r => `
-          <tr><td style="font-family:monospace;font-size:12px;">${r.userId?.substring(0,15)}...</td>
+          <tr><td style="font-family:monospace">${r.userId?.substring(0,15)}...</td>
           <td>${r.plan}</td><td>R$ ${r.price}</td>
           <td>${r.reason?.substring(0,30) || 'N/A'}</td>
           <td>${new Date(r.date).toLocaleDateString()}</td>
           <td><span class="status-badge status-${r.status === 'pending' ? 'pending' : 'completed'}">${r.status}</span></td>
-          <td>${r.status === 'pending' ? `<button class="btn-approve" onclick="openRefundModal('${r.userId}','${r.id}')">Aprovar</button>` : ''}</td>
-        </tr>
+          <td>${r.status === 'pending' ? `<button class="btn-approve" onclick="openRefundModal('${r.userId}','${r.id}')">Aprovar</button>` : ''}</td></tr>
         `).join('')}</tbody></table>
       `;
     }
@@ -211,14 +466,20 @@
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       if (tab === 'users') { document.querySelector('.tab-btn:first-child').classList.add('active'); document.getElementById('users-tab').classList.add('active'); }
-      else { document.querySelectorAll('.tab-btn')[1].classList.add('active'); document.getElementById('refunds-tab').classList.add('active'); }
+      else if (tab === 'refunds') { document.querySelectorAll('.tab-btn')[1].classList.add('active'); document.getElementById('refunds-tab').classList.add('active'); }
+      else { document.querySelectorAll('.tab-btn')[2].classList.add('active'); document.getElementById('calls-tab').classList.add('active'); renderCallsTable(); }
     }
+    
     window.filterUsers = () => renderUsersTable();
     window.switchTab = switchTab;
     window.loadAllData = loadAllData;
     window.openRefundModal = openRefundModal;
     window.processRefund = processRefund;
     window.closeRefundModal = closeRefundModal;
+    window.toggleOnlineStatus = toggleOnlineStatus;
+    window.answerCall = answerCall;
+    window.rejectCall = rejectCall;
+    window.hangUp = hangUp;
   </script>
 </body>
 </html>
