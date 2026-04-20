@@ -4,9 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CodeHUB - Planos e Assinaturas</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
@@ -129,7 +126,7 @@
     }
     
     .current-plan {
-      background: #e8f5e9;
+      background: rgba(255,255,255,0.95);
       border-radius: 15px;
       padding: 20px;
       margin-top: 30px;
@@ -184,10 +181,11 @@
       padding: 30px;
       border-radius: 15px;
       max-width: 500px;
+      width: 90%;
       text-align: center;
     }
     
-    .modal-content input {
+    .modal-content input, .modal-content select, .modal-content textarea {
       width: 100%;
       padding: 10px;
       margin: 10px 0;
@@ -246,6 +244,26 @@
       color: white;
     }
     
+    .payment-qr {
+      text-align: center;
+      padding: 20px;
+    }
+    
+    .payment-qr img {
+      max-width: 200px;
+      margin: 10px auto;
+    }
+    
+    .copy-pix-btn {
+      background: #00bcd4;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    
     @media (max-width: 768px) {
       .plans { grid-template-columns: 1fr; }
     }
@@ -273,6 +291,20 @@
     </div>
   </div>
   
+  <!-- Modal de Pagamento PIX -->
+  <div id="paymentModal" class="modal">
+    <div class="modal-content">
+      <h3>💳 Pagamento via PIX</h3>
+      <div id="paymentContent">
+        <p>Gerando código PIX...</p>
+      </div>
+      <div class="modal-buttons">
+        <button onclick="closePaymentModal()" class="cancel-btn">Fechar</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Modal de Localização -->
   <div id="locationModal" class="modal">
     <div class="modal-content">
       <h3>📍 Verificando Localização</h3>
@@ -282,13 +314,14 @@
     </div>
   </div>
   
+  <!-- Modal de Reembolso -->
   <div id="refundModal" class="modal">
     <div class="modal-content">
       <h3>🔄 Solicitar Reembolso</h3>
       <p>Selecione a compra para reembolso:</p>
       <select id="purchaseSelect"></select>
       <p style="margin-top: 15px;">Motivo:</p>
-      <textarea id="refundReason" rows="3" style="width:100%; padding:10px;"></textarea>
+      <textarea id="refundReason" rows="3" placeholder="Descreva o motivo do reembolso..."></textarea>
       <div class="modal-buttons">
         <button onclick="confirmRefund()" class="confirm-btn">Confirmar Reembolso</button>
         <button onclick="closeRefundModal()" class="cancel-btn">Cancelar</button>
@@ -299,30 +332,59 @@
   <div id="notification" class="notification"></div>
   
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
-      authDomain: "html-15e80.firebaseapp.com",
-      databaseURL: "https://html-15e80-default-rtdb.firebaseio.com",
-      projectId: "html-15e80",
-      storageBucket: "html-15e80.appspot.com",
-      messagingSenderId: "1068148640439",
-      appId: "1:1068148640439:web:1ac651348e624f6be41b32"
-    };
-    
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const auth = firebase.auth();
+    // Configuração do backend de pagamento
+    const PAYMENT_API = "https://code-hub-eta.vercel.app/api/payment.js";
     
     // Planos disponíveis (em MB)
     const PLANS = {
-      free: { name: "Grátis", price: 0, storage: 5, storageBytes: 5 * 1024 * 1024, features: ["5GB de armazenamento", "Projetos ilimitados", "Editor Monaco", "Suporte básico"] },
-      basic: { name: "Básico", price: 9, storage: 8, storageBytes: 8 * 1024 * 1024, features: ["8GB de armazenamento", "Projetos ilimitados", "Editor Monaco", "Suporte prioritário", "Exportar projetos"] },
-      pro: { name: "Profissional", price: 89, storage: 20, storageBytes: 20 * 1024 * 1024, features: ["20GB de armazenamento", "Projetos ilimitados", "Editor Monaco", "Suporte 24/7", "Exportar projetos", "Colaboração em tempo real", "Backup automático"] }
+      basic: { name: "Básico", price: 9, priceCents: 900, storage: 8, storageBytes: 8 * 1024 * 1024, features: ["8GB de armazenamento", "Projetos ilimitados", "Editor Monaco", "Suporte prioritário", "Exportar projetos"] },
+      pro: { name: "Profissional", price: 89, priceCents: 8900, storage: 20, storageBytes: 20 * 1024 * 1024, features: ["20GB de armazenamento", "Projetos ilimitados", "Editor Monaco", "Suporte 24/7", "Exportar projetos", "Colaboração em tempo real", "Backup automático"] }
     };
     
     let currentUser = null;
     let userPlan = 'free';
     let userPurchases = [];
+    let userStorage = { used: 0, limit: 5 * 1024 * 1024 };
+    
+    // Carregar dados do localStorage
+    function loadUserData() {
+      const userId = localStorage.getItem('userId');
+      if (!userId) {
+        // Criar usuário anônimo
+        const newId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('userId', newId);
+        currentUser = { uid: newId, name: 'Usuário', email: '' };
+      } else {
+        currentUser = { uid: userId, name: localStorage.getItem('userName') || 'Usuário', email: localStorage.getItem('userEmail') || '' };
+      }
+      
+      // Carregar plano
+      const savedPlan = localStorage.getItem(`plan_${currentUser.uid}`);
+      if (savedPlan) {
+        userPlan = savedPlan;
+      }
+      
+      // Carregar armazenamento
+      const savedStorage = localStorage.getItem(`storage_${currentUser.uid}`);
+      if (savedStorage) {
+        userStorage = JSON.parse(savedStorage);
+      }
+      
+      // Carregar compras
+      const savedPurchases = localStorage.getItem(`purchases_${currentUser.uid}`);
+      if (savedPurchases) {
+        userPurchases = JSON.parse(savedPurchases);
+      }
+      
+      updateCurrentPlanDisplay();
+    }
+    
+    // Salvar dados do usuário
+    function saveUserData() {
+      localStorage.setItem(`plan_${currentUser.uid}`, userPlan);
+      localStorage.setItem(`storage_${currentUser.uid}`, JSON.stringify(userStorage));
+      localStorage.setItem(`purchases_${currentUser.uid}`, JSON.stringify(userPurchases));
+    }
     
     // Mostrar notificação
     function showNotification(message, type = 'info') {
@@ -397,8 +459,10 @@
       const purchase = userPurchases.find(p => p.id === purchaseId);
       
       // Salvar solicitação de reembolso
-      const refundRef = db.ref(`refunds/${currentUser.uid}/${purchaseId}`);
-      await refundRef.set({
+      const refunds = JSON.parse(localStorage.getItem('refunds') || '[]');
+      refunds.push({
+        id: 'refund_' + Date.now(),
+        userId: currentUser.uid,
         purchaseId: purchaseId,
         plan: purchase.plan,
         price: purchase.price,
@@ -406,52 +470,159 @@
         date: new Date().toISOString(),
         status: 'pending'
       });
+      localStorage.setItem('refunds', JSON.stringify(refunds));
       
       showNotification('Solicitação de reembolso enviada! Aguarde aprovação do administrador.', 'success');
       closeRefundModal();
     }
     
-    // Processar pagamento (simulação com API)
+    // Processar pagamento com InfinitePay
     async function processPayment(planKey, plan) {
-      showNotification('Processando pagamento...', 'info');
+      showNotification('Gerando pagamento...', 'info');
       
-      // Gerar ID único da compra
-      const purchaseId = `${currentUser.uid}_${Date.now()}`;
+      const paymentModal = document.getElementById('paymentModal');
+      const paymentContent = document.getElementById('paymentContent');
+      paymentContent.innerHTML = '<p>🔄 Gerando código de pagamento...</p>';
+      paymentModal.style.display = 'flex';
       
-      // Salvar compra pendente
-      const purchaseRef = db.ref(`purchases/${currentUser.uid}/${purchaseId}`);
-      await purchaseRef.set({
-        id: purchaseId,
-        plan: plan.name,
-        planKey: planKey,
-        price: plan.price,
-        storage: plan.storageBytes,
-        date: new Date().toISOString(),
-        status: 'pending'
-      });
-      
-      // Simular pagamento bem-sucedido (na prática, integrar com gateway real)
-      setTimeout(async () => {
-        // Atualizar status da compra
-        await purchaseRef.update({ status: 'completed' });
+      try {
+        const orderId = `ORDER_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         
-        // Atualizar plano do usuário
-        await db.ref(`users/${currentUser.uid}/plan`).set({
-          name: plan.name,
-          storage: plan.storageBytes,
-          updatedAt: new Date().toISOString()
+        const response = await fetch(PAYMENT_API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            order_nsu: orderId,
+            items: [{
+              quantity: 1,
+              price: plan.priceCents,
+              description: `Assinatura ${plan.name} - CodeHUB - ${plan.storage}GB de armazenamento`
+            }],
+            redirect_success: window.location.href + "?payment_success=true&plan=" + planKey,
+            redirect_fail: window.location.href + "?payment_fail=true"
+          })
         });
         
-        // Atualizar limite de armazenamento
-        await db.ref(`users/${currentUser.uid}/storage/limit`).set(plan.storageBytes);
+        const data = await response.json();
         
-        showNotification(`Pagamento confirmado! Seu plano ${plan.name} está ativo.`, 'success');
+        if (data.url) {
+          // Salvar informações da compra pendente
+          const pendingPurchase = {
+            id: orderId,
+            plan: plan.name,
+            planKey: planKey,
+            price: plan.price,
+            storage: plan.storageBytes,
+            date: new Date().toISOString(),
+            status: 'pending'
+          };
+          localStorage.setItem('pending_purchase', JSON.stringify(pendingPurchase));
+          
+          // Redirecionar para o checkout
+          window.location.href = data.url;
+        } else if (data.qr_code) {
+          // Exibir QR Code PIX
+          paymentContent.innerHTML = `
+            <div class="payment-qr">
+              <p>📱 Escaneie o QR Code abaixo para pagar via PIX</p>
+              <img src="${data.qr_code}" alt="QR Code PIX">
+              <p style="font-size: 12px; margin-top: 10px;">Código PIX:</p>
+              <input type="text" value="${data.pix_code}" readonly style="width: 100%; font-size: 10px;">
+              <button class="copy-pix-btn" onclick="copyPixCode('${data.pix_code}')">Copiar código PIX</button>
+              <p style="margin-top: 15px;">⏱️ O código expira em 30 minutos</p>
+              <button onclick="checkPaymentStatus('${orderId}')" class="confirm-btn" style="margin-top: 10px;">✅ Já paguei</button>
+            </div>
+          `;
+        } else {
+          paymentContent.innerHTML = '<p>❌ Erro ao gerar pagamento. Tente novamente.</p>';
+          showNotification('Erro ao gerar pagamento.', 'error');
+        }
         
-        // Recarregar página para atualizar informações
-        setTimeout(() => {
-          location.reload();
-        }, 2000);
-      }, 2000);
+      } catch (error) {
+        console.error('Erro no pagamento:', error);
+        paymentContent.innerHTML = '<p>❌ Erro de conexão. Tente novamente.</p>';
+        showNotification('Erro de conexão. Tente novamente.', 'error');
+      }
+    }
+    
+    // Copiar código PIX
+    function copyPixCode(code) {
+      navigator.clipboard.writeText(code);
+      showNotification('Código PIX copiado!', 'success');
+    }
+    
+    // Verificar status do pagamento
+    async function checkPaymentStatus(orderId) {
+      showNotification('Verificando pagamento...', 'info');
+      
+      try {
+        const response = await fetch(`${PAYMENT_API}/status?order=${orderId}`);
+        const data = await response.json();
+        
+        if (data.status === 'paid') {
+          // Confirmar compra
+          const pendingPurchase = JSON.parse(localStorage.getItem('pending_purchase'));
+          if (pendingPurchase) {
+            pendingPurchase.status = 'completed';
+            userPurchases.push(pendingPurchase);
+            
+            // Atualizar plano
+            userPlan = pendingPurchase.planKey;
+            userStorage.limit = pendingPurchase.storage;
+            
+            saveUserData();
+            
+            showNotification(`✅ Pagamento confirmado! Seu plano ${pendingPurchase.plan} está ativo.`, 'success');
+            closePaymentModal();
+            location.reload();
+          }
+        } else {
+          showNotification('Pagamento ainda não confirmado. Aguarde alguns instantes.', 'info');
+        }
+      } catch (error) {
+        console.error('Erro ao verificar status:', error);
+      }
+    }
+    
+    // Verificar retorno de pagamento
+    function checkPaymentReturn() {
+      const urlParams = new URLSearchParams(window.location.search);
+      
+      if (urlParams.get('payment_success') === 'true') {
+        const planKey = urlParams.get('plan');
+        const pendingPurchase = JSON.parse(localStorage.getItem('pending_purchase'));
+        
+        if (pendingPurchase) {
+          pendingPurchase.status = 'completed';
+          userPurchases.push(pendingPurchase);
+          
+          // Atualizar plano
+          userPlan = planKey;
+          userStorage.limit = PLANS[planKey].storageBytes;
+          
+          saveUserData();
+          
+          showNotification(`✅ Pagamento confirmado! Seu plano ${PLANS[planKey].name} está ativo.`, 'success');
+          
+          // Limpar URL
+          window.history.replaceState({}, '', window.location.pathname);
+          setTimeout(() => location.reload(), 2000);
+        }
+      } else if (urlParams.get('payment_fail') === 'true') {
+        showNotification('❌ Pagamento cancelado ou não concluído.', 'error');
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+      
+      // Limpar pending purchase antigo
+      const pending = localStorage.getItem('pending_purchase');
+      if (pending) {
+        const pendingData = JSON.parse(pending);
+        const pendingDate = new Date(pendingData.date);
+        const now = new Date();
+        if ((now - pendingDate) > 60 * 60 * 1000) { // 1 hora
+          localStorage.removeItem('pending_purchase');
+        }
+      }
     }
     
     // Renderizar planos
@@ -468,7 +639,7 @@
             ${plan.features.map(f => `<li>${f}</li>`).join('')}
           </ul>
           <button class="buy-btn" onclick="selectPlan('${key}')">
-            ${key === 'free' ? 'Plano Atual' : 'Assinar Agora'}
+            ${userPlan === key ? '✅ Plano Atual' : 'Assinar Agora'}
           </button>
         </div>
       `).join('');
@@ -476,16 +647,36 @@
       container.style.display = 'grid';
     }
     
+    // Atualizar display do plano atual
+    function updateCurrentPlanDisplay() {
+      const container = document.getElementById('current-plan-container');
+      const currentPlan = PLANS[userPlan] || { name: 'Grátis', storage: 5 };
+      const usedMB = (userStorage.used / (1024 * 1024)).toFixed(2);
+      const limitMB = userStorage.limit / (1024 * 1024);
+      
+      container.innerHTML = `
+        <div class="current-plan">
+          <h3>📋 Seu Plano Atual: ${currentPlan.name}</h3>
+          <p>💾 Armazenamento: ${usedMB}MB / ${limitMB}GB usado</p>
+          <p>📅 Próxima cobrança: ${new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString('pt-BR')}</p>
+          <div style="background: #e0e0e0; border-radius: 10px; margin-top: 10px; overflow: hidden;">
+            <div style="background: #4caf50; width: ${(userStorage.used / userStorage.limit) * 100}%; height: 20px;"></div>
+          </div>
+        </div>
+      `;
+      container.style.display = 'block';
+      
+      // Mostrar seção de reembolso apenas para planos pagos
+      if (userPlan !== 'free') {
+        document.getElementById('refund-section').style.display = 'block';
+      }
+    }
+    
     // Selecionar plano
     async function selectPlan(planKey) {
       const plan = PLANS[planKey];
       
-      if (planKey === 'free') {
-        showNotification('Você já está no plano grátis!', 'info');
-        return;
-      }
-      
-      if (planKey === userPlan) {
+      if (userPlan === planKey) {
         showNotification('Este já é seu plano atual!', 'info');
         return;
       }
@@ -496,62 +687,12 @@
       }
     }
     
-    // Carregar dados do usuário
-    async function loadUserData() {
-      const userRef = db.ref(`users/${currentUser.uid}`);
-      const snapshot = await userRef.once('value');
-      const data = snapshot.val();
-      
-      if (data && data.plan) {
-        userPlan = data.plan.name === 'Básico' ? 'basic' : (data.plan.name === 'Profissional' ? 'pro' : 'free');
-      }
-      
-      // Carregar compras
-      const purchasesRef = db.ref(`purchases/${currentUser.uid}`);
-      const purchasesSnapshot = await purchasesRef.once('value');
-      userPurchases = [];
-      purchasesSnapshot.forEach(child => {
-        userPurchases.push(child.val());
-      });
-      userPurchases.sort((a, b) => new Date(b.date) - new Date(a.date));
-      
-      // Mostrar plano atual
-      const currentPlanContainer = document.getElementById('current-plan-container');
-      const currentPlan = PLANS[userPlan];
-      currentPlanContainer.innerHTML = `
-        <div class="current-plan">
-          <h3>📋 Seu Plano Atual: ${currentPlan.name}</h3>
-          <p>💾 Armazenamento: ${currentPlan.storage}GB</p>
-          <p>📅 Próxima cobrança: ${new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString('pt-BR')}</p>
-        </div>
-      `;
-      currentPlanContainer.style.display = 'block';
-      
-      // Mostrar seção de reembolso apenas para planos pagos
-      if (userPlan !== 'free') {
-        document.getElementById('refund-section').style.display = 'block';
-      }
+    // Fechar modal de pagamento
+    function closePaymentModal() {
+      document.getElementById('paymentModal').style.display = 'none';
     }
     
-    // Inicializar
-    function initialize() {
-      auth.onAuthStateChanged(async user => {
-        if (!user) {
-          window.location.href = 'auth.html';
-          return;
-        }
-        
-        currentUser = user;
-        
-        await loadUserData();
-        renderPlans();
-        
-        document.getElementById('loading').style.display = 'none';
-      });
-    }
-    
-    // Funções globais para os botões
-    window.selectPlan = selectPlan;
+    // Funções de modal
     window.requestRefund = () => {
       document.getElementById('locationModal').style.display = 'flex';
     };
@@ -563,6 +704,18 @@
       document.getElementById('refundModal').style.display = 'none';
     };
     window.confirmRefund = confirmRefund;
+    window.selectPlan = selectPlan;
+    window.closePaymentModal = closePaymentModal;
+    window.copyPixCode = copyPixCode;
+    window.checkPaymentStatus = checkPaymentStatus;
+    
+    // Inicializar
+    function initialize() {
+      loadUserData();
+      renderPlans();
+      checkPaymentReturn();
+      document.getElementById('loading').style.display = 'none';
+    }
     
     initialize();
   </script>
