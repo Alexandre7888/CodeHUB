@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CodeHUB - Editor com Puter</title>
+  <title>CodeHUB - Editor com Puter Hosting</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+  <!-- Puter.js SDK v2 -->
   <script src="https://js.puter.com/v2/"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -110,7 +111,7 @@
     #copyUrlBtn { background: #00bcd4; }
     #aiAssistantBtn { background: #9c27b0; }
     .logout-btn { background: #f44336; }
-    #uploadPuterBtn { background: #20b2aa; }
+    #hostBtn { background: #20b2aa; }
     
     #storage-info {
       background: #333;
@@ -359,7 +360,7 @@
 <body>
   <div id="loading-screen">
     <img src="https://alexandre7888.github.io/CodeHUB/CodeFOX/foto1.jpg" class="loader" alt="Loading">
-    <h1>Carregando editor com Puter...</h1>
+    <h1>Carregando editor com Puter Hosting...</h1>
   </div>
 
   <div id="app-content" style="display: none; height: 100vh; display: flex; flex-direction: column;">
@@ -373,7 +374,7 @@
       <button id="saveFileBtn" disabled>💾 Salvar</button>
       <button id="previewBtn">👁️ Preview</button>
       <button id="copyUrlBtn">🔗 Copiar URL</button>
-      <button id="uploadPuterBtn">☁️ Publicar (Puter)</button>
+      <button id="hostBtn">🌐 Hospedar (Puter)</button>
       <button id="aiAssistantBtn">🤖 IA Assistente</button>
       <button id="plansBtn">💰 Planos</button>
       <div id="storage-info">
@@ -409,7 +410,7 @@
             • "Crie uma pasta chamada components"<br>
             • "Gere um código CSS para um botão bonito"<br>
             • "Faça uma calculadora em JavaScript"<br><br>
-            <strong>Status do Puter:</strong> Aguardando conexão...
+            <strong>Hospedagem:</strong> Clique em "Hospedar (Puter)" para publicar seu site com um subdomínio gratuito!
           </div>
         </div>
         <div class="chat-input-area">
@@ -420,9 +421,10 @@
     </div>
     
     <div class="url-panel" id="urlPanel" style="display: none;">
-      <span>🔗 URL Pública (Puter):</span>
+      <span>🔗 Site hospedado:</span>
       <input type="text" id="fileUrl" readonly onclick="this.select()">
       <button id="openUrlBtn" style="background:#00bcd4;">Abrir</button>
+      <button id="manageHostingBtn" style="background:#ff9800;">Gerenciar</button>
     </div>
   </div>
 
@@ -449,7 +451,9 @@
     let files = {};
     let models = {};
     let userStorage = { used: 0, limit: 5 * 1024 * 1024 };
-    let currentFileUrl = null;
+    let currentHostingUrl = null;
+    let currentHostingSubdomain = null;
+    let currentHostingDirectory = null;
     let isPuterReady = false;
     let puterUser = null;
 
@@ -467,7 +471,7 @@
       copyUrlBtn: document.getElementById('copyUrlBtn'),
       plansBtn: document.getElementById('plansBtn'),
       aiAssistantBtn: document.getElementById('aiAssistantBtn'),
-      uploadPuterBtn: document.getElementById('uploadPuterBtn'),
+      hostBtn: document.getElementById('hostBtn'),
       storageUsed: document.getElementById('storage-used'),
       storageLimit: document.getElementById('storage-limit'),
       userName: document.getElementById('user-name'),
@@ -477,6 +481,7 @@
       urlPanel: document.getElementById('urlPanel'),
       fileUrl: document.getElementById('fileUrl'),
       openUrlBtn: document.getElementById('openUrlBtn'),
+      manageHostingBtn: document.getElementById('manageHostingBtn'),
       chatMessages: document.getElementById('chatMessages'),
       chatInput: document.getElementById('chatInput'),
       sendChatBtn: document.getElementById('sendChatBtn'),
@@ -534,55 +539,28 @@
       elements.aiSidebar.classList.toggle('collapsed');
     }
 
-    // ==================== PUTER SDK CORRIGIDO ====================
+    // ==================== PUTER HOSTING API (CORRETO) ====================
     
-    // Salvar token no localStorage para persistir login
-    async function savePuterToken() {
-      try {
-        // O token é gerenciado automaticamente pelo puter.js
-        // Mas podemos verificar se está logado
-        const user = await puter.auth.getUser();
-        if (user) {
-          localStorage.setItem(PUTER_TOKEN_KEY, 'true');
-          updatePuterStatus(true, `Conectado: ${user.username || user.email}`);
-          return true;
-        }
-      } catch (e) {
-        localStorage.removeItem(PUTER_TOKEN_KEY);
-        return false;
-      }
-      return false;
-    }
-
     async function initPuter() {
       try {
-        // Verificar se já tem token salvo
-        const hasSavedToken = localStorage.getItem(PUTER_TOKEN_KEY);
-        
         if (typeof puter !== 'undefined') {
-          // Tentar obter usuário atual (não força login)
+          // Verificar se já está autenticado
           try {
             const user = await puter.auth.getUser();
             if (user) {
               puterUser = user;
               isPuterReady = true;
               updatePuterStatus(true, `Conectado: ${user.username || user.email}`);
-              showNotification(`✅ Conectado ao Puter como ${user.username || user.email}`, 'success');
-              elements.uploadPuterBtn.disabled = false;
+              elements.hostBtn.disabled = false;
               return true;
             }
           } catch (e) {
-            console.log('Puter não autenticado');
-          }
-          
-          // Se não está logado mas tem token salvo, tenta reconectar
-          if (hasSavedToken) {
-            updatePuterStatus(false, 'Reconectando...');
+            console.log('Usuário não autenticado');
           }
           
           isPuterReady = false;
-          elements.uploadPuterBtn.disabled = false; // Botão vai pedir login quando clicado
-          updatePuterStatus(false, 'Clique em Publicar para conectar');
+          elements.hostBtn.disabled = false;
+          updatePuterStatus(false, 'Clique em Hospedar para conectar');
           return false;
         }
       } catch (error) {
@@ -596,20 +574,15 @@
       try {
         showNotification('🔐 Conectando ao Puter...', 'info');
         
-        // Forçar login - isso abre o popup do Puter
         await puter.auth.signIn();
         
-        // Após login, obter usuário
         const user = await puter.auth.getUser();
         puterUser = user;
         isPuterReady = true;
         
-        // Salvar token
-        localStorage.setItem(PUTER_TOKEN_KEY, 'true');
-        
         updatePuterStatus(true, `Conectado: ${user.username || user.email}`);
         showNotification(`✅ Conectado ao Puter como ${user.username || user.email}`, 'success');
-        elements.uploadPuterBtn.disabled = false;
+        elements.hostBtn.disabled = false;
         return true;
       } catch (error) {
         console.error('Erro no login Puter:', error);
@@ -622,7 +595,6 @@
     async function ensurePuterAuth() {
       if (isPuterReady && puterUser) return true;
       
-      // Tentar recuperar sessão existente
       try {
         const user = await puter.auth.getUser();
         if (user) {
@@ -631,16 +603,13 @@
           updatePuterStatus(true, `Conectado: ${user.username || user.email}`);
           return true;
         }
-      } catch (e) {
-        // Não está logado
-      }
+      } catch (e) {}
       
-      // Se não estiver logado, fazer login
       return await loginPuter();
     }
 
-    async function uploadToPuter(content, fileName) {
-      // Garantir que está autenticado
+    // Função principal para hospedar o projeto no Puter
+    async function hostProjectOnPuter() {
       const authenticated = await ensurePuterAuth();
       if (!authenticated) {
         showNotification('❌ Não foi possível autenticar no Puter', 'error');
@@ -648,70 +617,219 @@
       }
       
       try {
-        showNotification(`📤 Publicando ${fileName} no Puter...`, 'info');
+        showNotification(`📦 Preparando projeto para hospedagem...`, 'info');
         
-        // Criar estrutura de pastas: /CodeHUB/usuario/projeto/
-        const projectPath = `/CodeHUB/${currentUser.uid}/${currentProjectId}`;
+        // 1. Criar um diretório temporário com todos os arquivos do projeto
+        const dirName = `codehub_${currentUser.uid}_${currentProjectId}_${Date.now()}`;
+        await puter.fs.mkdir(dirName);
         
-        // Usar createMissingParents para criar pastas automaticamente [citation:3]
-        const fullPath = `${projectPath}/${fileName}`;
-        
-        // Upload do arquivo com opções
-        const result = await puter.fs.write(fullPath, content, { 
-          createMissingParents: true  // Cria pastas automaticamente
-        });
-        
-        // Obter URL pública [citation:3]
-        const url = await puter.fs.getReadURL(fullPath);
-        
-        showNotification(`✅ Publicado com sucesso!`, 'success');
-        return url;
-      } catch (error) {
-        console.error('Erro no upload Puter:', error);
-        
-        // Tratamento de erro específico
-        if (error.message.includes('401') || error.message.includes('unauthorized')) {
-          // Token expirado, tentar reconectar
-          localStorage.removeItem(PUTER_TOKEN_KEY);
-          isPuterReady = false;
-          puterUser = null;
-          updatePuterStatus(false, 'Sessão expirada');
-          
-          const relogged = await loginPuter();
-          if (relogged) {
-            // Tentar novamente
-            return uploadToPuter(content, fileName);
-          }
+        // 2. Salvar todos os arquivos do projeto no diretório
+        for (const [fileKey, fileData] of Object.entries(files)) {
+          const fileName = fileData.originalName || fileData.name;
+          const fileContent = fileData.content || '';
+          await puter.fs.write(`${dirName}/${fileName}`, fileContent);
         }
         
-        showNotification(`❌ Erro: ${error.message}`, 'error');
+        showNotification(`📁 Projeto salvo no diretório: ${dirName}`, 'info');
+        
+        // 3. Gerar subdomínio único baseado no nome do projeto
+        let projectSlug = elements.projectName.value
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '-')
+          .replace(/-+/g, '-')
+          .replace(/^-|-$/g, '');
+        
+        if (!projectSlug) projectSlug = 'meu-projeto';
+        
+        const subdomain = `${projectSlug}-${Math.random().toString(36).substring(2, 8)}`;
+        
+        // 4. Criar o hosting com o subdomínio apontando para o diretório
+        const site = await puter.hosting.create(subdomain, dirName);
+        
+        // 5. URL pública do site
+        const siteUrl = `https://${site.subdomain}.puter.site`;
+        
+        // Salvar informações da hospedagem
+        currentHostingUrl = siteUrl;
+        currentHostingSubdomain = site.subdomain;
+        currentHostingDirectory = dirName;
+        
+        // Atualizar Firebase com informações da hospedagem
+        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({
+          url: siteUrl,
+          subdomain: site.subdomain,
+          directory: dirName,
+          publishedAt: new Date().toISOString()
+        });
+        
+        showNotification(`✅ Site hospedado com sucesso!`, 'success');
+        return siteUrl;
+        
+      } catch (error) {
+        console.error('Erro detalhado na hospedagem:', error);
+        
+        if (error.message.includes('already exists') || error.message.includes('subdomain')) {
+          showNotification('⚠️ Subdomínio já existe. Tente novamente.', 'warning');
+          return hostProjectOnPuter(); // Tentar com novo subdomínio
+        }
+        
+        showNotification(`❌ Erro na hospedagem: ${error.message}`, 'error');
         return null;
       }
     }
 
-    async function uploadAllToPuter() {
-      if (!currentFile) {
-        showNotification('Nenhum arquivo aberto', 'warning');
-        return;
+    // Função para atualizar a hospedagem (após alterações nos arquivos)
+    async function updateHosting() {
+      if (!currentHostingSubdomain || !currentHostingDirectory) {
+        showNotification('Nenhum site hospedado para atualizar', 'warning');
+        return null;
       }
       
-      const model = editor.getModel();
-      if (!model) return;
+      const authenticated = await ensurePuterAuth();
+      if (!authenticated) return null;
       
-      const content = model.getValue();
-      const fileName = files[currentFile].originalName || files[currentFile].name;
-      
-      const url = await uploadToPuter(content, fileName);
-      
-      if (url) {
-        currentFileUrl = url;
-        elements.fileUrl.value = url;
-        elements.urlPanel.style.display = 'flex';
-        showNotification('✅ Arquivo publicado no Puter!', 'success');
+      try {
+        showNotification(`🔄 Atualizando site...`, 'info');
+        
+        // Atualizar todos os arquivos no diretório
+        for (const [fileKey, fileData] of Object.entries(files)) {
+          const fileName = fileData.originalName || fileData.name;
+          const fileContent = fileData.content || '';
+          await puter.fs.write(`${currentHostingDirectory}/${fileName}`, fileContent);
+        }
+        
+        // Atualizar o hosting para garantir
+        await puter.hosting.update(currentHostingSubdomain, currentHostingDirectory);
+        
+        showNotification(`✅ Site atualizado!`, 'success');
+        return currentHostingUrl;
+        
+      } catch (error) {
+        console.error('Erro ao atualizar:', error);
+        showNotification(`❌ Erro na atualização: ${error.message}`, 'error');
+        return null;
       }
     }
 
-    // ==================== AI FUNCTIONS CORRIGIDAS ====================
+    // Função para listar todos os sites hospedados pelo usuário
+    async function listHostings() {
+      const authenticated = await ensurePuterAuth();
+      if (!authenticated) return [];
+      
+      try {
+        const sites = await puter.hosting.list();
+        return sites;
+      } catch (error) {
+        console.error('Erro ao listar:', error);
+        return [];
+      }
+    }
+
+    // Função para deletar hospedagem
+    async function deleteHosting(subdomain) {
+      const authenticated = await ensurePuterAuth();
+      if (!authenticated) return false;
+      
+      try {
+        await puter.hosting.delete(subdomain);
+        showNotification(`✅ Site ${subdomain}.puter.site removido`, 'success');
+        return true;
+      } catch (error) {
+        console.error('Erro ao deletar:', error);
+        showNotification(`❌ Erro ao deletar: ${error.message}`, 'error');
+        return false;
+      }
+    }
+
+    // Handler principal do botão Hospedar
+    async function handleHostProject() {
+      // Verificar se há um arquivo index.html
+      const hasIndexHtml = Object.values(files).some(f => 
+        (f.originalName === 'index.html' || f.name === 'index.html')
+      );
+      
+      if (!hasIndexHtml) {
+        showNotification('⚠️ É necessário ter um arquivo index.html para hospedar o site', 'warning');
+        const createIndex = confirm('Deseja criar um arquivo index.html padrão?');
+        if (createIndex) {
+          await createDefaultIndexHtml();
+        } else {
+          return;
+        }
+      }
+      
+      // Salvar todos os arquivos antes de hospedar
+      if (currentFile && editor) {
+        const model = editor.getModel();
+        if (model && elements.saveFileBtn.disabled === false) {
+          await saveCurrentFile();
+        }
+      }
+      
+      // Se já tem hospedagem ativa, perguntar se quer atualizar ou criar nova
+      if (currentHostingSubdomain) {
+        const action = confirm('Você já tem um site hospedado. Deseja atualizá-lo ou criar um novo?\n\nOK = Atualizar\nCancelar = Criar novo');
+        if (action) {
+          const url = await updateHosting();
+          if (url) {
+            elements.fileUrl.value = url;
+            elements.urlPanel.style.display = 'flex';
+          }
+          return;
+        }
+      }
+      
+      // Criar nova hospedagem
+      const originalBtnText = elements.hostBtn.textContent;
+      elements.hostBtn.textContent = '⏳ Hospedando...';
+      elements.hostBtn.disabled = true;
+      
+      const url = await hostProjectOnPuter();
+      
+      elements.hostBtn.textContent = originalBtnText;
+      elements.hostBtn.disabled = false;
+      
+      if (url) {
+        currentHostingUrl = url;
+        elements.fileUrl.value = url;
+        elements.urlPanel.style.display = 'flex';
+        showNotification(`✅ Site hospedado em: ${url}`, 'success');
+      }
+    }
+
+    async function showManageHosting() {
+      const sites = await listHostings();
+      
+      if (sites.length === 0) {
+        showNotification('Nenhum site hospedado encontrado', 'info');
+        return;
+      }
+      
+      let message = '📋 Seus sites hospedados:\n\n';
+      sites.forEach((site, index) => {
+        message += `${index + 1}. https://${site.subdomain}.puter.site\n`;
+      });
+      message += '\nDeseja deletar algum? Digite o número ou 0 para cancelar.';
+      
+      const response = prompt(message);
+      const num = parseInt(response);
+      
+      if (!isNaN(num) && num > 0 && num <= sites.length) {
+        const siteToDelete = sites[num - 1];
+        const confirmDelete = confirm(`Tem certeza que deseja deletar https://${siteToDelete.subdomain}.puter.site?`);
+        if (confirmDelete) {
+          await deleteHosting(siteToDelete.subdomain);
+          if (currentHostingSubdomain === siteToDelete.subdomain) {
+            currentHostingSubdomain = null;
+            currentHostingDirectory = null;
+            currentHostingUrl = null;
+            elements.urlPanel.style.display = 'none';
+          }
+        }
+      }
+    }
+
+    // ==================== AI FUNCTIONS ====================
     
     async function sendToAI() {
       const userMessage = elements.chatInput.value.trim();
@@ -723,29 +841,23 @@
       addChatMessage('🤔 Processando...', 'ai');
       
       try {
-        // Garantir autenticação no Puter para usar AI
         const authenticated = await ensurePuterAuth();
         if (!authenticated) {
           const messages = elements.chatMessages.querySelectorAll('.message.ai');
           if (messages.length > 0 && messages[messages.length-1].innerText === '🤔 Processando...') {
             messages[messages.length-1].remove();
           }
-          addChatMessage('❌ É necessário conectar ao Puter para usar a IA. Clique em "Publicar" primeiro.', 'system');
+          addChatMessage('❌ É necessário conectar ao Puter para usar a IA. Clique em "Hospedar" primeiro.', 'system');
           return;
         }
         
-        // Usar puter.ai.chat conforme documentação [citation:1][citation:10]
-        const response = await puter.ai.chat(userMessage, {
-          model: "gpt-5.4-nano"  // Modelo rápido e eficiente [citation:10]
-        });
+        const response = await puter.ai.chat(userMessage);
         
-        // Remover mensagem de "Processando..."
         const messages = elements.chatMessages.querySelectorAll('.message.ai');
         if (messages.length > 0 && messages[messages.length-1].innerText === '🤔 Processando...') {
           messages[messages.length-1].remove();
         }
         
-        // Extrair resposta corretamente
         let aiResponse = '';
         if (typeof response === 'string') {
           aiResponse = response;
@@ -753,13 +865,10 @@
           aiResponse = response.message.content;
         } else if (response.text) {
           aiResponse = response.text;
-        } else if (response.content) {
-          aiResponse = response.content;
         } else {
           aiResponse = JSON.stringify(response);
         }
         
-        // Verificar se a resposta contém código (bloco ```)
         const codeMatch = aiResponse.match(/```(\w*)\n([\s\S]*?)```/);
         
         if (codeMatch) {
@@ -773,7 +882,6 @@
             addChatMessage(`✅ Código gerado em ${language || 'texto'}:`, 'ai', code);
           }
           
-          // Verificar se o usuário pediu para criar arquivo
           const createFileMatch = userMessage.match(/criar arquivo\s+(\S+)/i) || 
                                    userMessage.match(/create file\s+(\S+)/i);
           if (createFileMatch && code) {
@@ -784,10 +892,8 @@
           addChatMessage(aiResponse, 'ai');
         }
         
-        // Verificar se pediu para criar pasta
         const createFolderMatch = userMessage.match(/criar pasta\s+(\S+)/i) || 
-                                   userMessage.match(/create folder\s+(\S+)/i) ||
-                                   userMessage.match(/criar diretório\s+(\S+)/i);
+                                   userMessage.match(/create folder\s+(\S+)/i);
         if (createFolderMatch && authenticated) {
           const folderName = createFolderMatch[1];
           await createFolderFromAI(folderName);
@@ -802,14 +908,6 @@
         }
         
         addChatMessage(`❌ Erro: ${error.message || 'Falha na comunicação com a IA'}`, 'ai');
-        
-        // Se erro de autenticação, tentar reconectar
-        if (error.message.includes('401') || error.message.includes('auth')) {
-          localStorage.removeItem(PUTER_TOKEN_KEY);
-          isPuterReady = false;
-          updatePuterStatus(false, 'Sessão expirada');
-          addChatMessage('⚠️ Sessão do Puter expirada. Clique em "Publicar" para reconectar.', 'system');
-        }
       }
     }
 
@@ -817,7 +915,6 @@
       const fileName = suggestedFileName || prompt('Nome do arquivo (ex: index.html, style.css):', 'arquivo.html');
       if (!fileName) return;
       
-      // Criar o arquivo no editor
       const fileKey = btoa(encodeURIComponent(fileName)).replace(/=/g, '');
       
       if (files[fileKey]) {
@@ -852,7 +949,7 @@
         const folderPath = `/CodeHUB/${currentUser.uid}/${currentProjectId}/${folderName}`;
         await puter.fs.mkdir(folderPath, { parents: true });
         
-        addChatMessage(`✅ Pasta "${folderName}" criada no Puter em: ${folderPath}`, 'system');
+        addChatMessage(`✅ Pasta "${folderName}" criada no Puter!`, 'system');
         showNotification(`Pasta ${folderName} criada!`, 'success');
       } catch (error) {
         console.error('Erro ao criar pasta:', error);
@@ -969,7 +1066,6 @@
         currentUser = user;
         elements.userName.textContent = user.displayName || user.email.split('@')[0];
         
-        // Inicializar Puter
         await initPuter();
         
         const urlParams = new URLSearchParams(window.location.search);
@@ -983,6 +1079,20 @@
         
         await loadUserStorage();
         await loadProject();
+        
+        // Carregar informações de hospedagem salvas
+        const hostingRef = db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`);
+        const hostingSnapshot = await hostingRef.once('value');
+        const hostingData = hostingSnapshot.val();
+        if (hostingData) {
+          currentHostingUrl = hostingData.url;
+          currentHostingSubdomain = hostingData.subdomain;
+          currentHostingDirectory = hostingData.directory;
+          if (currentHostingUrl) {
+            elements.fileUrl.value = currentHostingUrl;
+            elements.urlPanel.style.display = 'flex';
+          }
+        }
         
         elements.loadingScreen.style.opacity = '0';
         setTimeout(() => {
@@ -1034,23 +1144,28 @@
       const fileName = 'index.html';
       const fileKey = btoa(encodeURIComponent(fileName)).replace(/=/g, '');
       
+      const projectName = elements.projectName.value || 'Meu Projeto';
+      
       const defaultContent = `<!DOCTYPE html>
 <html>
 <head>
-  <title>Meu Projeto</title>
+  <title>${projectName}</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-    .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+    .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
     h1 { color: #667eea; }
+    button { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+    button:hover { background: #5a67d8; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🚀 Bem-vindo ao seu projeto!</h1>
-    <p>Use o assistente AI ao lado para criar códigos automaticamente!</p>
-    <p>Clique em "Publicar" para obter uma URL pública do Puter.</p>
+    <h1>🚀 ${projectName}</h1>
+    <p>Seu site está online!</p>
+    <p>Use o assistente AI para adicionar mais funcionalidades.</p>
+    <button onclick="alert('Olá do CodeHUB!')">Clique aqui</button>
   </div>
 </body>
 </html>`;
@@ -1214,11 +1329,11 @@
     }
 
     function copyFileUrl() {
-      if (currentFileUrl) {
-        navigator.clipboard.writeText(currentFileUrl);
+      if (currentHostingUrl) {
+        navigator.clipboard.writeText(currentHostingUrl);
         showNotification('URL copiada!', 'success');
       } else {
-        showNotification('Publique o arquivo no Puter primeiro', 'warning');
+        showNotification('Hospede o projeto primeiro', 'warning');
       }
     }
 
@@ -1255,11 +1370,12 @@
       elements.previewBtn.addEventListener('click', previewProject);
       elements.copyUrlBtn.addEventListener('click', copyFileUrl);
       elements.openUrlBtn.addEventListener('click', () => {
-        if (currentFileUrl) window.open(currentFileUrl, '_blank');
+        if (currentHostingUrl) window.open(currentHostingUrl, '_blank');
       });
+      elements.manageHostingBtn.addEventListener('click', showManageHosting);
       elements.plansBtn.addEventListener('click', openPlansPage);
       elements.aiAssistantBtn.addEventListener('click', toggleAISidebar);
-      elements.uploadPuterBtn.addEventListener('click', uploadAllToPuter);
+      elements.hostBtn.addEventListener('click', handleHostProject);
       
       elements.logoutBtn.addEventListener('click', () => {
         auth.signOut().then(() => {
@@ -1275,7 +1391,6 @@
         }
       });
       
-      // Enviar com Enter (Shift+Enter para nova linha)
       elements.chatInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
