@@ -3,34 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- SEO -->
-  <meta name="keywords" content="CodeHUB, editor de código online, IDE online, programar no navegador, editor HTML, editor CSS, editor JavaScript, desenvolvimento web online, criar sites online, editor de código grátis, IDE para iniciantes, editor responsivo, ferramenta de programação, codar no navegador, editor com terminal, escrever código online, depuração online, editor de código rápido, desenvolvimento colaborativo, criar projetos web, editor frontend, plataforma de codar online, editor de programação, IDE web, editor de scripts, editor JS, editor CSS3, editor HTML5, criar páginas web, prototipagem online, editor web interativo, IDE colaborativa, editor de código com login, projetos online, editor de apps web, editor multiplataforma, editor com versionamento, editor de projetos HTML CSS JS, editor de código para estudantes, IDE para web developers, editor de código com templates, editor de projetos compartilháveis, editor para iniciantes em web, editor rápido e leve, editor de código com terminal integrado, editor de desenvolvimento web, editor de protótipos web, plataforma de aprendizado de programação, editor de sites responsivos, editor de HTML CSS JS online, criar sites responsivos online, editor de front-end, editor com Firebase, editor para projetos pessoais, IDE web gratuita, editor para codar online, editor de código interativo, editor de projetos colaborativos, editor de sites e aplicações, editor para estudantes de programação, editor de código com suporte a frameworks, editor de desenvolvimento ágil, IDE de aprendizado online, editor de projetos rápidos, editor de código para educação, editor de páginas web, editor de apps HTML CSS JS">
-  <meta name="author" content="CodeHUB - Alexandre Braatz Junior, fundador da plataforma">
-  <meta name="google-site-verification" content="d5deNmIStRgPPphEkAypCTSv-E_1gi9ba16et47RSmA" />
-
-  <title>CodeHUB - Editor de Código Online</title>
-  <link rel="icon" type="image/png" href="https://alexandre7888.github.io/CodeHUB/InShot_20250807_112151490.jpg">
-
-  <!-- Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-X4VF1LWB0F"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-X4VF1LWB0F');
-    gtag('config', 'G-XQE93JQ3RB');
-    gtag('config', 'G-7RYPMEN60E');
-  </script>
-
-  <!-- Scripts Externos -->
-  <script src="https://alexandre7888.github.io/CodeHUB/protecao.js"></script>
-  <script src="https://alexandre7888.github.io/CodeHUB/Botao/floating-menu.js"></script>
-  <script type="module" src="https://code.codehub.ct.ws/client.js"></script>
-  <script src="https://assistente-ia--socialkoala6579904.on.websim.com/embed.js"></script>
-
+  <title>CodeHUB - Editor com IA</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+  <script src="https://js.puter.com/v2/"></script>
   <style>
-    /* Loading Screen Styles */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1e1e1e;
+      color: white;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
     #loading-screen {
       position: fixed;
       top: 0;
@@ -42,604 +33,526 @@
       justify-content: center;
       align-items: center;
       flex-direction: column;
-      color: white;
-      font-family: Arial, sans-serif;
       z-index: 9999;
       transition: opacity 0.5s ease;
     }
-
-    #loading-screen h1 {
-      margin-top: 20px;
-      font-size: 1.8em;
-      color: #ff9500;
-      text-shadow: 0 0 10px #ff9500, 0 0 20px #ff7300;
-      animation: glowText 2s infinite alternate;
-    }
-
+    
     .loader {
-      width: 280px;
-      height: 280px;
-      animation: spinScale 4s ease-in-out infinite, glow 2s ease-in-out infinite alternate;
+      width: 120px;
+      animation: spin 1s linear infinite;
       border-radius: 50%;
-      box-shadow: 0 0 20px rgba(255,149,0,0.5);
-      transition: all 0.5s ease-in-out;
     }
-
-    @keyframes glowText {
-      0% { text-shadow: 0 0 5px #ff9500, 0 0 15px #ff7300; }
-      100% { text-shadow: 0 0 15px #ff9500, 0 0 30px #ff7300; }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
-
-    @keyframes spinScale {
-      0%   { transform: rotate(0deg) scale(1); }
-      25%  { transform: rotate(90deg) scale(1.1); }
-      50%  { transform: rotate(180deg) scale(0.9); }
-      75%  { transform: rotate(270deg) scale(1.1); }
-      100% { transform: rotate(360deg) scale(1); }
-    }
-
-    @keyframes glow {
-      0% { box-shadow: 0 0 20px rgba(255,149,0,0.5), 0 0 40px rgba(255,149,0,0.3); }
-      100% { box-shadow: 0 0 40px rgba(255,149,0,0.8), 0 0 80px rgba(255,149,0,0.5); }
-    }
-
-    /* Main App Styles */
-    #app-content {
-      display: none;
-    }
-
-    :root {
-      --primary-color: #4361ee;
-      --secondary-color: #3f37c9;
-      --accent-color: #4895ef;
-      --danger-color: #f72585;
-      --success-color: #4cc9f0;
-      --light-color: #f8f9fa;
-      --dark-color: #212529;
-      --gray-color: #6c757d;
-      --discord-color: #5865F2;
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f5f7fa;
-      color: #333;
-      line-height: 1.6;
-      min-height: 100vh;
+    
+    #top-bar {
       display: flex;
-      flex-direction: column;
-    }
-
-    header {
-      background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
-      color: white;
-      padding: 1rem;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
-
-    .header-content {
-      max-width: 1200px;
-      margin: 0 auto;
-      display: flex;
-      justify-content: space-between;
+      padding: 8px 12px;
+      background: #1e1e1e;
       align-items: center;
+      border-bottom: 1px solid #333;
       flex-wrap: wrap;
-      gap: 1rem;
+      gap: 8px;
     }
-
-    .logo-area {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-
-    .logo-area h1 {
-      font-size: 1.5rem;
-    }
-
-    .discord-mini-btn {
-      background: var(--discord-color);
+    
+    .back-btn {
+      background: #6c757d;
+      text-decoration: none;
       color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-weight: 600;
-      transition: all 0.3s;
-    }
-
-    .discord-mini-btn:hover {
-      background: #4752c4;
-      transform: scale(1.05);
-    }
-
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-
-    .logout-btn {
-      background-color: var(--danger-color);
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
+      padding: 6px 12px;
       border-radius: 4px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: all 0.3s;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+      font-size: 13px;
     }
-
-    .container {
-      flex: 1;
-      max-width: 1200px;
-      margin: 1rem auto;
-      padding: 0 1rem;
-      width: 100%;
-    }
-
-    .projects-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-
-    .new-project-btn {
-      background-color: var(--success-color);
+    
+    #project-name {
+      background: #252526;
       color: white;
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 6px 10px;
+      width: 200px;
+    }
+    
+    button {
+      background: #4361ee;
       border: none;
-      padding: 0.75rem 1.5rem;
-      border-radius: 6px;
+      color: white;
+      padding: 6px 12px;
       cursor: pointer;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: all 0.3s;
-      white-space: nowrap;
-    }
-
-    .projects-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 2rem;
-    }
-
-    .project-card {
-      background-color: white;
-      border-radius: 10px;
-      padding: 1.5rem;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-      transition: all 0.3s ease;
-      border: 1px solid #eaeaea;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .project-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-    }
-
-    .project-name {
-      font-size: 1.25rem;
-      font-weight: 700;
-      margin-bottom: 0.5rem;
-      color: var(--dark-color);
-    }
-
-    .project-domain {
-      font-size: 0.9rem;
-      color: var(--gray-color);
-      margin-bottom: 1rem;
-    }
-
-    .project-actions {
-      display: flex;
-      gap: 0.75rem;
-      margin-top: auto;
-    }
-
-    .action-btn {
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.9rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+      border-radius: 4px;
+      font-size: 13px;
       transition: all 0.2s;
-      flex: 1;
-      justify-content: center;
     }
-
-    .edit-btn {
-      background-color: var(--accent-color);
-      color: white;
+    
+    button:hover { filter: brightness(1.2); }
+    button:disabled { background: #555; cursor: not-allowed; }
+    
+    #saveFileBtn { background: #4cc9f0; }
+    #previewBtn { background: #4895ef; }
+    #puterDashboardBtn { background: #20b2aa; }
+    .logout-btn { background: #f44336; }
+    
+    #storage-info {
+      background: #333;
+      padding: 4px 10px;
+      border-radius: 5px;
+      font-size: 11px;
+      margin-left: 10px;
     }
-
-    .delete-btn {
-      background-color: var(--danger-color);
-      color: white;
-    }
-
-    /* Discord Widget Floating Button */
-    .discord-widget-container {
-      position: fixed;
-      bottom: 20px;
-      left: 20px;
-      z-index: 1000;
-    }
-
-    .discord-toggle-btn {
-      background: var(--discord-color);
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 50px;
-      cursor: pointer;
+    
+    #user-info {
+      margin-left: auto;
       display: flex;
       align-items: center;
       gap: 10px;
-      font-weight: 700;
-      font-size: 16px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-      transition: all 0.3s ease;
     }
-
-    .discord-toggle-btn:hover {
-      transform: scale(1.05);
-      background: #4752c4;
+    
+    #projects-sidebar {
+      width: 260px;
+      background: #252526;
+      border-right: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
     }
-
-    .discord-widget {
-      position: fixed;
-      bottom: 80px;
-      left: 20px;
-      width: 350px;
-      height: 500px;
-      background: #2c2f33;
-      border-radius: 16px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-      overflow: hidden;
-      z-index: 999;
-      display: none;
-      animation: slideInLeft 0.3s ease;
-    }
-
-    .discord-widget iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-
-    .discord-widget-header {
-      background: #23272a;
-      padding: 12px 16px;
+    
+    .projects-header {
+      padding: 12px;
+      background: #2d2d2d;
+      font-weight: bold;
+      border-bottom: 1px solid #333;
       display: flex;
       justify-content: space-between;
       align-items: center;
+    }
+    
+    .projects-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+    
+    .project-item {
+      padding: 10px;
+      margin-bottom: 8px;
+      background: #1e1e1e;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid #333;
+    }
+    
+    .project-item:hover {
+      background: #2d2d2d;
+      border-color: #4cc9f0;
+    }
+    
+    .project-item.active {
+      background: #4361ee;
+      border-color: #4cc9f0;
+    }
+    
+    .project-name {
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    
+    .project-date {
+      font-size: 10px;
+      color: #888;
+    }
+    
+    .main-container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+    
+    #editor-container {
+      flex: 2;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    #tabs {
+      display: flex;
+      background: #252526;
+      align-items: center;
+      gap: 1px;
+      overflow-x: auto;
+      min-height: 36px;
+    }
+    
+    .tab-btn {
+      background: #2d2d2d;
+      padding: 6px 12px;
+      position: relative;
+      padding-right: 25px;
+      border-radius: 0;
+      font-size: 12px;
+    }
+    
+    .tab-btn.active {
+      background: #1e1e1e;
       color: white;
     }
-
-    .discord-widget-header h4 {
-      margin: 0;
+    
+    .close-tab-btn {
+      position: absolute;
+      right: 5px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: #999;
+      cursor: pointer;
       font-size: 14px;
     }
-
-    .close-widget-btn {
-      background: none;
-      border: none;
+    
+    #container {
+      flex: 1;
+      overflow: hidden;
+    }
+    
+    #ai-sidebar {
+      width: 400px;
+      background: #252526;
+      border-left: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .sidebar-header {
+      padding: 12px;
+      background: #2d2d2d;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .message {
+      padding: 10px 14px;
+      border-radius: 12px;
+      max-width: 95%;
+      word-wrap: break-word;
+      font-size: 13px;
+    }
+    
+    .message.user {
+      background: #4361ee;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+    
+    .message.ai {
+      background: #3d3d3d;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+    
+    .message.system {
+      background: #ff9800;
+      align-self: center;
+      font-size: 12px;
+      border-radius: 20px;
+    }
+    
+    .message pre {
+      background: #1e1e1e;
+      padding: 10px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+    
+    .chat-input-area {
+      padding: 12px;
+      border-top: 1px solid #333;
+      display: flex;
+      gap: 10px;
+    }
+    
+    .chat-input-area textarea {
+      flex: 1;
+      background: #1e1e1e;
+      border: 1px solid #333;
       color: white;
-      cursor: pointer;
-      font-size: 20px;
-      padding: 0 5px;
+      padding: 10px;
+      border-radius: 8px;
+      resize: none;
+      font-family: inherit;
+      font-size: 13px;
     }
-
-    @keyframes slideInLeft {
-      from {
-        opacity: 0;
-        transform: translateX(-100px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
+    
+    .chat-input-area button {
+      background: #9c27b0;
+      padding: 10px 20px;
+      border-radius: 8px;
     }
-
-    /* Modal styles */
-    .modal {
-      display: none;
+    
+    .url-panel {
+      background: #252526;
+      padding: 8px 12px;
+      border-top: 1px solid #333;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+    }
+    
+    .url-panel input {
+      flex: 1;
+      background: #1e1e1e;
+      border: 1px solid #333;
+      color: white;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 11px;
+    }
+    
+    .ai-loading-overlay {
       position: fixed;
-      z-index: 1100;
-      left: 0;
       top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(3px);
-    }
-
-    .modal-content {
-      background-color: white;
-      margin: 10% auto;
-      padding: 2rem;
-      border-radius: 10px;
-      width: 90%;
-      max-width: 500px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-      position: relative;
-    }
-
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(8px);
+      display: none;
+      justify-content: center;
       align-items: center;
-      margin-bottom: 1.5rem;
+      z-index: 10000;
+      flex-direction: column;
+      gap: 20px;
     }
-
-    .modal-header h3 {
-      font-size: 1.5rem;
-      color: var(--dark-color);
+    
+    .ai-loading-spinner {
+      width: 70px;
+      height: 70px;
+      border: 4px solid #333;
+      border-top-color: #9c27b0;
+      border-right-color: #4cc9f0;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
     }
-
-    .close-btn {
-      background: none;
-      border: none;
-      font-size: 1.5rem;
-      cursor: pointer;
-      color: var(--gray-color);
-      padding: 0 0.5rem;
-    }
-
-    .form-group {
-      margin-bottom: 1.5rem;
-    }
-
-    .form-group label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: 600;
-      color: var(--dark-color);
-    }
-
-    .form-group input {
-      width: 100%;
-      padding: 0.75rem;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      font-size: 1rem;
-    }
-
-    .form-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 1rem;
-    }
-
-    .cancel-btn {
-      background-color: var(--gray-color);
+    
+    .ai-loading-text {
+      font-size: 20px;
       color: white;
-      border: none;
-      padding: 0.75rem 1.5rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
+      text-align: center;
+      font-weight: bold;
     }
-
-    .confirm-btn {
-      background-color: var(--primary-color);
-      color: white;
-      border: none;
-      padding: 0.75rem 1.5rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
+    
+    .ai-loading-subtext {
+      font-size: 14px;
+      color: #aaa;
+      text-align: center;
     }
-
-    /* Cookie Banner */
-    .cookie-banner {
+    
+    .ai-loading-progress {
+      width: 300px;
+      height: 4px;
+      background: #333;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    
+    .ai-loading-progress-bar {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #9c27b0, #4cc9f0);
+      animation: progress 2s ease-in-out infinite;
+    }
+    
+    @keyframes progress {
+      0% { width: 0%; }
+      50% { width: 70%; }
+      100% { width: 100%; }
+    }
+    
+    .publish-modal {
       position: fixed;
-      bottom: 0;
+      top: 0;
       left: 0;
-      right: 0;
-      background: rgba(0, 0, 0, 0.9);
-      color: white;
-      padding: 1rem;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(5px);
+      display: none;
+      justify-content: center;
       align-items: center;
-      z-index: 1100;
+      z-index: 10001;
     }
-
-    .cookie-banner p {
-      margin: 0.5rem 0;
-      flex: 1;
-      min-width: 250px;
+    
+    .publish-modal-content {
+      background: #2d2d2d;
+      border-radius: 16px;
+      padding: 30px;
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
     }
-
-    .cookie-banner-buttons {
+    
+    .publish-modal-content h3 {
+      margin-bottom: 15px;
+      color: #4cc9f0;
+    }
+    
+    .publish-modal-content p {
+      margin-bottom: 25px;
+      color: #ccc;
+    }
+    
+    .publish-modal-buttons {
       display: flex;
-      gap: 1rem;
+      gap: 15px;
+      justify-content: center;
     }
-
-    .cookie-btn {
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: 600;
-      white-space: nowrap;
+    
+    .publish-modal-buttons button {
+      padding: 10px 25px;
+      font-size: 14px;
     }
-
-    .cookie-accept {
-      background-color: var(--success-color);
+    
+    .btn-publish-yes { background: #4caf50; }
+    .btn-publish-no { background: #f44336; }
+    
+    .notification {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      border-radius: 8px;
       color: white;
-      border: none;
+      z-index: 1000;
+      animation: slideIn 0.3s ease;
+      font-size: 13px;
     }
-
-    .cookie-reject {
-      background-color: transparent;
-      color: white;
-      border: 1px solid white;
+    
+    .notification.success { background: #4caf50; }
+    .notification.error { background: #f44336; }
+    .notification.info { background: #2196f3; }
+    
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
     }
-
-    /* Responsividade */
-    @media (max-width: 768px) {
-      .projects-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .project-actions {
-        flex-direction: column;
-      }
-
-      .modal-content {
-        margin: 20% auto;
-      }
-
-      .cookie-banner {
-        flex-direction: column;
-        text-align: center;
-      }
-
-      .cookie-banner-buttons {
-        width: 100%;
-        justify-content: center;
-        margin-top: 1rem;
-      }
-
-      .discord-widget {
-        width: calc(100% - 40px);
-        left: 20px;
-        right: 20px;
-        height: 70vh;
-      }
+    
+    .monaco-editor { width: 100%; height: 100%; }
+    
+    .puter-status {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: #333;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+    }
+    
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #f44336;
+    }
+    
+    .status-dot.connected { background: #4caf50; }
+    
+    .new-project-btn {
+      background: #4caf50;
+      font-size: 11px;
+      padding: 4px 8px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
-  <!-- Loading Screen -->
   <div id="loading-screen">
-    <img id="codefox" src="https://alexandre7888.github.io/CodeHUB/CodeFOX/foto1.jpg" class="loader" alt="CodeFOX girando">
-    <h1>Carregando...</h1>
+    <img src="https://alexandre7888.github.io/CodeHUB/CodeFOX/foto1.jpg" class="loader" alt="Loading">
+    <h2>Carregando CodeHUB...</h2>
   </div>
 
-  <!-- Main App Content -->
-  <div id="app-content">
-    <header>
-      <div class="header-content">
-        <div class="logo-area">
-          <h1>🚀 CodeHUB</h1>
-          <button class="discord-mini-btn" onclick="toggleDiscordWidget()">
-            💬 Discord
-          </button>
-        </div>
-        <div class="user-info">
-          <span id="username"></span>
-          <button class="logout-btn" onclick="logout()">
-            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="18" height="18">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-            </svg>
-            Sair
-          </button>
-        </div>
-      </div>
-    </header>
-
-    <div class="container">
-      <div class="projects-header">
-        <h2>📁 Seus Projetos</h2>
-        <button class="new-project-btn" onclick="openNewProjectModal()">
-          <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="18" height="18">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-          </svg>
-          Novo Projeto
-        </button>
-      </div>
-
-      <div id="projects-container" class="projects-grid">
-        <!-- Projetos serão carregados aqui dinamicamente -->
+  <div id="app-content" style="display: none; height: 100vh; display: flex; flex-direction: column;">
+    <div id="top-bar">
+      <button id="puterDashboardBtn">🚀 Puter Dashboard</button>
+      <input type="text" id="project-name" placeholder="Nome do Projeto">
+      <button id="saveFileBtn" disabled>💾 Salvar</button>
+      <button id="previewBtn">👁️ Preview</button>
+      <div id="storage-info">📦 <span id="storage-used">0</span> / <span id="storage-limit">5</span> MB</div>
+      <div id="user-info">
+        <span id="user-name"></span>
+        <div class="puter-status"><div class="status-dot" id="puterStatusDot"></div><span id="puterStatusText">Puter</span></div>
+        <button id="logoutBtn" class="logout-btn">Sair</button>
       </div>
     </div>
 
-    <!-- Modal de Novo Projeto -->
-    <div id="new-project-modal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>✨ Criar Novo Projeto</h3>
-          <button type="button" class="close-btn" onclick="closeNewProjectModal()">&times;</button>
+    <div class="main-container">
+      <div id="projects-sidebar">
+        <div class="projects-header"><span>📁 Meus Projetos</span><button class="new-project-btn" onclick="createNewProject()">+ Novo</button></div>
+        <div class="projects-list" id="projects-list"><div style="text-align:center; padding:20px; color:#888;">Carregando...</div></div>
+      </div>
+
+      <div id="editor-container">
+        <div id="tabs"></div>
+        <div id="container"></div>
+      </div>
+
+      <div id="ai-sidebar">
+        <div class="sidebar-header"><span>🤖 Assistente IA</span><button onclick="clearChat()" style="background:#555; padding:2px 8px;">Limpar</button></div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-area">
+          <textarea id="chatInput" placeholder="Digite qualquer comando... Ex: 'Crie um site completo com HTML, CSS e JS', 'Delete o arquivo style.css', 'Edite o index.html e mude o título', 'Publique o projeto'" rows="2"></textarea>
+          <button id="sendChatBtn">Enviar</button>
         </div>
-        <form id="project-form">
-          <div class="form-group">
-            <label for="project-name">Nome do Projeto</label>
-            <input type="text" id="project-name" placeholder="Ex: Meu Site Pessoal" required maxlength="50">
-          </div>
-          <div class="form-actions">
-            <button type="button" class="cancel-btn" onclick="closeNewProjectModal()">Cancelar</button>
-            <button type="submit" class="confirm-btn">Criar Projeto</button>
-          </div>
-        </form>
       </div>
     </div>
-
-    <!-- Discord Floating Widget -->
-    <div class="discord-widget-container">
-      <button class="discord-toggle-btn" onclick="toggleDiscordWidget()">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3847-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C2.8084 7.6658 2.0395 10.8955 2.4158 14.0786a.067.067 0 00.0272.0445 19.8759 19.8759 0 004.9823 2.5107.077.077 0 00.0734-.0214c.3826-.5123.7262-1.0535 1.0192-1.6236a.076.076 0 00-.0412-.1055 13.148 13.148 0 01-1.5605-.7442.076.076 0 01-.0185-.1248l.3104-.242c.0159-.0125.0387-.0125.0546 0 3.2693 1.4904 6.804 1.4904 10.0389 0 .0159-.0125.0387-.0125.0546 0l.3104.242c.0459.036.0509.1011.0185.1248a13.221 13.221 0 01-1.5605.7442.076.076 0 00-.0412.1055c.293.5702.6366 1.1113 1.0192 1.6236a.077.077 0 00.0734.0214 19.873 19.873 0 004.9823-2.5107.067.067 0 00.0272-.0445c.439-3.7629-.3292-6.9926-1.4134-9.6821a.069.069 0 00-.0321-.0277zM8.6338 13.086c-.9845 0-1.7951-.905-1.7951-2.0087 0-1.1038.7912-2.0087 1.7951-2.0087 1.0125 0 1.823.9137 1.7951 2.0087 0 1.1038-.7912 2.0087-1.7951 2.0087zm6.7324 0c-.9845 0-1.7951-.905-1.7951-2.0087 0-1.1038.7912-2.0087 1.7951-2.0087 1.0125 0 1.823.9137 1.7951 2.0087 0 1.1038-.7912 2.0087-1.7951 2.0087z"/>
-        </svg>
-        Conectar ao Discord
-      </button>
-      
-      <div id="discordWidget" class="discord-widget">
-        <div class="discord-widget-header">
-          <h4>💬 Comunidade CodeHUB</h4>
-          <button class="close-widget-btn" onclick="toggleDiscordWidget()">✕</button>
-        </div>
-        <iframe src="https://discord.com/widget?id=1406804799734677667&theme=dark" 
-                allowtransparency="true" 
-                frameborder="0"
-                sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts">
-        </iframe>
-      </div>
+    
+    <div class="url-panel" id="urlPanel" style="display: none;">
+      <span>🔗 Site publicado:</span>
+      <input type="text" id="fileUrl" readonly onclick="this.select()">
+      <button id="openUrlBtn">Abrir</button>
     </div>
+  </div>
 
-    <!-- Cookie Banner -->
-    <div id="cookie-banner" class="cookie-banner" style="display: none;">
-      <p>🍪 Nós usamos cookies para melhorar sua experiência. Ao continuar navegando, você concorda com o uso de cookies.</p>
-      <div class="cookie-banner-buttons">
-        <button class="cookie-btn cookie-accept" onclick="acceptCookies()">Aceitar</button>
-        <button class="cookie-btn cookie-reject" onclick="rejectCookies()">Recusar</button>
+  <div id="aiLoadingOverlay" class="ai-loading-overlay">
+    <div class="ai-loading-spinner"></div>
+    <div class="ai-loading-text" id="aiLoadingText">🤖 IA processando...</div>
+    <div class="ai-loading-subtext" id="aiLoadingSubtext">Analisando seu comando</div>
+    <div class="ai-loading-progress"><div class="ai-loading-progress-bar"></div></div>
+  </div>
+
+  <div id="publishModal" class="publish-modal">
+    <div class="publish-modal-content">
+      <h3>🚀 Publicar no Puter?</h3>
+      <p>Deseja publicar as alterações no Puter agora?</p>
+      <div class="publish-modal-buttons">
+        <button class="btn-publish-yes" id="publishYesBtn">✅ Sim, publicar</button>
+        <button class="btn-publish-no" id="publishNoBtn">❌ Não, depois</button>
       </div>
     </div>
   </div>
 
-  <!-- Firebase e App Script -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
-    import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
-    import { getDatabase, ref, push, set, onValue, remove } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
-
-    // Configuração do Firebase
+  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
       authDomain: "html-15e80.firebaseapp.com",
@@ -647,335 +560,722 @@
       projectId: "html-15e80",
       storageBucket: "html-15e80.appspot.com",
       messagingSenderId: "1068148640439",
-      appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32",
-      measurementId: "G-V57KRZ02HJ"
+      appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32"
     };
 
-    // Inicializar Firebase
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const database = getDatabase(app);
+    const app = firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+    
+    let editor = null;
+    let currentProjectId = null;
+    let currentUser = null;
+    let currentFile = null;
+    let files = {};
+    let models = {};
+    let userStorage = { used: 0, limit: 5 * 1024 * 1024 };
+    let currentHostingUrl = null;
+    let currentHostingSubdomain = null;
+    let currentHostingDirectory = null;
+    let allProjects = [];
 
-    // Variáveis globais
-    let userData = null;
-    const loadingScreen = document.getElementById('loading-screen');
-    const appContent = document.getElementById('app-content');
-    const codefoxImage = document.getElementById('codefox');
+    const elements = {
+      loadingScreen: document.getElementById('loading-screen'),
+      appContent: document.getElementById('app-content'),
+      projectName: document.getElementById('project-name'),
+      saveFileBtn: document.getElementById('saveFileBtn'),
+      previewBtn: document.getElementById('previewBtn'),
+      puterDashboardBtn: document.getElementById('puterDashboardBtn'),
+      storageUsed: document.getElementById('storage-used'),
+      storageLimit: document.getElementById('storage-limit'),
+      userName: document.getElementById('user-name'),
+      logoutBtn: document.getElementById('logoutBtn'),
+      tabsContainer: document.getElementById('tabs'),
+      container: document.getElementById('container'),
+      urlPanel: document.getElementById('urlPanel'),
+      fileUrl: document.getElementById('fileUrl'),
+      openUrlBtn: document.getElementById('openUrlBtn'),
+      chatMessages: document.getElementById('chatMessages'),
+      chatInput: document.getElementById('chatInput'),
+      sendChatBtn: document.getElementById('sendChatBtn'),
+      projectsList: document.getElementById('projects-list'),
+      puterStatusDot: document.getElementById('puterStatusDot'),
+      puterStatusText: document.getElementById('puterStatusText'),
+      aiLoadingOverlay: document.getElementById('aiLoadingOverlay'),
+      aiLoadingText: document.getElementById('aiLoadingText'),
+      aiLoadingSubtext: document.getElementById('aiLoadingSubtext'),
+      publishModal: document.getElementById('publishModal'),
+      publishYesBtn: document.getElementById('publishYesBtn'),
+      publishNoBtn: document.getElementById('publishNoBtn')
+    };
 
-    // Configurar animação do loader
-    const imagens = [
-      "https://alexandre7888.github.io/CodeHUB/CodeFOX/foto1.jpg",
-      "https://alexandre7888.github.io/CodeHUB/CodeFOX/foto2.jpg",
-      "https://alexandre7888.github.io/CodeHUB/CodeFOX/foto3.jpg"
-    ];
-
-    let index = 0;
-    const loaderInterval = setInterval(() => {
-      index = (index + 1) % imagens.length;
-      if (codefoxImage) codefoxImage.src = imagens[index];
-    }, 2000);
-
-    // Função para mostrar o conteúdo principal
-    function showAppContent() {
-      loadingScreen.style.opacity = '0';
-      setTimeout(() => {
-        loadingScreen.style.display = 'none';
-        appContent.style.display = 'block';
-        clearInterval(loaderInterval);
-      }, 500);
+    function showNotification(msg, type = 'info') {
+      const n = document.createElement('div');
+      n.className = `notification ${type}`;
+      n.textContent = msg;
+      document.body.appendChild(n);
+      setTimeout(() => n.remove(), 4000);
     }
 
-    // Função para sanitizar nomes de arquivos
-    function sanitizeFilename(filename) {
-      return filename.replace(/[.#$/[\]]/g, '_');
-    }
-
-    // Função para validar nome do projeto
-    function isValidProjectName(name) {
-      return name && name.trim().length > 0 && name.length <= 50;
-    }
-
-    // Configurar o formulário
-    document.addEventListener('DOMContentLoaded', () => {
-      checkCookies();
-
-      const projectForm = document.getElementById('project-form');
-      if (projectForm) {
-        projectForm.addEventListener('submit', (e) => {
-          e.preventDefault();
-          createProject();
-        });
-      }
-    });
-
-    // Monitorar estado de autenticação
-    onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        window.location.href = 'auth.html';
+    function updatePuterStatus(connected) {
+      if (connected) {
+        elements.puterStatusDot.classList.add('connected');
+        elements.puterStatusText.textContent = 'Online';
       } else {
-        try {
-          userData = {
-            username: user.email?.split('@')[0] || 'usuário',
-            email: user.email || '',
-            uid: user.uid,
-            displayName: user.displayName || user.email?.split('@')[0] || 'usuário'
-          };
+        elements.puterStatusDot.classList.remove('connected');
+        elements.puterStatusText.textContent = 'Offline';
+      }
+    }
 
-          const usernameSpan = document.getElementById('username');
-          if (usernameSpan) usernameSpan.textContent = userData.displayName;
-          
-          loadProjects(user.uid);
-        } catch (error) {
-          console.error("Erro ao carregar dados do usuário:", error);
-          alert("Erro ao carregar dados. Por favor, recarregue a página.");
+    function showAILoading(text, subtext) {
+      elements.aiLoadingText.textContent = text || '🤖 IA processando...';
+      elements.aiLoadingSubtext.textContent = subtext || 'Analisando seu comando';
+      elements.aiLoadingOverlay.style.display = 'flex';
+    }
+
+    function hideAILoading() {
+      elements.aiLoadingOverlay.style.display = 'none';
+    }
+
+    function showPublishModal(onConfirm, onCancel) {
+      elements.publishModal.style.display = 'flex';
+      const confirmHandler = () => {
+        elements.publishModal.style.display = 'none';
+        elements.publishYesBtn.removeEventListener('click', confirmHandler);
+        elements.publishNoBtn.removeEventListener('click', cancelHandler);
+        if (onConfirm) onConfirm();
+      };
+      const cancelHandler = () => {
+        elements.publishModal.style.display = 'none';
+        elements.publishYesBtn.removeEventListener('click', confirmHandler);
+        elements.publishNoBtn.removeEventListener('click', cancelHandler);
+        if (onCancel) onCancel();
+      };
+      elements.publishYesBtn.addEventListener('click', confirmHandler);
+      elements.publishNoBtn.addEventListener('click', cancelHandler);
+    }
+
+    function addChatMessage(text, type) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `message ${type}`;
+      msgDiv.innerHTML = text.replace(/\n/g, '<br>');
+      elements.chatMessages.appendChild(msgDiv);
+      elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+      
+      if (currentProjectId && currentUser) {
+        const chatRef = db.ref(`chats/${currentUser.uid}/${currentProjectId}`).push();
+        chatRef.set({ text: text, type: type, timestamp: Date.now() });
+      }
+    }
+
+    async function loadChatHistory() {
+      if (!currentProjectId || !currentUser) return;
+      const chatsRef = db.ref(`chats/${currentUser.uid}/${currentProjectId}`);
+      const snapshot = await chatsRef.orderByChild('timestamp').once('value');
+      elements.chatMessages.innerHTML = '';
+      snapshot.forEach(child => {
+        const msg = child.val();
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${msg.type}`;
+        msgDiv.innerHTML = msg.text.replace(/\n/g, '<br>');
+        elements.chatMessages.appendChild(msgDiv);
+      });
+      if (elements.chatMessages.children.length === 0) {
+        addChatMessage('🤖 Olá! Sou seu assistente IA. Posso fazer TUDO automaticamente:<br><br>📝 <strong>Criar</strong> - "Crie um site completo com HTML, CSS e JS"<br>✏️ <strong>Editar</strong> - "Edite o index.html e mude o título"<br>🗑️ <strong>Deletar</strong> - "Delete o arquivo style.css"<br>🚀 <strong>Publicar</strong> - "Publique o projeto no Puter"<br>🔄 <strong>Atualizar</strong> - "Atualize o site publicado"<br><br>💡 Teste qualquer comando!', 'system');
+      }
+      elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+    }
+
+    function clearChat() {
+      if (confirm('Limpar todo o histórico do chat?')) {
+        db.ref(`chats/${currentUser.uid}/${currentProjectId}`).remove();
+        elements.chatMessages.innerHTML = '';
+        addChatMessage('🤖 Chat limpo! Digite um novo comando.', 'system');
+      }
+    }
+
+    // ==================== AÇÕES AUTOMÁTICAS DA IA ====================
+    
+    async function createFiles(filesData) {
+      const created = [];
+      for (const fileInfo of filesData) {
+        let fileName = fileInfo.name;
+        let content = fileInfo.content;
+        
+        if (!fileName || fileName === 'unknown') {
+          if (content.includes('<!DOCTYPE') || content.includes('<html')) fileName = 'index.html';
+          else if (content.includes('{') && content.includes('}')) fileName = 'style.css';
+          else if (content.includes('function') || content.includes('const') || content.includes('let')) fileName = 'script.js';
+          else fileName = 'arquivo.txt';
+        }
+        
+        if (!fileName.includes('.')) {
+          if (content.includes('<!DOCTYPE') || content.includes('<html')) fileName += '.html';
+          else if (content.includes('{') && content.includes('}')) fileName += '.css';
+          else fileName += '.js';
+        }
+        
+        const fileKey = btoa(fileName).replace(/=/g, '');
+        files[fileKey] = {
+          name: fileName,
+          originalName: fileName,
+          content: content,
+          size: content.length,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        created.push(fileName);
+      }
+      await saveProject();
+      if (created.length > 0) {
+        const firstKey = btoa(created[0]).replace(/=/g, '');
+        await openFile(firstKey);
+      }
+      return created;
+    }
+
+    async function editFile(fileName, newContent) {
+      let targetKey = null;
+      for (const key in files) {
+        if (files[key].name.toLowerCase() === fileName.toLowerCase() ||
+            files[key].name.toLowerCase().includes(fileName.toLowerCase())) {
+          targetKey = key;
+          break;
         }
       }
-    });
+      
+      if (!targetKey && currentFile) targetKey = currentFile;
+      if (!targetKey) return false;
+      
+      await saveFile(targetKey, newContent);
+      await saveProject();
+      if (targetKey === currentFile) {
+        const model = editor.getModel();
+        if (model) model.setValue(newContent);
+      }
+      return files[targetKey].name;
+    }
 
-    // Carregar projetos do usuário
-    function loadProjects(userId) {
+    async function deleteFile(fileName) {
+      let targetKey = null;
+      for (const key in files) {
+        if (files[key].name.toLowerCase() === fileName.toLowerCase() ||
+            files[key].name.toLowerCase().includes(fileName.toLowerCase())) {
+          targetKey = key;
+          break;
+        }
+      }
+      
+      if (!targetKey) return false;
+      
+      const deletedName = files[targetKey].name;
+      delete files[targetKey];
+      delete models[targetKey];
+      
+      if (targetKey === currentFile) {
+        const remainingKeys = Object.keys(files);
+        if (remainingKeys.length > 0) {
+          await openFile(remainingKeys[0]);
+        } else {
+          editor.setModel(null);
+          currentFile = null;
+        }
+      }
+      
+      await saveProject();
+      updateTabs();
+      return deletedName;
+    }
+
+    async function publishProject() {
+      const auth = await ensurePuterAuth();
+      if (!auth) return false;
+      
+      const hasIndex = Object.values(files).some(f => f.name === 'index.html');
+      if (!hasIndex) {
+        addChatMessage('❌ Não é possível publicar: falta o arquivo index.html', 'system');
+        return false;
+      }
+      
+      showAILoading('🚀 Publicando no Puter...', 'Criando site público');
+      
       try {
-        const projectsRef = ref(database, `projects/${userId}`);
-
-        onValue(projectsRef, (snapshot) => {
-          try {
-            const projectsContainer = document.getElementById('projects-container');
-            if (!projectsContainer) return;
-
-            projectsContainer.innerHTML = '';
-            const projects = snapshot.val() || {};
-
-            if (Object.keys(projects).length === 0) {
-              projectsContainer.innerHTML = `
-                <div style="grid-column:1/-1; text-align:center; padding:40px; background:white; border-radius:10px;">
-                  <p style="color:#666;">Você ainda não tem projetos. Clique em "Novo Projeto" para começar!</p>
-                </div>
-              `;
-            }
-
-            for (const [projectId, project] of Object.entries(projects)) {
-              if (!projectId || !project) continue;
-
-              const projectCard = document.createElement('div');
-              projectCard.className = 'project-card';
-              projectCard.innerHTML = `
-                <div class="project-name">📄 ${escapeHtml(project.name || 'Projeto sem nome')}</div>
-                <div class="project-domain">👤 ${escapeHtml(project.owner || userData?.displayName || 'usuário')}/${escapeHtml(project.slug || 'sem-slug')}</div>
-                <div class="project-actions">
-                  <button class="action-btn edit-btn" onclick="window.location.href='editor.html?projectId=${projectId}'">
-                    ✏️ Abrir
-                  </button>
-                  <button class="action-btn delete-btn" onclick="deleteProject('${projectId}')">
-                    🗑️ Excluir
-                  </button>
-                </div>
-              `;
-              projectsContainer.appendChild(projectCard);
-            }
-
-            showAppContent();
-          } catch (error) {
-            console.error("Erro ao renderizar projetos:", error);
-            alert("Erro ao carregar projetos. Por favor, recarregue a página.");
-          }
-        }, (error) => {
-          console.error("Erro ao carregar projetos:", error);
-          alert("Erro ao carregar projetos. Verifique sua conexão e tente novamente.");
+        const dirName = `codehub_${currentUser.uid}_${Date.now()}`;
+        await puter.fs.mkdir(dirName);
+        
+        for (const file of Object.values(files)) {
+          await puter.fs.write(`${dirName}/${file.name}`, file.content || '');
+        }
+        
+        let subdomain = currentHostingSubdomain;
+        if (!subdomain) {
+          subdomain = `codehub-${Math.random().toString(36).substring(2, 10)}`;
+          const site = await puter.hosting.create(subdomain, dirName);
+          subdomain = site.subdomain;
+        } else {
+          await puter.hosting.update(subdomain, dirName);
+        }
+        
+        const url = `https://${subdomain}.puter.site`;
+        currentHostingUrl = url;
+        currentHostingSubdomain = subdomain;
+        currentHostingDirectory = dirName;
+        
+        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({
+          url: url, subdomain: subdomain, directory: dirName, publishedAt: new Date().toISOString()
         });
-      } catch (error) {
-        console.error("Erro no carregamento de projetos:", error);
-        alert("Erro no sistema. Por favor, tente novamente mais tarde.");
+        
+        elements.fileUrl.value = url;
+        elements.urlPanel.style.display = 'flex';
+        hideAILoading();
+        return url;
+      } catch(e) {
+        hideAILoading();
+        throw e;
       }
     }
 
-    // Função para escapar HTML
+    async function updatePublishedSite() {
+      if (!currentHostingSubdomain || !currentHostingDirectory) {
+        return await publishProject();
+      }
+      
+      showAILoading('🔄 Atualizando site publicado...', 'Sincronizando arquivos');
+      
+      try {
+        for (const file of Object.values(files)) {
+          await puter.fs.write(`${currentHostingDirectory}/${file.name}`, file.content || '');
+        }
+        await puter.hosting.update(currentHostingSubdomain, currentHostingDirectory);
+        hideAILoading();
+        return currentHostingUrl;
+      } catch(e) {
+        hideAILoading();
+        throw e;
+      }
+    }
+
+    // ==================== IA PRINCIPAL ====================
+    
+    async function sendToAI() {
+      const userMessage = elements.chatInput.value.trim();
+      if (!userMessage) return;
+      
+      addChatMessage(userMessage, 'user');
+      elements.chatInput.value = '';
+      showAILoading('🤖 IA processando...', 'Analisando seu comando');
+      
+      try {
+        await ensurePuterAuth();
+        
+        const existingFiles = [];
+        for (const [key, file] of Object.entries(files)) {
+          existingFiles.push({ name: file.name, content: file.content || '' });
+        }
+        
+        const prompt = `
+          Você é um assistente que EXECUTA ações no código do usuário.
+          
+          PROJETO: ${elements.projectName.value}
+          ARQUIVOS EXISTENTES: ${existingFiles.map(f => f.name).join(', ')}
+          CONTEÚDO DOS ARQUIVOS:
+          ${existingFiles.map(f => `--- ${f.name} ---\n${f.content.substring(0, 500)}`).join('\n\n')}
+          
+          COMANDO: "${userMessage}"
+          
+          Responda APENAS com um JSON no formato:
+          {
+            "action": "criar|editar|deletar|publicar|atualizar",
+            "files": [{"name": "arquivo.html", "content": "codigo completo"}],
+            "targetFile": "nome do arquivo para editar/deletar",
+            "newContent": "novo conteúdo para editar",
+            "message": "mensagem para o usuário"
+          }
+          
+          REGRAS:
+          - "criar": para criar NOVOS arquivos (pode criar múltiplos)
+          - "editar": para MODIFICAR arquivo existente
+          - "deletar": para REMOVER arquivo
+          - "publicar": para PUBLICAR no Puter
+          - "atualizar": para ATUALIZAR site publicado
+          - Se não entender, action: "responder" e message com explicação
+        `;
+        
+        const response = await puter.ai.chat(prompt);
+        
+        let aiResponse = '';
+        if (typeof response === 'string') aiResponse = response;
+        else if (response.message?.content) aiResponse = response.message.content;
+        else aiResponse = JSON.stringify(response);
+        
+        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+        let result = null;
+        
+        if (jsonMatch) {
+          try {
+            result = JSON.parse(jsonMatch[0]);
+          } catch(e) {}
+        }
+        
+        hideAILoading();
+        
+        if (result && result.action) {
+          switch(result.action) {
+            case 'criar':
+              if (result.files && result.files.length > 0) {
+                const created = await createFiles(result.files);
+                addChatMessage(`✅ ${result.message || 'Arquivos criados!'}<br>📁 ${created.join(', ')}`, 'ai');
+                showPublishModal(async () => { await publishProject(); }, () => {});
+              }
+              break;
+              
+            case 'editar':
+              if (result.targetFile && result.newContent) {
+                const edited = await editFile(result.targetFile, result.newContent);
+                if (edited) {
+                  addChatMessage(`✅ ${result.message || `Arquivo "${edited}" editado com sucesso!`}`, 'ai');
+                  showPublishModal(async () => { await updatePublishedSite(); }, () => {});
+                } else {
+                  addChatMessage(`❌ Não encontrei o arquivo "${result.targetFile}" para editar.`, 'ai');
+                }
+              }
+              break;
+              
+            case 'deletar':
+              if (result.targetFile) {
+                const deleted = await deleteFile(result.targetFile);
+                if (deleted) {
+                  addChatMessage(`✅ ${result.message || `Arquivo "${deleted}" deletado!`}`, 'ai');
+                  showPublishModal(async () => { await updatePublishedSite(); }, () => {});
+                } else {
+                  addChatMessage(`❌ Não encontrei o arquivo "${result.targetFile}" para deletar.`, 'ai');
+                }
+              }
+              break;
+              
+            case 'publicar':
+              try {
+                const url = await publishProject();
+                addChatMessage(`✅ ${result.message || 'Site publicado com sucesso!'}<br>🔗 ${url}`, 'ai');
+              } catch(e) {
+                addChatMessage(`❌ Erro ao publicar: ${e.message}`, 'ai');
+              }
+              break;
+              
+            case 'atualizar':
+              try {
+                const url = await updatePublishedSite();
+                addChatMessage(`✅ ${result.message || 'Site atualizado com sucesso!'}<br>🔗 ${url}`, 'ai');
+              } catch(e) {
+                addChatMessage(`❌ Erro ao atualizar: ${e.message}`, 'ai');
+              }
+              break;
+              
+            default:
+              addChatMessage(result.message || aiResponse, 'ai');
+          }
+        } else {
+          addChatMessage(aiResponse, 'ai');
+        }
+        
+      } catch (error) {
+        hideAILoading();
+        console.error('Erro na IA:', error);
+        addChatMessage(`❌ Erro: ${error.message || 'Falha na comunicação'}`, 'ai');
+      }
+    }
+
+    // ==================== PROJETOS ====================
+    async function loadProjects() {
+      const projectsRef = db.ref(`projects/${currentUser.uid}`);
+      const snapshot = await projectsRef.once('value');
+      allProjects = [];
+      snapshot.forEach(child => {
+        allProjects.push({
+          id: child.key,
+          name: child.val().name || 'Sem nome',
+          updatedAt: child.val().updatedAt || new Date().toISOString()
+        });
+      });
+      allProjects.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+      renderProjectsList();
+    }
+
+    function renderProjectsList() {
+      if (allProjects.length === 0) {
+        elements.projectsList.innerHTML = '<div style="text-align:center; padding:20px; color:#888;">Nenhum projeto<br><button class="new-project-btn" onclick="createNewProject()" style="margin-top:10px;">+ Criar primeiro</button></div>';
+        return;
+      }
+      elements.projectsList.innerHTML = allProjects.map(p => `
+        <div class="project-item ${currentProjectId === p.id ? 'active' : ''}" onclick="selectProject('${p.id}')">
+          <div class="project-name">📄 ${escapeHtml(p.name)}</div>
+          <div class="project-date">${new Date(p.updatedAt).toLocaleDateString()}</div>
+        </div>
+      `).join('');
+    }
+
+    async function selectProject(projectId) {
+      if (currentProjectId === projectId) return;
+      currentProjectId = projectId;
+      await loadProjectData();
+      await loadChatHistory();
+      updateTabs();
+      window.history.pushState({}, '', `?projectId=${projectId}`);
+    }
+
+    async function createNewProject() {
+      const name = prompt('Nome do novo projeto:', 'Meu Projeto');
+      if (!name) return;
+      
+      const newProjectRef = db.ref(`projects/${currentUser.uid}`).push();
+      const projectId = newProjectRef.key;
+      
+      const defaultFiles = {};
+      const fileKey = btoa('index.html').replace(/=/g, '');
+      defaultFiles[fileKey] = {
+        name: 'index.html',
+        originalName: 'index.html',
+        content: `<!DOCTYPE html><html><head><title>${name}</title><meta charset="UTF-8"></head><body><h1>${name}</h1><p>Bem-vindo ao seu projeto!</p></body></html>`,
+        size: 200,
+        createdAt: new Date().toISOString()
+      };
+      
+      await newProjectRef.set({ name: name, files: defaultFiles, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+      await loadProjects();
+      await selectProject(projectId);
+      showNotification(`Projeto "${name}" criado!`, 'success');
+    }
+
+    async function loadProjectData() {
+      const snapshot = await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).once('value');
+      const data = snapshot.val();
+      if (!data) return;
+      
+      elements.projectName.value = data.name || 'Projeto';
+      files = data.files || {};
+      
+      const fileKeys = Object.keys(files);
+      if (fileKeys.length > 0) await openFile(fileKeys[0]);
+      else await createDefaultIndexHtml();
+      
+      if (data.hosting) {
+        currentHostingUrl = data.hosting.url;
+        currentHostingSubdomain = data.hosting.subdomain;
+        currentHostingDirectory = data.hosting.directory;
+        if (currentHostingUrl) {
+          elements.fileUrl.value = currentHostingUrl;
+          elements.urlPanel.style.display = 'flex';
+        }
+      }
+      updateTabs();
+      renderProjectsList();
+    }
+
+    async function createDefaultIndexHtml() {
+      const fileName = 'index.html';
+      const fileKey = btoa(fileName).replace(/=/g, '');
+      files[fileKey] = {
+        name: fileName, originalName: fileName,
+        content: `<!DOCTYPE html><html><head><title>${elements.projectName.value || 'Projeto'}</title></head><body><h1>Bem-vindo!</h1></body></html>`,
+        size: 100, createdAt: new Date().toISOString()
+      };
+      await saveProject();
+      await openFile(fileKey);
+    }
+
+    async function saveProject() {
+      await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ files: files, updatedAt: new Date().toISOString() });
+    }
+
     function escapeHtml(text) {
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
     }
 
-    // Funções do modal
-    window.openNewProjectModal = function() {
-      const modal = document.getElementById('new-project-modal');
-      if (modal) {
-        modal.style.display = 'block';
-        const input = document.getElementById('project-name');
-        if (input) input.focus();
-      }
+    // ==================== EDITOR ====================
+    function getContentSize(content) { return new Blob([content]).size; }
+
+    async function saveFile(fileKey, content) {
+      const fileData = files[fileKey];
+      const size = getContentSize(content);
+      const oldSize = fileData.size || 0;
+      userStorage.used = userStorage.used - oldSize + size;
+      files[fileKey] = { ...fileData, content: content, size: size, updatedAt: new Date().toISOString() };
+      await db.ref(`users/${currentUser.uid}/storage`).set({ used: userStorage.used, limit: userStorage.limit });
+      updateStorageDisplay();
+      return true;
     }
 
-    window.closeNewProjectModal = function() {
-      const modal = document.getElementById('new-project-modal');
-      if (modal) {
-        modal.style.display = 'none';
-        const input = document.getElementById('project-name');
-        if (input) input.value = '';
-      }
+    function updateStorageDisplay() {
+      const usedMB = (userStorage.used / (1024 * 1024)).toFixed(2);
+      const limitMB = (userStorage.limit / (1024 * 1024)).toFixed(0);
+      elements.storageUsed.textContent = usedMB;
+      elements.storageLimit.textContent = limitMB;
     }
 
-    // Criar novo projeto
-    async function createProject() {
-      const projectName = document.getElementById('project-name').value.trim();
-      const user = auth.currentUser;
+    require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
 
-      if (!isValidProjectName(projectName)) {
-        alert('Por favor, informe um nome válido para o projeto (1-50 caracteres)');
-        return;
-      }
+    require(['vs/editor/editor.main'], function() {
+      editor = monaco.editor.create(elements.container, {
+        theme: 'vs-dark', automaticLayout: true, minimap: { enabled: false }, language: 'html', fontSize: 13
+      });
+      editor.onDidChangeModelContent(() => { if (currentFile) elements.saveFileBtn.disabled = false; });
+      initializeApp();
+    });
 
-      try {
-        loadingScreen.style.display = 'flex';
-        loadingScreen.style.opacity = '1';
-        appContent.style.display = 'none';
-
-        const slug = projectName.toLowerCase()
-          .replace(/\s+/g, '-')
-          .replace(/[^\w\-]+/g, '')
-          .replace(/\-\-+/g, '-')
-          .replace(/^-+/, '')
-          .replace(/-+$/, '');
-
-        if (!slug) {
-          throw new Error('Não foi possível criar um slug válido a partir do nome');
+    async function initializeApp() {
+      auth.onAuthStateChanged(async user => {
+        if (!user) { window.location.href = 'auth.html'; return; }
+        currentUser = user;
+        elements.userName.textContent = user.displayName || user.email.split('@')[0];
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        currentProjectId = urlParams.get('projectId');
+        
+        await loadUserStorage();
+        await loadProjects();
+        
+        if (currentProjectId && allProjects.some(p => p.id === currentProjectId)) {
+          await loadProjectData();
+          await loadChatHistory();
+        } else if (allProjects.length > 0) {
+          await selectProject(allProjects[0].id);
+        } else {
+          await createNewProject();
         }
-
-        const newProjectRef = push(ref(database, `projects/${user.uid}`));
-        const projectId = newProjectRef.key;
-
-        if (!projectId) {
-          throw new Error('Não foi possível gerar um ID para o projeto');
-        }
-
-        const mainFileName = sanitizeFilename('index.html');
-
-        const projectData = {
-          name: projectName,
-          slug: slug,
-          owner: userData.displayName || userData.username,
-          ownerId: user.uid,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          files: {
-            [mainFileName]: {
-              content: `<!DOCTYPE html>
-<html>
-<head>
-  <title>${projectName}</title>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-    .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-    h1 { color: #667eea; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>🚀 ${escapeHtml(projectName)}</h1>
-    <p>Comece a editar seu código aqui!</p>
-  </div>
-</body>
-</html>`,
-              language: 'html',
-              createdAt: new Date().toISOString(),
-              originalName: 'index.html'
-            }
-          }
-        };
-
-        await Promise.race([
-          set(newProjectRef, projectData),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Tempo excedido ao criar projeto')), 5000)
-          )
-        ]);
-
-        closeNewProjectModal();
-        window.location.href = `editor.html?projectId=${projectId}`;
-
-      } catch (error) {
-        console.error("Erro detalhado ao criar projeto:", error);
-        alert(`Ocorreu um erro ao criar o projeto. ${error.message}`);
-        showAppContent();
-      }
-    }
-
-    // Excluir projeto
-    window.deleteProject = function(projectId) {
-      if (confirm('Tem certeza que deseja excluir este projeto? Esta ação não pode ser desfeita.')) {
-        try {
-          const user = auth.currentUser;
-          if (!user || !user.uid) {
-            throw new Error('Usuário não autenticado');
-          }
-
-          remove(ref(database, `projects/${user.uid}/${projectId}`))
-            .then(() => {
-              alert('Projeto excluído com sucesso!');
-            })
-            .catch(error => {
-              console.error("Erro ao excluir projeto:", error);
-              alert('Erro ao excluir projeto. Por favor, tente novamente.');
-            });
-        } catch (error) {
-          console.error("Erro ao excluir projeto:", error);
-          alert('Erro ao excluir projeto. Por favor, tente novamente.');
-        }
-      }
-    }
-
-    // Logout
-    window.logout = function() {
-      signOut(auth).then(() => {
-        window.location.href = 'auth.html';
-      }).catch(error => {
-        console.error("Erro ao fazer logout:", error);
-        alert('Erro ao fazer logout. Por favor, tente novamente.');
+        
+        elements.loadingScreen.style.opacity = '0';
+        setTimeout(() => {
+          elements.loadingScreen.style.display = 'none';
+          elements.appContent.style.display = 'flex';
+        }, 500);
+        
+        setupEventListeners();
+        initPuter();
       });
     }
 
-    // Discord Widget Functions
-    window.toggleDiscordWidget = function() {
-      const widget = document.getElementById('discordWidget');
-      if (widget) {
-        if (widget.style.display === 'none' || widget.style.display === '') {
-          widget.style.display = 'block';
-        } else {
-          widget.style.display = 'none';
+    async function loadUserStorage() {
+      const snapshot = await db.ref(`users/${currentUser.uid}/storage`).once('value');
+      const data = snapshot.val();
+      if (data) { userStorage.used = data.used || 0; userStorage.limit = data.limit || 5 * 1024 * 1024; }
+      updateStorageDisplay();
+    }
+
+    async function openFile(fileKey) {
+      if (!files[fileKey] || !editor) return;
+      currentFile = fileKey;
+      const fileData = files[fileKey];
+      let lang = 'plaintext';
+      const ext = (fileData.name || '').split('.').pop().toLowerCase();
+      if (ext === 'html') lang = 'html';
+      else if (ext === 'css') lang = 'css';
+      else if (ext === 'js') lang = 'javascript';
+      
+      const content = fileData.content || '';
+      let model = models[fileKey];
+      if (!model) {
+        model = monaco.editor.createModel(content, lang, monaco.Uri.parse(`file:///${fileData.name}`));
+        models[fileKey] = model;
+      } else {
+        model.setValue(content);
+        monaco.editor.setModelLanguage(model, lang);
+      }
+      editor.setModel(model);
+      updateTabs();
+      elements.saveFileBtn.disabled = true;
+    }
+
+    async function saveCurrentFile() {
+      if (!currentFile || !editor) return;
+      const content = editor.getModel().getValue();
+      const success = await saveFile(currentFile, content);
+      if (success) {
+        await saveProject();
+        elements.saveFileBtn.disabled = true;
+        elements.saveFileBtn.textContent = '✓';
+        setTimeout(() => { elements.saveFileBtn.textContent = '💾 Salvar'; }, 1500);
+        showNotification('Arquivo salvo!', 'success');
+      }
+    }
+
+    function updateTabs() {
+      elements.tabsContainer.innerHTML = '';
+      Object.keys(files).forEach(key => {
+        const tab = document.createElement('button');
+        tab.className = `tab-btn ${key === currentFile ? 'active' : ''}`;
+        tab.onclick = () => openFile(key);
+        tab.innerHTML = `${files[key].name} <button class="close-tab-btn" onclick="event.stopPropagation(); closeFile('${key}')">&times;</button>`;
+        elements.tabsContainer.appendChild(tab);
+      });
+    }
+
+    async function closeFile(fileKey) {
+      if (Object.keys(files).length <= 1) { showNotification('Não pode fechar o último arquivo', 'warning'); return; }
+      delete files[fileKey];
+      await saveProject();
+      if (fileKey === currentFile) await openFile(Object.keys(files)[0]);
+      updateTabs();
+    }
+
+    // ==================== PUTER ====================
+    async function initPuter() {
+      try {
+        const user = await puter.auth.getUser();
+        if (user) updatePuterStatus(true);
+        else updatePuterStatus(false);
+      } catch(e) { updatePuterStatus(false); }
+    }
+
+    async function ensurePuterAuth() {
+      try {
+        const user = await puter.auth.getUser();
+        if (user) { updatePuterStatus(true); return true; }
+      } catch(e) {}
+      try {
+        await puter.auth.signIn();
+        updatePuterStatus(true);
+        return true;
+      } catch(e) {
+        showNotification('Erro ao conectar ao Puter', 'error');
+        return false;
+      }
+    }
+
+    function openPuterDashboard() { window.open('https://puter.com', '_blank'); }
+    
+    function previewProject() {
+      const index = Object.values(files).find(f => f.name === 'index.html');
+      if (index?.content) {
+        const blob = new Blob([index.content], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } else { showNotification('Crie um index.html primeiro', 'warning'); }
+    }
+
+    function setupEventListeners() {
+      elements.saveFileBtn.addEventListener('click', saveCurrentFile);
+      elements.previewBtn.addEventListener('click', previewProject);
+      elements.puterDashboardBtn.addEventListener('click', openPuterDashboard);
+      elements.openUrlBtn?.addEventListener('click', () => { if (currentHostingUrl) window.open(currentHostingUrl, '_blank'); });
+      elements.sendChatBtn.addEventListener('click', sendToAI);
+      elements.chatInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendToAI(); } });
+      elements.logoutBtn.addEventListener('click', () => auth.signOut().then(() => window.location.href = 'auth.html'));
+      elements.projectName.addEventListener('blur', async () => {
+        const newName = elements.projectName.value.trim();
+        if (newName && currentProjectId) {
+          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/name`).set(newName);
+          await loadProjects();
         }
-      }
+      });
     }
 
-    // Cookie functions
-    function checkCookies() {
-      if (localStorage.getItem('cookiesAccepted') === null) {
-        const banner = document.getElementById('cookie-banner');
-        if (banner) banner.style.display = 'flex';
-      }
-    }
-
-    window.acceptCookies = function() {
-      localStorage.setItem('cookiesAccepted', 'true');
-      const banner = document.getElementById('cookie-banner');
-      if (banner) banner.style.display = 'none';
-      if (typeof gtag !== 'undefined') {
-        gtag('consent', 'update', {
-          'analytics_storage': 'granted'
-        });
-      }
-    }
-
-    window.rejectCookies = function() {
-      localStorage.setItem('cookiesAccepted', 'false');
-      const banner = document.getElementById('cookie-banner');
-      if (banner) banner.style.display = 'none';
-      if (typeof gtag !== 'undefined') {
-        gtag('consent', 'update', {
-          'analytics_storage': 'denied'
-        });
-      }
-    }
+    window.selectProject = selectProject;
+    window.createNewProject = createNewProject;
+    window.clearChat = clearChat;
+    window.closeFile = closeFile;
   </script>
 </body>
 </html>
