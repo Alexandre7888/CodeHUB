@@ -3,12 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CodeHUB - Editor de Projetos com Puter</title>
+  <title>CodeHUB - Editor com Puter</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
-  <!-- Puter.js SDK -->
   <script src="https://js.puter.com/v2/"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -111,6 +110,7 @@
     #copyUrlBtn { background: #00bcd4; }
     #aiAssistantBtn { background: #9c27b0; }
     .logout-btn { background: #f44336; }
+    #uploadPuterBtn { background: #20b2aa; }
     
     #storage-info {
       background: #333;
@@ -199,6 +199,11 @@
       font-size: 14px;
     }
     
+    .toggle-sidebar {
+      background: transparent;
+      padding: 4px 8px;
+    }
+    
     .chat-messages {
       flex: 1;
       overflow-y: auto;
@@ -268,6 +273,18 @@
       padding: 8px 16px;
     }
     
+    .action-buttons {
+      display: flex;
+      gap: 5px;
+      margin-top: 8px;
+    }
+    
+    .action-buttons button {
+      background: #4caf50;
+      font-size: 11px;
+      padding: 4px 8px;
+    }
+    
     .url-panel {
       background: #252526;
       padding: 6px 12px;
@@ -312,21 +329,25 @@
     
     .monaco-editor { width: 100%; height: 100%; }
     
-    .toggle-sidebar {
-      background: transparent;
-      padding: 4px 8px;
-    }
-    
-    .action-buttons {
+    .puter-status {
       display: flex;
+      align-items: center;
       gap: 5px;
-      margin-top: 8px;
+      background: #333;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
     }
     
-    .action-buttons button {
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #f44336;
+    }
+    
+    .status-dot.connected {
       background: #4caf50;
-      font-size: 11px;
-      padding: 4px 8px;
     }
     
     @media (max-width: 768px) {
@@ -338,7 +359,7 @@
 <body>
   <div id="loading-screen">
     <img src="https://alexandre7888.github.io/CodeHUB/CodeFOX/foto1.jpg" class="loader" alt="Loading">
-    <h1>Carregando editor com Puter AI...</h1>
+    <h1>Carregando editor com Puter...</h1>
   </div>
 
   <div id="app-content" style="display: none; height: 100vh; display: flex; flex-direction: column;">
@@ -360,6 +381,10 @@
       </div>
       <div id="user-info">
         <span id="user-name">Carregando...</span>
+        <div id="puterStatus" class="puter-status">
+          <div class="status-dot" id="puterStatusDot"></div>
+          <span id="puterStatusText">Desconectado</span>
+        </div>
         <button id="logoutBtn" class="logout-btn">Sair</button>
       </div>
     </div>
@@ -373,21 +398,18 @@
       
       <div id="ai-sidebar">
         <div class="sidebar-header" onclick="toggleSidebar()">
-          <h3>🤖 Assistente AI</h3>
+          <h3>🤖 Assistente AI (Puter)</h3>
           <button class="toggle-sidebar">◀</button>
         </div>
         <div class="chat-messages" id="chatMessages">
           <div class="message system">
-            🤖 Olá! Sou seu assistente AI do CodeHUB.<br>
-            Posso:<br>
-            • Criar/editar códigos HTML/CSS/JS<br>
-            • Criar pastas e arquivos<br>
-            • Gerar projetos completos<br>
-            • Responder perguntas sobre programação<br><br>
-            <strong>Exemplos:</strong><br>
-            "Crie um arquivo style.css com estilo moderno"<br>
-            "Faça uma pasta components e dentro um header.html"<br>
-            "Gere uma calculadora em JavaScript"
+            🤖 Olá! Sou seu assistente AI do CodeHUB via Puter.<br><br>
+            <strong>Comandos disponíveis:</strong><br>
+            • "Crie um arquivo index.html com um menu"<br>
+            • "Crie uma pasta chamada components"<br>
+            • "Gere um código CSS para um botão bonito"<br>
+            • "Faça uma calculadora em JavaScript"<br><br>
+            <strong>Status do Puter:</strong> Aguardando conexão...
           </div>
         </div>
         <div class="chat-input-area">
@@ -431,6 +453,9 @@
     let isPuterReady = false;
     let puterUser = null;
 
+    // Chave para salvar o token do Puter no localStorage
+    const PUTER_TOKEN_KEY = 'puter_auth_token';
+
     const elements = {
       loadingScreen: document.getElementById('loading-screen'),
       appContent: document.getElementById('app-content'),
@@ -455,7 +480,9 @@
       chatMessages: document.getElementById('chatMessages'),
       chatInput: document.getElementById('chatInput'),
       sendChatBtn: document.getElementById('sendChatBtn'),
-      aiSidebar: document.getElementById('ai-sidebar')
+      aiSidebar: document.getElementById('ai-sidebar'),
+      puterStatusDot: document.getElementById('puterStatusDot'),
+      puterStatusText: document.getElementById('puterStatusText')
     };
 
     function showNotification(message, type = 'info') {
@@ -466,13 +493,23 @@
       setTimeout(() => notif.remove(), 4000);
     }
 
+    function updatePuterStatus(connected, message = null) {
+      if (connected) {
+        elements.puterStatusDot.classList.add('connected');
+        elements.puterStatusText.textContent = message || 'Conectado ao Puter';
+      } else {
+        elements.puterStatusDot.classList.remove('connected');
+        elements.puterStatusText.textContent = message || 'Desconectado';
+      }
+    }
+
     function addChatMessage(text, type, code = null) {
       const messageDiv = document.createElement('div');
       messageDiv.className = `message ${type}`;
       
       if (code) {
         messageDiv.innerHTML = `
-          ${text}
+          <div>${escapeHtml(text)}</div>
           <pre><code>${escapeHtml(code)}</code></pre>
           <div class="action-buttons">
             <button onclick="insertCodeToEditor('${escapeHtml(code).replace(/'/g, "\\'")}')">📝 Inserir no Editor</button>
@@ -497,76 +534,166 @@
       elements.aiSidebar.classList.toggle('collapsed');
     }
 
-    // ==================== PUTER SDK FUNCTIONS ====================
+    // ==================== PUTER SDK CORRIGIDO ====================
     
+    // Salvar token no localStorage para persistir login
+    async function savePuterToken() {
+      try {
+        // O token é gerenciado automaticamente pelo puter.js
+        // Mas podemos verificar se está logado
+        const user = await puter.auth.getUser();
+        if (user) {
+          localStorage.setItem(PUTER_TOKEN_KEY, 'true');
+          updatePuterStatus(true, `Conectado: ${user.username || user.email}`);
+          return true;
+        }
+      } catch (e) {
+        localStorage.removeItem(PUTER_TOKEN_KEY);
+        return false;
+      }
+      return false;
+    }
+
     async function initPuter() {
       try {
-        // Verificar se já está logado no Puter
+        // Verificar se já tem token salvo
+        const hasSavedToken = localStorage.getItem(PUTER_TOKEN_KEY);
+        
         if (typeof puter !== 'undefined') {
-          const user = await puter.auth.getUser();
-          if (user) {
-            puterUser = user;
-            showNotification(`✅ Conectado ao Puter como ${user.username || user.email}`, 'success');
-            elements.uploadPuterBtn.disabled = false;
+          // Tentar obter usuário atual (não força login)
+          try {
+            const user = await puter.auth.getUser();
+            if (user) {
+              puterUser = user;
+              isPuterReady = true;
+              updatePuterStatus(true, `Conectado: ${user.username || user.email}`);
+              showNotification(`✅ Conectado ao Puter como ${user.username || user.email}`, 'success');
+              elements.uploadPuterBtn.disabled = false;
+              return true;
+            }
+          } catch (e) {
+            console.log('Puter não autenticado');
           }
-          isPuterReady = true;
+          
+          // Se não está logado mas tem token salvo, tenta reconectar
+          if (hasSavedToken) {
+            updatePuterStatus(false, 'Reconectando...');
+          }
+          
+          isPuterReady = false;
+          elements.uploadPuterBtn.disabled = false; // Botão vai pedir login quando clicado
+          updatePuterStatus(false, 'Clique em Publicar para conectar');
+          return false;
         }
       } catch (error) {
-        console.log('Puter não autenticado ainda');
+        console.error('Erro ao inicializar Puter:', error);
+        updatePuterStatus(false, 'Erro ao conectar');
+        return false;
       }
     }
 
     async function loginPuter() {
       try {
         showNotification('🔐 Conectando ao Puter...', 'info');
+        
+        // Forçar login - isso abre o popup do Puter
         await puter.auth.signIn();
+        
+        // Após login, obter usuário
         const user = await puter.auth.getUser();
         puterUser = user;
-        showNotification(`✅ Conectado ao Puter!`, 'success');
+        isPuterReady = true;
+        
+        // Salvar token
+        localStorage.setItem(PUTER_TOKEN_KEY, 'true');
+        
+        updatePuterStatus(true, `Conectado: ${user.username || user.email}`);
+        showNotification(`✅ Conectado ao Puter como ${user.username || user.email}`, 'success');
         elements.uploadPuterBtn.disabled = false;
         return true;
       } catch (error) {
+        console.error('Erro no login Puter:', error);
         showNotification(`❌ Erro ao conectar: ${error.message}`, 'error');
+        updatePuterStatus(false, 'Falha na conexão');
         return false;
       }
     }
 
+    async function ensurePuterAuth() {
+      if (isPuterReady && puterUser) return true;
+      
+      // Tentar recuperar sessão existente
+      try {
+        const user = await puter.auth.getUser();
+        if (user) {
+          puterUser = user;
+          isPuterReady = true;
+          updatePuterStatus(true, `Conectado: ${user.username || user.email}`);
+          return true;
+        }
+      } catch (e) {
+        // Não está logado
+      }
+      
+      // Se não estiver logado, fazer login
+      return await loginPuter();
+    }
+
     async function uploadToPuter(content, fileName) {
-      if (!isPuterReady) {
-        const logged = await loginPuter();
-        if (!logged) return null;
+      // Garantir que está autenticado
+      const authenticated = await ensurePuterAuth();
+      if (!authenticated) {
+        showNotification('❌ Não foi possível autenticar no Puter', 'error');
+        return null;
       }
       
       try {
         showNotification(`📤 Publicando ${fileName} no Puter...`, 'info');
         
-        // Criar pasta do projeto no Puter
+        // Criar estrutura de pastas: /CodeHUB/usuario/projeto/
         const projectPath = `/CodeHUB/${currentUser.uid}/${currentProjectId}`;
         
-        try {
-          await puter.fs.mkdir(projectPath, { parents: true });
-        } catch (e) {
-          // Pasta já existe
-        }
-        
-        // Upload do arquivo
+        // Usar createMissingParents para criar pastas automaticamente [citation:3]
         const fullPath = `${projectPath}/${fileName}`;
-        const result = await puter.fs.write(fullPath, content);
         
-        // Obter URL pública
+        // Upload do arquivo com opções
+        const result = await puter.fs.write(fullPath, content, { 
+          createMissingParents: true  // Cria pastas automaticamente
+        });
+        
+        // Obter URL pública [citation:3]
         const url = await puter.fs.getReadURL(fullPath);
         
-        showNotification(`✅ Publicado: ${fileName}`, 'success');
+        showNotification(`✅ Publicado com sucesso!`, 'success');
         return url;
       } catch (error) {
         console.error('Erro no upload Puter:', error);
+        
+        // Tratamento de erro específico
+        if (error.message.includes('401') || error.message.includes('unauthorized')) {
+          // Token expirado, tentar reconectar
+          localStorage.removeItem(PUTER_TOKEN_KEY);
+          isPuterReady = false;
+          puterUser = null;
+          updatePuterStatus(false, 'Sessão expirada');
+          
+          const relogged = await loginPuter();
+          if (relogged) {
+            // Tentar novamente
+            return uploadToPuter(content, fileName);
+          }
+        }
+        
         showNotification(`❌ Erro: ${error.message}`, 'error');
         return null;
       }
     }
 
     async function uploadAllToPuter() {
-      if (!currentFile) return;
+      if (!currentFile) {
+        showNotification('Nenhum arquivo aberto', 'warning');
+        return;
+      }
       
       const model = editor.getModel();
       if (!model) return;
@@ -580,11 +707,11 @@
         currentFileUrl = url;
         elements.fileUrl.value = url;
         elements.urlPanel.style.display = 'flex';
-        showNotification('✅ Arquivo publicado com sucesso!', 'success');
+        showNotification('✅ Arquivo publicado no Puter!', 'success');
       }
     }
 
-    // ==================== AI FUNCTIONS ====================
+    // ==================== AI FUNCTIONS CORRIGIDAS ====================
     
     async function sendToAI() {
       const userMessage = elements.chatInput.value.trim();
@@ -593,40 +720,63 @@
       addChatMessage(userMessage, 'user');
       elements.chatInput.value = '';
       
-      addChatMessage('🤔 Pensando...', 'ai');
+      addChatMessage('🤔 Processando...', 'ai');
       
       try {
-        // Autenticar no Puter se necessário
-        if (!isPuterReady) {
-          await loginPuter();
+        // Garantir autenticação no Puter para usar AI
+        const authenticated = await ensurePuterAuth();
+        if (!authenticated) {
+          const messages = elements.chatMessages.querySelectorAll('.message.ai');
+          if (messages.length > 0 && messages[messages.length-1].innerText === '🤔 Processando...') {
+            messages[messages.length-1].remove();
+          }
+          addChatMessage('❌ É necessário conectar ao Puter para usar a IA. Clique em "Publicar" primeiro.', 'system');
+          return;
         }
         
-        // Usar a AI do Puter.js
+        // Usar puter.ai.chat conforme documentação [citation:1][citation:10]
         const response = await puter.ai.chat(userMessage, {
-          model: "prime-intellect/intellect-3",
-          stream: false
+          model: "gpt-5.4-nano"  // Modelo rápido e eficiente [citation:10]
         });
         
-        // Remover mensagem de "Pensando..."
+        // Remover mensagem de "Processando..."
         const messages = elements.chatMessages.querySelectorAll('.message.ai');
-        if (messages.length > 0 && messages[messages.length-1].innerText === '🤔 Pensando...') {
+        if (messages.length > 0 && messages[messages.length-1].innerText === '🤔 Processando...') {
           messages[messages.length-1].remove();
         }
         
-        const aiResponse = response.message?.content || response.text || response;
+        // Extrair resposta corretamente
+        let aiResponse = '';
+        if (typeof response === 'string') {
+          aiResponse = response;
+        } else if (response.message && response.message.content) {
+          aiResponse = response.message.content;
+        } else if (response.text) {
+          aiResponse = response.text;
+        } else if (response.content) {
+          aiResponse = response.content;
+        } else {
+          aiResponse = JSON.stringify(response);
+        }
         
-        // Verificar se a resposta contém código
+        // Verificar se a resposta contém código (bloco ```)
         const codeMatch = aiResponse.match(/```(\w*)\n([\s\S]*?)```/);
         
         if (codeMatch) {
           const language = codeMatch[1];
-          const code = codeMatch[2];
-          addChatMessage(aiResponse.replace(/```[\s\S]*?```/, '[Código abaixo]'), 'ai', code);
+          const code = codeMatch[2].trim();
+          const textWithoutCode = aiResponse.replace(/```[\s\S]*?```/, '').trim();
+          
+          if (textWithoutCode) {
+            addChatMessage(textWithoutCode, 'ai', code);
+          } else {
+            addChatMessage(`✅ Código gerado em ${language || 'texto'}:`, 'ai', code);
+          }
           
           // Verificar se o usuário pediu para criar arquivo
           const createFileMatch = userMessage.match(/criar arquivo\s+(\S+)/i) || 
                                    userMessage.match(/create file\s+(\S+)/i);
-          if (createFileMatch) {
+          if (createFileMatch && code) {
             const fileName = createFileMatch[1];
             await createFileFromAICode(code, fileName);
           }
@@ -636,8 +786,9 @@
         
         // Verificar se pediu para criar pasta
         const createFolderMatch = userMessage.match(/criar pasta\s+(\S+)/i) || 
-                                   userMessage.match(/create folder\s+(\S+)/i);
-        if (createFolderMatch) {
+                                   userMessage.match(/create folder\s+(\S+)/i) ||
+                                   userMessage.match(/criar diretório\s+(\S+)/i);
+        if (createFolderMatch && authenticated) {
           const folderName = createFolderMatch[1];
           await createFolderFromAI(folderName);
         }
@@ -645,18 +796,25 @@
       } catch (error) {
         console.error('Erro na AI:', error);
         
-        // Remover mensagem de "Pensando..."
         const messages = elements.chatMessages.querySelectorAll('.message.ai');
-        if (messages.length > 0 && messages[messages.length-1].innerText === '🤔 Pensando...') {
+        if (messages.length > 0 && messages[messages.length-1].innerText === '🤔 Processando...') {
           messages[messages.length-1].remove();
         }
         
-        addChatMessage(`❌ Erro: ${error.message}`, 'ai');
+        addChatMessage(`❌ Erro: ${error.message || 'Falha na comunicação com a IA'}`, 'ai');
+        
+        // Se erro de autenticação, tentar reconectar
+        if (error.message.includes('401') || error.message.includes('auth')) {
+          localStorage.removeItem(PUTER_TOKEN_KEY);
+          isPuterReady = false;
+          updatePuterStatus(false, 'Sessão expirada');
+          addChatMessage('⚠️ Sessão do Puter expirada. Clique em "Publicar" para reconectar.', 'system');
+        }
       }
     }
 
     async function createFileFromAICode(code, suggestedFileName) {
-      const fileName = suggestedFileName || prompt('Nome do arquivo:', 'novo_arquivo.html');
+      const fileName = suggestedFileName || prompt('Nome do arquivo (ex: index.html, style.css):', 'arquivo.html');
       if (!fileName) return;
       
       // Criar o arquivo no editor
@@ -680,20 +838,24 @@
       await openFile(fileKey);
       
       addChatMessage(`✅ Arquivo ${fileName} criado com sucesso!`, 'system');
+      showNotification(`Arquivo ${fileName} criado!`, 'success');
     }
 
     async function createFolderFromAI(folderName) {
       try {
-        // Usar Puter para criar pasta (se conectado)
-        if (isPuterReady) {
-          const path = `/CodeHUB/${currentUser.uid}/${currentProjectId}/${folderName}`;
-          await puter.fs.mkdir(path, { parents: true });
-          addChatMessage(`✅ Pasta ${folderName} criada no Puter!`, 'system');
-        } else {
-          // Fallback: criar no Firebase
-          addChatMessage(`ℹ️ Pasta ${folderName} seria criada (conecte ao Puter para criar pastas)`, 'system');
+        const authenticated = await ensurePuterAuth();
+        if (!authenticated) {
+          addChatMessage(`❌ Conecte ao Puter primeiro para criar pastas.`, 'system');
+          return;
         }
+        
+        const folderPath = `/CodeHUB/${currentUser.uid}/${currentProjectId}/${folderName}`;
+        await puter.fs.mkdir(folderPath, { parents: true });
+        
+        addChatMessage(`✅ Pasta "${folderName}" criada no Puter em: ${folderPath}`, 'system');
+        showNotification(`Pasta ${folderName} criada!`, 'success');
       } catch (error) {
+        console.error('Erro ao criar pasta:', error);
         addChatMessage(`❌ Erro ao criar pasta: ${error.message}`, 'system');
       }
     }
@@ -807,6 +969,7 @@
         currentUser = user;
         elements.userName.textContent = user.displayName || user.email.split('@')[0];
         
+        // Inicializar Puter
         await initPuter();
         
         const urlParams = new URLSearchParams(window.location.search);
@@ -887,6 +1050,7 @@
   <div class="container">
     <h1>🚀 Bem-vindo ao seu projeto!</h1>
     <p>Use o assistente AI ao lado para criar códigos automaticamente!</p>
+    <p>Clique em "Publicar" para obter uma URL pública do Puter.</p>
   </div>
 </body>
 </html>`;
@@ -1078,11 +1242,7 @@
     }
 
     function toggleAISidebar() {
-      if (elements.aiSidebar.style.display === 'none' || elements.aiSidebar.classList.contains('collapsed')) {
-        elements.aiSidebar.classList.remove('collapsed');
-      } else {
-        elements.aiSidebar.classList.add('collapsed');
-      }
+      elements.aiSidebar.classList.toggle('collapsed');
     }
 
     function setupEventListeners() {
