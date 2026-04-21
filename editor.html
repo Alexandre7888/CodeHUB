@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CodeHUB - Editor com Puter AI</title>
+  <title>CodeHUB - Editor com IA Gráfica</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -22,7 +22,6 @@
       overflow: hidden;
     }
     
-    /* Loading */
     #loading-screen {
       position: fixed;
       top: 0;
@@ -49,7 +48,6 @@
       100% { transform: rotate(360deg); }
     }
     
-    /* Top Bar */
     #top-bar {
       display: flex;
       padding: 8px 12px;
@@ -129,7 +127,6 @@
       gap: 10px;
     }
     
-    /* Projects Sidebar */
     #projects-sidebar {
       width: 260px;
       background: #252526;
@@ -185,13 +182,6 @@
       color: #888;
     }
     
-    .project-actions {
-      display: flex;
-      gap: 5px;
-      margin-top: 8px;
-    }
-    
-    /* Main Container */
     .main-container {
       display: flex;
       flex: 1;
@@ -245,9 +235,8 @@
       overflow: hidden;
     }
     
-    /* AI Sidebar */
     #ai-sidebar {
-      width: 320px;
+      width: 380px;
       background: #252526;
       border-left: 1px solid #333;
       display: flex;
@@ -255,7 +244,7 @@
     }
     
     .sidebar-header {
-      padding: 10px;
+      padding: 12px;
       background: #2d2d2d;
       display: flex;
       justify-content: space-between;
@@ -265,50 +254,53 @@
     .chat-messages {
       flex: 1;
       overflow-y: auto;
-      padding: 10px;
+      padding: 12px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
     }
     
     .message {
-      padding: 8px 12px;
-      border-radius: 8px;
+      padding: 10px 14px;
+      border-radius: 12px;
       max-width: 95%;
       word-wrap: break-word;
-      font-size: 12px;
+      font-size: 13px;
     }
     
     .message.user {
       background: #4361ee;
       align-self: flex-end;
+      border-bottom-right-radius: 4px;
     }
     
     .message.ai {
       background: #3d3d3d;
       align-self: flex-start;
+      border-bottom-left-radius: 4px;
     }
     
     .message.system {
       background: #ff9800;
       align-self: center;
-      font-size: 11px;
+      font-size: 12px;
+      border-radius: 20px;
     }
     
     .message pre {
       background: #1e1e1e;
-      padding: 8px;
-      border-radius: 4px;
+      padding: 10px;
+      border-radius: 8px;
       overflow-x: auto;
-      margin-top: 8px;
-      font-size: 11px;
+      margin-top: 10px;
+      font-size: 12px;
     }
     
     .chat-input-area {
-      padding: 10px;
+      padding: 12px;
       border-top: 1px solid #333;
       display: flex;
-      gap: 8px;
+      gap: 10px;
     }
     
     .chat-input-area textarea {
@@ -316,33 +308,36 @@
       background: #1e1e1e;
       border: 1px solid #333;
       color: white;
-      padding: 8px;
-      border-radius: 4px;
+      padding: 10px;
+      border-radius: 8px;
       resize: none;
       font-family: inherit;
-      font-size: 12px;
+      font-size: 13px;
     }
     
     .chat-input-area button {
       background: #9c27b0;
-      padding: 8px 16px;
+      padding: 10px 20px;
+      border-radius: 8px;
     }
     
     .action-buttons {
       display: flex;
-      gap: 5px;
-      margin-top: 8px;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
     }
     
     .action-buttons button {
       background: #4caf50;
-      font-size: 11px;
-      padding: 4px 8px;
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 6px;
     }
     
     .url-panel {
       background: #252526;
-      padding: 6px 12px;
+      padding: 8px 12px;
       border-top: 1px solid #333;
       display: flex;
       align-items: center;
@@ -355,18 +350,109 @@
       background: #1e1e1e;
       border: 1px solid #333;
       color: white;
-      padding: 5px 10px;
+      padding: 6px 10px;
       border-radius: 4px;
       font-family: monospace;
       font-size: 11px;
+    }
+    
+    /* Loading Overlay */
+    .ai-loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(5px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .ai-loading-spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid #333;
+      border-top-color: #9c27b0;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    .ai-loading-text {
+      font-size: 18px;
+      color: white;
+      text-align: center;
+    }
+    
+    .ai-loading-subtext {
+      font-size: 14px;
+      color: #aaa;
+      text-align: center;
+    }
+    
+    /* Modal de Publicação */
+    .publish-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(5px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 10001;
+    }
+    
+    .publish-modal-content {
+      background: #2d2d2d;
+      border-radius: 16px;
+      padding: 30px;
+      max-width: 450px;
+      width: 90%;
+      text-align: center;
+    }
+    
+    .publish-modal-content h3 {
+      margin-bottom: 15px;
+      color: #4cc9f0;
+    }
+    
+    .publish-modal-content p {
+      margin-bottom: 20px;
+      color: #ccc;
+    }
+    
+    .publish-modal-buttons {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+    }
+    
+    .publish-modal-buttons button {
+      padding: 10px 25px;
+      font-size: 14px;
+    }
+    
+    .btn-publish-yes {
+      background: #4caf50;
+    }
+    
+    .btn-publish-no {
+      background: #f44336;
     }
     
     .notification {
       position: fixed;
       bottom: 20px;
       right: 20px;
-      padding: 10px 20px;
-      border-radius: 5px;
+      padding: 12px 20px;
+      border-radius: 8px;
       color: white;
       z-index: 1000;
       animation: slideIn 0.3s ease;
@@ -409,9 +495,13 @@
       padding: 4px 8px;
     }
     
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
     @media (max-width: 900px) {
       #projects-sidebar { width: 200px; }
-      #ai-sidebar { width: 280px; }
+      #ai-sidebar { width: 320px; }
     }
   </style>
 </head>
@@ -426,63 +516,39 @@
       <button id="puterDashboardBtn">🚀 Puter Dashboard</button>
       <input type="text" id="project-name" placeholder="Nome do Projeto">
       <form id="newFileForm">
-        <input type="text" id="newFileName" placeholder="ex: index.html" required>
+        <input type="text" id="newFileName" placeholder="ex: style.css" required>
         <button type="submit">+ Arquivo</button>
       </form>
       <button id="saveFileBtn" disabled>💾 Salvar</button>
       <button id="previewBtn">👁️ Preview</button>
       <button id="copyUrlBtn">🔗 Copiar URL</button>
       <button id="aiAssistantBtn">🤖 IA</button>
-      <div id="storage-info">
-        📦 <span id="storage-used">0</span> / <span id="storage-limit">5</span> MB
-      </div>
+      <div id="storage-info">📦 <span id="storage-used">0</span> / <span id="storage-limit">5</span> MB</div>
       <div id="user-info">
         <span id="user-name"></span>
-        <div class="puter-status">
-          <div class="status-dot" id="puterStatusDot"></div>
-          <span id="puterStatusText">Puter</span>
-        </div>
+        <div class="puter-status"><div class="status-dot" id="puterStatusDot"></div><span id="puterStatusText">Puter</span></div>
         <button id="logoutBtn" class="logout-btn">Sair</button>
       </div>
     </div>
 
     <div class="main-container">
-      <!-- Projects Sidebar -->
       <div id="projects-sidebar">
-        <div class="projects-header">
-          <span>📁 Meus Projetos</span>
-          <button class="new-project-btn" onclick="createNewProject()">+ Novo</button>
-        </div>
-        <div class="projects-list" id="projects-list">
-          <div style="text-align:center; padding:20px; color:#888;">Carregando...</div>
-        </div>
+        <div class="projects-header"><span>📁 Meus Projetos</span><button class="new-project-btn" onclick="createNewProject()">+ Novo</button></div>
+        <div class="projects-list" id="projects-list"><div style="text-align:center; padding:20px; color:#888;">Carregando...</div></div>
       </div>
 
-      <!-- Editor Area -->
       <div id="editor-container">
         <div id="tabs"></div>
         <div id="container"></div>
       </div>
 
-      <!-- AI Sidebar -->
       <div id="ai-sidebar">
-        <div class="sidebar-header">
-          <span>🤖 Assistente AI</span>
-          <button onclick="clearChat()" style="background:#555; padding:2px 8px;">Limpar</button>
-        </div>
+        <div class="sidebar-header"><span>🤖 Assistente IA (Edita Código)</span><button onclick="clearChat()" style="background:#555; padding:2px 8px;">Limpar</button></div>
         <div class="chat-messages" id="chatMessages">
-          <div class="message system">
-            🤖 Olá! Sou seu assistente AI.<br><br>
-            <strong>Comandos:</strong><br>
-            • "Crie um index.html com um menu"<br>
-            • "Faça um botão bonito em CSS"<br>
-            • "Crie uma calculadora em JS"<br>
-            • "Crie uma pasta components"<br><br>
-            💡 Clique em "Puter Dashboard" para gerenciar seus sites!
-          </div>
+          <div class="message system">🤖 <strong>IA que EDITA SEU CÓDIGO!</strong><br><br>Comandos:<br>• "Edite o index.html e mude o título"<br>• "Crie um arquivo style.css com fundo azul"<br>• "Adicione um botão no HTML"<br>• "Crie uma calculadora completa"<br><br>💡 A IA vai ANALISAR seus arquivos e EDITAR automaticamente!</div>
         </div>
         <div class="chat-input-area">
-          <textarea id="chatInput" placeholder="Digite seu comando para a IA..." rows="2"></textarea>
+          <textarea id="chatInput" placeholder="Ex: Edite o index.html e adicione um menu responsivo..." rows="2"></textarea>
           <button id="sendChatBtn">Enviar</button>
         </div>
       </div>
@@ -493,6 +559,25 @@
       <input type="text" id="fileUrl" readonly onclick="this.select()">
       <button id="openUrlBtn">Abrir</button>
       <button id="hostBtn" style="background:#20b2aa;">🌐 Hospedar</button>
+    </div>
+  </div>
+
+  <!-- Loading Overlay da IA -->
+  <div id="aiLoadingOverlay" class="ai-loading-overlay">
+    <div class="ai-loading-spinner"></div>
+    <div class="ai-loading-text" id="aiLoadingText">🤖 IA processando seu comando...</div>
+    <div class="ai-loading-subtext" id="aiLoadingSubtext">Analisando arquivos do projeto</div>
+  </div>
+
+  <!-- Modal de Publicação -->
+  <div id="publishModal" class="publish-modal">
+    <div class="publish-modal-content">
+      <h3>🚀 Publicar no Puter?</h3>
+      <p id="publishModalMessage">Deseja publicar as alterações no Puter agora?</p>
+      <div class="publish-modal-buttons">
+        <button class="btn-publish-yes" id="publishYesBtn">✅ Sim, publicar agora</button>
+        <button class="btn-publish-no" id="publishNoBtn">⏰ Não, publicar depois</button>
+      </div>
     </div>
   </div>
 
@@ -521,10 +606,10 @@
     let userStorage = { used: 0, limit: 5 * 1024 * 1024 };
     let currentHostingUrl = null;
     let currentHostingSubdomain = null;
-    let currentHostingDirectory = null;
     let allProjects = [];
+    let pendingPublishCode = null;
+    let pendingPublishFileName = null;
 
-    // DOM Elements
     const elements = {
       loadingScreen: document.getElementById('loading-screen'),
       appContent: document.getElementById('app-content'),
@@ -551,7 +636,14 @@
       sendChatBtn: document.getElementById('sendChatBtn'),
       projectsList: document.getElementById('projects-list'),
       puterStatusDot: document.getElementById('puterStatusDot'),
-      puterStatusText: document.getElementById('puterStatusText')
+      puterStatusText: document.getElementById('puterStatusText'),
+      aiLoadingOverlay: document.getElementById('aiLoadingOverlay'),
+      aiLoadingText: document.getElementById('aiLoadingText'),
+      aiLoadingSubtext: document.getElementById('aiLoadingSubtext'),
+      publishModal: document.getElementById('publishModal'),
+      publishModalMessage: document.getElementById('publishModalMessage'),
+      publishYesBtn: document.getElementById('publishYesBtn'),
+      publishNoBtn: document.getElementById('publishNoBtn')
     };
 
     function showNotification(msg, type = 'info') {
@@ -572,16 +664,51 @@
       }
     }
 
-    function addChatMessage(text, type, code = null) {
+    function showAILoading(text, subtext) {
+      elements.aiLoadingText.textContent = text || '🤖 IA processando seu comando...';
+      elements.aiLoadingSubtext.textContent = subtext || 'Analisando arquivos do projeto';
+      elements.aiLoadingOverlay.style.display = 'flex';
+    }
+
+    function hideAILoading() {
+      elements.aiLoadingOverlay.style.display = 'none';
+    }
+
+    function showPublishModal(message, onConfirm, onCancel) {
+      elements.publishModalMessage.textContent = message || 'Deseja publicar as alterações no Puter agora?';
+      elements.publishModal.style.display = 'flex';
+      
+      const confirmHandler = () => {
+        elements.publishModal.style.display = 'none';
+        elements.publishYesBtn.removeEventListener('click', confirmHandler);
+        elements.publishNoBtn.removeEventListener('click', cancelHandler);
+        if (onConfirm) onConfirm();
+      };
+      
+      const cancelHandler = () => {
+        elements.publishModal.style.display = 'none';
+        elements.publishYesBtn.removeEventListener('click', confirmHandler);
+        elements.publishNoBtn.removeEventListener('click', cancelHandler);
+        if (onCancel) onCancel();
+      };
+      
+      elements.publishYesBtn.addEventListener('click', confirmHandler);
+      elements.publishNoBtn.addEventListener('click', cancelHandler);
+    }
+
+    function addChatMessage(text, type, code = null, fileName = null, showPublishButton = false) {
       const msgDiv = document.createElement('div');
       msgDiv.className = `message ${type}`;
+      
       if (code) {
         msgDiv.innerHTML = `
           <div>${escapeHtml(text)}</div>
-          <pre><code>${escapeHtml(code)}</code></pre>
+          <pre><code>${escapeHtml(code.substring(0, 500))}${code.length > 500 ? '...' : ''}</code></pre>
           <div class="action-buttons">
-            <button onclick="insertCodeToEditor('${escapeHtml(code).replace(/'/g, "\\'")}')">📝 Inserir</button>
-            <button onclick="createFileFromAICode('${escapeHtml(code).replace(/'/g, "\\'")}')">📁 Criar Arquivo</button>
+            <button onclick="insertCodeToEditor('${escapeHtml(code).replace(/'/g, "\\'")}')">📝 Inserir no Editor</button>
+            <button onclick="createNewFileWithCode('${escapeHtml(code).replace(/'/g, "\\'")}', '${fileName || 'arquivo'}')">📁 Criar Arquivo</button>
+            <button onclick="replaceCurrentFile('${escapeHtml(code).replace(/'/g, "\\'")}')">🔄 Substituir Arquivo</button>
+            ${showPublishButton ? '<button onclick="triggerPublish()">🚀 Publicar Agora</button>' : ''}
           </div>
         `;
       } else {
@@ -598,7 +725,7 @@
     }
 
     function clearChat() {
-      elements.chatMessages.innerHTML = '<div class="message system">🤖 Chat limpo! Pergunte algo sobre programação.</div>';
+      elements.chatMessages.innerHTML = '<div class="message system">🤖 Chat limpo! Digite um comando para a IA editar seu código.</div>';
     }
 
     // ==================== PROJETOS ====================
@@ -622,14 +749,10 @@
         elements.projectsList.innerHTML = '<div style="text-align:center; padding:20px; color:#888;">Nenhum projeto<br><button class="new-project-btn" onclick="createNewProject()" style="margin-top:10px;">+ Criar primeiro</button></div>';
         return;
       }
-      
       elements.projectsList.innerHTML = allProjects.map(p => `
         <div class="project-item ${currentProjectId === p.id ? 'active' : ''}" onclick="selectProject('${p.id}')">
           <div class="project-name">📄 ${escapeHtml(p.name)}</div>
           <div class="project-date">${new Date(p.updatedAt).toLocaleDateString()}</div>
-          <div class="project-actions">
-            <button class="delete-project-btn" onclick="event.stopPropagation(); deleteProject('${p.id}')">🗑️ Excluir</button>
-          </div>
         </div>
       `).join('');
     }
@@ -639,7 +762,6 @@
       currentProjectId = projectId;
       await loadProjectData();
       updateTabs();
-      // Atualizar URL sem recarregar
       window.history.pushState({}, '', `?projectId=${projectId}`);
     }
 
@@ -655,43 +777,15 @@
       defaultFiles[fileKey] = {
         name: 'index.html',
         originalName: 'index.html',
-        content: `<!DOCTYPE html>
-<html>
-<head><title>${name}</title><meta charset="UTF-8"></head>
-<body><h1>${name}</h1><p>Bem-vindo ao seu projeto!</p></body>
-</html>`,
+        content: `<!DOCTYPE html><html><head><title>${name}</title><meta charset="UTF-8"></head><body><h1>${name}</h1><p>Bem-vindo ao seu projeto!</p></body></html>`,
         size: 200,
         createdAt: new Date().toISOString()
       };
       
-      await newProjectRef.set({
-        name: name,
-        files: defaultFiles,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      });
-      
+      await newProjectRef.set({ name: name, files: defaultFiles, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
       await loadProjects();
       await selectProject(projectId);
       showNotification(`Projeto "${name}" criado!`, 'success');
-    }
-
-    async function deleteProject(projectId) {
-      if (!confirm('Tem certeza que deseja excluir este projeto permanentemente?')) return;
-      await db.ref(`projects/${currentUser.uid}/${projectId}`).remove();
-      if (currentProjectId === projectId) {
-        await loadProjects();
-        if (allProjects.length > 0) {
-          await selectProject(allProjects[0].id);
-        } else {
-          currentProjectId = null;
-          editor.setModel(null);
-          elements.projectName.value = '';
-          elements.tabsContainer.innerHTML = '';
-        }
-      }
-      await loadProjects();
-      showNotification('Projeto excluído!', 'success');
     }
 
     async function loadProjectData() {
@@ -703,23 +797,17 @@
       files = data.files || {};
       
       const fileKeys = Object.keys(files);
-      if (fileKeys.length > 0) {
-        await openFile(fileKeys[0]);
-      } else {
-        await createDefaultIndexHtml();
-      }
+      if (fileKeys.length > 0) await openFile(fileKeys[0]);
+      else await createDefaultIndexHtml();
       
-      // Carregar hosting info
       if (data.hosting) {
         currentHostingUrl = data.hosting.url;
         currentHostingSubdomain = data.hosting.subdomain;
-        currentHostingDirectory = data.hosting.directory;
         if (currentHostingUrl) {
           elements.fileUrl.value = currentHostingUrl;
           elements.urlPanel.style.display = 'flex';
         }
       }
-      
       updateTabs();
       renderProjectsList();
     }
@@ -728,21 +816,16 @@
       const fileName = 'index.html';
       const fileKey = btoa(fileName).replace(/=/g, '');
       files[fileKey] = {
-        name: fileName,
-        originalName: fileName,
+        name: fileName, originalName: fileName,
         content: `<!DOCTYPE html><html><head><title>${elements.projectName.value || 'Projeto'}</title></head><body><h1>Bem-vindo!</h1></body></html>`,
-        size: 100,
-        createdAt: new Date().toISOString()
+        size: 100, createdAt: new Date().toISOString()
       };
       await saveProject();
       await openFile(fileKey);
     }
 
     async function saveProject() {
-      await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({
-        files: files,
-        updatedAt: new Date().toISOString()
-      });
+      await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ files: files, updatedAt: new Date().toISOString() });
     }
 
     // ==================== EDITOR ====================
@@ -752,10 +835,8 @@
       const fileData = files[fileKey];
       const size = getContentSize(content);
       const oldSize = fileData.size || 0;
-      
       userStorage.used = userStorage.used - oldSize + size;
       files[fileKey] = { ...fileData, content: content, size: size, updatedAt: new Date().toISOString() };
-      
       await db.ref(`users/${currentUser.uid}/storage`).set({ used: userStorage.used, limit: userStorage.limit });
       updateStorageDisplay();
       return true;
@@ -781,7 +862,6 @@
     async function initializeApp() {
       auth.onAuthStateChanged(async user => {
         if (!user) { window.location.href = 'auth.html'; return; }
-        
         currentUser = user;
         elements.userName.textContent = user.displayName || user.email.split('@')[0];
         
@@ -791,13 +871,9 @@
         await loadUserStorage();
         await loadProjects();
         
-        if (currentProjectId && allProjects.some(p => p.id === currentProjectId)) {
-          await loadProjectData();
-        } else if (allProjects.length > 0) {
-          await selectProject(allProjects[0].id);
-        } else {
-          await createNewProject();
-        }
+        if (currentProjectId && allProjects.some(p => p.id === currentProjectId)) await loadProjectData();
+        else if (allProjects.length > 0) await selectProject(allProjects[0].id);
+        else await createNewProject();
         
         elements.loadingScreen.style.opacity = '0';
         setTimeout(() => {
@@ -813,10 +889,7 @@
     async function loadUserStorage() {
       const snapshot = await db.ref(`users/${currentUser.uid}/storage`).once('value');
       const data = snapshot.val();
-      if (data) {
-        userStorage.used = data.used || 0;
-        userStorage.limit = data.limit || 5 * 1024 * 1024;
-      }
+      if (data) { userStorage.used = data.used || 0; userStorage.limit = data.limit || 5 * 1024 * 1024; }
       updateStorageDisplay();
     }
 
@@ -824,7 +897,6 @@
       if (!files[fileKey] || !editor) return;
       currentFile = fileKey;
       const fileData = files[fileKey];
-      
       let lang = 'plaintext';
       const ext = (fileData.name || '').split('.').pop().toLowerCase();
       if (ext === 'html') lang = 'html';
@@ -861,7 +933,6 @@
     async function createNewFile() {
       const fileName = elements.newFileName.value.trim();
       if (!fileName) return showNotification('Digite um nome', 'error');
-      
       const fileKey = btoa(fileName).replace(/=/g, '');
       if (files[fileKey]) return showNotification('Arquivo já existe', 'error');
       
@@ -897,12 +968,174 @@
       updateTabs();
     }
 
+    // ==================== IA QUE EDITA CÓDIGO ====================
+    
+    async function sendToAI() {
+      const userMessage = elements.chatInput.value.trim();
+      if (!userMessage) return;
+      
+      addChatMessage(userMessage, 'user');
+      elements.chatInput.value = '';
+      
+      // Mostrar loading
+      showAILoading('🤖 IA processando seu comando...', 'Analisando arquivos do projeto');
+      
+      try {
+        await ensurePuterAuth();
+        
+        // Coletar todos os arquivos do projeto para a IA analisar
+        const projectFiles = [];
+        for (const [key, file] of Object.entries(files)) {
+          projectFiles.push({
+            name: file.name,
+            content: file.content || '',
+            size: file.size
+          });
+        }
+        
+        // Criar prompt detalhado para a IA
+        const prompt = `
+          Você é um assistente de programação que edita códigos.
+          
+          PROJETO ATUAL:
+          Nome: ${elements.projectName.value}
+          Arquivos: ${projectFiles.map(f => f.name).join(', ')}
+          
+          CONTEÚDO DOS ARQUIVOS:
+          ${projectFiles.map(f => `--- ${f.name} ---\n${f.content.substring(0, 1500)}`).join('\n\n')}
+          
+          COMANDO DO USUÁRIO: "${userMessage}"
+          
+          INSTRUÇÕES:
+          1. Se o usuário pedir para EDITAR um arquivo existente, mostre o código completo modificado
+          2. Se pedir para CRIAR um novo arquivo, mostre o código completo e sugira o nome
+          3. Responda em português
+          4. Coloque o código dentro de blocos \`\`\` com a linguagem
+          5. No final, pergunte se deseja publicar as alterações
+        `;
+        
+        const response = await puter.ai.chat(prompt);
+        
+        let aiResponse = '';
+        if (typeof response === 'string') aiResponse = response;
+        else if (response.message?.content) aiResponse = response.message.content;
+        else aiResponse = JSON.stringify(response);
+        
+        hideAILoading();
+        
+        // Extrair código da resposta
+        const codeMatch = aiResponse.match(/```(\w*)\n([\s\S]*?)```/);
+        
+        if (codeMatch) {
+          const code = codeMatch[2].trim();
+          const text = aiResponse.replace(/```[\s\S]*?```/, '').trim();
+          
+          // Verificar qual arquivo editar
+          let targetFile = null;
+          for (const file of Object.keys(files)) {
+            if (userMessage.toLowerCase().includes(files[file].name.toLowerCase())) {
+              targetFile = file;
+              break;
+            }
+          }
+          
+          if (targetFile) {
+            // Editar arquivo existente
+            addChatMessage(`✏️ Editando ${files[targetFile].name}: ${text || 'Código gerado'}`, 'ai', code, files[targetFile].name, true);
+          } else {
+            // Criar novo arquivo
+            let suggestedName = 'arquivo.html';
+            if (code.includes('<!DOCTYPE') || code.includes('<html')) suggestedName = 'index.html';
+            else if (code.includes('{') && code.includes('}')) suggestedName = 'style.css';
+            else suggestedName = 'script.js';
+            addChatMessage(`📄 ${text || 'Código gerado'}`, 'ai', code, suggestedName, true);
+          }
+        } else {
+          addChatMessage(aiResponse, 'ai');
+        }
+        
+      } catch (error) {
+        hideAILoading();
+        console.error('Erro na IA:', error);
+        addChatMessage(`❌ Erro: ${error.message || 'Falha na comunicação'}`, 'ai');
+      }
+    }
+
+    function insertCodeToEditor(code) {
+      if (!editor) return;
+      const pos = editor.getPosition();
+      editor.getModel().applyEdits([{ 
+        range: new monaco.Range(pos.lineNumber, pos.column, pos.lineNumber, pos.column), 
+        text: code 
+      }]);
+      showNotification('✅ Código inserido no editor!', 'success');
+    }
+
+    async function createNewFileWithCode(code, suggestedName) {
+      let fileName = prompt('Nome do arquivo:', suggestedName || 'arquivo.html');
+      if (!fileName) return;
+      
+      if (!fileName.includes('.')) {
+        if (code.includes('<!DOCTYPE') || code.includes('<html')) fileName += '.html';
+        else if (code.includes('{') && code.includes('}')) fileName += '.css';
+        else fileName += '.js';
+      }
+      
+      const fileKey = btoa(fileName).replace(/=/g, '');
+      if (files[fileKey]) {
+        const overwrite = confirm(`Arquivo ${fileName} já existe. Sobrescrever?`);
+        if (!overwrite) return;
+      }
+      
+      files[fileKey] = { name: fileName, originalName: fileName, content: code, size: code.length, createdAt: new Date().toISOString() };
+      await saveProject();
+      await openFile(fileKey);
+      showNotification(`✅ Arquivo ${fileName} criado!`, 'success');
+      
+      // Perguntar se quer publicar
+      showPublishModal('Arquivo criado! Deseja publicar o projeto no Puter agora?', async () => {
+        await hostProject();
+      }, () => {
+        showNotification('OK! Você pode publicar depois clicando em "Hospedar"', 'info');
+      });
+    }
+
+    async function replaceCurrentFile(code) {
+      if (!currentFile) {
+        showNotification('Nenhum arquivo aberto', 'error');
+        return;
+      }
+      const fileName = files[currentFile].name;
+      if (confirm(`Substituir todo o conteúdo de ${fileName}?`)) {
+        await saveFile(currentFile, code);
+        await saveProject();
+        const model = editor.getModel();
+        if (model) model.setValue(code);
+        showNotification(`✅ Arquivo ${fileName} substituído!`, 'success');
+        
+        // Perguntar se quer publicar
+        showPublishModal('Arquivo alterado! Deseja publicar as alterações no Puter agora?', async () => {
+          await hostProject();
+        }, () => {
+          showNotification('OK! Você pode publicar depois', 'info');
+        });
+      }
+    }
+
+    function triggerPublish() {
+      showPublishModal('Publicar este projeto no Puter agora?', async () => {
+        await hostProject();
+      }, () => {
+        showNotification('Publicação cancelada', 'info');
+      });
+    }
+
     // ==================== PUTER ====================
     async function initPuter() {
       try {
         const user = await puter.auth.getUser();
-        if (user) { updatePuterStatus(true); }
-        else { updatePuterStatus(false); }
+        if (user) updatePuterStatus(true);
+        else updatePuterStatus(false);
       } catch(e) { updatePuterStatus(false); }
     }
 
@@ -944,7 +1177,6 @@
         
         currentHostingUrl = url;
         currentHostingSubdomain = site.subdomain;
-        currentHostingDirectory = dirName;
         
         await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({
           url: url, subdomain: site.subdomain, directory: dirName, publishedAt: new Date().toISOString()
@@ -960,59 +1192,6 @@
 
     function openPuterDashboard() {
       window.open('https://puter.com', '_blank');
-    }
-
-    // ==================== AI ====================
-    async function sendToAI() {
-      const msg = elements.chatInput.value.trim();
-      if (!msg) return;
-      
-      addChatMessage(msg, 'user');
-      elements.chatInput.value = '';
-      addChatMessage('🤔 Pensando...', 'ai');
-      
-      try {
-        await ensurePuterAuth();
-        const response = await puter.ai.chat(msg);
-        
-        const msgs = document.querySelectorAll('.message.ai');
-        if (msgs.length && msgs[msgs.length-1].innerText === '🤔 Pensando...') msgs[msgs.length-1].remove();
-        
-        let aiResponse = '';
-        if (typeof response === 'string') aiResponse = response;
-        else if (response.message?.content) aiResponse = response.message.content;
-        else aiResponse = JSON.stringify(response);
-        
-        const codeMatch = aiResponse.match(/```(\w*)\n([\s\S]*?)```/);
-        if (codeMatch) {
-          const code = codeMatch[2].trim();
-          const text = aiResponse.replace(/```[\s\S]*?```/, '').trim();
-          addChatMessage(text || 'Código gerado:', 'ai', code);
-        } else {
-          addChatMessage(aiResponse, 'ai');
-        }
-      } catch(e) {
-        const msgs = document.querySelectorAll('.message.ai');
-        if (msgs.length && msgs[msgs.length-1].innerText === '🤔 Pensando...') msgs[msgs.length-1].remove();
-        addChatMessage(`❌ Erro: ${e.message}`, 'ai');
-      }
-    }
-
-    function insertCodeToEditor(code) {
-      if (!editor) return;
-      const pos = editor.getPosition();
-      editor.getModel().applyEdits([{ range: new monaco.Range(pos.lineNumber, pos.column, pos.lineNumber, pos.column), text: code }]);
-      showNotification('Código inserido!', 'success');
-    }
-
-    async function createFileFromAICode(code) {
-      const fileName = prompt('Nome do arquivo:', 'arquivo.html');
-      if (!fileName) return;
-      const fileKey = btoa(fileName).replace(/=/g, '');
-      files[fileKey] = { name: fileName, originalName: fileName, content: code, size: code.length, createdAt: new Date().toISOString() };
-      await saveProject();
-      await openFile(fileKey);
-      showNotification(`Arquivo ${fileName} criado!`, 'success');
     }
 
     function previewProject() {
@@ -1058,10 +1237,11 @@
     }
 
     window.selectProject = selectProject;
-    window.deleteProject = deleteProject;
     window.createNewProject = createNewProject;
     window.insertCodeToEditor = insertCodeToEditor;
-    window.createFileFromAICode = createFileFromAICode;
+    window.createNewFileWithCode = createNewFileWithCode;
+    window.replaceCurrentFile = replaceCurrentFile;
+    window.triggerPublish = triggerPublish;
     window.clearChat = clearChat;
     window.closeFile = closeFile;
   </script>
