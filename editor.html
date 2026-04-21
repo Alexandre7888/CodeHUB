@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CodeHUB - Editor com IA Gráfica</title>
+  <title>CodeHUB - Editor com IA</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -108,7 +108,6 @@
     #previewBtn { background: #4895ef; }
     #puterDashboardBtn { background: #20b2aa; }
     #copyUrlBtn { background: #00bcd4; }
-    #aiAssistantBtn { background: #9c27b0; }
     .logout-btn { background: #f44336; }
     .delete-project-btn { background: #f44336; font-size: 11px; padding: 4px 8px; }
     
@@ -321,20 +320,6 @@
       border-radius: 8px;
     }
     
-    .action-buttons {
-      display: flex;
-      gap: 8px;
-      margin-top: 10px;
-      flex-wrap: wrap;
-    }
-    
-    .action-buttons button {
-      background: #4caf50;
-      font-size: 12px;
-      padding: 6px 12px;
-      border-radius: 6px;
-    }
-    
     .url-panel {
       background: #252526;
       padding: 8px 12px;
@@ -356,7 +341,6 @@
       font-size: 11px;
     }
     
-    /* Loading Overlay */
     .ai-loading-overlay {
       position: fixed;
       top: 0;
@@ -388,13 +372,6 @@
       text-align: center;
     }
     
-    .ai-loading-subtext {
-      font-size: 14px;
-      color: #aaa;
-      text-align: center;
-    }
-    
-    /* Modal de Publicação */
     .publish-modal {
       position: fixed;
       top: 0;
@@ -413,7 +390,7 @@
       background: #2d2d2d;
       border-radius: 16px;
       padding: 30px;
-      max-width: 450px;
+      max-width: 400px;
       width: 90%;
       text-align: center;
     }
@@ -424,7 +401,7 @@
     }
     
     .publish-modal-content p {
-      margin-bottom: 20px;
+      margin-bottom: 25px;
       color: #ccc;
     }
     
@@ -439,13 +416,8 @@
       font-size: 14px;
     }
     
-    .btn-publish-yes {
-      background: #4caf50;
-    }
-    
-    .btn-publish-no {
-      background: #f44336;
-    }
+    .btn-publish-yes { background: #4caf50; }
+    .btn-publish-no { background: #f44336; }
     
     .notification {
       position: fixed;
@@ -498,11 +470,6 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
-    
-    @media (max-width: 900px) {
-      #projects-sidebar { width: 200px; }
-      #ai-sidebar { width: 320px; }
-    }
   </style>
 </head>
 <body>
@@ -522,7 +489,6 @@
       <button id="saveFileBtn" disabled>💾 Salvar</button>
       <button id="previewBtn">👁️ Preview</button>
       <button id="copyUrlBtn">🔗 Copiar URL</button>
-      <button id="aiAssistantBtn">🤖 IA</button>
       <div id="storage-info">📦 <span id="storage-used">0</span> / <span id="storage-limit">5</span> MB</div>
       <div id="user-info">
         <span id="user-name"></span>
@@ -543,12 +509,10 @@
       </div>
 
       <div id="ai-sidebar">
-        <div class="sidebar-header"><span>🤖 Assistente IA (Edita Código)</span><button onclick="clearChat()" style="background:#555; padding:2px 8px;">Limpar</button></div>
-        <div class="chat-messages" id="chatMessages">
-          <div class="message system">🤖 <strong>IA que EDITA SEU CÓDIGO!</strong><br><br>Comandos:<br>• "Edite o index.html e mude o título"<br>• "Crie um arquivo style.css com fundo azul"<br>• "Adicione um botão no HTML"<br>• "Crie uma calculadora completa"<br><br>💡 A IA vai ANALISAR seus arquivos e EDITAR automaticamente!</div>
-        </div>
+        <div class="sidebar-header"><span>🤖 Assistente IA</span><button onclick="clearChat()" style="background:#555; padding:2px 8px;">Limpar</button></div>
+        <div class="chat-messages" id="chatMessages"></div>
         <div class="chat-input-area">
-          <textarea id="chatInput" placeholder="Ex: Edite o index.html e adicione um menu responsivo..." rows="2"></textarea>
+          <textarea id="chatInput" placeholder="Ex: Crie um arquivo style.css com fundo azul..." rows="2"></textarea>
           <button id="sendChatBtn">Enviar</button>
         </div>
       </div>
@@ -562,27 +526,23 @@
     </div>
   </div>
 
-  <!-- Loading Overlay da IA -->
   <div id="aiLoadingOverlay" class="ai-loading-overlay">
     <div class="ai-loading-spinner"></div>
-    <div class="ai-loading-text" id="aiLoadingText">🤖 IA processando seu comando...</div>
-    <div class="ai-loading-subtext" id="aiLoadingSubtext">Analisando arquivos do projeto</div>
+    <div class="ai-loading-text" id="aiLoadingText">🤖 IA processando...</div>
   </div>
 
-  <!-- Modal de Publicação -->
   <div id="publishModal" class="publish-modal">
     <div class="publish-modal-content">
       <h3>🚀 Publicar no Puter?</h3>
-      <p id="publishModalMessage">Deseja publicar as alterações no Puter agora?</p>
+      <p>Deseja publicar as alterações no Puter agora?</p>
       <div class="publish-modal-buttons">
-        <button class="btn-publish-yes" id="publishYesBtn">✅ Sim, publicar agora</button>
-        <button class="btn-publish-no" id="publishNoBtn">⏰ Não, publicar depois</button>
+        <button class="btn-publish-yes" id="publishYesBtn">✅ Sim</button>
+        <button class="btn-publish-no" id="publishNoBtn">❌ Não</button>
       </div>
     </div>
   </div>
 
   <script>
-    // Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
       authDomain: "html-15e80.firebaseapp.com",
@@ -607,8 +567,6 @@
     let currentHostingUrl = null;
     let currentHostingSubdomain = null;
     let allProjects = [];
-    let pendingPublishCode = null;
-    let pendingPublishFileName = null;
 
     const elements = {
       loadingScreen: document.getElementById('loading-screen'),
@@ -620,7 +578,6 @@
       previewBtn: document.getElementById('previewBtn'),
       copyUrlBtn: document.getElementById('copyUrlBtn'),
       puterDashboardBtn: document.getElementById('puterDashboardBtn'),
-      aiAssistantBtn: document.getElementById('aiAssistantBtn'),
       hostBtn: document.getElementById('hostBtn'),
       storageUsed: document.getElementById('storage-used'),
       storageLimit: document.getElementById('storage-limit'),
@@ -639,9 +596,7 @@
       puterStatusText: document.getElementById('puterStatusText'),
       aiLoadingOverlay: document.getElementById('aiLoadingOverlay'),
       aiLoadingText: document.getElementById('aiLoadingText'),
-      aiLoadingSubtext: document.getElementById('aiLoadingSubtext'),
       publishModal: document.getElementById('publishModal'),
-      publishModalMessage: document.getElementById('publishModalMessage'),
       publishYesBtn: document.getElementById('publishYesBtn'),
       publishNoBtn: document.getElementById('publishNoBtn')
     };
@@ -664,9 +619,8 @@
       }
     }
 
-    function showAILoading(text, subtext) {
-      elements.aiLoadingText.textContent = text || '🤖 IA processando seu comando...';
-      elements.aiLoadingSubtext.textContent = subtext || 'Analisando arquivos do projeto';
+    function showAILoading(text) {
+      elements.aiLoadingText.textContent = text || '🤖 IA processando...';
       elements.aiLoadingOverlay.style.display = 'flex';
     }
 
@@ -674,58 +628,247 @@
       elements.aiLoadingOverlay.style.display = 'none';
     }
 
-    function showPublishModal(message, onConfirm, onCancel) {
-      elements.publishModalMessage.textContent = message || 'Deseja publicar as alterações no Puter agora?';
+    function showPublishModal(onConfirm, onCancel) {
       elements.publishModal.style.display = 'flex';
-      
       const confirmHandler = () => {
         elements.publishModal.style.display = 'none';
         elements.publishYesBtn.removeEventListener('click', confirmHandler);
         elements.publishNoBtn.removeEventListener('click', cancelHandler);
         if (onConfirm) onConfirm();
       };
-      
       const cancelHandler = () => {
         elements.publishModal.style.display = 'none';
         elements.publishYesBtn.removeEventListener('click', confirmHandler);
         elements.publishNoBtn.removeEventListener('click', cancelHandler);
         if (onCancel) onCancel();
       };
-      
       elements.publishYesBtn.addEventListener('click', confirmHandler);
       elements.publishNoBtn.addEventListener('click', cancelHandler);
     }
 
-    function addChatMessage(text, type, code = null, fileName = null, showPublishButton = false) {
+    function addChatMessage(text, type) {
       const msgDiv = document.createElement('div');
       msgDiv.className = `message ${type}`;
-      
-      if (code) {
-        msgDiv.innerHTML = `
-          <div>${escapeHtml(text)}</div>
-          <pre><code>${escapeHtml(code.substring(0, 500))}${code.length > 500 ? '...' : ''}</code></pre>
-          <div class="action-buttons">
-            <button onclick="insertCodeToEditor('${escapeHtml(code).replace(/'/g, "\\'")}')">📝 Inserir no Editor</button>
-            <button onclick="createNewFileWithCode('${escapeHtml(code).replace(/'/g, "\\'")}', '${fileName || 'arquivo'}')">📁 Criar Arquivo</button>
-            <button onclick="replaceCurrentFile('${escapeHtml(code).replace(/'/g, "\\'")}')">🔄 Substituir Arquivo</button>
-            ${showPublishButton ? '<button onclick="triggerPublish()">🚀 Publicar Agora</button>' : ''}
-          </div>
-        `;
-      } else {
-        msgDiv.innerHTML = escapeHtml(text);
-      }
+      msgDiv.innerHTML = text.replace(/\n/g, '<br>');
       elements.chatMessages.appendChild(msgDiv);
+      elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+      
+      // Salvar mensagem no Firebase
+      if (currentProjectId && currentUser) {
+        const chatRef = db.ref(`chats/${currentUser.uid}/${currentProjectId}`).push();
+        chatRef.set({ text: text, type: type, timestamp: Date.now() });
+      }
+    }
+
+    async function loadChatHistory() {
+      if (!currentProjectId || !currentUser) return;
+      const chatsRef = db.ref(`chats/${currentUser.uid}/${currentProjectId}`);
+      const snapshot = await chatsRef.orderByChild('timestamp').once('value');
+      elements.chatMessages.innerHTML = '';
+      snapshot.forEach(child => {
+        const msg = child.val();
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${msg.type}`;
+        msgDiv.innerHTML = msg.text.replace(/\n/g, '<br>');
+        elements.chatMessages.appendChild(msgDiv);
+      });
+      if (elements.chatMessages.children.length === 0) {
+        addChatMessage('🤖 Olá! Sou seu assistente IA. Digite um comando como:<br><br>• "Crie um arquivo style.css com fundo azul"<br>• "Edite o index.html e mude o título"<br>• "Substitua todo o conteúdo do index.html"<br>• "Crie uma calculadora em JavaScript"', 'system');
+      }
       elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
     }
 
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
+    function clearChat() {
+      if (confirm('Limpar todo o histórico do chat?')) {
+        db.ref(`chats/${currentUser.uid}/${currentProjectId}`).remove();
+        elements.chatMessages.innerHTML = '';
+        addChatMessage('🤖 Chat limpo! Digite um novo comando.', 'system');
+      }
     }
 
-    function clearChat() {
-      elements.chatMessages.innerHTML = '<div class="message system">🤖 Chat limpo! Digite um comando para a IA editar seu código.</div>';
+    // ==================== AÇÕES AUTOMÁTICAS DA IA ====================
+    
+    async function executeAIAction(action, fileName, content, fullResponse) {
+      const lowerAction = action.toLowerCase();
+      const fullResponseLower = fullResponse.toLowerCase();
+      
+      // CRIAR novo arquivo
+      if (lowerAction.includes('criar') || lowerAction.includes('create') || 
+          (fullResponseLower.includes('vou criar') && !lowerAction.includes('editar'))) {
+        
+        let finalFileName = fileName;
+        if (!finalFileName) {
+          if (content.includes('<!DOCTYPE') || content.includes('<html')) finalFileName = 'index.html';
+          else if (content.includes('{') && content.includes('}')) finalFileName = 'style.css';
+          else if (content.includes('function') || content.includes('const') || content.includes('let')) finalFileName = 'script.js';
+          else finalFileName = 'arquivo.txt';
+        }
+        
+        const fileKey = btoa(finalFileName).replace(/=/g, '');
+        if (files[fileKey]) {
+          addChatMessage(`⚠️ Arquivo "${finalFileName}" já existe. Deseja substituir? Diga "substitua" para confirmar.`, 'ai');
+          return { action: 'confirm_replace', fileName: finalFileName, content: content };
+        }
+        
+        files[fileKey] = {
+          name: finalFileName,
+          originalName: finalFileName,
+          content: content,
+          size: content.length,
+          createdAt: new Date().toISOString()
+        };
+        await saveProject();
+        await openFile(fileKey);
+        addChatMessage(`✅ Arquivo "${finalFileName}" criado com sucesso!`, 'ai');
+        
+        // Perguntar se quer publicar
+        showPublishModal(async () => {
+          await hostProject();
+        }, () => {});
+        return { action: 'created', fileName: finalFileName };
+      }
+      
+      // EDITAR arquivo existente
+      else if (lowerAction.includes('editar') || lowerAction.includes('edit') || 
+               (fullResponseLower.includes('vou editar') && !lowerAction.includes('substituir'))) {
+        
+        let targetFile = null;
+        for (const key in files) {
+          if (files[key].name.toLowerCase().includes(fileName.toLowerCase()) || 
+              fileName.toLowerCase().includes(files[key].name.toLowerCase())) {
+            targetFile = key;
+            break;
+          }
+        }
+        
+        if (!targetFile && files[currentFile]) targetFile = currentFile;
+        
+        if (targetFile) {
+          await saveFile(targetFile, content);
+          await saveProject();
+          if (targetFile === currentFile) {
+            const model = editor.getModel();
+            if (model) model.setValue(content);
+          }
+          addChatMessage(`✅ Arquivo "${files[targetFile].name}" editado com sucesso!`, 'ai');
+          
+          showPublishModal(async () => {
+            await hostProject();
+          }, () => {});
+          return { action: 'edited', fileName: files[targetFile].name };
+        } else {
+          addChatMessage(`❌ Não encontrei o arquivo "${fileName}" para editar.`, 'ai');
+          return { action: 'error' };
+        }
+      }
+      
+      // SUBSTITUIR arquivo inteiro
+      else if (lowerAction.includes('substituir') || lowerAction.includes('replace')) {
+        let targetFile = null;
+        for (const key in files) {
+          if (files[key].name.toLowerCase().includes(fileName.toLowerCase())) {
+            targetFile = key;
+            break;
+          }
+        }
+        
+        if (targetFile) {
+          await saveFile(targetFile, content);
+          await saveProject();
+          if (targetFile === currentFile) {
+            const model = editor.getModel();
+            if (model) model.setValue(content);
+          }
+          addChatMessage(`✅ Arquivo "${files[targetFile].name}" substituído completamente!`, 'ai');
+          
+          showPublishModal(async () => {
+            await hostProject();
+          }, () => {});
+          return { action: 'replaced', fileName: files[targetFile].name };
+        } else {
+          addChatMessage(`❌ Não encontrei o arquivo "${fileName}" para substituir.`, 'ai');
+          return { action: 'error' };
+        }
+      }
+      
+      return { action: 'unknown' };
+    }
+
+    // ==================== IA PRINCIPAL ====================
+    
+    async function sendToAI() {
+      const userMessage = elements.chatInput.value.trim();
+      if (!userMessage) return;
+      
+      addChatMessage(userMessage, 'user');
+      elements.chatInput.value = '';
+      showAILoading('🤖 IA processando seu comando...');
+      
+      try {
+        await ensurePuterAuth();
+        
+        const projectFiles = [];
+        for (const [key, file] of Object.entries(files)) {
+          projectFiles.push({ name: file.name, content: file.content || '' });
+        }
+        
+        const prompt = `
+          Você é um assistente que EDITA e CRIA códigos automaticamente.
+          
+          PROJETO: ${elements.projectName.value}
+          ARQUIVOS: ${projectFiles.map(f => f.name).join(', ')}
+          CONTEÚDO DOS ARQUIVOS:
+          ${projectFiles.map(f => `--- ${f.name} ---\n${f.content.substring(0, 800)}`).join('\n\n')}
+          
+          COMANDO: "${userMessage}"
+          
+          REGRAS:
+          1. Se o usuário pedir para CRIAR um arquivo, responda começando com "VOU CRIAR:" e o nome do arquivo
+          2. Se pedir para EDITAR, responda "VOU EDITAR:" e o nome
+          3. Se pedir para SUBSTITUIR, responda "VOU SUBSTITUIR:" e o nome
+          4. Coloque o código completo dentro de \`\`\`
+          5. Responda em português
+        `;
+        
+        const response = await puter.ai.chat(prompt);
+        let aiResponse = '';
+        if (typeof response === 'string') aiResponse = response;
+        else if (response.message?.content) aiResponse = response.message.content;
+        else aiResponse = JSON.stringify(response);
+        
+        hideAILoading();
+        
+        // Extrair ação e código
+        let action = '';
+        let fileName = '';
+        if (aiResponse.includes('VOU CRIAR:')) {
+          action = 'criar';
+          const match = aiResponse.match(/VOU CRIAR:\s*([^\n]+)/);
+          if (match) fileName = match[1].trim();
+        } else if (aiResponse.includes('VOU EDITAR:')) {
+          action = 'editar';
+          const match = aiResponse.match(/VOU EDITAR:\s*([^\n]+)/);
+          if (match) fileName = match[1].trim();
+        } else if (aiResponse.includes('VOU SUBSTITUIR:')) {
+          action = 'substituir';
+          const match = aiResponse.match(/VOU SUBSTITUIR:\s*([^\n]+)/);
+          if (match) fileName = match[1].trim();
+        }
+        
+        const codeMatch = aiResponse.match(/```(\w*)\n([\s\S]*?)```/);
+        const code = codeMatch ? codeMatch[2].trim() : '';
+        
+        if (code && (action === 'criar' || action === 'editar' || action === 'substituir')) {
+          await executeAIAction(action, fileName, code, aiResponse);
+          addChatMessage(aiResponse.replace(/```[\s\S]*?```/, '').trim() || '✅ Comando executado!', 'ai');
+        } else {
+          addChatMessage(aiResponse, 'ai');
+        }
+        
+      } catch (error) {
+        hideAILoading();
+        addChatMessage(`❌ Erro: ${error.message}`, 'ai');
+      }
     }
 
     // ==================== PROJETOS ====================
@@ -761,6 +904,7 @@
       if (currentProjectId === projectId) return;
       currentProjectId = projectId;
       await loadProjectData();
+      await loadChatHistory();
       updateTabs();
       window.history.pushState({}, '', `?projectId=${projectId}`);
     }
@@ -828,6 +972,12 @@
       await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ files: files, updatedAt: new Date().toISOString() });
     }
 
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
     // ==================== EDITOR ====================
     function getContentSize(content) { return new Blob([content]).size; }
 
@@ -871,9 +1021,14 @@
         await loadUserStorage();
         await loadProjects();
         
-        if (currentProjectId && allProjects.some(p => p.id === currentProjectId)) await loadProjectData();
-        else if (allProjects.length > 0) await selectProject(allProjects[0].id);
-        else await createNewProject();
+        if (currentProjectId && allProjects.some(p => p.id === currentProjectId)) {
+          await loadProjectData();
+          await loadChatHistory();
+        } else if (allProjects.length > 0) {
+          await selectProject(allProjects[0].id);
+        } else {
+          await createNewProject();
+        }
         
         elements.loadingScreen.style.opacity = '0';
         setTimeout(() => {
@@ -968,168 +1123,6 @@
       updateTabs();
     }
 
-    // ==================== IA QUE EDITA CÓDIGO ====================
-    
-    async function sendToAI() {
-      const userMessage = elements.chatInput.value.trim();
-      if (!userMessage) return;
-      
-      addChatMessage(userMessage, 'user');
-      elements.chatInput.value = '';
-      
-      // Mostrar loading
-      showAILoading('🤖 IA processando seu comando...', 'Analisando arquivos do projeto');
-      
-      try {
-        await ensurePuterAuth();
-        
-        // Coletar todos os arquivos do projeto para a IA analisar
-        const projectFiles = [];
-        for (const [key, file] of Object.entries(files)) {
-          projectFiles.push({
-            name: file.name,
-            content: file.content || '',
-            size: file.size
-          });
-        }
-        
-        // Criar prompt detalhado para a IA
-        const prompt = `
-          Você é um assistente de programação que edita códigos.
-          
-          PROJETO ATUAL:
-          Nome: ${elements.projectName.value}
-          Arquivos: ${projectFiles.map(f => f.name).join(', ')}
-          
-          CONTEÚDO DOS ARQUIVOS:
-          ${projectFiles.map(f => `--- ${f.name} ---\n${f.content.substring(0, 1500)}`).join('\n\n')}
-          
-          COMANDO DO USUÁRIO: "${userMessage}"
-          
-          INSTRUÇÕES:
-          1. Se o usuário pedir para EDITAR um arquivo existente, mostre o código completo modificado
-          2. Se pedir para CRIAR um novo arquivo, mostre o código completo e sugira o nome
-          3. Responda em português
-          4. Coloque o código dentro de blocos \`\`\` com a linguagem
-          5. No final, pergunte se deseja publicar as alterações
-        `;
-        
-        const response = await puter.ai.chat(prompt);
-        
-        let aiResponse = '';
-        if (typeof response === 'string') aiResponse = response;
-        else if (response.message?.content) aiResponse = response.message.content;
-        else aiResponse = JSON.stringify(response);
-        
-        hideAILoading();
-        
-        // Extrair código da resposta
-        const codeMatch = aiResponse.match(/```(\w*)\n([\s\S]*?)```/);
-        
-        if (codeMatch) {
-          const code = codeMatch[2].trim();
-          const text = aiResponse.replace(/```[\s\S]*?```/, '').trim();
-          
-          // Verificar qual arquivo editar
-          let targetFile = null;
-          for (const file of Object.keys(files)) {
-            if (userMessage.toLowerCase().includes(files[file].name.toLowerCase())) {
-              targetFile = file;
-              break;
-            }
-          }
-          
-          if (targetFile) {
-            // Editar arquivo existente
-            addChatMessage(`✏️ Editando ${files[targetFile].name}: ${text || 'Código gerado'}`, 'ai', code, files[targetFile].name, true);
-          } else {
-            // Criar novo arquivo
-            let suggestedName = 'arquivo.html';
-            if (code.includes('<!DOCTYPE') || code.includes('<html')) suggestedName = 'index.html';
-            else if (code.includes('{') && code.includes('}')) suggestedName = 'style.css';
-            else suggestedName = 'script.js';
-            addChatMessage(`📄 ${text || 'Código gerado'}`, 'ai', code, suggestedName, true);
-          }
-        } else {
-          addChatMessage(aiResponse, 'ai');
-        }
-        
-      } catch (error) {
-        hideAILoading();
-        console.error('Erro na IA:', error);
-        addChatMessage(`❌ Erro: ${error.message || 'Falha na comunicação'}`, 'ai');
-      }
-    }
-
-    function insertCodeToEditor(code) {
-      if (!editor) return;
-      const pos = editor.getPosition();
-      editor.getModel().applyEdits([{ 
-        range: new monaco.Range(pos.lineNumber, pos.column, pos.lineNumber, pos.column), 
-        text: code 
-      }]);
-      showNotification('✅ Código inserido no editor!', 'success');
-    }
-
-    async function createNewFileWithCode(code, suggestedName) {
-      let fileName = prompt('Nome do arquivo:', suggestedName || 'arquivo.html');
-      if (!fileName) return;
-      
-      if (!fileName.includes('.')) {
-        if (code.includes('<!DOCTYPE') || code.includes('<html')) fileName += '.html';
-        else if (code.includes('{') && code.includes('}')) fileName += '.css';
-        else fileName += '.js';
-      }
-      
-      const fileKey = btoa(fileName).replace(/=/g, '');
-      if (files[fileKey]) {
-        const overwrite = confirm(`Arquivo ${fileName} já existe. Sobrescrever?`);
-        if (!overwrite) return;
-      }
-      
-      files[fileKey] = { name: fileName, originalName: fileName, content: code, size: code.length, createdAt: new Date().toISOString() };
-      await saveProject();
-      await openFile(fileKey);
-      showNotification(`✅ Arquivo ${fileName} criado!`, 'success');
-      
-      // Perguntar se quer publicar
-      showPublishModal('Arquivo criado! Deseja publicar o projeto no Puter agora?', async () => {
-        await hostProject();
-      }, () => {
-        showNotification('OK! Você pode publicar depois clicando em "Hospedar"', 'info');
-      });
-    }
-
-    async function replaceCurrentFile(code) {
-      if (!currentFile) {
-        showNotification('Nenhum arquivo aberto', 'error');
-        return;
-      }
-      const fileName = files[currentFile].name;
-      if (confirm(`Substituir todo o conteúdo de ${fileName}?`)) {
-        await saveFile(currentFile, code);
-        await saveProject();
-        const model = editor.getModel();
-        if (model) model.setValue(code);
-        showNotification(`✅ Arquivo ${fileName} substituído!`, 'success');
-        
-        // Perguntar se quer publicar
-        showPublishModal('Arquivo alterado! Deseja publicar as alterações no Puter agora?', async () => {
-          await hostProject();
-        }, () => {
-          showNotification('OK! Você pode publicar depois', 'info');
-        });
-      }
-    }
-
-    function triggerPublish() {
-      showPublishModal('Publicar este projeto no Puter agora?', async () => {
-        await hostProject();
-      }, () => {
-        showNotification('Publicação cancelada', 'info');
-      });
-    }
-
     // ==================== PUTER ====================
     async function initPuter() {
       try {
@@ -1144,7 +1137,6 @@
         const user = await puter.auth.getUser();
         if (user) { updatePuterStatus(true); return true; }
       } catch(e) {}
-      
       try {
         await puter.auth.signIn();
         updatePuterStatus(true);
@@ -1166,34 +1158,22 @@
       try {
         const dirName = `codehub_${currentUser.uid}_${Date.now()}`;
         await puter.fs.mkdir(dirName);
-        
         for (const file of Object.values(files)) {
           await puter.fs.write(`${dirName}/${file.name}`, file.content || '');
         }
-        
         const subdomain = `codehub-${Math.random().toString(36).substring(2, 10)}`;
         const site = await puter.hosting.create(subdomain, dirName);
         const url = `https://${site.subdomain}.puter.site`;
-        
         currentHostingUrl = url;
         currentHostingSubdomain = site.subdomain;
-        
-        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({
-          url: url, subdomain: site.subdomain, directory: dirName, publishedAt: new Date().toISOString()
-        });
-        
+        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({ url: url, subdomain: site.subdomain, directory: dirName, publishedAt: new Date().toISOString() });
         elements.fileUrl.value = url;
         elements.urlPanel.style.display = 'flex';
         showNotification(`✅ Site hospedado em ${url}`, 'success');
-      } catch(e) {
-        showNotification(`Erro: ${e.message}`, 'error');
-      }
+      } catch(e) { showNotification(`Erro: ${e.message}`, 'error'); }
     }
 
-    function openPuterDashboard() {
-      window.open('https://puter.com', '_blank');
-    }
-
+    function openPuterDashboard() { window.open('https://puter.com', '_blank'); }
     function previewProject() {
       const index = Object.values(files).find(f => f.name === 'index.html');
       if (index?.content) {
@@ -1201,18 +1181,13 @@
         const url = URL.createObjectURL(blob);
         window.open(url, '_blank');
         setTimeout(() => URL.revokeObjectURL(url), 1000);
-      } else {
-        showNotification('Crie um index.html primeiro', 'warning');
-      }
+      } else { showNotification('Crie um index.html primeiro', 'warning'); }
     }
-
     function copyUrl() {
       if (currentHostingUrl) {
         navigator.clipboard.writeText(currentHostingUrl);
         showNotification('URL copiada!', 'success');
-      } else {
-        showNotification('Hospede o projeto primeiro', 'warning');
-      }
+      } else { showNotification('Hospede o projeto primeiro', 'warning'); }
     }
 
     function setupEventListeners() {
@@ -1221,7 +1196,6 @@
       elements.previewBtn.addEventListener('click', previewProject);
       elements.copyUrlBtn.addEventListener('click', copyUrl);
       elements.puterDashboardBtn.addEventListener('click', openPuterDashboard);
-      elements.aiAssistantBtn.addEventListener('click', () => document.getElementById('ai-sidebar').scrollIntoView());
       elements.hostBtn?.addEventListener('click', hostProject);
       elements.openUrlBtn?.addEventListener('click', () => { if (currentHostingUrl) window.open(currentHostingUrl, '_blank'); });
       elements.sendChatBtn.addEventListener('click', sendToAI);
@@ -1238,10 +1212,6 @@
 
     window.selectProject = selectProject;
     window.createNewProject = createNewProject;
-    window.insertCodeToEditor = insertCodeToEditor;
-    window.createNewFileWithCode = createNewFileWithCode;
-    window.replaceCurrentFile = replaceCurrentFile;
-    window.triggerPublish = triggerPublish;
     window.clearChat = clearChat;
     window.closeFile = closeFile;
   </script>
