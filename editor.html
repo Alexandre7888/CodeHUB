@@ -110,6 +110,29 @@
       gap: 10px;
     }
     
+    /* Mode Selector */
+    .mode-selector {
+      display: flex;
+      gap: 5px;
+      background: #2d2d2d;
+      padding: 3px;
+      border-radius: 20px;
+      margin-left: 10px;
+    }
+    
+    .mode-btn {
+      background: transparent;
+      padding: 4px 12px;
+      font-size: 11px;
+      border-radius: 16px;
+      cursor: pointer;
+    }
+    
+    .mode-btn.active {
+      background: #4cc9f0;
+      color: #1e1e1e;
+    }
+    
     .url-panel-top {
       display: flex;
       align-items: center;
@@ -248,7 +271,6 @@
     #container {
       flex: 1;
       overflow: hidden;
-      position: relative;
     }
     
     #ai-sidebar {
@@ -296,6 +318,11 @@
       padding: 2px 6px;
       border-radius: 4px;
       font-size: 11px;
+      cursor: pointer;
+    }
+    
+    .toggle-icon:hover {
+      background: #4cc9f0;
     }
     
     .chat-messages {
@@ -306,6 +333,12 @@
       gap: 12px;
       min-height: 100px;
       transition: height 0.2s;
+    }
+    
+    /* Estado minimizado - esconde o conteúdo mas mantém o header */
+    .chat-messages.minimized,
+    .activities-content.minimized {
+      display: none;
     }
     
     .resize-separator {
@@ -414,25 +447,34 @@
       border-radius: 8px;
     }
     
+    /* Activities Panel */
     .activities-panel {
       background: #1e1e1e;
       border-top: 1px solid #333;
-      padding: 10px;
-      overflow-y: auto;
-      font-size: 11px;
-      min-height: 80px;
-      transition: height 0.2s;
+      display: flex;
+      flex-direction: column;
     }
     
     .activities-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #333;
+      padding: 10px;
+      background: #2d2d2d;
       font-size: 11px;
       color: #4cc9f0;
       cursor: pointer;
+    }
+    
+    .activities-header:hover {
+      background: #3d3d3d;
+    }
+    
+    .activities-content {
+      padding: 10px;
+      overflow-y: auto;
+      font-size: 11px;
+      max-height: 200px;
     }
     
     .activity-item {
@@ -547,10 +589,6 @@
       font-size: 11px;
       padding: 4px 8px;
     }
-    
-    .collapsed {
-      display: none !important;
-    }
   </style>
 </head>
 <body>
@@ -563,6 +601,13 @@
     <div id="top-bar">
       <button id="puterDashboardBtn">🚀 Puter Dashboard</button>
       <input type="text" id="project-name" placeholder="Nome do Projeto">
+      
+      <!-- Mode Selector - Chat Normal vs Edição -->
+      <div class="mode-selector">
+        <button class="mode-btn" id="chatModeBtn" onclick="setMode('chat')">💬 Chat Normal</button>
+        <button class="mode-btn active" id="editModeBtn" onclick="setMode('edit')">✏️ Edição Rápida</button>
+      </div>
+      
       <button id="saveFileBtn" disabled>💾 Salvar</button>
       <button id="previewBtn">👁️ Preview</button>
       <div id="storage-info">📦 <span id="storage-used">0</span> / <span id="storage-limit">5</span> MB</div>
@@ -595,27 +640,33 @@
       <div id="ai-sidebar">
         <div class="resize-handle" id="resizeHandle"></div>
         
-        <div class="sidebar-header" onclick="toggleChat()">
+        <!-- Chat Header - Minimiza/Maximiza -->
+        <div class="sidebar-header" id="chatHeader">
           <h3>🤖 Assistente IA</h3>
           <span class="toggle-icon" id="chatToggleIcon">▼</span>
         </div>
         
+        <!-- Chat Messages (pode minimizar) -->
         <div class="chat-messages" id="chatMessages"></div>
         
+        <!-- Chat Input Area (sempre visível) -->
         <div class="chat-input-area">
-          <textarea id="chatInput" placeholder="Digite seu comando... Ex: 'Edite o index.html e mude o título para Meu Site', 'Crie um arquivo style.css com fundo azul'" rows="2"></textarea>
+          <textarea id="chatInput" placeholder="Digite seu comando... Ex: 'Edite o index.html e mude o título'" rows="2"></textarea>
           <button id="sendChatBtn">Enviar</button>
         </div>
         
         <div class="resize-separator" id="chatActivitiesResize"></div>
         
-        <div class="activities-panel" id="activitiesPanel">
-          <div class="activities-header" onclick="toggleActivities()">
+        <!-- Activities Panel - com minimizar separado -->
+        <div class="activities-panel">
+          <div class="activities-header" id="activitiesHeader">
             <span>📊 Atividades do Usuário</span>
             <span class="toggle-icon" id="activitiesToggleIcon">▼</span>
           </div>
-          <div id="activitiesList">
-            <div class="no-activities">🔍 Carregando atividades...</div>
+          <div class="activities-content" id="activitiesContent">
+            <div id="activitiesList">
+              <div class="no-activities">🔍 Carregando atividades...</div>
+            </div>
           </div>
         </div>
       </div>
@@ -659,14 +710,15 @@
     let currentHostingSubdomain = null;
     let currentHostingDirectory = null;
     let allProjects = [];
+    let currentMode = 'edit'; // 'edit' ou 'chat'
 
     const ACTIVITIES_DB_URL = "https://html-785e3-default-rtdb.firebaseio.com/activities";
     const ACTIVITY_SCRIPT_URL = "https://code.codehub.ct.ws/atividade.js";
     
     let chatHeight = 300;
     let sidebarWidth = 420;
-    let chatCollapsed = false;
-    let activitiesCollapsed = false;
+    let chatMinimized = false;
+    let activitiesMinimized = false;
 
     const elements = {
       loadingScreen: document.getElementById('loading-screen'),
@@ -696,11 +748,71 @@
       publishNoBtn: document.getElementById('publishNoBtn'),
       activitiesList: document.getElementById('activitiesList'),
       aiSidebar: document.getElementById('ai-sidebar'),
-      chatMessagesDiv: document.querySelector('.chat-messages'),
-      activitiesPanel: document.getElementById('activitiesPanel'),
+      chatMessagesDiv: document.getElementById('chatMessages'),
+      activitiesContent: document.getElementById('activitiesContent'),
+      chatModeBtn: document.getElementById('chatModeBtn'),
+      editModeBtn: document.getElementById('editModeBtn'),
       resizeHandle: document.getElementById('resizeHandle'),
       chatActivitiesResize: document.getElementById('chatActivitiesResize')
     };
+
+    // ==================== MODO (CHAT NORMAL vs EDIÇÃO) ====================
+    function setMode(mode) {
+      currentMode = mode;
+      
+      if (mode === 'chat') {
+        elements.chatModeBtn.classList.add('active');
+        elements.editModeBtn.classList.remove('active');
+        showNotification('💬 Modo Chat Normal - A IA vai conversar e sugerir, mas não vai editar automaticamente', 'info');
+      } else {
+        elements.editModeBtn.classList.add('active');
+        elements.chatModeBtn.classList.remove('active');
+        showNotification('✏️ Modo Edição Rápida - A IA vai editar seus arquivos automaticamente!', 'success');
+      }
+      
+      localStorage.setItem('codehub_mode', mode);
+    }
+
+    // ==================== MINIMIZAR/MAXIMIZAR ====================
+    function toggleChat() {
+      chatMinimized = !chatMinimized;
+      const icon = document.getElementById('chatToggleIcon');
+      
+      if (chatMinimized) {
+        elements.chatMessagesDiv.classList.add('minimized');
+        icon.innerHTML = '▶';
+        // Guardar altura antes de minimizar
+        if (elements.chatMessagesDiv.style.height) {
+          chatHeight = parseInt(elements.chatMessagesDiv.style.height);
+        }
+        elements.chatMessagesDiv.style.height = '0';
+        elements.chatMessagesDiv.style.minHeight = '0';
+        elements.chatMessagesDiv.style.padding = '0';
+      } else {
+        elements.chatMessagesDiv.classList.remove('minimized');
+        icon.innerHTML = '▼';
+        elements.chatMessagesDiv.style.height = chatHeight + 'px';
+        elements.chatMessagesDiv.style.minHeight = '100px';
+        elements.chatMessagesDiv.style.padding = '12px';
+      }
+      
+      localStorage.setItem('codehub_chat_minimized', chatMinimized);
+    }
+
+    function toggleActivities() {
+      activitiesMinimized = !activitiesMinimized;
+      const icon = document.getElementById('activitiesToggleIcon');
+      
+      if (activitiesMinimized) {
+        elements.activitiesContent.classList.add('minimized');
+        icon.innerHTML = '▶';
+      } else {
+        elements.activitiesContent.classList.remove('minimized');
+        icon.innerHTML = '▼';
+      }
+      
+      localStorage.setItem('codehub_activities_minimized', activitiesMinimized);
+    }
 
     function showNotification(msg, type = 'info') {
       const n = document.createElement('div');
@@ -781,7 +893,7 @@
         elements.chatMessages.appendChild(msgDiv);
       });
       if (elements.chatMessages.children.length === 0) {
-        addChatMessage('🤖 Olá! Sou seu assistente IA. Posso editar, criar e publicar seu código!<br><br>📝 <strong>Comandos:</strong><br>• "Edite o index.html e mude o título para Meu Site"<br>• "Crie um arquivo style.css com fundo azul"<br>• "Delete o arquivo style.css"<br>• "Publique o projeto no Puter"<br><br>💡 A IA executa automaticamente!', 'system');
+        addChatMessage('🤖 Olá! Sou seu assistente IA.<br><br>📝 <strong>Modos:</strong><br>• 💬 Chat Normal: converso e sugiro<br>• ✏️ Edição Rápida: executo automaticamente<br><br>💡 Escolha o modo no topo!', 'system');
       }
       elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
     }
@@ -1014,51 +1126,31 @@
           existingFiles.push({ name: file.name, content: file.content || '' });
         }
         
-        const prompt = `
-          Você é um assistente que EXECUTA ações no código do usuário.
-          
-          PROJETO: ${elements.projectName.value}
-          ARQUIVOS EXISTENTES: ${existingFiles.map(f => f.name).join(', ')}
-          CONTEÚDO DOS ARQUIVOS:
-          ${existingFiles.map(f => `--- ${f.name} ---\n${f.content.substring(0, 800)}`).join('\n\n')}
-          
-          COMANDO: "${userMessage}"
-          
-          Responda APENAS com um JSON. NÃO responda texto normal. Use este formato exato:
-          {
-            "action": "criar",
-            "files": [{"name": "arquivo.html", "content": "codigo completo"}],
-            "message": "mensagem curta"
-          }
-          OU
-          {
-            "action": "editar",
-            "targetFile": "nome do arquivo existente",
-            "newContent": "novo conteudo completo",
-            "message": "mensagem curta"
-          }
-          OU
-          {
-            "action": "deletar",
-            "targetFile": "nome do arquivo",
-            "message": "mensagem curta"
-          }
-          OU
-          {
-            "action": "publicar",
-            "message": "mensagem curta"
-          }
-          OU
-          {
-            "action": "atualizar",
-            "message": "mensagem curta"
-          }
-          
-          IMPORTANTE: 
-          - Para editar, você DEVE fornecer o conteudo COMPLETO do arquivo
-          - O código deve estar DENTRO do JSON, sem blocos \`\`\`
-          - Responda SOMENTE o JSON, sem texto adicional
-        `;
+        let prompt = '';
+        
+        if (currentMode === 'chat') {
+          prompt = `
+            Você é um assistente de programação amigável.
+            PROJETO: ${elements.projectName.value}
+            ARQUIVOS: ${existingFiles.map(f => f.name).join(', ')}
+            CONTEÚDO: ${existingFiles.map(f => `--- ${f.name} ---\n${f.content.substring(0, 500)}`).join('\n\n')}
+            COMANDO: "${userMessage}"
+            
+            Responda normalmente como uma conversa. Se quiser sugerir código, use blocos \`\`\`.
+            Não execute ações automaticamente, apenas converse e sugira.
+          `;
+        } else {
+          prompt = `
+            Você é um assistente que EXECUTA ações no código.
+            PROJETO: ${elements.projectName.value}
+            ARQUIVOS: ${existingFiles.map(f => f.name).join(', ')}
+            CONTEÚDO: ${existingFiles.map(f => `--- ${f.name} ---\n${f.content.substring(0, 500)}`).join('\n\n')}
+            COMANDO: "${userMessage}"
+            
+            Responda APENAS com um JSON:
+            {"action":"criar|editar|deletar|publicar|atualizar","files":[{"name":"arquivo","content":"codigo"}],"targetFile":"nome","newContent":"conteudo","message":"msg"}
+          `;
+        }
         
         const response = await puter.ai.chat(prompt);
         
@@ -1077,57 +1169,54 @@
         
         streamingMsgDiv.classList.remove('streaming');
         
-        // Extrair JSON
-        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-        let result = null;
-        if (jsonMatch) {
-          try { result = JSON.parse(jsonMatch[0]); } catch(e) { console.error('Erro parse JSON:', e); }
-        }
-        
-        if (result && result.action) {
-          switch(result.action) {
-            case 'criar':
-              if (result.files && result.files.length > 0) {
-                const created = await createFiles(result.files);
-                addChatMessage(`✅ ${result.message || 'Arquivos criados! ' + created.join(', ')}`, 'ai');
-                showPublishModal(() => updatePublishedSite(), () => {});
-              }
-              break;
-            case 'editar':
-              if (result.targetFile && result.newContent) {
-                const edited = await editFile(result.targetFile, result.newContent);
-                if (edited) {
-                  addChatMessage(`✅ ${result.message || `Arquivo "${edited}" editado!`}`, 'ai');
-                  showPublishModal(() => updatePublishedSite(), () => {});
-                } else {
-                  addChatMessage(`❌ Arquivo "${result.targetFile}" não encontrado`, 'ai');
-                }
-              }
-              break;
-            case 'deletar':
-              if (result.targetFile) {
-                const deleted = await deleteFile(result.targetFile);
-                if (deleted) {
-                  addChatMessage(`✅ ${result.message || `Arquivo "${deleted}" deletado!`}`, 'ai');
-                  showPublishModal(() => updatePublishedSite(), () => {});
-                } else {
-                  addChatMessage(`❌ Arquivo "${result.targetFile}" não encontrado`, 'ai');
-                }
-              }
-              break;
-            case 'publicar':
-              const url = await publishProject();
-              addChatMessage(`✅ ${result.message || `Site publicado! 🔗 ${url}`}`, 'ai');
-              break;
-            case 'atualizar':
-              const updatedUrl = await updatePublishedSite();
-              addChatMessage(`✅ ${result.message || `Site atualizado! 🔗 ${updatedUrl}`}`, 'ai');
-              break;
-            default:
-              addChatMessage(result.message || 'Comando executado!', 'ai');
+        if (currentMode === 'edit') {
+          const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+          let result = null;
+          if (jsonMatch) {
+            try { result = JSON.parse(jsonMatch[0]); } catch(e) {}
           }
-        } else {
-          addChatMessage(aiResponse, 'ai');
+          
+          if (result && result.action) {
+            switch(result.action) {
+              case 'criar':
+                if (result.files && result.files.length > 0) {
+                  const created = await createFiles(result.files);
+                  addChatMessage(`✅ ${result.message || 'Arquivos criados! ' + created.join(', ')}`, 'ai');
+                  showPublishModal(() => updatePublishedSite(), () => {});
+                }
+                break;
+              case 'editar':
+                if (result.targetFile && result.newContent) {
+                  const edited = await editFile(result.targetFile, result.newContent);
+                  if (edited) {
+                    addChatMessage(`✅ ${result.message || `Arquivo "${edited}" editado!`}`, 'ai');
+                    showPublishModal(() => updatePublishedSite(), () => {});
+                  } else {
+                    addChatMessage(`❌ Arquivo "${result.targetFile}" não encontrado`, 'ai');
+                  }
+                }
+                break;
+              case 'deletar':
+                if (result.targetFile) {
+                  const deleted = await deleteFile(result.targetFile);
+                  if (deleted) {
+                    addChatMessage(`✅ ${result.message || `Arquivo "${deleted}" deletado!`}`, 'ai');
+                    showPublishModal(() => updatePublishedSite(), () => {});
+                  } else {
+                    addChatMessage(`❌ Arquivo "${result.targetFile}" não encontrado`, 'ai');
+                  }
+                }
+                break;
+              case 'publicar':
+                await publishProject();
+                break;
+              case 'atualizar':
+                await updatePublishedSite();
+                break;
+              default:
+                addChatMessage(result.message || 'Comando executado!', 'ai');
+            }
+          }
         }
         
       } catch (error) {
@@ -1388,60 +1477,34 @@
       const savedChatHeight = localStorage.getItem('codehub_chat_height');
       if (savedChatHeight) {
         chatHeight = parseInt(savedChatHeight);
-        if (elements.chatMessagesDiv) {
+        if (elements.chatMessagesDiv && !chatMinimized) {
           elements.chatMessagesDiv.style.height = chatHeight + 'px';
         }
       }
       
-      const savedChatCollapsed = localStorage.getItem('codehub_chat_collapsed');
-      if (savedChatCollapsed === 'true') {
-        chatCollapsed = true;
-        if (elements.chatMessagesDiv) elements.chatMessagesDiv.classList.add('collapsed');
-        if (document.getElementById('chatToggleIcon')) document.getElementById('chatToggleIcon').innerHTML = '▶';
+      const savedChatMinimized = localStorage.getItem('codehub_chat_minimized');
+      if (savedChatMinimized === 'true') {
+        toggleChat();
       }
       
-      const savedActivitiesCollapsed = localStorage.getItem('codehub_activities_collapsed');
-      if (savedActivitiesCollapsed === 'true') {
-        activitiesCollapsed = true;
-        if (elements.activitiesPanel) elements.activitiesPanel.classList.add('collapsed');
-        if (document.getElementById('activitiesToggleIcon')) document.getElementById('activitiesToggleIcon').innerHTML = '▶';
+      const savedActivitiesMinimized = localStorage.getItem('codehub_activities_minimized');
+      if (savedActivitiesMinimized === 'true') {
+        toggleActivities();
+      }
+      
+      const savedMode = localStorage.getItem('codehub_mode');
+      if (savedMode === 'chat') {
+        setMode('chat');
+      } else {
+        setMode('edit');
       }
     }
 
     function savePreferences() {
       localStorage.setItem('codehub_sidebar_width', sidebarWidth);
       localStorage.setItem('codehub_chat_height', chatHeight);
-      localStorage.setItem('codehub_chat_collapsed', chatCollapsed);
-      localStorage.setItem('codehub_activities_collapsed', activitiesCollapsed);
-    }
-
-    function toggleChat() {
-      chatCollapsed = !chatCollapsed;
-      const chatDiv = elements.chatMessagesDiv;
-      const icon = document.getElementById('chatToggleIcon');
-      if (chatCollapsed) {
-        chatDiv.classList.add('collapsed');
-        icon.innerHTML = '▶';
-      } else {
-        chatDiv.classList.remove('collapsed');
-        icon.innerHTML = '▼';
-        if (chatDiv.style.height) chatDiv.style.height = chatHeight + 'px';
-      }
-      savePreferences();
-    }
-
-    function toggleActivities() {
-      activitiesCollapsed = !activitiesCollapsed;
-      const activitiesDiv = elements.activitiesPanel;
-      const icon = document.getElementById('activitiesToggleIcon');
-      if (activitiesCollapsed) {
-        activitiesDiv.classList.add('collapsed');
-        icon.innerHTML = '▶';
-      } else {
-        activitiesDiv.classList.remove('collapsed');
-        icon.innerHTML = '▼';
-      }
-      savePreferences();
+      localStorage.setItem('codehub_chat_minimized', chatMinimized);
+      localStorage.setItem('codehub_activities_minimized', activitiesMinimized);
     }
 
     function initResizing() {
@@ -1474,6 +1537,7 @@
       let startChatHeight = 0;
       
       elements.chatActivitiesResize.addEventListener('mousedown', (e) => {
+        if (chatMinimized) return;
         isResizingHeight = true;
         startY = e.clientY;
         startChatHeight = elements.chatMessagesDiv.offsetHeight;
@@ -1485,8 +1549,8 @@
         if (!isResizingHeight) return;
         const delta = e.clientY - startY;
         let newChatHeight = startChatHeight + delta;
-        const totalHeight = elements.aiSidebar.offsetHeight - 120;
-        if (newChatHeight >= 100 && newChatHeight <= totalHeight - 100) {
+        const totalHeight = elements.aiSidebar.offsetHeight - 200;
+        if (newChatHeight >= 100 && newChatHeight <= totalHeight) {
           chatHeight = newChatHeight;
           elements.chatMessagesDiv.style.height = chatHeight + 'px';
         }
@@ -1517,6 +1581,10 @@
           await loadProjects();
         }
       });
+      
+      // Eventos de minimizar
+      document.getElementById('chatHeader').addEventListener('click', toggleChat);
+      document.getElementById('activitiesHeader').addEventListener('click', toggleActivities);
     }
 
     window.selectProject = selectProject;
@@ -1524,6 +1592,7 @@
     window.clearChat = clearChat;
     window.closeFile = closeFile;
     window.deleteActivity = deleteActivity;
+    window.setMode = setMode;
     window.toggleChat = toggleChat;
     window.toggleActivities = toggleActivities;
   </script>
