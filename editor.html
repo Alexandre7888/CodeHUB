@@ -241,8 +241,6 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      max-height: 50%;
-      min-height: 200px;
     }
     
     .message {
@@ -251,12 +249,6 @@
       max-width: 95%;
       word-wrap: break-word;
       font-size: 13px;
-      animation: fadeIn 0.3s ease;
-    }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
     }
     
     .message.user {
@@ -269,10 +261,6 @@
       background: #3d3d3d;
       align-self: flex-start;
       border-bottom-left-radius: 4px;
-    }
-    
-    .message.ai.streaming {
-      border-left: 3px solid #9c27b0;
     }
     
     .message.system {
@@ -291,40 +279,11 @@
       font-size: 12px;
     }
     
-    .file-action {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: #1e1e1e;
-      padding: 6px 12px;
-      border-radius: 20px;
-      margin: 8px 0;
-      font-size: 12px;
-    }
-    
-    .file-icon {
-      width: 20px;
-      height: 20px;
-      background-size: contain;
-      background-repeat: no-repeat;
-    }
-    
-    .spinner-small {
-      width: 16px;
-      height: 16px;
-      border: 2px solid #333;
-      border-top-color: #9c27b0;
-      border-radius: 50%;
-      animation: spin 0.6s linear infinite;
-      display: inline-block;
-    }
-    
     .chat-input-area {
       padding: 12px;
       border-top: 1px solid #333;
       display: flex;
       gap: 10px;
-      background: #252526;
     }
     
     .chat-input-area textarea {
@@ -343,54 +302,6 @@
       background: #9c27b0;
       padding: 10px 20px;
       border-radius: 8px;
-    }
-    
-    /* Activities Panel */
-    .activities-panel {
-      background: #1e1e1e;
-      border-top: 1px solid #333;
-      padding: 10px;
-      max-height: 180px;
-      overflow-y: auto;
-      font-size: 11px;
-    }
-    
-    .activities-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #333;
-      font-size: 11px;
-      color: #4cc9f0;
-    }
-    
-    .activity-item {
-      background: #2d2d2d;
-      border-radius: 8px;
-      padding: 8px;
-      margin-top: 8px;
-    }
-    
-    .activity-online { color: #4caf50; font-weight: bold; }
-    .activity-offline { color: #f44336; }
-    .activity-time { color: #888; font-size: 10px; margin-top: 4px; }
-    .activity-delete-btn {
-      background: #f44336;
-      color: white;
-      border: none;
-      padding: 4px 8px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 10px;
-      margin-top: 6px;
-    }
-    
-    .no-activities {
-      text-align: center;
-      color: #888;
-      padding: 15px;
-      font-size: 11px;
     }
     
     .url-panel {
@@ -569,6 +480,10 @@
       font-size: 11px;
       padding: 4px 8px;
     }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -604,25 +519,10 @@
 
       <div id="ai-sidebar">
         <div class="sidebar-header"><span>🤖 Assistente IA</span><button onclick="clearChat()" style="background:#555; padding:2px 8px;">Limpar</button></div>
-        
-        <!-- Chat Messages -->
         <div class="chat-messages" id="chatMessages"></div>
-        
-        <!-- Chat Input Area -->
         <div class="chat-input-area">
-          <textarea id="chatInput" placeholder="Digite seu comando... Ex: 'Crie um site completo com HTML, CSS e JS'" rows="2"></textarea>
+          <textarea id="chatInput" placeholder="Digite qualquer comando... Ex: 'Crie um site completo com HTML, CSS e JS', 'Delete o arquivo style.css', 'Edite o index.html e mude o título', 'Publique o projeto'" rows="2"></textarea>
           <button id="sendChatBtn">Enviar</button>
-        </div>
-        
-        <!-- Activities Panel -->
-        <div class="activities-panel" id="activitiesPanel">
-          <div class="activities-header">
-            <span>📊 Atividades do Usuário</span>
-            <span id="activityProjectId" style="font-family: monospace; font-size: 10px;"></span>
-          </div>
-          <div id="activitiesList">
-            <div class="no-activities">🔍 Carregando atividades...</div>
-          </div>
         </div>
       </div>
     </div>
@@ -656,7 +556,7 @@
     const firebaseConfig = {
       apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
       authDomain: "html-15e80.firebaseapp.com",
-      databaseURL: "https://html-785e3-default-rtdb.firebaseio.com",
+      databaseURL: "https://html-15e80-default-rtdb.firebaseio.com",
       projectId: "html-15e80",
       storageBucket: "html-15e80.appspot.com",
       messagingSenderId: "1068148640439",
@@ -678,11 +578,6 @@
     let currentHostingSubdomain = null;
     let currentHostingDirectory = null;
     let allProjects = [];
-
-    // Activity tracking URLs
-    const ACTIVITIES_DB_URL = "https://html-785e3-default-rtdb.firebaseio.com/activities";
-    const ACTIVITY_SCRIPT_URL = "https://code.codehub.ct.ws/atividade.js";
-    let activitiesInterval = null;
 
     const elements = {
       loadingScreen: document.getElementById('loading-screen'),
@@ -711,9 +606,7 @@
       aiLoadingSubtext: document.getElementById('aiLoadingSubtext'),
       publishModal: document.getElementById('publishModal'),
       publishYesBtn: document.getElementById('publishYesBtn'),
-      publishNoBtn: document.getElementById('publishNoBtn'),
-      activitiesList: document.getElementById('activitiesList'),
-      activityProjectId: document.getElementById('activityProjectId')
+      publishNoBtn: document.getElementById('publishNoBtn')
     };
 
     function showNotification(msg, type = 'info') {
@@ -762,49 +655,6 @@
       elements.publishNoBtn.addEventListener('click', cancelHandler);
     }
 
-    // ==================== STREAMING MESSAGE ====================
-    async function addStreamingMessage(text, type) {
-      const msgDiv = document.createElement('div');
-      msgDiv.className = `message ${type} streaming`;
-      const contentDiv = document.createElement('div');
-      msgDiv.appendChild(contentDiv);
-      elements.chatMessages.appendChild(msgDiv);
-      elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
-      
-      let i = 0;
-      const chars = text.split('');
-      
-      const typeNextChar = () => {
-        if (i < chars.length) {
-          contentDiv.innerHTML += chars[i];
-          i++;
-          elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
-          setTimeout(typeNextChar, 15 + Math.random() * 20);
-        } else {
-          msgDiv.classList.remove('streaming');
-        }
-      };
-      typeNextChar();
-      
-      return msgDiv;
-    }
-
-    function addFileActionMessage(fileName, action, fileType) {
-      const msgDiv = document.createElement('div');
-      msgDiv.className = `message system`;
-      const fileIcon = fileType === 'html' ? '📄' : (fileType === 'css' ? '🎨' : '📜');
-      msgDiv.innerHTML = `
-        <div class="file-action">
-          <span>${action === 'Criando' ? '📝' : (action === 'Editando' ? '✏️' : '🗑️')}</span>
-          <span>${action} <strong>${fileName}</strong></span>
-          <div class="spinner-small"></div>
-        </div>
-      `;
-      elements.chatMessages.appendChild(msgDiv);
-      elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
-      return msgDiv;
-    }
-
     function addChatMessage(text, type) {
       const msgDiv = document.createElement('div');
       msgDiv.className = `message ${type}`;
@@ -844,89 +694,6 @@
       }
     }
 
-    // ==================== PAINEL DE ATIVIDADES ====================
-    async function loadActivities() {
-      if (!currentProjectId) return;
-      
-      try {
-        const res = await fetch(`${ACTIVITIES_DB_URL}/${currentProjectId}.json`);
-        const data = await res.json();
-        
-        elements.activityProjectId.textContent = `ID: ${currentProjectId.substring(0, 12)}...`;
-        
-        if (!data) {
-          elements.activitiesList.innerHTML = '<div class="no-activities">📭 Nenhuma atividade registrada ainda</div>';
-          return;
-        }
-        
-        const now = Date.now();
-        const elapsed = data.time || Math.floor((now - (data.start || now)) / 1000);
-        const isOnline = (now - (data.lastSeen || 0)) < 10000;
-        
-        elements.activitiesList.innerHTML = `
-          <div class="activity-item">
-            <div>
-              <span class="${isOnline ? 'activity-online' : 'activity-offline'}">
-                ${isOnline ? '🟢 ONLINE' : '⚫ OFFLINE'}
-              </span>
-            </div>
-            <div>📅 Primeira visita: ${new Date(data.start || now).toLocaleString()}</div>
-            <div>⏱ Tempo no site: ${Math.floor(elapsed/60)}min ${elapsed%60}s</div>
-            <div>🔄 Total de visitas: ${data.visits || 1}</div>
-            <div>📍 URL: ${data.url || 'N/A'}</div>
-            <div>🖥 Navegador: ${(data.ua || 'N/A').substring(0, 50)}</div>
-            <button class="activity-delete-btn" onclick="deleteActivity('${currentProjectId}')">🗑 Limpar atividades</button>
-          </div>
-        `;
-        
-        if (isOnline) {
-          setTimeout(loadActivities, 5000);
-        }
-      } catch (error) {
-        console.error('Erro ao carregar atividades:', error);
-      }
-    }
-
-    async function deleteActivity(projectId) {
-      if (confirm('Tem certeza que deseja limpar as atividades deste projeto?')) {
-        await fetch(`${ACTIVITIES_DB_URL}/${projectId}.json`, { method: "DELETE" });
-        showNotification('Atividades limpas!', 'success');
-        loadActivities();
-      }
-    }
-
-    // ==================== INJETAR SCRIPT DE ATIVIDADE ====================
-    function injectActivityScript(htmlContent) {
-      const activityScript = `<script src="${ACTIVITY_SCRIPT_URL}?projectid=${currentProjectId}"><\/script>`;
-      
-      if (htmlContent.includes('</body>')) {
-        return htmlContent.replace('</body>', `${activityScript}\n</body>`);
-      } else if (htmlContent.includes('</html>')) {
-        return htmlContent.replace('</html>', `${activityScript}\n</html>`);
-      } else {
-        return htmlContent + activityScript;
-      }
-    }
-
-    async function injectActivityToAllHtmlFiles() {
-      for (const [key, file] of Object.entries(files)) {
-        if (file.name.endsWith('.html') && file.content) {
-          if (!file.content.includes('atividade.js')) {
-            const newContent = injectActivityScript(file.content);
-            files[key].content = newContent;
-            files[key].updatedAt = new Date().toISOString();
-            
-            if (key === currentFile) {
-              const model = editor.getModel();
-              if (model) model.setValue(newContent);
-            }
-          }
-        }
-      }
-      await saveProject();
-      showNotification('✅ Script de atividade adicionado aos arquivos HTML!', 'success');
-    }
-
     // ==================== AÇÕES AUTOMÁTICAS DA IA ====================
     
     async function createFiles(filesData) {
@@ -948,14 +715,6 @@
           else fileName += '.js';
         }
         
-        const fileType = fileName.split('.').pop();
-        const actionMsg = addFileActionMessage(fileName, 'Criando', fileType);
-        
-        // Se for HTML, injetar script de atividade
-        if (fileName.endsWith('.html')) {
-          content = injectActivityScript(content);
-        }
-        
         const fileKey = btoa(fileName).replace(/=/g, '');
         files[fileKey] = {
           name: fileName,
@@ -966,8 +725,6 @@
           updatedAt: new Date().toISOString()
         };
         created.push(fileName);
-        
-        setTimeout(() => actionMsg.remove(), 800);
       }
       await saveProject();
       if (created.length > 0) {
@@ -990,22 +747,12 @@
       if (!targetKey && currentFile) targetKey = currentFile;
       if (!targetKey) return false;
       
-      const fileType = files[targetKey].name.split('.').pop();
-      const actionMsg = addFileActionMessage(files[targetKey].name, 'Editando', fileType);
-      
-      let finalContent = newContent;
-      if (files[targetKey].name.endsWith('.html') && !newContent.includes('atividade.js')) {
-        finalContent = injectActivityScript(newContent);
-      }
-      
-      await saveFile(targetKey, finalContent);
+      await saveFile(targetKey, newContent);
       await saveProject();
       if (targetKey === currentFile) {
         const model = editor.getModel();
-        if (model) model.setValue(finalContent);
+        if (model) model.setValue(newContent);
       }
-      
-      setTimeout(() => actionMsg.remove(), 800);
       return files[targetKey].name;
     }
 
@@ -1021,10 +768,7 @@
       
       if (!targetKey) return false;
       
-      const fileType = files[targetKey].name.split('.').pop();
-      const actionMsg = addFileActionMessage(files[targetKey].name, 'Deletando', fileType);
       const deletedName = files[targetKey].name;
-      
       delete files[targetKey];
       delete models[targetKey];
       
@@ -1040,7 +784,6 @@
       
       await saveProject();
       updateTabs();
-      setTimeout(() => actionMsg.remove(), 800);
       return deletedName;
     }
 
@@ -1061,11 +804,7 @@
         await puter.fs.mkdir(dirName);
         
         for (const file of Object.values(files)) {
-          let content = file.content || '';
-          if (file.name.endsWith('.html') && !content.includes('atividade.js')) {
-            content = injectActivityScript(content);
-          }
-          await puter.fs.write(`${dirName}/${file.name}`, content);
+          await puter.fs.write(`${dirName}/${file.name}`, file.content || '');
         }
         
         let subdomain = currentHostingSubdomain;
@@ -1089,7 +828,6 @@
         elements.fileUrl.value = url;
         elements.urlPanel.style.display = 'flex';
         hideAILoading();
-        addChatMessage(`✅ Site publicado! 🔗 ${url}`, 'ai');
         return url;
       } catch(e) {
         hideAILoading();
@@ -1106,15 +844,10 @@
       
       try {
         for (const file of Object.values(files)) {
-          let content = file.content || '';
-          if (file.name.endsWith('.html') && !content.includes('atividade.js')) {
-            content = injectActivityScript(content);
-          }
-          await puter.fs.write(`${currentHostingDirectory}/${file.name}`, content);
+          await puter.fs.write(`${currentHostingDirectory}/${file.name}`, file.content || '');
         }
         await puter.hosting.update(currentHostingSubdomain, currentHostingDirectory);
         hideAILoading();
-        addChatMessage(`✅ Site atualizado! 🔗 ${currentHostingUrl}`, 'ai');
         return currentHostingUrl;
       } catch(e) {
         hideAILoading();
@@ -1286,7 +1019,6 @@
       currentProjectId = projectId;
       await loadProjectData();
       await loadChatHistory();
-      await loadActivities();
       updateTabs();
       window.history.pushState({}, '', `?projectId=${projectId}`);
     }
@@ -1300,13 +1032,11 @@
       
       const defaultFiles = {};
       const fileKey = btoa('index.html').replace(/=/g, '');
-      const defaultContent = injectActivityScript(`<!DOCTYPE html><html><head><title>${name}</title><meta charset="UTF-8"></head><body><h1>${name}</h1><p>Bem-vindo ao seu projeto!</p></body></html>`);
-      
       defaultFiles[fileKey] = {
         name: 'index.html',
         originalName: 'index.html',
-        content: defaultContent,
-        size: defaultContent.length,
+        content: `<!DOCTYPE html><html><head><title>${name}</title><meta charset="UTF-8"></head><body><h1>${name}</h1><p>Bem-vindo ao seu projeto!</p></body></html>`,
+        size: 200,
         createdAt: new Date().toISOString()
       };
       
@@ -1344,11 +1074,10 @@
     async function createDefaultIndexHtml() {
       const fileName = 'index.html';
       const fileKey = btoa(fileName).replace(/=/g, '');
-      const content = injectActivityScript(`<!DOCTYPE html><html><head><title>${elements.projectName.value || 'Projeto'}</title></head><body><h1>Bem-vindo!</h1></body></html>`);
       files[fileKey] = {
         name: fileName, originalName: fileName,
-        content: content,
-        size: content.length, createdAt: new Date().toISOString()
+        content: `<!DOCTYPE html><html><head><title>${elements.projectName.value || 'Projeto'}</title></head><body><h1>Bem-vindo!</h1></body></html>`,
+        size: 100, createdAt: new Date().toISOString()
       };
       await saveProject();
       await openFile(fileKey);
@@ -1410,7 +1139,6 @@
         if (currentProjectId && allProjects.some(p => p.id === currentProjectId)) {
           await loadProjectData();
           await loadChatHistory();
-          await loadActivities();
         } else if (allProjects.length > 0) {
           await selectProject(allProjects[0].id);
         } else {
@@ -1548,7 +1276,6 @@
     window.createNewProject = createNewProject;
     window.clearChat = clearChat;
     window.closeFile = closeFile;
-    window.deleteActivity = deleteActivity;
   </script>
 </body>
 </html>
