@@ -58,15 +58,6 @@
       gap: 8px;
     }
     
-    .back-btn {
-      background: #6c757d;
-      text-decoration: none;
-      color: white;
-      padding: 6px 12px;
-      border-radius: 4px;
-      font-size: 13px;
-    }
-    
     #project-name {
       background: #252526;
       color: white;
@@ -110,29 +101,6 @@
       gap: 10px;
     }
     
-    /* Mode Selector */
-    .mode-selector {
-      display: flex;
-      gap: 5px;
-      background: #2d2d2d;
-      padding: 3px;
-      border-radius: 20px;
-      margin-left: 10px;
-    }
-    
-    .mode-btn {
-      background: transparent;
-      padding: 4px 12px;
-      font-size: 11px;
-      border-radius: 16px;
-      cursor: pointer;
-    }
-    
-    .mode-btn.active {
-      background: #4cc9f0;
-      color: #1e1e1e;
-    }
-    
     .url-panel-top {
       display: flex;
       align-items: center;
@@ -141,11 +109,6 @@
       padding: 4px 10px;
       border-radius: 6px;
       margin-left: 10px;
-      font-size: 11px;
-    }
-    
-    .url-panel-top span {
-      color: #aaa;
       font-size: 11px;
     }
     
@@ -158,11 +121,6 @@
       font-family: monospace;
       font-size: 10px;
       width: 250px;
-    }
-    
-    .url-panel-top button {
-      padding: 4px 8px;
-      font-size: 11px;
     }
     
     #projects-sidebar {
@@ -306,51 +264,16 @@
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid #333;
-      cursor: pointer;
-    }
-    
-    .sidebar-header h3 {
-      font-size: 13px;
-    }
-    
-    .toggle-icon {
-      background: #555;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 11px;
-      cursor: pointer;
-    }
-    
-    .toggle-icon:hover {
-      background: #4cc9f0;
     }
     
     .chat-messages {
+      flex: 1;
       overflow-y: auto;
       padding: 12px;
       display: flex;
       flex-direction: column;
       gap: 12px;
-      min-height: 100px;
-      transition: height 0.2s;
-    }
-    
-    /* Estado minimizado - esconde o conteúdo mas mantém o header */
-    .chat-messages.minimized,
-    .activities-content.minimized {
-      display: none;
-    }
-    
-    .resize-separator {
-      height: 4px;
-      background: #333;
-      cursor: ns-resize;
-      transition: background 0.2s;
-      position: relative;
-    }
-    
-    .resize-separator:hover {
-      background: #4cc9f0;
+      min-height: 200px;
     }
     
     .message {
@@ -421,15 +344,45 @@
       display: inline-block;
     }
     
-    .chat-input-area {
+    /* Chat Input Area com modo toggle */
+    .chat-controls {
       padding: 12px;
       border-top: 1px solid #333;
-      display: flex;
-      gap: 10px;
       background: #252526;
     }
     
-    .chat-input-area textarea {
+    .mode-toggle {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      justify-content: center;
+    }
+    
+    .mode-toggle-btn {
+      flex: 1;
+      background: #333;
+      padding: 6px;
+      font-size: 12px;
+    }
+    
+    .mode-toggle-btn.active {
+      background: #9c27b0;
+    }
+    
+    .mode-toggle-btn.edit-mode {
+      background: #4caf50;
+    }
+    
+    .mode-toggle-btn.edit-mode.active {
+      background: #2e7d32;
+    }
+    
+    .chat-input-wrapper {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .chat-input-wrapper textarea {
       flex: 1;
       background: #1e1e1e;
       border: 1px solid #333;
@@ -441,40 +394,29 @@
       font-size: 13px;
     }
     
-    .chat-input-area button {
+    .chat-input-wrapper button {
       background: #9c27b0;
       padding: 10px 20px;
       border-radius: 8px;
     }
     
-    /* Activities Panel */
     .activities-panel {
       background: #1e1e1e;
       border-top: 1px solid #333;
-      display: flex;
-      flex-direction: column;
+      padding: 10px;
+      max-height: 180px;
+      overflow-y: auto;
+      font-size: 11px;
     }
     
     .activities-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px;
-      background: #2d2d2d;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #333;
       font-size: 11px;
       color: #4cc9f0;
-      cursor: pointer;
-    }
-    
-    .activities-header:hover {
-      background: #3d3d3d;
-    }
-    
-    .activities-content {
-      padding: 10px;
-      overflow-y: auto;
-      font-size: 11px;
-      max-height: 200px;
     }
     
     .activity-item {
@@ -525,11 +467,6 @@
       max-width: 400px;
       width: 90%;
       text-align: center;
-    }
-    
-    .publish-modal-content h3 {
-      margin-bottom: 15px;
-      color: #4cc9f0;
     }
     
     .publish-modal-buttons {
@@ -601,20 +538,13 @@
     <div id="top-bar">
       <button id="puterDashboardBtn">🚀 Puter Dashboard</button>
       <input type="text" id="project-name" placeholder="Nome do Projeto">
-      
-      <!-- Mode Selector - Chat Normal vs Edição -->
-      <div class="mode-selector">
-        <button class="mode-btn" id="chatModeBtn" onclick="setMode('chat')">💬 Chat Normal</button>
-        <button class="mode-btn active" id="editModeBtn" onclick="setMode('edit')">✏️ Edição Rápida</button>
-      </div>
-      
       <button id="saveFileBtn" disabled>💾 Salvar</button>
       <button id="previewBtn">👁️ Preview</button>
       <div id="storage-info">📦 <span id="storage-used">0</span> / <span id="storage-limit">5</span> MB</div>
       
       <div class="url-panel-top" id="urlPanelTop" style="display: none;">
         <span>🔗</span>
-        <input type="text" id="fileUrlTop" readonly onclick="this.select()" placeholder="URL do site">
+        <input type="text" id="fileUrlTop" readonly onclick="this.select()">
         <button id="openUrlTopBtn">Abrir</button>
         <button id="publishTopBtn" style="background:#20b2aa;">🌐 Publicar</button>
       </div>
@@ -640,33 +570,29 @@
       <div id="ai-sidebar">
         <div class="resize-handle" id="resizeHandle"></div>
         
-        <!-- Chat Header - Minimiza/Maximiza -->
-        <div class="sidebar-header" id="chatHeader">
+        <div class="sidebar-header">
           <h3>🤖 Assistente IA</h3>
-          <span class="toggle-icon" id="chatToggleIcon">▼</span>
         </div>
         
-        <!-- Chat Messages (pode minimizar) -->
         <div class="chat-messages" id="chatMessages"></div>
         
-        <!-- Chat Input Area (sempre visível) -->
-        <div class="chat-input-area">
-          <textarea id="chatInput" placeholder="Digite seu comando... Ex: 'Edite o index.html e mude o título'" rows="2"></textarea>
-          <button id="sendChatBtn">Enviar</button>
+        <div class="chat-controls">
+          <div class="mode-toggle">
+            <button class="mode-toggle-btn" id="chatModeBtn" onclick="setMode('chat')">💬 Conversar</button>
+            <button class="mode-toggle-btn edit-mode active" id="editModeBtn" onclick="setMode('edit')">✏️ Editar Código</button>
+          </div>
+          <div class="chat-input-wrapper">
+            <textarea id="chatInput" placeholder="Digite seu comando... Ex: 'Crie um site bonito com HTML, CSS e JS'" rows="2"></textarea>
+            <button id="sendChatBtn">Enviar</button>
+          </div>
         </div>
         
-        <div class="resize-separator" id="chatActivitiesResize"></div>
-        
-        <!-- Activities Panel - com minimizar separado -->
-        <div class="activities-panel">
-          <div class="activities-header" id="activitiesHeader">
+        <div class="activities-panel" id="activitiesPanel">
+          <div class="activities-header">
             <span>📊 Atividades do Usuário</span>
-            <span class="toggle-icon" id="activitiesToggleIcon">▼</span>
           </div>
-          <div class="activities-content" id="activitiesContent">
-            <div id="activitiesList">
-              <div class="no-activities">🔍 Carregando atividades...</div>
-            </div>
+          <div id="activitiesList">
+            <div class="no-activities">🔍 Carregando atividades...</div>
           </div>
         </div>
       </div>
@@ -715,10 +641,7 @@
     const ACTIVITIES_DB_URL = "https://html-785e3-default-rtdb.firebaseio.com/activities";
     const ACTIVITY_SCRIPT_URL = "https://code.codehub.ct.ws/atividade.js";
     
-    let chatHeight = 300;
     let sidebarWidth = 420;
-    let chatMinimized = false;
-    let activitiesMinimized = false;
 
     const elements = {
       loadingScreen: document.getElementById('loading-screen'),
@@ -748,70 +671,26 @@
       publishNoBtn: document.getElementById('publishNoBtn'),
       activitiesList: document.getElementById('activitiesList'),
       aiSidebar: document.getElementById('ai-sidebar'),
-      chatMessagesDiv: document.getElementById('chatMessages'),
-      activitiesContent: document.getElementById('activitiesContent'),
-      chatModeBtn: document.getElementById('chatModeBtn'),
-      editModeBtn: document.getElementById('editModeBtn'),
       resizeHandle: document.getElementById('resizeHandle'),
-      chatActivitiesResize: document.getElementById('chatActivitiesResize')
+      chatModeBtn: document.getElementById('chatModeBtn'),
+      editModeBtn: document.getElementById('editModeBtn')
     };
 
-    // ==================== MODO (CHAT NORMAL vs EDIÇÃO) ====================
+    // ==================== MODO ====================
     function setMode(mode) {
       currentMode = mode;
       
       if (mode === 'chat') {
         elements.chatModeBtn.classList.add('active');
         elements.editModeBtn.classList.remove('active');
-        showNotification('💬 Modo Chat Normal - A IA vai conversar e sugerir, mas não vai editar automaticamente', 'info');
+        showNotification('💬 Modo Conversa - Vou conversar e sugerir códigos', 'info');
       } else {
         elements.editModeBtn.classList.add('active');
         elements.chatModeBtn.classList.remove('active');
-        showNotification('✏️ Modo Edição Rápida - A IA vai editar seus arquivos automaticamente!', 'success');
+        showNotification('✏️ Modo Edição - Vou editar seus arquivos automaticamente!', 'success');
       }
       
       localStorage.setItem('codehub_mode', mode);
-    }
-
-    // ==================== MINIMIZAR/MAXIMIZAR ====================
-    function toggleChat() {
-      chatMinimized = !chatMinimized;
-      const icon = document.getElementById('chatToggleIcon');
-      
-      if (chatMinimized) {
-        elements.chatMessagesDiv.classList.add('minimized');
-        icon.innerHTML = '▶';
-        // Guardar altura antes de minimizar
-        if (elements.chatMessagesDiv.style.height) {
-          chatHeight = parseInt(elements.chatMessagesDiv.style.height);
-        }
-        elements.chatMessagesDiv.style.height = '0';
-        elements.chatMessagesDiv.style.minHeight = '0';
-        elements.chatMessagesDiv.style.padding = '0';
-      } else {
-        elements.chatMessagesDiv.classList.remove('minimized');
-        icon.innerHTML = '▼';
-        elements.chatMessagesDiv.style.height = chatHeight + 'px';
-        elements.chatMessagesDiv.style.minHeight = '100px';
-        elements.chatMessagesDiv.style.padding = '12px';
-      }
-      
-      localStorage.setItem('codehub_chat_minimized', chatMinimized);
-    }
-
-    function toggleActivities() {
-      activitiesMinimized = !activitiesMinimized;
-      const icon = document.getElementById('activitiesToggleIcon');
-      
-      if (activitiesMinimized) {
-        elements.activitiesContent.classList.add('minimized');
-        icon.innerHTML = '▶';
-      } else {
-        elements.activitiesContent.classList.remove('minimized');
-        icon.innerHTML = '▼';
-      }
-      
-      localStorage.setItem('codehub_activities_minimized', activitiesMinimized);
     }
 
     function showNotification(msg, type = 'info') {
@@ -850,23 +729,8 @@
       elements.publishNoBtn.addEventListener('click', cancelHandler);
     }
 
-    // ==================== STREAMING ====================
+    // ==================== FUNÇÕES DO CHAT ====================
     
-    function addFileActionMessage(fileName, action) {
-      const msgDiv = document.createElement('div');
-      msgDiv.className = `message system`;
-      msgDiv.innerHTML = `
-        <div class="file-action">
-          <span>${action === 'Criando' ? '📝' : (action === 'Editando' ? '✏️' : '🗑️')}</span>
-          <span>${action} <strong>${fileName}</strong></span>
-          <div class="spinner-small"></div>
-        </div>
-      `;
-      elements.chatMessages.appendChild(msgDiv);
-      elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
-      return msgDiv;
-    }
-
     function addChatMessage(text, type) {
       const msgDiv = document.createElement('div');
       msgDiv.className = `message ${type}`;
@@ -893,7 +757,7 @@
         elements.chatMessages.appendChild(msgDiv);
       });
       if (elements.chatMessages.children.length === 0) {
-        addChatMessage('🤖 Olá! Sou seu assistente IA.<br><br>📝 <strong>Modos:</strong><br>• 💬 Chat Normal: converso e sugiro<br>• ✏️ Edição Rápida: executo automaticamente<br><br>💡 Escolha o modo no topo!', 'system');
+        addChatMessage('🤖 Olá! Sou seu assistente IA.<br><br>📝 <strong>Modos:</strong><br>• 💬 Conversar: converso e sugiro códigos<br>• ✏️ Editar Código: executo automaticamente<br><br>💡 Escolha o modo nos botões acima!', 'system');
       }
       elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
     }
@@ -906,6 +770,7 @@
       }
     }
 
+    // ==================== ATIVIDADES ====================
     async function loadActivities() {
       if (!currentProjectId) return;
       try {
@@ -951,6 +816,35 @@
 
     // ==================== AÇÕES ====================
     
+    // Função para validar e corrigir HTML
+    function validateAndFixHTML(content) {
+      let html = content;
+      
+      // Se não tem DOCTYPE, adicionar
+      if (!html.includes('<!DOCTYPE')) {
+        html = '<!DOCTYPE html>\n' + html;
+      }
+      
+      // Se não tem html tag, adicionar
+      if (!html.includes('<html')) {
+        html = html.replace('<!DOCTYPE html>\n', '<!DOCTYPE html>\n<html>\n');
+        if (!html.includes('</html>')) html += '\n</html>';
+      }
+      
+      // Se não tem head, adicionar
+      if (!html.includes('<head>')) {
+        html = html.replace('<html>', '<html>\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>CodeHUB</title>\n</head>');
+      }
+      
+      // Se não tem body, adicionar
+      if (!html.includes('<body>')) {
+        html = html.replace('</head>', '</head>\n<body>');
+        if (!html.includes('</body>')) html = html.replace('</html>', '</body>\n</html>');
+      }
+      
+      return html;
+    }
+
     async function createFiles(filesData) {
       const created = [];
       for (const fileInfo of filesData) {
@@ -970,8 +864,11 @@
           else fileName += '.js';
         }
         
-        const actionMsg = addFileActionMessage(fileName, 'Criando');
-        if (fileName.endsWith('.html')) content = injectActivityScript(content);
+        // Validar e corrigir HTML se for arquivo HTML
+        if (fileName.endsWith('.html')) {
+          content = validateAndFixHTML(content);
+          content = injectActivityScript(content);
+        }
         
         const fileKey = btoa(fileName).replace(/=/g, '');
         files[fileKey] = {
@@ -979,7 +876,6 @@
           size: content.length, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
         };
         created.push(fileName);
-        setTimeout(() => actionMsg.remove(), 800);
       }
       await saveProject();
       if (created.length > 0) {
@@ -1001,16 +897,15 @@
       if (!targetKey && currentFile) targetKey = currentFile;
       if (!targetKey) return false;
       
-      const actionMsg = addFileActionMessage(files[targetKey].name, 'Editando');
       let finalContent = newContent;
-      if (files[targetKey].name.endsWith('.html') && !newContent.includes('atividade.js')) {
-        finalContent = injectActivityScript(newContent);
+      if (files[targetKey].name.endsWith('.html')) {
+        finalContent = validateAndFixHTML(newContent);
+        finalContent = injectActivityScript(finalContent);
       }
       
       await saveFile(targetKey, finalContent);
       await saveProject();
       if (targetKey === currentFile && editor) editor.setValue(finalContent);
-      setTimeout(() => actionMsg.remove(), 800);
       return files[targetKey].name;
     }
 
@@ -1025,7 +920,6 @@
       }
       if (!targetKey) return false;
       
-      const actionMsg = addFileActionMessage(files[targetKey].name, 'Deletando');
       const deletedName = files[targetKey].name;
       delete files[targetKey];
       delete models[targetKey];
@@ -1038,7 +932,6 @@
       
       await saveProject();
       updateTabs();
-      setTimeout(() => actionMsg.remove(), 800);
       return deletedName;
     }
 
@@ -1102,6 +995,25 @@
 
     // ==================== IA PRINCIPAL ====================
     
+    // Função para extrair JSON de forma robusta
+    function extractJSON(text) {
+      try {
+        // Tentar parse direto
+        return JSON.parse(text);
+      } catch(e) {
+        // Tentar encontrar JSON entre chaves
+        const match = text.match(/\{[\s\S]*\}/);
+        if (match) {
+          try {
+            return JSON.parse(match[0]);
+          } catch(e2) {
+            return null;
+          }
+        }
+        return null;
+      }
+    }
+
     async function sendToAI() {
       const userMessage = elements.chatInput.value.trim();
       if (!userMessage) return;
@@ -1130,25 +1042,48 @@
         
         if (currentMode === 'chat') {
           prompt = `
-            Você é um assistente de programação amigável.
+            Você é um assistente de programação amigável e prestativo.
+            
             PROJETO: ${elements.projectName.value}
             ARQUIVOS: ${existingFiles.map(f => f.name).join(', ')}
-            CONTEÚDO: ${existingFiles.map(f => `--- ${f.name} ---\n${f.content.substring(0, 500)}`).join('\n\n')}
+            
             COMANDO: "${userMessage}"
             
-            Responda normalmente como uma conversa. Se quiser sugerir código, use blocos \`\`\`.
-            Não execute ações automaticamente, apenas converse e sugira.
+            Instruções:
+            1. Responda em português de forma clara e amigável
+            2. Se for sugerir código, use blocos \`\`\`html, \`\`\`css ou \`\`\`javascript
+            3. SEMPRE que sugerir HTML, forneça um HTML completo com DOCTYPE, head e body
+            4. Faça códigos bonitos, com CSS moderno (gradientes, sombras, flexbox, grid)
+            5. Nunca deixe o HTML vazio ou incompleto
           `;
         } else {
           prompt = `
             Você é um assistente que EXECUTA ações no código.
+            
             PROJETO: ${elements.projectName.value}
-            ARQUIVOS: ${existingFiles.map(f => f.name).join(', ')}
-            CONTEÚDO: ${existingFiles.map(f => `--- ${f.name} ---\n${f.content.substring(0, 500)}`).join('\n\n')}
+            ARQUIVOS EXISTENTES: ${existingFiles.map(f => f.name).join(', ')}
+            CONTEÚDO ATUAL:
+            ${existingFiles.map(f => `--- ${f.name} ---\n${f.content.substring(0, 500)}`).join('\n\n')}
+            
             COMANDO: "${userMessage}"
             
-            Responda APENAS com um JSON:
-            {"action":"criar|editar|deletar|publicar|atualizar","files":[{"name":"arquivo","content":"codigo"}],"targetFile":"nome","newContent":"conteudo","message":"msg"}
+            Responda SOMENTE com um JSON neste formato exato:
+            {"action":"criar","files":[{"name":"index.html","content":"<!DOCTYPE html><html><head><title>Meu Site</title><style>body{font-family:Arial;}</style></head><body><h1>Olá Mundo</h1></body></html>"}],"message":"Site criado"}
+            
+            OU
+            {"action":"editar","targetFile":"index.html","newContent":"<!DOCTYPE html><html><head><title>Novo Título</title></head><body>...</body></html>","message":"Título alterado"}
+            
+            OU
+            {"action":"deletar","targetFile":"style.css","message":"Arquivo deletado"}
+            
+            OU
+            {"action":"publicar","message":"Site publicado"}
+            
+            IMPORTANTE:
+            - Códigos HTML devem ser COMPLETOS (com DOCTYPE, html, head, body)
+            - Use CSS moderno e bonito (gradientes, flexbox, grid)
+            - O conteúdo não pode ser vazio
+            - Responda APENAS o JSON, sem texto adicional
           `;
         }
         
@@ -1170,16 +1105,18 @@
         streamingMsgDiv.classList.remove('streaming');
         
         if (currentMode === 'edit') {
-          const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-          let result = null;
-          if (jsonMatch) {
-            try { result = JSON.parse(jsonMatch[0]); } catch(e) {}
-          }
+          const result = extractJSON(aiResponse);
           
           if (result && result.action) {
             switch(result.action) {
               case 'criar':
                 if (result.files && result.files.length > 0) {
+                  // Validar e corrigir HTML antes de criar
+                  for (const file of result.files) {
+                    if (file.name.endsWith('.html') && file.content) {
+                      file.content = validateAndFixHTML(file.content);
+                    }
+                  }
                   const created = await createFiles(result.files);
                   addChatMessage(`✅ ${result.message || 'Arquivos criados! ' + created.join(', ')}`, 'ai');
                   showPublishModal(() => updatePublishedSite(), () => {});
@@ -1187,6 +1124,10 @@
                 break;
               case 'editar':
                 if (result.targetFile && result.newContent) {
+                  // Validar e corrigir HTML antes de editar
+                  if (result.targetFile.endsWith('.html')) {
+                    result.newContent = validateAndFixHTML(result.newContent);
+                  }
                   const edited = await editFile(result.targetFile, result.newContent);
                   if (edited) {
                     addChatMessage(`✅ ${result.message || `Arquivo "${edited}" editado!`}`, 'ai');
@@ -1209,20 +1150,31 @@
                 break;
               case 'publicar':
                 await publishProject();
+                addChatMessage(`✅ ${result.message || 'Site publicado!'}`, 'ai');
                 break;
               case 'atualizar':
                 await updatePublishedSite();
+                addChatMessage(`✅ ${result.message || 'Site atualizado!'}`, 'ai');
                 break;
               default:
                 addChatMessage(result.message || 'Comando executado!', 'ai');
             }
+          } else if (aiResponse.includes('```')) {
+            // Se não for JSON mas tiver código, mostrar como sugestão
+            addChatMessage(aiResponse, 'ai');
+          } else {
+            addChatMessage(aiResponse, 'ai');
           }
+        } else {
+          // Modo chat - mostrar resposta normalmente
+          addChatMessage(aiResponse, 'ai');
         }
         
       } catch (error) {
         streamingMsgDiv.classList.remove('streaming');
         contentSpan.innerHTML = `❌ Erro: ${error.message}`;
         console.error(error);
+        addChatMessage(`❌ Erro: ${error.message}`, 'ai');
       }
     }
 
@@ -1267,7 +1219,42 @@
       const newProjectRef = db.ref(`projects/${currentUser.uid}`).push();
       const projectId = newProjectRef.key;
       const fileKey = btoa('index.html').replace(/=/g, '');
-      const content = injectActivityScript(`<!DOCTYPE html><html><head><title>${name}</title></head><body><h1>${name}</h1></body></html>`);
+      const defaultHTML = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${name}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        h1 { color: #667eea; margin-bottom: 20px; }
+        p { color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 ${name}</h1>
+        <p>Bem-vindo ao seu projeto!</p>
+        <p>Use o chat ao lado para criar e editar seu código.</p>
+    </div>
+</body>
+</html>`;
+      const content = injectActivityScript(defaultHTML);
       await newProjectRef.set({ name, files: { [fileKey]: { name: 'index.html', content, size: content.length, createdAt: new Date().toISOString() } }, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
       await loadProjects();
       await selectProject(projectId);
@@ -1299,7 +1286,40 @@
     async function createDefaultIndexHtml() {
       const fileName = 'index.html';
       const fileKey = btoa(fileName).replace(/=/g, '');
-      const content = injectActivityScript(`<!DOCTYPE html><html><head><title>${elements.projectName.value || 'Projeto'}</title></head><body><h1>Bem-vindo!</h1></body></html>`);
+      const defaultHTML = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${elements.projectName.value || 'Projeto'}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        h1 { color: #667eea; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Bem-vindo!</h1>
+        <p>Use o chat ao lado para criar seu site.</p>
+    </div>
+</body>
+</html>`;
+      const content = injectActivityScript(defaultHTML);
       files[fileKey] = { name: fileName, originalName: fileName, content, size: content.length, createdAt: new Date().toISOString() };
       await saveProject();
       await openFile(fileKey);
@@ -1474,24 +1494,6 @@
         elements.aiSidebar.style.width = sidebarWidth + 'px';
       }
       
-      const savedChatHeight = localStorage.getItem('codehub_chat_height');
-      if (savedChatHeight) {
-        chatHeight = parseInt(savedChatHeight);
-        if (elements.chatMessagesDiv && !chatMinimized) {
-          elements.chatMessagesDiv.style.height = chatHeight + 'px';
-        }
-      }
-      
-      const savedChatMinimized = localStorage.getItem('codehub_chat_minimized');
-      if (savedChatMinimized === 'true') {
-        toggleChat();
-      }
-      
-      const savedActivitiesMinimized = localStorage.getItem('codehub_activities_minimized');
-      if (savedActivitiesMinimized === 'true') {
-        toggleActivities();
-      }
-      
       const savedMode = localStorage.getItem('codehub_mode');
       if (savedMode === 'chat') {
         setMode('chat');
@@ -1502,9 +1504,6 @@
 
     function savePreferences() {
       localStorage.setItem('codehub_sidebar_width', sidebarWidth);
-      localStorage.setItem('codehub_chat_height', chatHeight);
-      localStorage.setItem('codehub_chat_minimized', chatMinimized);
-      localStorage.setItem('codehub_activities_minimized', activitiesMinimized);
     }
 
     function initResizing() {
@@ -1531,38 +1530,6 @@
           savePreferences();
         }
       });
-      
-      let isResizingHeight = false;
-      let startY = 0;
-      let startChatHeight = 0;
-      
-      elements.chatActivitiesResize.addEventListener('mousedown', (e) => {
-        if (chatMinimized) return;
-        isResizingHeight = true;
-        startY = e.clientY;
-        startChatHeight = elements.chatMessagesDiv.offsetHeight;
-        document.body.style.cursor = 'ns-resize';
-        e.preventDefault();
-      });
-      
-      document.addEventListener('mousemove', (e) => {
-        if (!isResizingHeight) return;
-        const delta = e.clientY - startY;
-        let newChatHeight = startChatHeight + delta;
-        const totalHeight = elements.aiSidebar.offsetHeight - 200;
-        if (newChatHeight >= 100 && newChatHeight <= totalHeight) {
-          chatHeight = newChatHeight;
-          elements.chatMessagesDiv.style.height = chatHeight + 'px';
-        }
-      });
-      
-      document.addEventListener('mouseup', () => {
-        if (isResizingHeight) {
-          isResizingHeight = false;
-          document.body.style.cursor = '';
-          savePreferences();
-        }
-      });
     }
 
     function setupEventListeners() {
@@ -1581,10 +1548,6 @@
           await loadProjects();
         }
       });
-      
-      // Eventos de minimizar
-      document.getElementById('chatHeader').addEventListener('click', toggleChat);
-      document.getElementById('activitiesHeader').addEventListener('click', toggleActivities);
     }
 
     window.selectProject = selectProject;
@@ -1593,8 +1556,6 @@
     window.closeFile = closeFile;
     window.deleteActivity = deleteActivity;
     window.setMode = setMode;
-    window.toggleChat = toggleChat;
-    window.toggleActivities = toggleActivities;
   </script>
 </body>
 </html>
