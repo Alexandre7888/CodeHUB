@@ -266,6 +266,7 @@
       border-bottom: 1px solid #333;
     }
     
+    /* Chat Messages - 50% da altura */
     .chat-messages {
       flex: 1;
       overflow-y: auto;
@@ -273,7 +274,7 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      min-height: 200px;
+      min-height: 0;
     }
     
     .message {
@@ -323,28 +324,6 @@
       font-size: 12px;
     }
     
-    .file-action {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: #1e1e1e;
-      padding: 6px 12px;
-      border-radius: 20px;
-      margin: 8px 0;
-      font-size: 12px;
-    }
-    
-    .spinner-small {
-      width: 16px;
-      height: 16px;
-      border: 2px solid #333;
-      border-top-color: #9c27b0;
-      border-radius: 50%;
-      animation: spin 0.6s linear infinite;
-      display: inline-block;
-    }
-    
-    /* Chat Input Area com modo toggle */
     .chat-controls {
       padding: 12px;
       border-top: 1px solid #333;
@@ -361,8 +340,9 @@
     .mode-toggle-btn {
       flex: 1;
       background: #333;
-      padding: 6px;
-      font-size: 12px;
+      padding: 8px;
+      font-size: 13px;
+      border-radius: 8px;
     }
     
     .mode-toggle-btn.active {
@@ -370,11 +350,11 @@
     }
     
     .mode-toggle-btn.edit-mode {
-      background: #4caf50;
+      background: #2d2d2d;
     }
     
     .mode-toggle-btn.edit-mode.active {
-      background: #2e7d32;
+      background: #4caf50;
     }
     
     .chat-input-wrapper {
@@ -400,23 +380,32 @@
       border-radius: 8px;
     }
     
+    /* Activities Panel - 50% da altura */
     .activities-panel {
       background: #1e1e1e;
       border-top: 1px solid #333;
-      padding: 10px;
-      max-height: 180px;
-      overflow-y: auto;
-      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      flex: 1;
     }
     
     .activities-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #333;
-      font-size: 11px;
+      padding: 10px;
+      background: #2d2d2d;
+      font-size: 12px;
       color: #4cc9f0;
+      border-bottom: 1px solid #333;
+    }
+    
+    .activities-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      font-size: 11px;
     }
     
     .activity-item {
@@ -574,25 +563,29 @@
           <h3>🤖 Assistente IA</h3>
         </div>
         
+        <!-- Chat Messages - 50% da altura -->
         <div class="chat-messages" id="chatMessages"></div>
         
         <div class="chat-controls">
           <div class="mode-toggle">
-            <button class="mode-toggle-btn" id="chatModeBtn" onclick="setMode('chat')">💬 Conversar</button>
-            <button class="mode-toggle-btn edit-mode active" id="editModeBtn" onclick="setMode('edit')">✏️ Editar Código</button>
+            <button class="mode-toggle-btn" id="chatModeBtn" onclick="setMode('chat')">💬 Conversar (Só Visualizar)</button>
+            <button class="mode-toggle-btn edit-mode active" id="editModeBtn" onclick="setMode('edit')">✏️ Editar (Criar/Editar/Deletar)</button>
           </div>
           <div class="chat-input-wrapper">
-            <textarea id="chatInput" placeholder="Digite seu comando... Ex: 'Crie um site bonito com HTML, CSS e JS'" rows="2"></textarea>
+            <textarea id="chatInput" placeholder="Digite seu comando..." rows="2"></textarea>
             <button id="sendChatBtn">Enviar</button>
           </div>
         </div>
         
-        <div class="activities-panel" id="activitiesPanel">
+        <!-- Activities Panel - 50% da altura -->
+        <div class="activities-panel">
           <div class="activities-header">
             <span>📊 Atividades do Usuário</span>
           </div>
-          <div id="activitiesList">
-            <div class="no-activities">🔍 Carregando atividades...</div>
+          <div class="activities-content" id="activitiesContent">
+            <div id="activitiesList">
+              <div class="no-activities">🔍 Carregando atividades...</div>
+            </div>
           </div>
         </div>
       </div>
@@ -683,11 +676,11 @@
       if (mode === 'chat') {
         elements.chatModeBtn.classList.add('active');
         elements.editModeBtn.classList.remove('active');
-        showNotification('💬 Modo Conversa - Vou conversar e sugerir códigos', 'info');
+        showNotification('💬 Modo Conversar - Posso ANALISAR e VISUALIZAR seu código, mas NÃO posso editar!', 'info');
       } else {
         elements.editModeBtn.classList.add('active');
         elements.chatModeBtn.classList.remove('active');
-        showNotification('✏️ Modo Edição - Vou editar seus arquivos automaticamente!', 'success');
+        showNotification('✏️ Modo Editar - Posso CRIAR, EDITAR, DELETAR e PUBLICAR seus arquivos!', 'success');
       }
       
       localStorage.setItem('codehub_mode', mode);
@@ -757,7 +750,7 @@
         elements.chatMessages.appendChild(msgDiv);
       });
       if (elements.chatMessages.children.length === 0) {
-        addChatMessage('🤖 Olá! Sou seu assistente IA.<br><br>📝 <strong>Modos:</strong><br>• 💬 Conversar: converso e sugiro códigos<br>• ✏️ Editar Código: executo automaticamente<br><br>💡 Escolha o modo nos botões acima!', 'system');
+        addChatMessage('🤖 Olá! Sou seu assistente IA.<br><br>📝 <strong>Modos:</strong><br>• 💬 Conversar: analiso e visualizo seu código (sem editar)<br>• ✏️ Editar: posso criar, editar, deletar e publicar<br><br>💡 Escolha o modo nos botões acima!', 'system');
       }
       elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
     }
@@ -814,38 +807,25 @@
       return htmlContent + script;
     }
 
-    // ==================== AÇÕES ====================
+    // ==================== AÇÕES (APENAS NO MODO EDITAR) ====================
     
-    // Função para validar e corrigir HTML
     function validateAndFixHTML(content) {
       let html = content;
-      
-      // Se não tem DOCTYPE, adicionar
-      if (!html.includes('<!DOCTYPE')) {
-        html = '<!DOCTYPE html>\n' + html;
-      }
-      
-      // Se não tem html tag, adicionar
-      if (!html.includes('<html')) {
-        html = html.replace('<!DOCTYPE html>\n', '<!DOCTYPE html>\n<html>\n');
-        if (!html.includes('</html>')) html += '\n</html>';
-      }
-      
-      // Se não tem head, adicionar
-      if (!html.includes('<head>')) {
-        html = html.replace('<html>', '<html>\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>CodeHUB</title>\n</head>');
-      }
-      
-      // Se não tem body, adicionar
-      if (!html.includes('<body>')) {
-        html = html.replace('</head>', '</head>\n<body>');
-        if (!html.includes('</body>')) html = html.replace('</html>', '</body>\n</html>');
-      }
-      
+      if (!html.includes('<!DOCTYPE')) html = '<!DOCTYPE html>\n' + html;
+      if (!html.includes('<html')) html = html.replace('<!DOCTYPE html>\n', '<!DOCTYPE html>\n<html>\n');
+      if (!html.includes('</html>')) html += '\n</html>';
+      if (!html.includes('<head>')) html = html.replace('<html>', '<html>\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>CodeHUB</title>\n</head>');
+      if (!html.includes('<body>')) html = html.replace('</head>', '</head>\n<body>');
+      if (!html.includes('</body>')) html = html.replace('</html>', '</body>\n</html>');
       return html;
     }
 
     async function createFiles(filesData) {
+      if (currentMode === 'chat') {
+        addChatMessage('⚠️ Modo Conversar ativado. Para criar arquivos, mude para o modo "✏️ Editar".', 'system');
+        return [];
+      }
+      
       const created = [];
       for (const fileInfo of filesData) {
         let fileName = fileInfo.name;
@@ -864,7 +844,6 @@
           else fileName += '.js';
         }
         
-        // Validar e corrigir HTML se for arquivo HTML
         if (fileName.endsWith('.html')) {
           content = validateAndFixHTML(content);
           content = injectActivityScript(content);
@@ -886,6 +865,11 @@
     }
 
     async function editFile(fileName, newContent) {
+      if (currentMode === 'chat') {
+        addChatMessage('⚠️ Modo Conversar ativado. Para editar arquivos, mude para o modo "✏️ Editar".', 'system');
+        return false;
+      }
+      
       let targetKey = null;
       for (const key in files) {
         if (files[key].name.toLowerCase() === fileName.toLowerCase() ||
@@ -910,6 +894,11 @@
     }
 
     async function deleteFile(fileName) {
+      if (currentMode === 'chat') {
+        addChatMessage('⚠️ Modo Conversar ativado. Para deletar arquivos, mude para o modo "✏️ Editar".', 'system');
+        return false;
+      }
+      
       let targetKey = null;
       for (const key in files) {
         if (files[key].name.toLowerCase() === fileName.toLowerCase() ||
@@ -936,6 +925,11 @@
     }
 
     async function publishProject() {
+      if (currentMode === 'chat') {
+        addChatMessage('⚠️ Modo Conversar ativado. Para publicar, mude para o modo "✏️ Editar".', 'system');
+        return false;
+      }
+      
       const auth = await ensurePuterAuth();
       if (!auth) return false;
       
@@ -979,6 +973,11 @@
     }
 
     async function updatePublishedSite() {
+      if (currentMode === 'chat') {
+        addChatMessage('⚠️ Modo Conversar ativado. Para atualizar o site, mude para o modo "✏️ Editar".', 'system');
+        return false;
+      }
+      
       if (!currentHostingSubdomain) return await publishProject();
       addChatMessage('🔄 Atualizando site publicado...', 'system');
       try {
@@ -995,13 +994,10 @@
 
     // ==================== IA PRINCIPAL ====================
     
-    // Função para extrair JSON de forma robusta
     function extractJSON(text) {
       try {
-        // Tentar parse direto
         return JSON.parse(text);
       } catch(e) {
-        // Tentar encontrar JSON entre chaves
         const match = text.match(/\{[\s\S]*\}/);
         if (match) {
           try {
@@ -1042,19 +1038,19 @@
         
         if (currentMode === 'chat') {
           prompt = `
-            Você é um assistente de programação amigável e prestativo.
+            Você é um assistente de programação amigável que só ANALISA e VISUALIZA código.
             
             PROJETO: ${elements.projectName.value}
             ARQUIVOS: ${existingFiles.map(f => f.name).join(', ')}
+            CONTEÚDO DOS ARQUIVOS:
+            ${existingFiles.map(f => `--- ${f.name} ---\n${f.content.substring(0, 800)}`).join('\n\n')}
             
             COMANDO: "${userMessage}"
             
-            Instruções:
-            1. Responda em português de forma clara e amigável
-            2. Se for sugerir código, use blocos \`\`\`html, \`\`\`css ou \`\`\`javascript
-            3. SEMPRE que sugerir HTML, forneça um HTML completo com DOCTYPE, head e body
-            4. Faça códigos bonitos, com CSS moderno (gradientes, sombras, flexbox, grid)
-            5. Nunca deixe o HTML vazio ou incompleto
+            IMPORTANTE: Você está no modo CONVERSAR. Você NÃO pode criar, editar ou deletar arquivos.
+            Apenas ANALISE e VISUALIZE o código existente.
+            Responda em português de forma clara, explicando o que vê no código.
+            Se quiser sugerir melhorias, diga o que poderia ser feito, mas NÃO execute ações.
           `;
         } else {
           prompt = `
@@ -1067,23 +1063,14 @@
             
             COMANDO: "${userMessage}"
             
-            Responda SOMENTE com um JSON neste formato exato:
-            {"action":"criar","files":[{"name":"index.html","content":"<!DOCTYPE html><html><head><title>Meu Site</title><style>body{font-family:Arial;}</style></head><body><h1>Olá Mundo</h1></body></html>"}],"message":"Site criado"}
+            Responda SOMENTE com um JSON neste formato:
+            {"action":"criar","files":[{"name":"index.html","content":"<!DOCTYPE html>..."}],"message":"Site criado"}
+            OU {"action":"editar","targetFile":"index.html","newContent":"...","message":"Editado"}
+            OU {"action":"deletar","targetFile":"style.css","message":"Deletado"}
+            OU {"action":"publicar","message":"Publicado"}
+            OU {"action":"atualizar","message":"Atualizado"}
             
-            OU
-            {"action":"editar","targetFile":"index.html","newContent":"<!DOCTYPE html><html><head><title>Novo Título</title></head><body>...</body></html>","message":"Título alterado"}
-            
-            OU
-            {"action":"deletar","targetFile":"style.css","message":"Arquivo deletado"}
-            
-            OU
-            {"action":"publicar","message":"Site publicado"}
-            
-            IMPORTANTE:
-            - Códigos HTML devem ser COMPLETOS (com DOCTYPE, html, head, body)
-            - Use CSS moderno e bonito (gradientes, flexbox, grid)
-            - O conteúdo não pode ser vazio
-            - Responda APENAS o JSON, sem texto adicional
+            IMPORTANTE: Códigos HTML devem ser COMPLETOS e bonitos.
           `;
         }
         
@@ -1111,7 +1098,6 @@
             switch(result.action) {
               case 'criar':
                 if (result.files && result.files.length > 0) {
-                  // Validar e corrigir HTML antes de criar
                   for (const file of result.files) {
                     if (file.name.endsWith('.html') && file.content) {
                       file.content = validateAndFixHTML(file.content);
@@ -1124,7 +1110,6 @@
                 break;
               case 'editar':
                 if (result.targetFile && result.newContent) {
-                  // Validar e corrigir HTML antes de editar
                   if (result.targetFile.endsWith('.html')) {
                     result.newContent = validateAndFixHTML(result.newContent);
                   }
@@ -1160,13 +1145,12 @@
                 addChatMessage(result.message || 'Comando executado!', 'ai');
             }
           } else if (aiResponse.includes('```')) {
-            // Se não for JSON mas tiver código, mostrar como sugestão
             addChatMessage(aiResponse, 'ai');
           } else {
             addChatMessage(aiResponse, 'ai');
           }
         } else {
-          // Modo chat - mostrar resposta normalmente
+          // Modo chat - mostrar resposta normalmente (só análise)
           addChatMessage(aiResponse, 'ai');
         }
         
@@ -1250,7 +1234,6 @@
     <div class="container">
         <h1>🚀 ${name}</h1>
         <p>Bem-vindo ao seu projeto!</p>
-        <p>Use o chat ao lado para criar e editar seu código.</p>
     </div>
 </body>
 </html>`;
@@ -1315,7 +1298,6 @@
 <body>
     <div class="container">
         <h1>🚀 Bem-vindo!</h1>
-        <p>Use o chat ao lado para criar seu site.</p>
     </div>
 </body>
 </html>`;
