@@ -266,7 +266,6 @@
       border-bottom: 1px solid #333;
     }
     
-    /* Chat Messages - 50% da altura */
     .chat-messages {
       flex: 1;
       overflow-y: auto;
@@ -349,10 +348,6 @@
       background: #9c27b0;
     }
     
-    .mode-toggle-btn.edit-mode {
-      background: #2d2d2d;
-    }
-    
     .mode-toggle-btn.edit-mode.active {
       background: #4caf50;
     }
@@ -380,7 +375,6 @@
       border-radius: 8px;
     }
     
-    /* Activities Panel - 50% da altura */
     .activities-panel {
       background: #1e1e1e;
       border-top: 1px solid #333;
@@ -563,21 +557,19 @@
           <h3>🤖 Assistente IA</h3>
         </div>
         
-        <!-- Chat Messages - 50% da altura -->
         <div class="chat-messages" id="chatMessages"></div>
         
         <div class="chat-controls">
           <div class="mode-toggle">
-            <button class="mode-toggle-btn" id="chatModeBtn" onclick="setMode('chat')">💬 Conversar (Só Visualizar)</button>
-            <button class="mode-toggle-btn edit-mode active" id="editModeBtn" onclick="setMode('edit')">✏️ Editar (Criar/Editar/Deletar)</button>
+            <button class="mode-toggle-btn" id="chatModeBtn" onclick="setMode('chat')">💬 Conversar</button>
+            <button class="mode-toggle-btn edit-mode active" id="editModeBtn" onclick="setMode('edit')">✏️ Editar</button>
           </div>
           <div class="chat-input-wrapper">
-            <textarea id="chatInput" placeholder="Digite seu comando..." rows="2"></textarea>
+            <textarea id="chatInput" placeholder="Digite seu comando... Ex: 'Crie um site bonito com HTML, CSS e JS'" rows="2"></textarea>
             <button id="sendChatBtn">Enviar</button>
           </div>
         </div>
         
-        <!-- Activities Panel - 50% da altura -->
         <div class="activities-panel">
           <div class="activities-header">
             <span>📊 Atividades do Usuário</span>
@@ -629,7 +621,7 @@
     let currentHostingSubdomain = null;
     let currentHostingDirectory = null;
     let allProjects = [];
-    let currentMode = 'edit'; // 'edit' ou 'chat'
+    let currentMode = 'edit';
 
     const ACTIVITIES_DB_URL = "https://html-785e3-default-rtdb.firebaseio.com/activities";
     const ACTIVITY_SCRIPT_URL = "https://code.codehub.ct.ws/atividade.js";
@@ -669,20 +661,17 @@
       editModeBtn: document.getElementById('editModeBtn')
     };
 
-    // ==================== MODO ====================
     function setMode(mode) {
       currentMode = mode;
-      
       if (mode === 'chat') {
         elements.chatModeBtn.classList.add('active');
         elements.editModeBtn.classList.remove('active');
-        showNotification('💬 Modo Conversar - Posso ANALISAR e VISUALIZAR seu código, mas NÃO posso editar!', 'info');
+        showNotification('💬 Modo Conversar - Posso ANALISAR seu código, mas NÃO edito!', 'info');
       } else {
         elements.editModeBtn.classList.add('active');
         elements.chatModeBtn.classList.remove('active');
-        showNotification('✏️ Modo Editar - Posso CRIAR, EDITAR, DELETAR e PUBLICAR seus arquivos!', 'success');
+        showNotification('✏️ Modo Editar - Posso CRIAR, EDITAR, DELETAR e PUBLICAR!', 'success');
       }
-      
       localStorage.setItem('codehub_mode', mode);
     }
 
@@ -722,8 +711,6 @@
       elements.publishNoBtn.addEventListener('click', cancelHandler);
     }
 
-    // ==================== FUNÇÕES DO CHAT ====================
-    
     function addChatMessage(text, type) {
       const msgDiv = document.createElement('div');
       msgDiv.className = `message ${type}`;
@@ -732,15 +719,13 @@
       elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
       
       if (currentProjectId && currentUser) {
-        const chatRef = db.ref(`chats/${currentUser.uid}/${currentProjectId}`).push();
-        chatRef.set({ text: text, type: type, timestamp: Date.now() });
+        db.ref(`chats/${currentUser.uid}/${currentProjectId}`).push({ text, type, timestamp: Date.now() });
       }
     }
 
     async function loadChatHistory() {
       if (!currentProjectId || !currentUser) return;
-      const chatsRef = db.ref(`chats/${currentUser.uid}/${currentProjectId}`);
-      const snapshot = await chatsRef.orderByChild('timestamp').once('value');
+      const snapshot = await db.ref(`chats/${currentUser.uid}/${currentProjectId}`).orderByChild('timestamp').once('value');
       elements.chatMessages.innerHTML = '';
       snapshot.forEach(child => {
         const msg = child.val();
@@ -750,46 +735,33 @@
         elements.chatMessages.appendChild(msgDiv);
       });
       if (elements.chatMessages.children.length === 0) {
-        addChatMessage('🤖 Olá! Sou seu assistente IA.<br><br>📝 <strong>Modos:</strong><br>• 💬 Conversar: analiso e visualizo seu código (sem editar)<br>• ✏️ Editar: posso criar, editar, deletar e publicar<br><br>💡 Escolha o modo nos botões acima!', 'system');
-      }
-      elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
-    }
-
-    function clearChat() {
-      if (confirm('Limpar todo o histórico do chat?')) {
-        db.ref(`chats/${currentUser.uid}/${currentProjectId}`).remove();
-        elements.chatMessages.innerHTML = '';
-        addChatMessage('🤖 Chat limpo! Digite um novo comando.', 'system');
+        addChatMessage('🤖 Olá! Sou seu assistente IA.<br><br>📝 <strong>Modos:</strong><br>• 💬 Conversar: analiso seu código<br>• ✏️ Editar: crio, edito, deleto e publico<br><br>💡 Escolha o modo nos botões acima!', 'system');
       }
     }
 
-    // ==================== ATIVIDADES ====================
     async function loadActivities() {
       if (!currentProjectId) return;
       try {
         const res = await fetch(`${ACTIVITIES_DB_URL}/${currentProjectId}.json`);
         const data = await res.json();
-        
         if (!data) {
-          elements.activitiesList.innerHTML = '<div class="no-activities">📭 Nenhuma atividade registrada ainda</div>';
+          elements.activitiesList.innerHTML = '<div class="no-activities">📭 Nenhuma atividade registrada</div>';
           return;
         }
-        
         const now = Date.now();
         const elapsed = data.time || Math.floor((now - (data.start || now)) / 1000);
         const isOnline = (now - (data.lastSeen || 0)) < 10000;
-        
         elements.activitiesList.innerHTML = `
           <div class="activity-item">
             <div><span class="${isOnline ? 'activity-online' : 'activity-offline'}">${isOnline ? '🟢 ONLINE' : '⚫ OFFLINE'}</span></div>
             <div>📅 Primeira visita: ${new Date(data.start || now).toLocaleString()}</div>
-            <div>⏱ Tempo no site: ${Math.floor(elapsed/60)}min ${elapsed%60}s</div>
-            <div>🔄 Total de visitas: ${data.visits || 1}</div>
-            <button class="activity-delete-btn" onclick="deleteActivity('${currentProjectId}')">🗑 Limpar atividades</button>
+            <div>⏱ Tempo: ${Math.floor(elapsed/60)}min ${elapsed%60}s</div>
+            <div>🔄 Visitas: ${data.visits || 1}</div>
+            <button class="activity-delete-btn" onclick="deleteActivity('${currentProjectId}')">🗑 Limpar</button>
           </div>
         `;
         if (isOnline) setTimeout(loadActivities, 5000);
-      } catch (error) { console.error(error); }
+      } catch(e) { console.error(e); }
     }
 
     async function deleteActivity(projectId) {
@@ -807,8 +779,6 @@
       return htmlContent + script;
     }
 
-    // ==================== AÇÕES (APENAS NO MODO EDITAR) ====================
-    
     function validateAndFixHTML(content) {
       let html = content;
       if (!html.includes('<!DOCTYPE')) html = '<!DOCTYPE html>\n' + html;
@@ -822,33 +792,28 @@
 
     async function createFiles(filesData) {
       if (currentMode === 'chat') {
-        addChatMessage('⚠️ Modo Conversar ativado. Para criar arquivos, mude para o modo "✏️ Editar".', 'system');
+        addChatMessage('⚠️ Modo Conversar - Para criar, mude para "✏️ Editar"', 'system');
         return [];
       }
-      
       const created = [];
       for (const fileInfo of filesData) {
         let fileName = fileInfo.name;
         let content = fileInfo.content;
-        
         if (!fileName || fileName === 'unknown') {
           if (content.includes('<!DOCTYPE') || content.includes('<html')) fileName = 'index.html';
           else if (content.includes('{') && content.includes('}')) fileName = 'style.css';
           else if (content.includes('function') || content.includes('const')) fileName = 'script.js';
           else fileName = 'arquivo.txt';
         }
-        
         if (!fileName.includes('.')) {
           if (content.includes('<!DOCTYPE') || content.includes('<html')) fileName += '.html';
           else if (content.includes('{') && content.includes('}')) fileName += '.css';
           else fileName += '.js';
         }
-        
         if (fileName.endsWith('.html')) {
           content = validateAndFixHTML(content);
           content = injectActivityScript(content);
         }
-        
         const fileKey = btoa(fileName).replace(/=/g, '');
         files[fileKey] = {
           name: fileName, originalName: fileName, content: content,
@@ -866,10 +831,9 @@
 
     async function editFile(fileName, newContent) {
       if (currentMode === 'chat') {
-        addChatMessage('⚠️ Modo Conversar ativado. Para editar arquivos, mude para o modo "✏️ Editar".', 'system');
+        addChatMessage('⚠️ Modo Conversar - Para editar, mude para "✏️ Editar"', 'system');
         return false;
       }
-      
       let targetKey = null;
       for (const key in files) {
         if (files[key].name.toLowerCase() === fileName.toLowerCase() ||
@@ -880,13 +844,11 @@
       }
       if (!targetKey && currentFile) targetKey = currentFile;
       if (!targetKey) return false;
-      
       let finalContent = newContent;
       if (files[targetKey].name.endsWith('.html')) {
         finalContent = validateAndFixHTML(newContent);
         finalContent = injectActivityScript(finalContent);
       }
-      
       await saveFile(targetKey, finalContent);
       await saveProject();
       if (targetKey === currentFile && editor) editor.setValue(finalContent);
@@ -895,10 +857,9 @@
 
     async function deleteFile(fileName) {
       if (currentMode === 'chat') {
-        addChatMessage('⚠️ Modo Conversar ativado. Para deletar arquivos, mude para o modo "✏️ Editar".', 'system');
+        addChatMessage('⚠️ Modo Conversar - Para deletar, mude para "✏️ Editar"', 'system');
         return false;
       }
-      
       let targetKey = null;
       for (const key in files) {
         if (files[key].name.toLowerCase() === fileName.toLowerCase() ||
@@ -908,17 +869,14 @@
         }
       }
       if (!targetKey) return false;
-      
       const deletedName = files[targetKey].name;
       delete files[targetKey];
       delete models[targetKey];
-      
       if (targetKey === currentFile) {
         const remaining = Object.keys(files);
         if (remaining.length > 0) await openFile(remaining[0]);
         else editor.setModel(null);
       }
-      
       await saveProject();
       updateTabs();
       return deletedName;
@@ -926,20 +884,17 @@
 
     async function publishProject() {
       if (currentMode === 'chat') {
-        addChatMessage('⚠️ Modo Conversar ativado. Para publicar, mude para o modo "✏️ Editar".', 'system');
+        addChatMessage('⚠️ Modo Conversar - Para publicar, mude para "✏️ Editar"', 'system');
         return false;
       }
-      
       const auth = await ensurePuterAuth();
       if (!auth) return false;
-      
       const hasIndex = Object.values(files).some(f => f.name === 'index.html');
       if (!hasIndex) {
         addChatMessage('❌ Falta o arquivo index.html', 'system');
         return false;
       }
-      
-      addChatMessage('🚀 Publicando no Puter...', 'system');
+      addChatMessage('🚀 Publicando...', 'system');
       try {
         const dirName = `codehub_${currentUser.uid}_${Date.now()}`;
         await puter.fs.mkdir(dirName);
@@ -948,7 +903,6 @@
           if (file.name.endsWith('.html') && !content.includes('atividade.js')) content = injectActivityScript(content);
           await puter.fs.write(`${dirName}/${file.name}`, content);
         }
-        
         let subdomain = currentHostingSubdomain;
         if (!subdomain) {
           subdomain = `codehub-${Math.random().toString(36).substring(2, 10)}`;
@@ -957,16 +911,13 @@
         } else {
           await puter.hosting.update(subdomain, dirName);
         }
-        
         const url = `https://${subdomain}.puter.site`;
         currentHostingUrl = url;
         currentHostingSubdomain = subdomain;
         currentHostingDirectory = dirName;
         await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({ url, subdomain, directory: dirName });
-        
         elements.fileUrlTop.value = url;
         elements.urlPanelTop.style.display = 'flex';
-        
         addChatMessage(`✅ Site publicado! 🔗 ${url}`, 'ai');
         return url;
       } catch(e) { addChatMessage(`❌ Erro: ${e.message}`, 'system'); throw e; }
@@ -974,12 +925,11 @@
 
     async function updatePublishedSite() {
       if (currentMode === 'chat') {
-        addChatMessage('⚠️ Modo Conversar ativado. Para atualizar o site, mude para o modo "✏️ Editar".', 'system');
+        addChatMessage('⚠️ Modo Conversar - Para atualizar, mude para "✏️ Editar"', 'system');
         return false;
       }
-      
       if (!currentHostingSubdomain) return await publishProject();
-      addChatMessage('🔄 Atualizando site publicado...', 'system');
+      addChatMessage('🔄 Atualizando...', 'system');
       try {
         for (const file of Object.values(files)) {
           let content = file.content || '';
@@ -992,24 +942,8 @@
       } catch(e) { addChatMessage(`❌ Erro: ${e.message}`, 'system'); throw e; }
     }
 
-    // ==================== IA PRINCIPAL ====================
+    // ==================== STREAMING REAL COM SSE ====================
     
-    function extractJSON(text) {
-      try {
-        return JSON.parse(text);
-      } catch(e) {
-        const match = text.match(/\{[\s\S]*\}/);
-        if (match) {
-          try {
-            return JSON.parse(match[0]);
-          } catch(e2) {
-            return null;
-          }
-        }
-        return null;
-      }
-    }
-
     async function sendToAI() {
       const userMessage = elements.chatInput.value.trim();
       if (!userMessage) return;
@@ -1017,6 +951,7 @@
       addChatMessage(userMessage, 'user');
       elements.chatInput.value = '';
       
+      // Criar elemento para streaming
       const streamingMsgDiv = document.createElement('div');
       streamingMsgDiv.className = 'message ai streaming';
       const contentSpan = document.createElement('span');
@@ -1024,7 +959,7 @@
       elements.chatMessages.appendChild(streamingMsgDiv);
       elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
       
-      let accumulatedText = '';
+      let fullResponse = '';
       
       try {
         await ensurePuterAuth();
@@ -1035,130 +970,120 @@
         }
         
         let prompt = '';
-        
         if (currentMode === 'chat') {
-          prompt = `
-            Você é um assistente de programação amigável que só ANALISA e VISUALIZA código.
-            
+          prompt = `Você é um assistente de programação amigável que só ANALISA código.
             PROJETO: ${elements.projectName.value}
             ARQUIVOS: ${existingFiles.map(f => f.name).join(', ')}
-            CONTEÚDO DOS ARQUIVOS:
-            ${existingFiles.map(f => `--- ${f.name} ---\n${f.content.substring(0, 800)}`).join('\n\n')}
-            
+            CONTEÚDO: ${existingFiles.map(f => `--- ${f.name} ---\n${f.content.substring(0, 800)}`).join('\n\n')}
             COMANDO: "${userMessage}"
             
-            IMPORTANTE: Você está no modo CONVERSAR. Você NÃO pode criar, editar ou deletar arquivos.
-            Apenas ANALISE e VISUALIZE o código existente.
-            Responda em português de forma clara, explicando o que vê no código.
-            Se quiser sugerir melhorias, diga o que poderia ser feito, mas NÃO execute ações.
-          `;
+            IMPORTANTE: Modo CONVERSAR - NÃO pode criar, editar ou deletar. Apenas ANALISE o código.
+            Responda em português de forma clara. Se sugerir código, use blocos \`\`\``;
         } else {
-          prompt = `
-            Você é um assistente que EXECUTA ações no código.
-            
+          prompt = `Você é um assistente que EXECUTA ações no código.
             PROJETO: ${elements.projectName.value}
-            ARQUIVOS EXISTENTES: ${existingFiles.map(f => f.name).join(', ')}
-            CONTEÚDO ATUAL:
-            ${existingFiles.map(f => `--- ${f.name} ---\n${f.content.substring(0, 500)}`).join('\n\n')}
-            
+            ARQUIVOS: ${existingFiles.map(f => f.name).join(', ')}
+            CONTEÚDO: ${existingFiles.map(f => `--- ${f.name} ---\n${f.content.substring(0, 500)}`).join('\n\n')}
             COMANDO: "${userMessage}"
             
-            Responda SOMENTE com um JSON neste formato:
-            {"action":"criar","files":[{"name":"index.html","content":"<!DOCTYPE html>..."}],"message":"Site criado"}
-            OU {"action":"editar","targetFile":"index.html","newContent":"...","message":"Editado"}
-            OU {"action":"deletar","targetFile":"style.css","message":"Deletado"}
-            OU {"action":"publicar","message":"Publicado"}
-            OU {"action":"atualizar","message":"Atualizado"}
-            
-            IMPORTANTE: Códigos HTML devem ser COMPLETOS e bonitos.
-          `;
+            Responda SOMENTE com um JSON:
+            {"action":"criar","files":[{"name":"index.html","content":"<!DOCTYPE html>..."}],"message":"msg"}
+            OU {"action":"editar","targetFile":"index.html","newContent":"...","message":"msg"}
+            OU {"action":"deletar","targetFile":"style.css","message":"msg"}
+            OU {"action":"publicar","message":"msg"}
+            OU {"action":"atualizar","message":"msg"}`;
         }
         
-        const response = await puter.ai.chat(prompt);
+        // Usar fetch com streaming real
+        const response = await fetch('https://api.puter.com/v1/ai/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('puter_token')}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [{ role: 'user', content: prompt }],
+            stream: true
+          })
+        });
         
-        let aiResponse = '';
-        if (typeof response === 'string') aiResponse = response;
-        else if (response.message?.content) aiResponse = response.message.content;
-        else aiResponse = JSON.stringify(response);
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
         
-        // Streaming letra por letra
-        for (let i = 0; i < aiResponse.length; i++) {
-          accumulatedText += aiResponse[i];
-          contentSpan.innerHTML = accumulatedText.replace(/\n/g, '<br>');
-          elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
-          await new Promise(r => setTimeout(r, 8 + Math.random() * 10));
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+              try {
+                const parsed = JSON.parse(data);
+                const chunk = parsed.choices?.[0]?.delta?.content || '';
+                if (chunk) {
+                  fullResponse += chunk;
+                  contentSpan.innerHTML = fullResponse.replace(/\n/g, '<br>');
+                  elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+                }
+              } catch(e) {}
+            }
+          }
         }
         
         streamingMsgDiv.classList.remove('streaming');
         
         if (currentMode === 'edit') {
-          const result = extractJSON(aiResponse);
-          
-          if (result && result.action) {
-            switch(result.action) {
-              case 'criar':
-                if (result.files && result.files.length > 0) {
-                  for (const file of result.files) {
-                    if (file.name.endsWith('.html') && file.content) {
-                      file.content = validateAndFixHTML(file.content);
+          try {
+            const jsonMatch = fullResponse.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              const result = JSON.parse(jsonMatch[0]);
+              if (result.action) {
+                switch(result.action) {
+                  case 'criar':
+                    if (result.files) {
+                      const created = await createFiles(result.files);
+                      addChatMessage(`✅ ${result.message || 'Arquivos criados: ' + created.join(', ')}`, 'ai');
+                      showPublishModal(() => updatePublishedSite(), () => {});
                     }
-                  }
-                  const created = await createFiles(result.files);
-                  addChatMessage(`✅ ${result.message || 'Arquivos criados! ' + created.join(', ')}`, 'ai');
-                  showPublishModal(() => updatePublishedSite(), () => {});
+                    break;
+                  case 'editar':
+                    if (result.targetFile && result.newContent) {
+                      const edited = await editFile(result.targetFile, result.newContent);
+                      if (edited) {
+                        addChatMessage(`✅ ${result.message || 'Arquivo editado!'}`, 'ai');
+                        showPublishModal(() => updatePublishedSite(), () => {});
+                      }
+                    }
+                    break;
+                  case 'deletar':
+                    if (result.targetFile) {
+                      const deleted = await deleteFile(result.targetFile);
+                      if (deleted) addChatMessage(`✅ ${result.message || 'Arquivo deletado!'}`, 'ai');
+                    }
+                    break;
+                  case 'publicar':
+                    await publishProject();
+                    break;
+                  case 'atualizar':
+                    await updatePublishedSite();
+                    break;
                 }
-                break;
-              case 'editar':
-                if (result.targetFile && result.newContent) {
-                  if (result.targetFile.endsWith('.html')) {
-                    result.newContent = validateAndFixHTML(result.newContent);
-                  }
-                  const edited = await editFile(result.targetFile, result.newContent);
-                  if (edited) {
-                    addChatMessage(`✅ ${result.message || `Arquivo "${edited}" editado!`}`, 'ai');
-                    showPublishModal(() => updatePublishedSite(), () => {});
-                  } else {
-                    addChatMessage(`❌ Arquivo "${result.targetFile}" não encontrado`, 'ai');
-                  }
-                }
-                break;
-              case 'deletar':
-                if (result.targetFile) {
-                  const deleted = await deleteFile(result.targetFile);
-                  if (deleted) {
-                    addChatMessage(`✅ ${result.message || `Arquivo "${deleted}" deletado!`}`, 'ai');
-                    showPublishModal(() => updatePublishedSite(), () => {});
-                  } else {
-                    addChatMessage(`❌ Arquivo "${result.targetFile}" não encontrado`, 'ai');
-                  }
-                }
-                break;
-              case 'publicar':
-                await publishProject();
-                addChatMessage(`✅ ${result.message || 'Site publicado!'}`, 'ai');
-                break;
-              case 'atualizar':
-                await updatePublishedSite();
-                addChatMessage(`✅ ${result.message || 'Site atualizado!'}`, 'ai');
-                break;
-              default:
-                addChatMessage(result.message || 'Comando executado!', 'ai');
+              }
             }
-          } else if (aiResponse.includes('```')) {
-            addChatMessage(aiResponse, 'ai');
-          } else {
-            addChatMessage(aiResponse, 'ai');
-          }
-        } else {
-          // Modo chat - mostrar resposta normalmente (só análise)
-          addChatMessage(aiResponse, 'ai');
+          } catch(e) {}
         }
         
       } catch (error) {
         streamingMsgDiv.classList.remove('streaming');
         contentSpan.innerHTML = `❌ Erro: ${error.message}`;
         console.error(error);
-        addChatMessage(`❌ Erro: ${error.message}`, 'ai');
       }
     }
 
@@ -1317,9 +1242,6 @@
       return div.innerHTML;
     }
 
-    // ==================== EDITOR ====================
-    function getContentSize(content) { return new Blob([content]).size; }
-
     async function saveFile(fileKey, content) {
       const fileData = files[fileKey];
       const size = getContentSize(content);
@@ -1330,6 +1252,8 @@
       updateStorageDisplay();
       return true;
     }
+
+    function getContentSize(content) { return new Blob([content]).size; }
 
     function updateStorageDisplay() {
       const usedMB = (userStorage.used / (1024 * 1024)).toFixed(2);
@@ -1446,7 +1370,6 @@
       updateTabs();
     }
 
-    // ==================== PUTER ====================
     async function initPuter() {
       try { const user = await puter.auth.getUser(); updatePuterStatus(!!user); } catch(e) { updatePuterStatus(false); }
     }
@@ -1468,20 +1391,15 @@
       } else { showNotification('Crie um index.html primeiro', 'warning'); }
     }
 
-    // ==================== PREFERÊNCIAS ====================
     function loadPreferences() {
       const savedSidebarWidth = localStorage.getItem('codehub_sidebar_width');
       if (savedSidebarWidth) {
         sidebarWidth = parseInt(savedSidebarWidth);
         elements.aiSidebar.style.width = sidebarWidth + 'px';
       }
-      
       const savedMode = localStorage.getItem('codehub_mode');
-      if (savedMode === 'chat') {
-        setMode('chat');
-      } else {
-        setMode('edit');
-      }
+      if (savedMode === 'chat') setMode('chat');
+      else setMode('edit');
     }
 
     function savePreferences() {
@@ -1495,7 +1413,6 @@
         document.body.style.cursor = 'ew-resize';
         e.preventDefault();
       });
-      
       document.addEventListener('mousemove', (e) => {
         if (!isResizing) return;
         const newWidth = window.innerWidth - e.clientX;
@@ -1504,7 +1421,6 @@
           elements.aiSidebar.style.width = sidebarWidth + 'px';
         }
       });
-      
       document.addEventListener('mouseup', () => {
         if (isResizing) {
           isResizing = false;
@@ -1534,7 +1450,13 @@
 
     window.selectProject = selectProject;
     window.createNewProject = createNewProject;
-    window.clearChat = clearChat;
+    window.clearChat = () => {
+      if (confirm('Limpar chat?')) {
+        db.ref(`chats/${currentUser.uid}/${currentProjectId}`).remove();
+        elements.chatMessages.innerHTML = '';
+        addChatMessage('🤖 Chat limpo!', 'system');
+      }
+    };
     window.closeFile = closeFile;
     window.deleteActivity = deleteActivity;
     window.setMode = setMode;
