@@ -232,8 +232,10 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      border-bottom: 1px solid #333;
     }
     
+    /* Chat Messages - 50% da altura */
     .chat-messages {
       flex: 1;
       overflow-y: auto;
@@ -241,6 +243,7 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
+      min-height: 0;
     }
     
     .message {
@@ -249,6 +252,12 @@
       max-width: 95%;
       word-wrap: break-word;
       font-size: 13px;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     
     .message.user {
@@ -331,13 +340,15 @@
       border-radius: 8px;
     }
     
+    /* Activities Panel - 50% da altura */
     .activities-panel {
       background: #1e1e1e;
       border-top: 1px solid #333;
       padding: 10px;
-      max-height: 180px;
       overflow-y: auto;
       font-size: 11px;
+      min-height: 0;
+      flex-shrink: 0;
     }
     
     .activities-header {
@@ -377,14 +388,20 @@
       font-size: 11px;
     }
     
+    /* URL Panel - Mais para cima */
     .url-panel {
       background: #252526;
-      padding: 8px 12px;
+      padding: 6px 12px;
       border-top: 1px solid #333;
       display: flex;
       align-items: center;
       gap: 10px;
-      font-size: 12px;
+      font-size: 11px;
+    }
+    
+    .url-panel span {
+      font-size: 11px;
+      color: #aaa;
     }
     
     .url-panel input {
@@ -392,9 +409,14 @@
       background: #1e1e1e;
       border: 1px solid #333;
       color: white;
-      padding: 6px 10px;
+      padding: 5px 8px;
       border-radius: 4px;
       font-family: monospace;
+      font-size: 11px;
+    }
+    
+    .url-panel button {
+      padding: 4px 10px;
       font-size: 11px;
     }
     
@@ -526,15 +548,29 @@
       </div>
 
       <div id="ai-sidebar">
-        <div class="sidebar-header"><span>🤖 Assistente IA</span><button onclick="clearChat()" style="background:#555; padding:2px 8px;">Limpar</button></div>
+        <div class="sidebar-header">
+          <span>🤖 Assistente IA</span>
+          <button onclick="clearChat()" style="background:#555; padding:2px 8px;">Limpar</button>
+        </div>
         
+        <!-- Chat Messages - Parte de cima (50%) -->
         <div class="chat-messages" id="chatMessages"></div>
         
+        <!-- Chat Input Area -->
         <div class="chat-input-area">
           <textarea id="chatInput" placeholder="Digite seu comando... Ex: 'Crie um site completo com HTML, CSS e JS'" rows="2"></textarea>
           <button id="sendChatBtn">Enviar</button>
         </div>
         
+        <!-- URL Panel - Agora mais para cima, antes das atividades -->
+        <div class="url-panel" id="urlPanel" style="display: none;">
+          <span>🔗 Publicado:</span>
+          <input type="text" id="fileUrl" readonly onclick="this.select()">
+          <button id="openUrlBtn">Abrir</button>
+          <button id="publishBtn" style="background:#20b2aa;">🌐 Publicar</button>
+        </div>
+        
+        <!-- Activities Panel - Parte de baixo (50%) -->
         <div class="activities-panel" id="activitiesPanel">
           <div class="activities-header">
             <span>📊 Atividades do Usuário</span>
@@ -545,12 +581,6 @@
           </div>
         </div>
       </div>
-    </div>
-    
-    <div class="url-panel" id="urlPanel" style="display: none;">
-      <span>🔗 Site publicado:</span>
-      <input type="text" id="fileUrl" readonly onclick="this.select()">
-      <button id="openUrlBtn">Abrir</button>
     </div>
   </div>
 
@@ -611,6 +641,7 @@
       urlPanel: document.getElementById('urlPanel'),
       fileUrl: document.getElementById('fileUrl'),
       openUrlBtn: document.getElementById('openUrlBtn'),
+      publishBtn: document.getElementById('publishBtn'),
       chatMessages: document.getElementById('chatMessages'),
       chatInput: document.getElementById('chatInput'),
       sendChatBtn: document.getElementById('sendChatBtn'),
@@ -660,7 +691,7 @@
       elements.publishNoBtn.addEventListener('click', cancelHandler);
     }
 
-    // ==================== STREAMING DE TEXTO EM TEMPO REAL ====================
+    // ==================== STREAMING DE TEXTO ====================
     
     async function addStreamingMessage(text, type) {
       return new Promise((resolve) => {
@@ -731,7 +762,7 @@
         elements.chatMessages.appendChild(msgDiv);
       });
       if (elements.chatMessages.children.length === 0) {
-        addChatMessage('🤖 Olá! Sou seu assistente IA. O texto vai aparecendo EM TEMPO REAL!<br><br>📝 <strong>Comandos:</strong><br>• "Crie um site completo com HTML, CSS e JS"<br>• "Edite o index.html e mude o título"<br>• "Delete o arquivo style.css"<br>• "Publique o projeto no Puter"<br><br>💡 O texto da IA aparece LETRA POR LETRA!', 'system');
+        addChatMessage('🤖 Olá! Sou seu assistente IA. O texto aparece LETRA POR LETRA!<br><br>📝 <strong>Comandos:</strong><br>• "Crie um site completo com HTML, CSS e JS"<br>• "Edite o index.html e mude o título"<br>• "Delete o arquivo style.css"<br>• "Publique o projeto no Puter"<br><br>💡 Teste qualquer comando!', 'system');
       }
       elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
     }
@@ -938,7 +969,7 @@
       } catch(e) { addChatMessage(`❌ Erro: ${e.message}`, 'system'); throw e; }
     }
 
-    // ==================== IA PRINCIPAL COM STREAMING ====================
+    // ==================== IA PRINCIPAL ====================
     
     async function sendToAI() {
       const userMessage = elements.chatInput.value.trim();
@@ -947,7 +978,6 @@
       addChatMessage(userMessage, 'user');
       elements.chatInput.value = '';
       
-      // Criar mensagem vazia que vai receber o streaming
       const streamingMsgDiv = document.createElement('div');
       streamingMsgDiv.className = 'message ai streaming';
       const contentSpan = document.createElement('span');
@@ -956,7 +986,6 @@
       elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
       
       let accumulatedText = '';
-      let fullResponse = '';
       
       try {
         await ensurePuterAuth();
@@ -976,7 +1005,6 @@
           {"action":"criar|editar|deletar|publicar","files":[{"name":"arquivo","content":"codigo"}],"targetFile":"nome","newContent":"conteudo","message":"msg"}
         `;
         
-        // Usar fetch com streaming para receber resposta em tempo real
         const response = await puter.ai.chat(prompt);
         
         let aiResponse = '';
@@ -984,7 +1012,7 @@
         else if (response.message?.content) aiResponse = response.message.content;
         else aiResponse = JSON.stringify(response);
         
-        // Simular streaming letra por letra
+        // Streaming letra por letra
         for (let i = 0; i < aiResponse.length; i++) {
           accumulatedText += aiResponse[i];
           contentSpan.innerHTML = accumulatedText.replace(/\n/g, '<br>');
@@ -994,7 +1022,6 @@
         
         streamingMsgDiv.classList.remove('streaming');
         
-        // Processar resposta
         const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
         let result = null;
         if (jsonMatch) {
@@ -1281,6 +1308,7 @@
       elements.previewBtn.addEventListener('click', previewProject);
       elements.puterDashboardBtn.addEventListener('click', openPuterDashboard);
       elements.openUrlBtn?.addEventListener('click', () => { if (currentHostingUrl) window.open(currentHostingUrl, '_blank'); });
+      elements.publishBtn?.addEventListener('click', () => publishProject());
       elements.sendChatBtn.addEventListener('click', sendToAI);
       elements.chatInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendToAI(); } });
       elements.logoutBtn.addEventListener('click', () => auth.signOut().then(() => window.location.href = 'auth.html'));
