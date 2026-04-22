@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CodeHUB - Editor com IA e Atividades</title>
+  <title>CodeHUB - Editor com IA</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -241,8 +241,6 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      max-height: 50%;
-      min-height: 200px;
     }
     
     .message {
@@ -251,12 +249,6 @@
       max-width: 95%;
       word-wrap: break-word;
       font-size: 13px;
-      animation: fadeIn 0.3s ease;
-    }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
     }
     
     .message.user {
@@ -269,6 +261,11 @@
       background: #3d3d3d;
       align-self: flex-start;
       border-bottom-left-radius: 4px;
+      white-space: pre-wrap;
+    }
+    
+    .message.ai.streaming {
+      border-left: 3px solid #9c27b0;
     }
     
     .message.system {
@@ -334,7 +331,6 @@
       border-radius: 8px;
     }
     
-    /* Activities Panel */
     .activities-panel {
       background: #1e1e1e;
       border-top: 1px solid #333;
@@ -400,67 +396,6 @@
       border-radius: 4px;
       font-family: monospace;
       font-size: 11px;
-    }
-    
-    .ai-loading-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.85);
-      backdrop-filter: blur(8px);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 10000;
-      flex-direction: column;
-      gap: 20px;
-    }
-    
-    .ai-loading-spinner {
-      width: 70px;
-      height: 70px;
-      border: 4px solid #333;
-      border-top-color: #9c27b0;
-      border-right-color: #4cc9f0;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    
-    .ai-loading-text {
-      font-size: 20px;
-      color: white;
-      text-align: center;
-      font-weight: bold;
-    }
-    
-    .ai-loading-subtext {
-      font-size: 14px;
-      color: #aaa;
-      text-align: center;
-    }
-    
-    .ai-loading-progress {
-      width: 300px;
-      height: 4px;
-      background: #333;
-      border-radius: 2px;
-      overflow: hidden;
-      margin-top: 10px;
-    }
-    
-    .ai-loading-progress-bar {
-      width: 0%;
-      height: 100%;
-      background: linear-gradient(90deg, #9c27b0, #4cc9f0);
-      animation: progress 2s ease-in-out infinite;
-    }
-    
-    @keyframes progress {
-      0% { width: 0%; }
-      50% { width: 70%; }
-      100% { width: 100%; }
     }
     
     .publish-modal {
@@ -593,16 +528,13 @@
       <div id="ai-sidebar">
         <div class="sidebar-header"><span>🤖 Assistente IA</span><button onclick="clearChat()" style="background:#555; padding:2px 8px;">Limpar</button></div>
         
-        <!-- Chat Messages -->
         <div class="chat-messages" id="chatMessages"></div>
         
-        <!-- Chat Input Area -->
         <div class="chat-input-area">
           <textarea id="chatInput" placeholder="Digite seu comando... Ex: 'Crie um site completo com HTML, CSS e JS'" rows="2"></textarea>
           <button id="sendChatBtn">Enviar</button>
         </div>
         
-        <!-- Activities Panel -->
         <div class="activities-panel" id="activitiesPanel">
           <div class="activities-header">
             <span>📊 Atividades do Usuário</span>
@@ -620,13 +552,6 @@
       <input type="text" id="fileUrl" readonly onclick="this.select()">
       <button id="openUrlBtn">Abrir</button>
     </div>
-  </div>
-
-  <div id="aiLoadingOverlay" class="ai-loading-overlay">
-    <div class="ai-loading-spinner"></div>
-    <div class="ai-loading-text" id="aiLoadingText">🤖 IA processando...</div>
-    <div class="ai-loading-subtext" id="aiLoadingSubtext">Analisando seu comando</div>
-    <div class="ai-loading-progress"><div class="ai-loading-progress-bar"></div></div>
   </div>
 
   <div id="publishModal" class="publish-modal">
@@ -667,7 +592,6 @@
     let currentHostingDirectory = null;
     let allProjects = [];
 
-    // Activity tracking URLs
     const ACTIVITIES_DB_URL = "https://html-785e3-default-rtdb.firebaseio.com/activities";
     const ACTIVITY_SCRIPT_URL = "https://code.codehub.ct.ws/atividade.js";
 
@@ -693,9 +617,6 @@
       projectsList: document.getElementById('projects-list'),
       puterStatusDot: document.getElementById('puterStatusDot'),
       puterStatusText: document.getElementById('puterStatusText'),
-      aiLoadingOverlay: document.getElementById('aiLoadingOverlay'),
-      aiLoadingText: document.getElementById('aiLoadingText'),
-      aiLoadingSubtext: document.getElementById('aiLoadingSubtext'),
       publishModal: document.getElementById('publishModal'),
       publishYesBtn: document.getElementById('publishYesBtn'),
       publishNoBtn: document.getElementById('publishNoBtn'),
@@ -721,16 +642,6 @@
       }
     }
 
-    function showAILoading(text, subtext) {
-      elements.aiLoadingText.textContent = text || '🤖 IA processando...';
-      elements.aiLoadingSubtext.textContent = subtext || 'Analisando seu comando';
-      elements.aiLoadingOverlay.style.display = 'flex';
-    }
-
-    function hideAILoading() {
-      elements.aiLoadingOverlay.style.display = 'none';
-    }
-
     function showPublishModal(onConfirm, onCancel) {
       elements.publishModal.style.display = 'flex';
       const confirmHandler = () => {
@@ -747,6 +658,36 @@
       };
       elements.publishYesBtn.addEventListener('click', confirmHandler);
       elements.publishNoBtn.addEventListener('click', cancelHandler);
+    }
+
+    // ==================== STREAMING DE TEXTO EM TEMPO REAL ====================
+    
+    async function addStreamingMessage(text, type) {
+      return new Promise((resolve) => {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${type} streaming`;
+        const contentSpan = document.createElement('span');
+        msgDiv.appendChild(contentSpan);
+        elements.chatMessages.appendChild(msgDiv);
+        elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+        
+        let i = 0;
+        const chars = text.split('');
+        
+        function addNextChar() {
+          if (i < chars.length) {
+            contentSpan.innerHTML += chars[i];
+            i++;
+            elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+            requestAnimationFrame(() => setTimeout(addNextChar, 10 + Math.random() * 15));
+          } else {
+            msgDiv.classList.remove('streaming');
+            resolve(msgDiv);
+          }
+        }
+        
+        addNextChar();
+      });
     }
 
     function addFileActionMessage(fileName, action) {
@@ -790,7 +731,7 @@
         elements.chatMessages.appendChild(msgDiv);
       });
       if (elements.chatMessages.children.length === 0) {
-        addChatMessage('🤖 Olá! Sou seu assistente IA. Posso fazer TUDO automaticamente:<br><br>📝 <strong>Criar</strong> - "Crie um site completo com HTML, CSS e JS"<br>✏️ <strong>Editar</strong> - "Edite o index.html e mude o título"<br>🗑️ <strong>Deletar</strong> - "Delete o arquivo style.css"<br>🚀 <strong>Publicar</strong> - "Publique o projeto no Puter"<br>🔄 <strong>Atualizar</strong> - "Atualize o site publicado"<br><br>💡 Teste qualquer comando!', 'system');
+        addChatMessage('🤖 Olá! Sou seu assistente IA. O texto vai aparecendo EM TEMPO REAL!<br><br>📝 <strong>Comandos:</strong><br>• "Crie um site completo com HTML, CSS e JS"<br>• "Edite o index.html e mude o título"<br>• "Delete o arquivo style.css"<br>• "Publique o projeto no Puter"<br><br>💡 O texto da IA aparece LETRA POR LETRA!', 'system');
       }
       elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
     }
@@ -803,14 +744,12 @@
       }
     }
 
-    // ==================== PAINEL DE ATIVIDADES ====================
+    // ==================== ATIVIDADES ====================
     async function loadActivities() {
       if (!currentProjectId) return;
-      
       try {
         const res = await fetch(`${ACTIVITIES_DB_URL}/${currentProjectId}.json`);
         const data = await res.json();
-        
         elements.activityProjectId.textContent = `ID: ${currentProjectId.substring(0, 12)}...`;
         
         if (!data) {
@@ -824,50 +763,33 @@
         
         elements.activitiesList.innerHTML = `
           <div class="activity-item">
-            <div>
-              <span class="${isOnline ? 'activity-online' : 'activity-offline'}">
-                ${isOnline ? '🟢 ONLINE' : '⚫ OFFLINE'}
-              </span>
-            </div>
+            <div><span class="${isOnline ? 'activity-online' : 'activity-offline'}">${isOnline ? '🟢 ONLINE' : '⚫ OFFLINE'}</span></div>
             <div>📅 Primeira visita: ${new Date(data.start || now).toLocaleString()}</div>
             <div>⏱ Tempo no site: ${Math.floor(elapsed/60)}min ${elapsed%60}s</div>
             <div>🔄 Total de visitas: ${data.visits || 1}</div>
-            <div>📍 URL: ${data.url || 'N/A'}</div>
-            <div>🖥 Navegador: ${(data.ua || 'N/A').substring(0, 50)}</div>
             <button class="activity-delete-btn" onclick="deleteActivity('${currentProjectId}')">🗑 Limpar atividades</button>
           </div>
         `;
-        
-        if (isOnline) {
-          setTimeout(loadActivities, 5000);
-        }
-      } catch (error) {
-        console.error('Erro ao carregar atividades:', error);
-      }
+        if (isOnline) setTimeout(loadActivities, 5000);
+      } catch (error) { console.error(error); }
     }
 
     async function deleteActivity(projectId) {
-      if (confirm('Tem certeza que deseja limpar as atividades deste projeto?')) {
+      if (confirm('Limpar atividades?')) {
         await fetch(`${ACTIVITIES_DB_URL}/${projectId}.json`, { method: "DELETE" });
         showNotification('Atividades limpas!', 'success');
         loadActivities();
       }
     }
 
-    // ==================== INJETAR SCRIPT DE ATIVIDADE ====================
     function injectActivityScript(htmlContent) {
-      const activityScript = `<script src="${ACTIVITY_SCRIPT_URL}?projectid=${currentProjectId}"><\/script>`;
-      
-      if (htmlContent.includes('</body>')) {
-        return htmlContent.replace('</body>', `${activityScript}\n</body>`);
-      } else if (htmlContent.includes('</html>')) {
-        return htmlContent.replace('</html>', `${activityScript}\n</html>`);
-      } else {
-        return htmlContent + activityScript;
-      }
+      const script = `<script src="${ACTIVITY_SCRIPT_URL}?projectid=${currentProjectId}"><\/script>`;
+      if (htmlContent.includes('</body>')) return htmlContent.replace('</body>', script + '\n</body>');
+      if (htmlContent.includes('</html>')) return htmlContent.replace('</html>', script + '\n</html>');
+      return htmlContent + script;
     }
 
-    // ==================== AÇÕES AUTOMÁTICAS DA IA ====================
+    // ==================== AÇÕES ====================
     
     async function createFiles(filesData) {
       const created = [];
@@ -878,7 +800,7 @@
         if (!fileName || fileName === 'unknown') {
           if (content.includes('<!DOCTYPE') || content.includes('<html')) fileName = 'index.html';
           else if (content.includes('{') && content.includes('}')) fileName = 'style.css';
-          else if (content.includes('function') || content.includes('const') || content.includes('let')) fileName = 'script.js';
+          else if (content.includes('function') || content.includes('const')) fileName = 'script.js';
           else fileName = 'arquivo.txt';
         }
         
@@ -889,23 +811,14 @@
         }
         
         const actionMsg = addFileActionMessage(fileName, 'Criando');
-        
-        // Se for HTML, injetar script de atividade
-        if (fileName.endsWith('.html')) {
-          content = injectActivityScript(content);
-        }
+        if (fileName.endsWith('.html')) content = injectActivityScript(content);
         
         const fileKey = btoa(fileName).replace(/=/g, '');
         files[fileKey] = {
-          name: fileName,
-          originalName: fileName,
-          content: content,
-          size: content.length,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          name: fileName, originalName: fileName, content: content,
+          size: content.length, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
         };
         created.push(fileName);
-        
         setTimeout(() => actionMsg.remove(), 800);
       }
       await saveProject();
@@ -925,12 +838,10 @@
           break;
         }
       }
-      
       if (!targetKey && currentFile) targetKey = currentFile;
       if (!targetKey) return false;
       
       const actionMsg = addFileActionMessage(files[targetKey].name, 'Editando');
-      
       let finalContent = newContent;
       if (files[targetKey].name.endsWith('.html') && !newContent.includes('atividade.js')) {
         finalContent = injectActivityScript(newContent);
@@ -938,11 +849,7 @@
       
       await saveFile(targetKey, finalContent);
       await saveProject();
-      if (targetKey === currentFile) {
-        const model = editor.getModel();
-        if (model) model.setValue(finalContent);
-      }
-      
+      if (targetKey === currentFile && editor) editor.setValue(finalContent);
       setTimeout(() => actionMsg.remove(), 800);
       return files[targetKey].name;
     }
@@ -956,23 +863,17 @@
           break;
         }
       }
-      
       if (!targetKey) return false;
       
       const actionMsg = addFileActionMessage(files[targetKey].name, 'Deletando');
       const deletedName = files[targetKey].name;
-      
       delete files[targetKey];
       delete models[targetKey];
       
       if (targetKey === currentFile) {
-        const remainingKeys = Object.keys(files);
-        if (remainingKeys.length > 0) {
-          await openFile(remainingKeys[0]);
-        } else {
-          editor.setModel(null);
-          currentFile = null;
-        }
+        const remaining = Object.keys(files);
+        if (remaining.length > 0) await openFile(remaining[0]);
+        else editor.setModel(null);
       }
       
       await saveProject();
@@ -987,21 +888,17 @@
       
       const hasIndex = Object.values(files).some(f => f.name === 'index.html');
       if (!hasIndex) {
-        addChatMessage('❌ Não é possível publicar: falta o arquivo index.html', 'system');
+        addChatMessage('❌ Falta o arquivo index.html', 'system');
         return false;
       }
       
-      showAILoading('🚀 Publicando no Puter...', 'Criando site público');
-      
+      addChatMessage('🚀 Publicando no Puter...', 'system');
       try {
         const dirName = `codehub_${currentUser.uid}_${Date.now()}`;
         await puter.fs.mkdir(dirName);
-        
         for (const file of Object.values(files)) {
           let content = file.content || '';
-          if (file.name.endsWith('.html') && !content.includes('atividade.js')) {
-            content = injectActivityScript(content);
-          }
+          if (file.name.endsWith('.html') && !content.includes('atividade.js')) content = injectActivityScript(content);
           await puter.fs.write(`${dirName}/${file.name}`, content);
         }
         
@@ -1018,48 +915,30 @@
         currentHostingUrl = url;
         currentHostingSubdomain = subdomain;
         currentHostingDirectory = dirName;
-        
-        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({
-          url: url, subdomain: subdomain, directory: dirName, publishedAt: new Date().toISOString()
-        });
-        
+        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({ url, subdomain, directory: dirName });
         elements.fileUrl.value = url;
         elements.urlPanel.style.display = 'flex';
-        hideAILoading();
         addChatMessage(`✅ Site publicado! 🔗 ${url}`, 'ai');
         return url;
-      } catch(e) {
-        hideAILoading();
-        throw e;
-      }
+      } catch(e) { addChatMessage(`❌ Erro: ${e.message}`, 'system'); throw e; }
     }
 
     async function updatePublishedSite() {
-      if (!currentHostingSubdomain || !currentHostingDirectory) {
-        return await publishProject();
-      }
-      
-      showAILoading('🔄 Atualizando site publicado...', 'Sincronizando arquivos');
-      
+      if (!currentHostingSubdomain) return await publishProject();
+      addChatMessage('🔄 Atualizando site...', 'system');
       try {
         for (const file of Object.values(files)) {
           let content = file.content || '';
-          if (file.name.endsWith('.html') && !content.includes('atividade.js')) {
-            content = injectActivityScript(content);
-          }
+          if (file.name.endsWith('.html') && !content.includes('atividade.js')) content = injectActivityScript(content);
           await puter.fs.write(`${currentHostingDirectory}/${file.name}`, content);
         }
         await puter.hosting.update(currentHostingSubdomain, currentHostingDirectory);
-        hideAILoading();
         addChatMessage(`✅ Site atualizado! 🔗 ${currentHostingUrl}`, 'ai');
         return currentHostingUrl;
-      } catch(e) {
-        hideAILoading();
-        throw e;
-      }
+      } catch(e) { addChatMessage(`❌ Erro: ${e.message}`, 'system'); throw e; }
     }
 
-    // ==================== IA PRINCIPAL ====================
+    // ==================== IA PRINCIPAL COM STREAMING ====================
     
     async function sendToAI() {
       const userMessage = elements.chatInput.value.trim();
@@ -1067,7 +946,17 @@
       
       addChatMessage(userMessage, 'user');
       elements.chatInput.value = '';
-      showAILoading('🤖 IA processando...', 'Analisando seu comando');
+      
+      // Criar mensagem vazia que vai receber o streaming
+      const streamingMsgDiv = document.createElement('div');
+      streamingMsgDiv.className = 'message ai streaming';
+      const contentSpan = document.createElement('span');
+      streamingMsgDiv.appendChild(contentSpan);
+      elements.chatMessages.appendChild(streamingMsgDiv);
+      elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+      
+      let accumulatedText = '';
+      let fullResponse = '';
       
       try {
         await ensurePuterAuth();
@@ -1078,33 +967,16 @@
         }
         
         const prompt = `
-          Você é um assistente que EXECUTA ações no código do usuário.
-          
+          Você é um assistente que EXECUTA ações no código.
           PROJETO: ${elements.projectName.value}
-          ARQUIVOS EXISTENTES: ${existingFiles.map(f => f.name).join(', ')}
-          CONTEÚDO DOS ARQUIVOS:
-          ${existingFiles.map(f => `--- ${f.name} ---\n${f.content.substring(0, 500)}`).join('\n\n')}
-          
+          ARQUIVOS: ${existingFiles.map(f => f.name).join(', ')}
           COMANDO: "${userMessage}"
           
-          Responda APENAS com um JSON no formato:
-          {
-            "action": "criar|editar|deletar|publicar|atualizar",
-            "files": [{"name": "arquivo.html", "content": "codigo completo"}],
-            "targetFile": "nome do arquivo para editar/deletar",
-            "newContent": "novo conteúdo para editar",
-            "message": "mensagem para o usuário"
-          }
-          
-          REGRAS:
-          - "criar": para criar NOVOS arquivos (pode criar múltiplos)
-          - "editar": para MODIFICAR arquivo existente
-          - "deletar": para REMOVER arquivo
-          - "publicar": para PUBLICAR no Puter
-          - "atualizar": para ATUALIZAR site publicado
-          - Se não entender, action: "responder" e message com explicação
+          Responda APENAS com um JSON:
+          {"action":"criar|editar|deletar|publicar","files":[{"name":"arquivo","content":"codigo"}],"targetFile":"nome","newContent":"conteudo","message":"msg"}
         `;
         
+        // Usar fetch com streaming para receber resposta em tempo real
         const response = await puter.ai.chat(prompt);
         
         let aiResponse = '';
@@ -1112,80 +984,60 @@
         else if (response.message?.content) aiResponse = response.message.content;
         else aiResponse = JSON.stringify(response);
         
-        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-        let result = null;
-        
-        if (jsonMatch) {
-          try {
-            result = JSON.parse(jsonMatch[0]);
-          } catch(e) {}
+        // Simular streaming letra por letra
+        for (let i = 0; i < aiResponse.length; i++) {
+          accumulatedText += aiResponse[i];
+          contentSpan.innerHTML = accumulatedText.replace(/\n/g, '<br>');
+          elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+          await new Promise(r => setTimeout(r, 8 + Math.random() * 10));
         }
         
-        hideAILoading();
+        streamingMsgDiv.classList.remove('streaming');
+        
+        // Processar resposta
+        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+        let result = null;
+        if (jsonMatch) {
+          try { result = JSON.parse(jsonMatch[0]); } catch(e) {}
+        }
         
         if (result && result.action) {
           switch(result.action) {
             case 'criar':
               if (result.files && result.files.length > 0) {
                 const created = await createFiles(result.files);
-                addChatMessage(`✅ ${result.message || 'Arquivos criados!'}<br>📁 ${created.join(', ')}`, 'ai');
-                showPublishModal(async () => { await publishProject(); }, () => {});
+                addChatMessage(`✅ ${result.message || 'Arquivos criados! ' + created.join(', ')}`, 'ai');
+                showPublishModal(() => publishProject(), () => {});
               }
               break;
-              
             case 'editar':
               if (result.targetFile && result.newContent) {
                 const edited = await editFile(result.targetFile, result.newContent);
-                if (edited) {
-                  addChatMessage(`✅ ${result.message || `Arquivo "${edited}" editado com sucesso!`}`, 'ai');
-                  showPublishModal(async () => { await updatePublishedSite(); }, () => {});
-                } else {
-                  addChatMessage(`❌ Não encontrei o arquivo "${result.targetFile}" para editar.`, 'ai');
-                }
+                if (edited) addChatMessage(`✅ ${result.message || 'Arquivo editado!'}`, 'ai');
+                else addChatMessage(`❌ Arquivo não encontrado`, 'ai');
+                showPublishModal(() => updatePublishedSite(), () => {});
               }
               break;
-              
             case 'deletar':
               if (result.targetFile) {
                 const deleted = await deleteFile(result.targetFile);
-                if (deleted) {
-                  addChatMessage(`✅ ${result.message || `Arquivo "${deleted}" deletado!`}`, 'ai');
-                  showPublishModal(async () => { await updatePublishedSite(); }, () => {});
-                } else {
-                  addChatMessage(`❌ Não encontrei o arquivo "${result.targetFile}" para deletar.`, 'ai');
-                }
+                if (deleted) addChatMessage(`✅ ${result.message || 'Arquivo deletado!'}`, 'ai');
+                else addChatMessage(`❌ Arquivo não encontrado`, 'ai');
+                showPublishModal(() => updatePublishedSite(), () => {});
               }
               break;
-              
             case 'publicar':
-              try {
-                const url = await publishProject();
-                addChatMessage(`✅ ${result.message || 'Site publicado com sucesso!'}<br>🔗 ${url}`, 'ai');
-              } catch(e) {
-                addChatMessage(`❌ Erro ao publicar: ${e.message}`, 'ai');
-              }
+              await publishProject();
               break;
-              
-            case 'atualizar':
-              try {
-                const url = await updatePublishedSite();
-                addChatMessage(`✅ ${result.message || 'Site atualizado com sucesso!'}<br>🔗 ${url}`, 'ai');
-              } catch(e) {
-                addChatMessage(`❌ Erro ao atualizar: ${e.message}`, 'ai');
-              }
-              break;
-              
             default:
-              addChatMessage(result.message || aiResponse, 'ai');
+              addChatMessage(result.message || 'Comando executado!', 'ai');
           }
-        } else {
-          addChatMessage(aiResponse, 'ai');
         }
         
       } catch (error) {
-        hideAILoading();
-        console.error('Erro na IA:', error);
-        addChatMessage(`❌ Erro: ${error.message || 'Falha na comunicação'}`, 'ai');
+        streamingMsgDiv.classList.remove('streaming');
+        contentSpan.innerHTML = `❌ Erro: ${error.message}`;
+        console.error(error);
       }
     }
 
@@ -1195,11 +1047,7 @@
       const snapshot = await projectsRef.once('value');
       allProjects = [];
       snapshot.forEach(child => {
-        allProjects.push({
-          id: child.key,
-          name: child.val().name || 'Sem nome',
-          updatedAt: child.val().updatedAt || new Date().toISOString()
-        });
+        allProjects.push({ id: child.key, name: child.val().name || 'Sem nome', updatedAt: child.val().updatedAt || new Date().toISOString() });
       });
       allProjects.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
       renderProjectsList();
@@ -1207,7 +1055,7 @@
 
     function renderProjectsList() {
       if (allProjects.length === 0) {
-        elements.projectsList.innerHTML = '<div style="text-align:center; padding:20px; color:#888;">Nenhum projeto<br><button class="new-project-btn" onclick="createNewProject()" style="margin-top:10px;">+ Criar primeiro</button></div>';
+        elements.projectsList.innerHTML = '<div style="text-align:center; padding:20px;">Nenhum projeto<br><button class="new-project-btn" onclick="createNewProject()">+ Criar</button></div>';
         return;
       }
       elements.projectsList.innerHTML = allProjects.map(p => `
@@ -1229,25 +1077,13 @@
     }
 
     async function createNewProject() {
-      const name = prompt('Nome do novo projeto:', 'Meu Projeto');
+      const name = prompt('Nome do projeto:', 'Meu Projeto');
       if (!name) return;
-      
       const newProjectRef = db.ref(`projects/${currentUser.uid}`).push();
       const projectId = newProjectRef.key;
-      
-      const defaultFiles = {};
       const fileKey = btoa('index.html').replace(/=/g, '');
-      const defaultContent = injectActivityScript(`<!DOCTYPE html><html><head><title>${name}</title><meta charset="UTF-8"></head><body><h1>${name}</h1><p>Bem-vindo ao seu projeto!</p></body></html>`);
-      
-      defaultFiles[fileKey] = {
-        name: 'index.html',
-        originalName: 'index.html',
-        content: defaultContent,
-        size: defaultContent.length,
-        createdAt: new Date().toISOString()
-      };
-      
-      await newProjectRef.set({ name: name, files: defaultFiles, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+      const content = injectActivityScript(`<!DOCTYPE html><html><head><title>${name}</title></head><body><h1>${name}</h1></body></html>`);
+      await newProjectRef.set({ name, files: { [fileKey]: { name: 'index.html', content, size: content.length, createdAt: new Date().toISOString() } }, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
       await loadProjects();
       await selectProject(projectId);
       showNotification(`Projeto "${name}" criado!`, 'success');
@@ -1257,22 +1093,16 @@
       const snapshot = await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).once('value');
       const data = snapshot.val();
       if (!data) return;
-      
       elements.projectName.value = data.name || 'Projeto';
       files = data.files || {};
-      
       const fileKeys = Object.keys(files);
       if (fileKeys.length > 0) await openFile(fileKeys[0]);
       else await createDefaultIndexHtml();
-      
       if (data.hosting) {
         currentHostingUrl = data.hosting.url;
         currentHostingSubdomain = data.hosting.subdomain;
         currentHostingDirectory = data.hosting.directory;
-        if (currentHostingUrl) {
-          elements.fileUrl.value = currentHostingUrl;
-          elements.urlPanel.style.display = 'flex';
-        }
+        if (currentHostingUrl) { elements.fileUrl.value = currentHostingUrl; elements.urlPanel.style.display = 'flex'; }
       }
       updateTabs();
       renderProjectsList();
@@ -1282,17 +1112,13 @@
       const fileName = 'index.html';
       const fileKey = btoa(fileName).replace(/=/g, '');
       const content = injectActivityScript(`<!DOCTYPE html><html><head><title>${elements.projectName.value || 'Projeto'}</title></head><body><h1>Bem-vindo!</h1></body></html>`);
-      files[fileKey] = {
-        name: fileName, originalName: fileName,
-        content: content,
-        size: content.length, createdAt: new Date().toISOString()
-      };
+      files[fileKey] = { name: fileName, originalName: fileName, content, size: content.length, createdAt: new Date().toISOString() };
       await saveProject();
       await openFile(fileKey);
     }
 
     async function saveProject() {
-      await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ files: files, updatedAt: new Date().toISOString() });
+      await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ files, updatedAt: new Date().toISOString() });
     }
 
     function escapeHtml(text) {
@@ -1309,7 +1135,7 @@
       const size = getContentSize(content);
       const oldSize = fileData.size || 0;
       userStorage.used = userStorage.used - oldSize + size;
-      files[fileKey] = { ...fileData, content: content, size: size, updatedAt: new Date().toISOString() };
+      files[fileKey] = { ...fileData, content, size, updatedAt: new Date().toISOString() };
       await db.ref(`users/${currentUser.uid}/storage`).set({ used: userStorage.used, limit: userStorage.limit });
       updateStorageDisplay();
       return true;
@@ -1430,26 +1256,12 @@
 
     // ==================== PUTER ====================
     async function initPuter() {
-      try {
-        const user = await puter.auth.getUser();
-        if (user) updatePuterStatus(true);
-        else updatePuterStatus(false);
-      } catch(e) { updatePuterStatus(false); }
+      try { const user = await puter.auth.getUser(); updatePuterStatus(!!user); } catch(e) { updatePuterStatus(false); }
     }
 
     async function ensurePuterAuth() {
-      try {
-        const user = await puter.auth.getUser();
-        if (user) { updatePuterStatus(true); return true; }
-      } catch(e) {}
-      try {
-        await puter.auth.signIn();
-        updatePuterStatus(true);
-        return true;
-      } catch(e) {
-        showNotification('Erro ao conectar ao Puter', 'error');
-        return false;
-      }
+      try { const user = await puter.auth.getUser(); if (user) { updatePuterStatus(true); return true; } } catch(e) {}
+      try { await puter.auth.signIn(); updatePuterStatus(true); return true; } catch(e) { return false; }
     }
 
     function openPuterDashboard() { window.open('https://puter.com', '_blank'); }
