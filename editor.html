@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CodeHUB - Editor com IA</title>
+  <title>CodeHUB - Editor com IA e Workers .sc</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -123,7 +123,7 @@
       width: 250px;
     }
     
-    /* Sidebar esquerda com Projetos e Workers */
+    /* Sidebar esquerda */
     #left-sidebar {
       width: 280px;
       background: #252526;
@@ -182,7 +182,6 @@
       color: #888;
     }
     
-    /* Workers List - cada projeto tem seus workers */
     .workers-list {
       flex: 1;
       overflow-y: auto;
@@ -443,7 +442,6 @@
       border-radius: 8px;
     }
     
-    /* Worker Code Editor */
     .worker-editor {
       background: #1e1e1e;
       border-top: 1px solid #333;
@@ -652,7 +650,6 @@
     </div>
 
     <div class="main-container">
-      <!-- Sidebar Esquerda: Projetos + Workers do Projeto -->
       <div id="left-sidebar">
         <div class="section-header">
           <span>📁 Meus Projetos</span>
@@ -696,7 +693,6 @@
           </div>
         </div>
         
-        <!-- Worker Code Editor -->
         <div class="worker-editor">
           <div class="worker-editor-header">
             <span>📝 Código do Worker (.sc)</span>
@@ -769,7 +765,6 @@ router.get('/api/hello.sc', async () => {
     let allProjects = [];
     let currentMode = 'edit';
     
-    // Workers do projeto atual
     let projectWorkers = [];
     let currentWorkerData = null;
 
@@ -813,6 +808,25 @@ router.get('/api/hello.sc', async () => {
       editModeBtn: document.getElementById('editModeBtn')
     };
 
+    // ==================== FUNÇÕES DE SUBSTITUIÇÃO DE URL ====================
+    
+    function replaceWorkerUrlsInHtml(htmlContent, workerUrls) {
+      let newHtml = htmlContent;
+      
+      // Substituir padrões como '/api/hello.sc' pela URL completa do worker
+      for (const [route, fullUrl] of Object.entries(workerUrls)) {
+        // Substituir caminho relativo pela URL completa
+        const regex = new RegExp(`(['"\`])(${route})(['"\`])`, 'g');
+        newHtml = newHtml.replace(regex, `$1${fullUrl}$3`);
+        
+        // Também substituir em fetch
+        const fetchRegex = new RegExp(`fetch\\(['"\`](${route})['"\`]`, 'g');
+        newHtml = newHtml.replace(fetchRegex, `fetch('${fullUrl}')`);
+      }
+      
+      return newHtml;
+    }
+
     // ==================== WORKERS .sc FUNCTIONS ====================
     
     function workerLog(msg) {
@@ -820,9 +834,8 @@ router.get('/api/hello.sc', async () => {
     }
 
     function extractRouteFromCode(code) {
-      // Extrai rota do código .sc
       const match = code.match(/router\.(get|post|put|delete)\(['"`](.*?)['"`]/);
-      return match ? match[2] : "/api/unknown";
+      return match ? match[2] : "/api/unknown.sc";
     }
 
     async function loadProjectWorkers() {
@@ -842,7 +855,6 @@ router.get('/api/hello.sc', async () => {
         
         renderWorkersList();
         
-        // Carregar worker selecionado ou primeiro
         if (projectWorkers.length > 0 && !currentWorkerData) {
           selectWorker(projectWorkers[0].id);
         }
@@ -861,7 +873,7 @@ router.get('/api/hello.sc', async () => {
         <div class="worker-item" onclick="selectWorker('${w.id}')">
           <div class="worker-name">📦 ${w.name || 'Sem nome'}</div>
           <div class="worker-route">🎯 ${w.route || '/api/unknown.sc'}</div>
-          <div class="worker-url">🔗 ${w.url ? w.url.substring(0, 50) + '...' : 'Não publicado'}</div>
+          <div class="worker-url">🔗 ${w.fullUrl ? w.fullUrl.substring(0, 50) + '...' : 'Não publicado'}</div>
           <div class="worker-actions">
             <button class="test" onclick="event.stopPropagation(); testWorker('${w.id}')">▶️ Testar</button>
             <button onclick="event.stopPropagation(); editWorker('${w.id}')">✏️ Editar</button>
@@ -956,14 +968,11 @@ router.post('${route}', async (req) => {
         workerLog(`Publicando worker "${currentWorkerData.name}"...`);
         
         try {
-          // Salvar código no Puter FS com extensão .sc
           const fileName = `worker_${currentWorkerData.name}.sc`;
           await puter.fs.write(fileName, currentWorkerData.code);
           
-          // Criar worker no Puter
-          const workerName = `${currentProjectId}_${currentWorkerData.name}`;
+          const workerName = `${currentProjectId.substring(0, 15)}_${currentWorkerData.name}`;
           
-          // Tentar deletar se existir
           try {
             await puter.workers.delete(workerName);
           } catch(e) {}
@@ -971,7 +980,6 @@ router.post('${route}', async (req) => {
           const w = await puter.workers.create(workerName, fileName);
           const fullUrl = w.url + currentWorkerData.route;
           
-          // Atualizar Firebase com URL
           await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({
             url: w.url,
             fullUrl: fullUrl,
@@ -982,16 +990,55 @@ router.post('${route}', async (req) => {
           currentWorkerData.fullUrl = fullUrl;
           
           workerLog(`Worker publicado!`);
-          workerLog(`URL: ${fullUrl}`);
+          workerLog(`URL completa: ${fullUrl}`);
           
           showNotification(`Worker publicado em ${fullUrl}`, 'success');
           await loadProjectWorkers();
+          
+          // Atualizar arquivos HTML com as URLs dos workers
+          await updateHtmlFilesWithWorkerUrls();
           
         } catch(e) {
           workerLog(`Erro: ${e.message}`);
           showNotification(`Erro: ${e.message}`, 'error');
         }
       }, () => {});
+    }
+
+    async function updateHtmlFilesWithWorkerUrls() {
+      // Coletar todas as URLs dos workers
+      const workerUrls = {};
+      for (const worker of projectWorkers) {
+        if (worker.fullUrl) {
+          workerUrls[worker.route] = worker.fullUrl;
+        }
+      }
+      
+      if (Object.keys(workerUrls).length === 0) return;
+      
+      // Atualizar todos os arquivos HTML
+      let updated = false;
+      for (const [key, file] of Object.entries(files)) {
+        if (file.name.endsWith('.html') && file.content) {
+          const newContent = replaceWorkerUrlsInHtml(file.content, workerUrls);
+          if (newContent !== file.content) {
+            files[key].content = newContent;
+            files[key].updatedAt = new Date().toISOString();
+            updated = true;
+            
+            if (key === currentFile) {
+              const model = editor.getModel();
+              if (model) model.setValue(newContent);
+            }
+          }
+        }
+      }
+      
+      if (updated) {
+        await saveProject();
+        workerLog("Arquivos HTML atualizados com as URLs dos workers!");
+        showNotification("URLs dos workers inseridas nos HTMLs!", 'success');
+      }
     }
 
     async function testWorker(workerId) {
@@ -1003,12 +1050,27 @@ router.post('${route}', async (req) => {
       
       try {
         workerLog(`Testando ${worker.fullUrl}...`);
-        const res = await fetch(worker.fullUrl);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
+        const res = await fetch(worker.fullUrl, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        
         const data = await res.json();
         workerLog(`✅ Resposta: ${JSON.stringify(data, null, 2)}`);
         showNotification(`Worker respondeu!`, 'success');
       } catch(e) {
         workerLog(`❌ Erro: ${e.message}`);
+        if (e.message.includes('abort')) {
+          workerLog(`Timeout: Worker não respondeu em 10 segundos`);
+        } else if (e.message.includes('Failed to fetch')) {
+          workerLog(`Erro de conexão. Verifique se o worker está online.`);
+        }
+        showNotification(`Erro ao testar worker: ${e.message}`, 'error');
       }
     }
 
@@ -1022,7 +1084,7 @@ router.post('${route}', async (req) => {
       const worker = projectWorkers.find(w => w.id === workerId);
       if (worker) {
         try {
-          const workerName = `${currentProjectId}_${worker.name}`;
+          const workerName = `${currentProjectId.substring(0, 15)}_${worker.name}`;
           await puter.workers.delete(workerName);
         } catch(e) {}
         
@@ -1039,7 +1101,7 @@ router.post('${route}', async (req) => {
       }
     }
 
-    // ==================== IA TREINADA PARA CRIAR WORKERS .sc ====================
+    // ==================== IA TREINADA ====================
     
     async function createWorkerFromAI(workerName, route, code) {
       if (!workerName || !route || !code) {
@@ -1064,7 +1126,6 @@ router.post('${route}', async (req) => {
       await selectWorker(workerId);
       workerLog(`Worker "${workerName}" criado pela IA! Rota: ${route}`);
       
-      // Perguntar se quer publicar
       showPublishModal(async () => {
         await deployWorker();
       }, () => {});
@@ -1147,7 +1208,7 @@ router.post('${route}', async (req) => {
         elements.chatMessages.appendChild(msgDiv);
       });
       if (elements.chatMessages.children.length === 0) {
-        addChatMessage('🤖 Olá! Sou seu assistente IA.<br><br>📝 <strong>Modos:</strong><br>• 💬 Conversar: analiso seu código<br>• ✏️ Editar: crio, edito, deleto e publico<br><br>⚡ <strong>Workers .sc:</strong> Crie APIs com extensão .sc!<br><br>💡 <strong>Comandos:</strong><br>• "Crie um worker .sc chamado hello com rota /api/hello.sc"<br>• "Crie um worker que retorna usuários"<br>• "Edite o worker hello para retornar JSON diferente"', 'system');
+        addChatMessage('🤖 Olá! Sou seu assistente IA.<br><br>📝 <strong>Modos:</strong><br>• 💬 Conversar: analiso seu código<br>• ✏️ Editar: crio, edito, deleto e publico<br><br>⚡ <strong>Workers .sc:</strong> Crie APIs com extensão .sc!<br><br>💡 <strong>Exemplos:</strong><br>• "Crie um worker .sc chamado hello com rota /api/hello.sc"<br>• "Crie um worker que retorna usuários"<br>• "Edite o worker hello"<br>• "Publique o worker"', 'system');
       }
     }
 
@@ -1225,7 +1286,6 @@ router.post('${route}', async (req) => {
           else fileName += '.js';
         }
         
-        // Se for worker .sc, salvar como worker também
         if (fileName.endsWith('.sc')) {
           const route = extractRouteFromCode(content);
           const workerName = fileName.replace('.sc', '');
@@ -1257,11 +1317,9 @@ router.post('${route}', async (req) => {
         return false;
       }
       
-      // Se for worker .sc, editar também
       if (fileName.endsWith('.sc')) {
         const route = extractRouteFromCode(newContent);
         const workerName = fileName.replace('.sc', '');
-        // Encontrar worker existente
         const existingWorker = projectWorkers.find(w => w.name === workerName);
         if (existingWorker) {
           await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${existingWorker.id}`).update({
@@ -1301,7 +1359,6 @@ router.post('${route}', async (req) => {
         return false;
       }
       
-      // Se for worker .sc, deletar também
       if (fileName.endsWith('.sc')) {
         const workerName = fileName.replace('.sc', '');
         const worker = projectWorkers.find(w => w.name === workerName);
@@ -1344,6 +1401,10 @@ router.post('${route}', async (req) => {
         addChatMessage('❌ Falta o arquivo index.html', 'system');
         return false;
       }
+      
+      // Antes de publicar, atualizar HTMLs com URLs dos workers
+      await updateHtmlFilesWithWorkerUrls();
+      
       addChatMessage('🚀 Publicando site...', 'system');
       try {
         const dirName = `codehub_${currentUser.uid}_${Date.now()}`;
@@ -1379,6 +1440,9 @@ router.post('${route}', async (req) => {
         return false;
       }
       if (!currentHostingSubdomain) return await publishProject();
+      
+      await updateHtmlFilesWithWorkerUrls();
+      
       addChatMessage('🔄 Atualizando site...', 'system');
       try {
         for (const file of Object.values(files)) {
@@ -1581,6 +1645,17 @@ router.post('${route}', async (req) => {
         <h1>🚀 ${name}</h1>
         <p>Bem-vindo ao seu projeto!</p>
         <p>Crie workers .sc na sidebar esquerda!</p>
+        <p>Exemplo de chamada worker: <span id="demo"></span></p>
+        <script>
+            // Exemplo de como chamar um worker .sc
+            // O caminho '/api/hello.sc' será automaticamente substituído pela URL completa quando publicado
+            fetch('/api/hello.sc')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('demo').innerText = data.message;
+                })
+                .catch(err => console.error(err));
+        </script>
     </div>
 </body>
 </html>`;
@@ -1646,6 +1721,12 @@ router.post('${route}', async (req) => {
     <div class="container">
         <h1>🚀 Bem-vindo!</h1>
         <p>Crie workers .sc na sidebar esquerda!</p>
+        <script>
+            fetch('/api/hello.sc')
+                .then(res => res.json())
+                .then(data => console.log(data))
+                .catch(err => console.error(err));
+        </script>
     </div>
 </body>
 </html>`;
