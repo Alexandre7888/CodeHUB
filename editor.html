@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CodeHUB - Editor com IA e Workers</title>
+  <title>CodeHUB - Editor com IA e Workers .sc</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -123,8 +123,9 @@
       width: 250px;
     }
     
-    #projects-sidebar {
-      width: 260px;
+    /* Sidebar esquerda com Projetos e Workers */
+    #left-sidebar {
+      width: 280px;
       background: #252526;
       border-right: 1px solid #333;
       display: flex;
@@ -132,7 +133,7 @@
       overflow-y: auto;
     }
     
-    .projects-header {
+    .section-header {
       padding: 12px;
       background: #2d2d2d;
       font-weight: bold;
@@ -140,12 +141,14 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      font-size: 13px;
     }
     
     .projects-list {
       flex: 1;
       overflow-y: auto;
       padding: 8px;
+      max-height: 40%;
     }
     
     .project-item {
@@ -171,11 +174,76 @@
     .project-name {
       font-weight: bold;
       margin-bottom: 4px;
+      font-size: 13px;
     }
     
     .project-date {
       font-size: 10px;
       color: #888;
+    }
+    
+    /* Workers List - cada projeto tem seus workers */
+    .workers-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+      border-top: 1px solid #333;
+    }
+    
+    .worker-item {
+      background: #1e1e1e;
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 8px;
+      border: 1px solid #333;
+    }
+    
+    .worker-name {
+      font-weight: bold;
+      color: #4cc9f0;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    
+    .worker-route {
+      font-size: 11px;
+      color: #22c55e;
+      font-family: monospace;
+      margin-bottom: 4px;
+    }
+    
+    .worker-url {
+      font-size: 10px;
+      color: #888;
+      word-break: break-all;
+      margin-bottom: 8px;
+    }
+    
+    .worker-actions {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    
+    .worker-actions button {
+      background: #4361ee;
+      padding: 3px 8px;
+      font-size: 10px;
+    }
+    
+    .worker-actions button.delete {
+      background: #f44336;
+    }
+    
+    .worker-actions button.test {
+      background: #22c55e;
+    }
+    
+    .no-workers {
+      text-align: center;
+      color: #888;
+      padding: 20px;
+      font-size: 12px;
     }
     
     .main-container {
@@ -375,90 +443,42 @@
       border-radius: 8px;
     }
     
-    /* Workers Panel */
-    .workers-panel {
+    /* Worker Code Editor */
+    .worker-editor {
       background: #1e1e1e;
       border-top: 1px solid #333;
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-      flex: 1;
+      padding: 8px;
     }
     
-    .workers-header {
+    .worker-editor-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px;
-      background: #2d2d2d;
-      font-size: 12px;
+      margin-bottom: 8px;
+      font-size: 11px;
       color: #4cc9f0;
-      border-bottom: 1px solid #333;
     }
     
-    .workers-buttons {
+    .worker-editor-buttons {
       display: flex;
-      gap: 5px;
+      gap: 8px;
     }
     
-    .workers-buttons button {
-      background: #4361ee;
+    .worker-editor-buttons button {
       padding: 4px 10px;
       font-size: 10px;
     }
     
-    .workers-content {
-      flex: 1;
-      overflow-y: auto;
+    #workerCode {
+      width: 100%;
+      background: #1e1e1e;
+      border: 1px solid #333;
+      color: #d4d4d4;
+      font-family: 'Consolas', monospace;
+      font-size: 12px;
       padding: 10px;
-      font-size: 11px;
-    }
-    
-    .worker-item {
-      background: #2d2d2d;
-      border-radius: 8px;
-      padding: 8px;
-      margin-top: 8px;
-    }
-    
-    .worker-name {
-      font-weight: bold;
-      color: #4cc9f0;
-    }
-    
-    .worker-url {
-      font-size: 10px;
-      color: #888;
-      word-break: break-all;
-    }
-    
-    .worker-route {
-      font-size: 10px;
-      color: #22c55e;
-      margin-top: 4px;
-    }
-    
-    .worker-buttons {
-      display: flex;
-      gap: 8px;
-      margin-top: 8px;
-    }
-    
-    .worker-buttons button {
-      background: #4361ee;
-      padding: 4px 8px;
-      font-size: 10px;
-    }
-    
-    .worker-buttons button.delete {
-      background: #f44336;
-    }
-    
-    .no-workers {
-      text-align: center;
-      color: #888;
-      padding: 15px;
-      font-size: 11px;
+      border-radius: 6px;
+      resize: vertical;
     }
     
     .activities-panel {
@@ -466,17 +486,17 @@
       border-top: 1px solid #333;
       display: flex;
       flex-direction: column;
-      min-height: 0;
-      flex: 1;
+      min-height: 150px;
+      max-height: 180px;
     }
     
     .activities-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px;
+      padding: 8px 10px;
       background: #2d2d2d;
-      font-size: 12px;
+      font-size: 11px;
       color: #4cc9f0;
       border-bottom: 1px solid #333;
     }
@@ -484,15 +504,15 @@
     .activities-content {
       flex: 1;
       overflow-y: auto;
-      padding: 10px;
+      padding: 8px;
       font-size: 11px;
     }
     
     .activity-item {
       background: #2d2d2d;
-      border-radius: 8px;
-      padding: 8px;
-      margin-top: 8px;
+      border-radius: 6px;
+      padding: 6px;
+      margin-top: 6px;
     }
     
     .activity-online { color: #4caf50; font-weight: bold; }
@@ -501,17 +521,17 @@
       background: #f44336;
       color: white;
       border: none;
-      padding: 4px 8px;
+      padding: 3px 6px;
       border-radius: 4px;
       cursor: pointer;
-      font-size: 10px;
-      margin-top: 6px;
+      font-size: 9px;
+      margin-top: 4px;
     }
     
     .no-activities {
       text-align: center;
       color: #888;
-      padding: 15px;
+      padding: 10px;
       font-size: 11px;
     }
     
@@ -596,18 +616,10 @@
       padding: 4px 8px;
     }
     
-    .worker-code-area {
-      background: #1e1e1e;
-      border: 1px solid #333;
-      border-radius: 8px;
-      padding: 8px;
-      margin-bottom: 8px;
-      font-family: monospace;
+    .new-worker-btn {
+      background: #22c55e;
       font-size: 11px;
-      resize: vertical;
-      width: 100%;
-      color: #d4d4d4;
-      background: #252526;
+      padding: 4px 8px;
     }
   </style>
 </head>
@@ -640,9 +652,23 @@
     </div>
 
     <div class="main-container">
-      <div id="projects-sidebar">
-        <div class="projects-header"><span>📁 Meus Projetos</span><button class="new-project-btn" onclick="createNewProject()">+ Novo</button></div>
-        <div class="projects-list" id="projects-list"><div style="text-align:center; padding:20px; color:#888;">Carregando...</div></div>
+      <!-- Sidebar Esquerda: Projetos + Workers do Projeto -->
+      <div id="left-sidebar">
+        <div class="section-header">
+          <span>📁 Meus Projetos</span>
+          <button class="new-project-btn" onclick="createNewProject()">+ Novo</button>
+        </div>
+        <div class="projects-list" id="projects-list">
+          <div style="text-align:center; padding:20px; color:#888;">Carregando...</div>
+        </div>
+        
+        <div class="section-header">
+          <span>⚡ Workers .sc do Projeto</span>
+          <button class="new-worker-btn" onclick="createNewWorker()">+ Worker</button>
+        </div>
+        <div class="workers-list" id="workers-list">
+          <div class="no-workers">📭 Nenhum worker criado</div>
+        </div>
       </div>
 
       <div id="editor-container">
@@ -665,27 +691,28 @@
             <button class="mode-toggle-btn edit-mode active" id="editModeBtn" onclick="setMode('edit')">✏️ Editar</button>
           </div>
           <div class="chat-input-wrapper">
-            <textarea id="chatInput" placeholder="Digite seu comando... Ex: 'Crie um worker com rota /api/usuarios'" rows="2"></textarea>
+            <textarea id="chatInput" placeholder="Digite seu comando... Ex: 'Crie um worker .sc com rota /api/hello que retorna Olá'" rows="2"></textarea>
             <button id="sendChatBtn">Enviar</button>
           </div>
         </div>
         
-        <!-- Workers Panel - Cada projeto tem seu worker -->
-        <div class="workers-panel">
-          <div class="workers-header">
-            <span>⚡ Worker do Projeto</span>
-            <div class="workers-buttons">
-              <button onclick="createWorker()">➕ Criar/Atualizar</button>
-              <button onclick="deleteCurrentWorker()">🗑️ Deletar</button>
+        <!-- Worker Code Editor -->
+        <div class="worker-editor">
+          <div class="worker-editor-header">
+            <span>📝 Código do Worker (.sc)</span>
+            <div class="worker-editor-buttons">
+              <button onclick="saveWorker()">💾 Salvar Worker</button>
+              <button onclick="deployWorker()">🚀 Publicar Worker</button>
             </div>
           </div>
-          <div class="workers-content" id="workersList">
-            <div class="no-workers">📭 Nenhum worker criado para este projeto</div>
-          </div>
-          <textarea id="workerCode" class="worker-code-area" rows="6" placeholder="// Código do Worker
-// Exemplo:
-router.get('/api/hello', async () => {
-    return { message: 'Olá do Worker!' };
+          <textarea id="workerCode" rows="8" placeholder="// Código do Worker .sc
+// Exemplo com rota /api/hello.sc
+
+router.get('/api/hello.sc', async () => {
+    return {
+        message: 'Olá do Worker .sc!',
+        status: 'online'
+    };
 });"></textarea>
         </div>
         
@@ -705,8 +732,8 @@ router.get('/api/hello', async () => {
 
   <div id="publishModal" class="publish-modal">
     <div class="publish-modal-content">
-      <h3>🚀 Publicar no Puter?</h3>
-      <p>Deseja publicar as alterações no Puter agora?</p>
+      <h3>🚀 Publicar Worker?</h3>
+      <p>Deseja publicar este worker no Puter agora?</p>
       <div class="publish-modal-buttons">
         <button class="btn-publish-yes" id="publishYesBtn">✅ Sim, publicar</button>
         <button class="btn-publish-no" id="publishNoBtn">❌ Não, depois</button>
@@ -742,9 +769,9 @@ router.get('/api/hello', async () => {
     let allProjects = [];
     let currentMode = 'edit';
     
-    // Worker do projeto atual
-    let currentWorker = null;
-    let workerCodeArea = null;
+    // Workers do projeto atual
+    let projectWorkers = [];
+    let currentWorkerData = null;
 
     const ACTIVITIES_DB_URL = "https://html-785e3-default-rtdb.firebaseio.com/activities";
     const ACTIVITY_SCRIPT_URL = "https://code.codehub.ct.ws/atividade.js";
@@ -772,213 +799,277 @@ router.get('/api/hello', async () => {
       chatInput: document.getElementById('chatInput'),
       sendChatBtn: document.getElementById('sendChatBtn'),
       projectsList: document.getElementById('projects-list'),
+      workersList: document.getElementById('workers-list'),
+      workerCode: document.getElementById('workerCode'),
       puterStatusDot: document.getElementById('puterStatusDot'),
       puterStatusText: document.getElementById('puterStatusText'),
       publishModal: document.getElementById('publishModal'),
       publishYesBtn: document.getElementById('publishYesBtn'),
       publishNoBtn: document.getElementById('publishNoBtn'),
       activitiesList: document.getElementById('activitiesList'),
-      workersList: document.getElementById('workersList'),
-      workerCode: document.getElementById('workerCode'),
       aiSidebar: document.getElementById('ai-sidebar'),
       resizeHandle: document.getElementById('resizeHandle'),
       chatModeBtn: document.getElementById('chatModeBtn'),
       editModeBtn: document.getElementById('editModeBtn')
     };
 
-    // ==================== WORKERS FUNCTIONS ====================
+    // ==================== WORKERS .sc FUNCTIONS ====================
     
     function workerLog(msg) {
       addChatMessage(`⚡ Worker: ${msg}`, 'system');
     }
 
-    function pegarRota(code) {
+    function extractRouteFromCode(code) {
+      // Extrai rota do código .sc
       const match = code.match(/router\.(get|post|put|delete)\(['"`](.*?)['"`]/);
-      return match ? match[2] : "/";
+      return match ? match[2] : "/api/unknown";
     }
 
-    async function createWorker() {
-      if (!currentProjectId) {
-        workerLog("Nenhum projeto selecionado");
+    async function loadProjectWorkers() {
+      if (!currentProjectId) return;
+      
+      try {
+        const workersRef = db.ref(`workers/${currentUser.uid}/${currentProjectId}`);
+        const snapshot = await workersRef.once('value');
+        projectWorkers = [];
+        
+        snapshot.forEach(child => {
+          projectWorkers.push({
+            id: child.key,
+            ...child.val()
+          });
+        });
+        
+        renderWorkersList();
+        
+        // Carregar worker selecionado ou primeiro
+        if (projectWorkers.length > 0 && !currentWorkerData) {
+          selectWorker(projectWorkers[0].id);
+        }
+      } catch(e) {
+        console.error(e);
+      }
+    }
+
+    function renderWorkersList() {
+      if (!projectWorkers.length) {
+        elements.workersList.innerHTML = '<div class="no-workers">📭 Nenhum worker .sc criado</div>';
+        return;
+      }
+      
+      elements.workersList.innerHTML = projectWorkers.map(w => `
+        <div class="worker-item" onclick="selectWorker('${w.id}')">
+          <div class="worker-name">📦 ${w.name || 'Sem nome'}</div>
+          <div class="worker-route">🎯 ${w.route || '/api/unknown.sc'}</div>
+          <div class="worker-url">🔗 ${w.url ? w.url.substring(0, 50) + '...' : 'Não publicado'}</div>
+          <div class="worker-actions">
+            <button class="test" onclick="event.stopPropagation(); testWorker('${w.id}')">▶️ Testar</button>
+            <button onclick="event.stopPropagation(); editWorker('${w.id}')">✏️ Editar</button>
+            <button class="delete" onclick="event.stopPropagation(); deleteWorker('${w.id}')">🗑️ Deletar</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function selectWorker(workerId) {
+      const worker = projectWorkers.find(w => w.id === workerId);
+      if (!worker) return;
+      
+      currentWorkerData = worker;
+      elements.workerCode.value = worker.code || '';
+      workerLog(`Selecionado worker: ${worker.name}`);
+    }
+
+    async function createNewWorker() {
+      const name = prompt('Nome do worker (ex: hello, test):', 'meu-worker');
+      if (!name) return;
+      
+      const route = `/api/${name}.sc`;
+      const defaultCode = `// Worker .sc: ${name}
+// Rota: ${route}
+
+router.get('${route}', async () => {
+    return {
+        message: 'Olá do worker ${name}!',
+        timestamp: new Date().toISOString(),
+        route: '${route}'
+    };
+});
+
+// Você pode adicionar mais rotas
+router.post('${route}', async (req) => {
+    return {
+        received: req.body,
+        message: 'Dados recebidos com sucesso!'
+    };
+});`;
+      
+      const newWorkerRef = db.ref(`workers/${currentUser.uid}/${currentProjectId}`).push();
+      const workerId = newWorkerRef.key;
+      
+      const workerData = {
+        id: workerId,
+        name: name,
+        route: route,
+        code: defaultCode,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      await newWorkerRef.set(workerData);
+      await loadProjectWorkers();
+      await selectWorker(workerId);
+      workerLog(`Worker "${name}" criado!`);
+      showNotification(`Worker "${name}" criado!`, 'success');
+    }
+
+    async function saveWorker() {
+      if (!currentWorkerData) {
+        showNotification('Selecione um worker primeiro', 'warning');
+        return;
+      }
+      
+      const newCode = elements.workerCode.value;
+      const newRoute = extractRouteFromCode(newCode);
+      
+      await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({
+        code: newCode,
+        route: newRoute,
+        updatedAt: new Date().toISOString()
+      });
+      
+      currentWorkerData.code = newCode;
+      currentWorkerData.route = newRoute;
+      
+      workerLog(`Worker "${currentWorkerData.name}" salvo!`);
+      showNotification('Worker salvo!', 'success');
+      await loadProjectWorkers();
+    }
+
+    async function deployWorker() {
+      if (!currentWorkerData) {
+        showNotification('Selecione um worker primeiro', 'warning');
+        return;
+      }
+      
+      showPublishModal(async () => {
+        workerLog(`Publicando worker "${currentWorkerData.name}"...`);
+        
+        try {
+          // Salvar código no Puter FS com extensão .sc
+          const fileName = `worker_${currentWorkerData.name}.sc`;
+          await puter.fs.write(fileName, currentWorkerData.code);
+          
+          // Criar worker no Puter
+          const workerName = `${currentProjectId}_${currentWorkerData.name}`;
+          
+          // Tentar deletar se existir
+          try {
+            await puter.workers.delete(workerName);
+          } catch(e) {}
+          
+          const w = await puter.workers.create(workerName, fileName);
+          const fullUrl = w.url + currentWorkerData.route;
+          
+          // Atualizar Firebase com URL
+          await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({
+            url: w.url,
+            fullUrl: fullUrl,
+            deployedAt: new Date().toISOString()
+          });
+          
+          currentWorkerData.url = w.url;
+          currentWorkerData.fullUrl = fullUrl;
+          
+          workerLog(`Worker publicado!`);
+          workerLog(`URL: ${fullUrl}`);
+          
+          showNotification(`Worker publicado em ${fullUrl}`, 'success');
+          await loadProjectWorkers();
+          
+        } catch(e) {
+          workerLog(`Erro: ${e.message}`);
+          showNotification(`Erro: ${e.message}`, 'error');
+        }
+      }, () => {});
+    }
+
+    async function testWorker(workerId) {
+      const worker = projectWorkers.find(w => w.id === workerId);
+      if (!worker || !worker.fullUrl) {
+        workerLog(`Worker não publicado ainda. Publique primeiro.`);
         return;
       }
       
       try {
-        let code = elements.workerCode.value;
-        if (!code.trim()) {
-          code = `// Worker do projeto ${elements.projectName.value}
-// Rotas disponíveis: GET, POST, PUT, DELETE
+        workerLog(`Testando ${worker.fullUrl}...`);
+        const res = await fetch(worker.fullUrl);
+        const data = await res.json();
+        workerLog(`✅ Resposta: ${JSON.stringify(data, null, 2)}`);
+        showNotification(`Worker respondeu!`, 'success');
+      } catch(e) {
+        workerLog(`❌ Erro: ${e.message}`);
+      }
+    }
 
-router.get('/api/hello', async () => {
-    return {
-        message: 'Olá do CodeHUB!',
-        project: '${elements.projectName.value}',
-        timestamp: new Date().toISOString()
-    };
-});
+    async function editWorker(workerId) {
+      await selectWorker(workerId);
+    }
 
-router.get('/api/info', async () => {
-    return {
-        name: '${elements.projectName.value}',
-        status: 'online',
-        version: '1.0.0'
-    };
-});`;
-          elements.workerCode.value = code;
-        }
-        
-        // Salvar código do worker no Firebase
-        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/worker`).set({
-          code: code,
-          updatedAt: new Date().toISOString()
-        });
-        
-        // Salvar no Puter FS
-        await puter.fs.write(`worker_${currentProjectId}.js`, code);
-        
-        // Criar ou atualizar worker
-        const workerName = `codehub_${currentProjectId.substring(0, 10)}`;
-        
+    async function deleteWorker(workerId) {
+      if (!confirm('Tem certeza que deseja deletar este worker?')) return;
+      
+      const worker = projectWorkers.find(w => w.id === workerId);
+      if (worker) {
         try {
-          // Tentar deletar se existir
+          const workerName = `${currentProjectId}_${worker.name}`;
           await puter.workers.delete(workerName);
         } catch(e) {}
         
-        const w = await puter.workers.create(workerName, `worker_${currentProjectId}.js`);
-        currentWorker = w;
+        await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${workerId}`).remove();
+        await loadProjectWorkers();
         
-        const rota = pegarRota(code);
-        const urlFinal = w.url + rota;
+        if (currentWorkerData && currentWorkerData.id === workerId) {
+          currentWorkerData = null;
+          elements.workerCode.value = '';
+        }
         
-        workerLog(`Worker criado/atualizado: ${workerName}`);
-        workerLog(`URL base: ${w.url}`);
-        workerLog(`Rota detectada: ${rota}`);
-        
-        // Salvar info do worker no Firebase
-        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/workerInfo`).set({
-          name: workerName,
-          url: w.url,
-          route: rota,
-          fullUrl: urlFinal,
-          updatedAt: new Date().toISOString()
-        });
-        
-        await displayWorkerInfo();
-        showNotification(`Worker criado/atualizado!`, 'success');
-        
-      } catch (e) {
-        workerLog(`Erro: ${e.message}`);
-        showNotification(`Erro: ${e.message}`, 'error');
+        workerLog(`Worker "${worker.name}" deletado`);
+        showNotification(`Worker deletado!`, 'success');
       }
     }
 
-    async function displayWorkerInfo() {
-      if (!currentProjectId) return;
+    // ==================== IA TREINADA PARA CRIAR WORKERS .sc ====================
+    
+    async function createWorkerFromAI(workerName, route, code) {
+      if (!workerName || !route || !code) {
+        workerLog('Dados do worker incompletos');
+        return;
+      }
       
-      try {
-        const workerInfoSnap = await db.ref(`projects/${currentUser.uid}/${currentProjectId}/workerInfo`).once('value');
-        const workerInfo = workerInfoSnap.val();
-        
-        if (!workerInfo) {
-          elements.workersList.innerHTML = '<div class="no-workers">📭 Nenhum worker criado para este projeto</div>';
-          return;
-        }
-        
-        // Carregar código do worker
-        const workerCodeSnap = await db.ref(`projects/${currentUser.uid}/${currentProjectId}/worker`).once('value');
-        if (workerCodeSnap.val()) {
-          elements.workerCode.value = workerCodeSnap.val().code;
-        }
-        
-        elements.workersList.innerHTML = `
-          <div class="worker-item">
-            <div class="worker-name">📦 ${workerInfo.name}</div>
-            <div class="worker-url">🔗 ${workerInfo.url}</div>
-            <div class="worker-route">🎯 Rota: ${workerInfo.route}</div>
-            <div class="worker-buttons">
-              <button onclick="testWorker('${workerInfo.url}', '${workerInfo.route}')">▶️ Testar API</button>
-              <button onclick="window.open('${workerInfo.fullUrl}', '_blank')" class="open">🔗 Abrir Rota</button>
-              <button onclick="window.open('${workerInfo.url}', '_blank')">🌐 Abrir Base</button>
-            </div>
-          </div>
-        `;
-        
-      } catch(e) {
-        console.error(e);
-      }
-    }
-
-    async function testWorker(url, route) {
-      try {
-        const fullUrl = url + route;
-        addChatMessage(`🧪 Testando worker...`, 'system');
-        const res = await fetch(fullUrl);
-        const data = await res.json();
-        addChatMessage(`✅ Resposta: ${JSON.stringify(data, null, 2)}`, 'system');
-        showNotification(`Worker respondeu!`, 'success');
-      } catch(e) {
-        addChatMessage(`❌ Erro: ${e.message}`, 'system');
-      }
-    }
-
-    async function deleteCurrentWorker() {
-      if (!currentProjectId) return;
+      const newWorkerRef = db.ref(`workers/${currentUser.uid}/${currentProjectId}`).push();
+      const workerId = newWorkerRef.key;
       
-      try {
-        const workerInfoSnap = await db.ref(`projects/${currentUser.uid}/${currentProjectId}/workerInfo`).once('value');
-        const workerInfo = workerInfoSnap.val();
-        
-        if (!workerInfo) {
-          workerLog("Nenhum worker para deletar");
-          return;
-        }
-        
-        if (confirm(`Deletar worker "${workerInfo.name}" permanentemente?`)) {
-          await puter.workers.delete(workerInfo.name);
-          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/worker`).remove();
-          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/workerInfo`).remove();
-          currentWorker = null;
-          elements.workersList.innerHTML = '<div class="no-workers">📭 Nenhum worker criado para este projeto</div>';
-          workerLog(`Worker deletado: ${workerInfo.name}`);
-          showNotification(`Worker deletado!`, 'success');
-        }
-      } catch(e) {
-        workerLog(`Erro: ${e.message}`);
-      }
-    }
-
-    async function loadProjectWorker() {
-      if (!currentProjectId) return;
+      const workerData = {
+        id: workerId,
+        name: workerName,
+        route: route,
+        code: code,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
       
-      try {
-        const workerInfoSnap = await db.ref(`projects/${currentUser.uid}/${currentProjectId}/workerInfo`).once('value');
-        const workerInfo = workerInfoSnap.val();
-        
-        if (workerInfo) {
-          currentWorker = workerInfo;
-        }
-        
-        const workerCodeSnap = await db.ref(`projects/${currentUser.uid}/${currentProjectId}/worker`).once('value');
-        if (workerCodeSnap.val()) {
-          elements.workerCode.value = workerCodeSnap.val().code;
-        } else {
-          elements.workerCode.value = `// Worker do projeto ${elements.projectName.value || 'Meu Projeto'}
-// Crie suas rotas aqui!
-
-router.get('/api/hello', async () => {
-    return {
-        message: 'Olá do CodeHUB!',
-        project: '${elements.projectName.value || 'Meu Projeto'}',
-        timestamp: new Date().toISOString()
-    };
-});`;
-        }
-        
-        await displayWorkerInfo();
-        
-      } catch(e) {
-        console.error(e);
-      }
+      await newWorkerRef.set(workerData);
+      await loadProjectWorkers();
+      await selectWorker(workerId);
+      workerLog(`Worker "${workerName}" criado pela IA! Rota: ${route}`);
+      
+      // Perguntar se quer publicar
+      showPublishModal(async () => {
+        await deployWorker();
+      }, () => {});
+      
+      return workerId;
     }
 
     // ==================== MODO ====================
@@ -1056,7 +1147,7 @@ router.get('/api/hello', async () => {
         elements.chatMessages.appendChild(msgDiv);
       });
       if (elements.chatMessages.children.length === 0) {
-        addChatMessage('🤖 Olá! Sou seu assistente IA.<br><br>📝 <strong>Modos:</strong><br>• 💬 Conversar: analiso seu código<br>• ✏️ Editar: crio, edito, deleto e publico<br><br>⚡ <strong>Workers:</strong> Cada projeto tem seu próprio worker! Crie APIs serverless!', 'system');
+        addChatMessage('🤖 Olá! Sou seu assistente IA.<br><br>📝 <strong>Modos:</strong><br>• 💬 Conversar: analiso seu código<br>• ✏️ Editar: crio, edito, deleto e publico<br><br>⚡ <strong>Workers .sc:</strong> Crie APIs com extensão .sc!<br><br>💡 <strong>Comandos:</strong><br>• "Crie um worker .sc chamado hello com rota /api/hello.sc"<br>• "Crie um worker que retorna usuários"<br>• "Edite o worker hello para retornar JSON diferente"', 'system');
       }
     }
 
@@ -1124,13 +1215,23 @@ router.get('/api/hello', async () => {
           if (content.includes('<!DOCTYPE') || content.includes('<html')) fileName = 'index.html';
           else if (content.includes('{') && content.includes('}')) fileName = 'style.css';
           else if (content.includes('function') || content.includes('const')) fileName = 'script.js';
+          else if (content.includes('router.')) fileName = 'worker.sc';
           else fileName = 'arquivo.txt';
         }
         if (!fileName.includes('.')) {
           if (content.includes('<!DOCTYPE') || content.includes('<html')) fileName += '.html';
           else if (content.includes('{') && content.includes('}')) fileName += '.css';
+          else if (content.includes('router.')) fileName += '.sc';
           else fileName += '.js';
         }
+        
+        // Se for worker .sc, salvar como worker também
+        if (fileName.endsWith('.sc')) {
+          const route = extractRouteFromCode(content);
+          const workerName = fileName.replace('.sc', '');
+          await createWorkerFromAI(workerName, route, content);
+        }
+        
         if (fileName.endsWith('.html')) {
           content = validateAndFixHTML(content);
           content = injectActivityScript(content);
@@ -1155,6 +1256,24 @@ router.get('/api/hello', async () => {
         addChatMessage('⚠️ Modo Conversar - Para editar, mude para "✏️ Editar"', 'system');
         return false;
       }
+      
+      // Se for worker .sc, editar também
+      if (fileName.endsWith('.sc')) {
+        const route = extractRouteFromCode(newContent);
+        const workerName = fileName.replace('.sc', '');
+        // Encontrar worker existente
+        const existingWorker = projectWorkers.find(w => w.name === workerName);
+        if (existingWorker) {
+          await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${existingWorker.id}`).update({
+            code: newContent,
+            route: route,
+            updatedAt: new Date().toISOString()
+          });
+          await loadProjectWorkers();
+          workerLog(`Worker "${workerName}" atualizado!`);
+        }
+      }
+      
       let targetKey = null;
       for (const key in files) {
         if (files[key].name.toLowerCase() === fileName.toLowerCase() ||
@@ -1181,6 +1300,16 @@ router.get('/api/hello', async () => {
         addChatMessage('⚠️ Modo Conversar - Para deletar, mude para "✏️ Editar"', 'system');
         return false;
       }
+      
+      // Se for worker .sc, deletar também
+      if (fileName.endsWith('.sc')) {
+        const workerName = fileName.replace('.sc', '');
+        const worker = projectWorkers.find(w => w.name === workerName);
+        if (worker) {
+          await deleteWorker(worker.id);
+        }
+      }
+      
       let targetKey = null;
       for (const key in files) {
         if (files[key].name.toLowerCase() === fileName.toLowerCase() ||
@@ -1215,7 +1344,7 @@ router.get('/api/hello', async () => {
         addChatMessage('❌ Falta o arquivo index.html', 'system');
         return false;
       }
-      addChatMessage('🚀 Publicando...', 'system');
+      addChatMessage('🚀 Publicando site...', 'system');
       try {
         const dirName = `codehub_${currentUser.uid}_${Date.now()}`;
         await puter.fs.mkdir(dirName);
@@ -1250,7 +1379,7 @@ router.get('/api/hello', async () => {
         return false;
       }
       if (!currentHostingSubdomain) return await publishProject();
-      addChatMessage('🔄 Atualizando...', 'system');
+      addChatMessage('🔄 Atualizando site...', 'system');
       try {
         for (const file of Object.values(files)) {
           let content = file.content || '';
@@ -1289,29 +1418,32 @@ router.get('/api/hello', async () => {
           existingFiles.push({ name: file.name, content: file.content || '' });
         }
         
+        const workersInfo = projectWorkers.map(w => `- ${w.name}: rota ${w.route}${w.fullUrl ? ` (${w.fullUrl})` : ' (não publicado)'}`).join('\n');
+        
         let prompt = '';
         if (currentMode === 'chat') {
           prompt = `Você é um assistente de programação amigável que só ANALISA código.
             PROJETO: ${elements.projectName.value}
             ARQUIVOS: ${existingFiles.map(f => f.name).join(', ')}
-            CONTEÚDO: ${existingFiles.map(f => `--- ${f.name} ---\n${f.content.substring(0, 800)}`).join('\n\n')}
+            WORKERS .sc: ${workersInfo || 'Nenhum'}
             COMANDO: "${userMessage}"
             
-            IMPORTANTE: Modo CONVERSAR - NÃO pode criar, editar ou deletar. Apenas ANALISE o código.
-            Responda em português de forma clara. Se sugerir código, use blocos \`\`\``;
+            IMPORTANTE: Modo CONVERSAR - NÃO pode criar, editar ou deletar. Apenas ANALISE.
+            Responda em português. Se sugerir código, use blocos \`\`\`.`;
         } else {
           prompt = `Você é um assistente que EXECUTA ações no código.
             PROJETO: ${elements.projectName.value}
             ARQUIVOS: ${existingFiles.map(f => f.name).join(', ')}
-            CONTEÚDO: ${existingFiles.map(f => `--- ${f.name} ---\n${f.content.substring(0, 500)}`).join('\n\n')}
+            WORKERS EXISTENTES: ${workersInfo || 'Nenhum'}
             COMANDO: "${userMessage}"
             
             Responda SOMENTE com um JSON:
-            {"action":"criar","files":[{"name":"index.html","content":"<!DOCTYPE html>..."}],"message":"msg"}
+            {"action":"criar","files":[{"name":"index.html","content":"..."}],"message":"msg"}
             OU {"action":"editar","targetFile":"index.html","newContent":"...","message":"msg"}
             OU {"action":"deletar","targetFile":"style.css","message":"msg"}
             OU {"action":"publicar","message":"msg"}
-            OU {"action":"atualizar","message":"msg"}`;
+            OU {"action":"atualizar","message":"msg"}
+            OU {"action":"criar_worker","workerName":"nome","route":"/api/nome.sc","code":"código do worker","message":"msg"}`;
         }
         
         const res = await puter.ai.chat(prompt, { stream: true });
@@ -1329,7 +1461,10 @@ router.get('/api/hello', async () => {
             const jsonMatch = fullResponse.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
               const result = JSON.parse(jsonMatch[0]);
-              if (result.action) {
+              if (result.action === 'criar_worker' && result.workerName && result.route && result.code) {
+                await createWorkerFromAI(result.workerName, result.route, result.code);
+                addChatMessage(`✅ ${result.message || `Worker "${result.workerName}" criado!`}`, 'ai');
+              } else if (result.action) {
                 switch(result.action) {
                   case 'criar':
                     if (result.files) {
@@ -1403,7 +1538,7 @@ router.get('/api/hello', async () => {
       await loadProjectData();
       await loadChatHistory();
       await loadActivities();
-      await loadProjectWorker();
+      await loadProjectWorkers();
       updateTabs();
       window.history.pushState({}, '', `?projectId=${projectId}`);
     }
@@ -1445,7 +1580,7 @@ router.get('/api/hello', async () => {
     <div class="container">
         <h1>🚀 ${name}</h1>
         <p>Bem-vindo ao seu projeto!</p>
-        <p>Crie workers para sua API clicando em "Criar/Atualizar" no painel ao lado!</p>
+        <p>Crie workers .sc na sidebar esquerda!</p>
     </div>
 </body>
 </html>`;
@@ -1510,7 +1645,7 @@ router.get('/api/hello', async () => {
 <body>
     <div class="container">
         <h1>🚀 Bem-vindo!</h1>
-        <p>Crie workers para sua API!</p>
+        <p>Crie workers .sc na sidebar esquerda!</p>
     </div>
 </body>
 </html>`;
@@ -1576,7 +1711,7 @@ router.get('/api/hello', async () => {
           await loadProjectData();
           await loadChatHistory();
           await loadActivities();
-          await loadProjectWorker();
+          await loadProjectWorkers();
         } else if (allProjects.length > 0) {
           await selectProject(allProjects[0].id);
         } else {
@@ -1612,6 +1747,7 @@ router.get('/api/hello', async () => {
       if (ext === 'html') lang = 'html';
       else if (ext === 'css') lang = 'css';
       else if (ext === 'js') lang = 'javascript';
+      else if (ext === 'sc') lang = 'javascript';
       
       const content = fileData.content || '';
       let model = models[fileKey];
@@ -1749,9 +1885,13 @@ router.get('/api/hello', async () => {
     window.closeFile = closeFile;
     window.deleteActivity = deleteActivity;
     window.setMode = setMode;
-    window.createWorker = createWorker;
-    window.deleteCurrentWorker = deleteCurrentWorker;
+    window.createNewWorker = createNewWorker;
+    window.selectWorker = selectWorker;
+    window.saveWorker = saveWorker;
+    window.deployWorker = deployWorker;
     window.testWorker = testWorker;
+    window.editWorker = editWorker;
+    window.deleteWorker = deleteWorker;
   </script>
 </body>
 </html>
