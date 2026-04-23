@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CodeHUB - Editor com IA</title>
+  <title>CodeHUB - Editor com IA e Workers</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -375,6 +375,92 @@
       border-radius: 8px;
     }
     
+    /* Workers Panel */
+    .workers-panel {
+      background: #1e1e1e;
+      border-top: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      flex: 1;
+    }
+    
+    .workers-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      background: #2d2d2d;
+      font-size: 12px;
+      color: #4cc9f0;
+      border-bottom: 1px solid #333;
+    }
+    
+    .workers-buttons {
+      display: flex;
+      gap: 5px;
+    }
+    
+    .workers-buttons button {
+      background: #4361ee;
+      padding: 4px 10px;
+      font-size: 10px;
+    }
+    
+    .workers-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      font-size: 11px;
+    }
+    
+    .worker-item {
+      background: #2d2d2d;
+      border-radius: 8px;
+      padding: 8px;
+      margin-top: 8px;
+    }
+    
+    .worker-name {
+      font-weight: bold;
+      color: #4cc9f0;
+    }
+    
+    .worker-url {
+      font-size: 10px;
+      color: #888;
+      word-break: break-all;
+    }
+    
+    .worker-route {
+      font-size: 10px;
+      color: #22c55e;
+      margin-top: 4px;
+    }
+    
+    .worker-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    
+    .worker-buttons button {
+      background: #4361ee;
+      padding: 4px 8px;
+      font-size: 10px;
+    }
+    
+    .worker-buttons button.delete {
+      background: #f44336;
+    }
+    
+    .no-workers {
+      text-align: center;
+      color: #888;
+      padding: 15px;
+      font-size: 11px;
+    }
+    
     .activities-panel {
       background: #1e1e1e;
       border-top: 1px solid #333;
@@ -509,6 +595,20 @@
       font-size: 11px;
       padding: 4px 8px;
     }
+    
+    .worker-code-area {
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 8px;
+      margin-bottom: 8px;
+      font-family: monospace;
+      font-size: 11px;
+      resize: vertical;
+      width: 100%;
+      color: #d4d4d4;
+      background: #252526;
+    }
   </style>
 </head>
 <body>
@@ -565,9 +665,28 @@
             <button class="mode-toggle-btn edit-mode active" id="editModeBtn" onclick="setMode('edit')">✏️ Editar</button>
           </div>
           <div class="chat-input-wrapper">
-            <textarea id="chatInput" placeholder="Digite seu comando... Ex: 'Crie um site bonito com HTML, CSS e JS'" rows="2"></textarea>
+            <textarea id="chatInput" placeholder="Digite seu comando... Ex: 'Crie um worker com rota /api/usuarios'" rows="2"></textarea>
             <button id="sendChatBtn">Enviar</button>
           </div>
+        </div>
+        
+        <!-- Workers Panel - Cada projeto tem seu worker -->
+        <div class="workers-panel">
+          <div class="workers-header">
+            <span>⚡ Worker do Projeto</span>
+            <div class="workers-buttons">
+              <button onclick="createWorker()">➕ Criar/Atualizar</button>
+              <button onclick="deleteCurrentWorker()">🗑️ Deletar</button>
+            </div>
+          </div>
+          <div class="workers-content" id="workersList">
+            <div class="no-workers">📭 Nenhum worker criado para este projeto</div>
+          </div>
+          <textarea id="workerCode" class="worker-code-area" rows="6" placeholder="// Código do Worker
+// Exemplo:
+router.get('/api/hello', async () => {
+    return { message: 'Olá do Worker!' };
+});"></textarea>
         </div>
         
         <div class="activities-panel">
@@ -622,6 +741,10 @@
     let currentHostingDirectory = null;
     let allProjects = [];
     let currentMode = 'edit';
+    
+    // Worker do projeto atual
+    let currentWorker = null;
+    let workerCodeArea = null;
 
     const ACTIVITIES_DB_URL = "https://html-785e3-default-rtdb.firebaseio.com/activities";
     const ACTIVITY_SCRIPT_URL = "https://code.codehub.ct.ws/atividade.js";
@@ -655,12 +778,210 @@
       publishYesBtn: document.getElementById('publishYesBtn'),
       publishNoBtn: document.getElementById('publishNoBtn'),
       activitiesList: document.getElementById('activitiesList'),
+      workersList: document.getElementById('workersList'),
+      workerCode: document.getElementById('workerCode'),
       aiSidebar: document.getElementById('ai-sidebar'),
       resizeHandle: document.getElementById('resizeHandle'),
       chatModeBtn: document.getElementById('chatModeBtn'),
       editModeBtn: document.getElementById('editModeBtn')
     };
 
+    // ==================== WORKERS FUNCTIONS ====================
+    
+    function workerLog(msg) {
+      addChatMessage(`⚡ Worker: ${msg}`, 'system');
+    }
+
+    function pegarRota(code) {
+      const match = code.match(/router\.(get|post|put|delete)\(['"`](.*?)['"`]/);
+      return match ? match[2] : "/";
+    }
+
+    async function createWorker() {
+      if (!currentProjectId) {
+        workerLog("Nenhum projeto selecionado");
+        return;
+      }
+      
+      try {
+        let code = elements.workerCode.value;
+        if (!code.trim()) {
+          code = `// Worker do projeto ${elements.projectName.value}
+// Rotas disponíveis: GET, POST, PUT, DELETE
+
+router.get('/api/hello', async () => {
+    return {
+        message: 'Olá do CodeHUB!',
+        project: '${elements.projectName.value}',
+        timestamp: new Date().toISOString()
+    };
+});
+
+router.get('/api/info', async () => {
+    return {
+        name: '${elements.projectName.value}',
+        status: 'online',
+        version: '1.0.0'
+    };
+});`;
+          elements.workerCode.value = code;
+        }
+        
+        // Salvar código do worker no Firebase
+        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/worker`).set({
+          code: code,
+          updatedAt: new Date().toISOString()
+        });
+        
+        // Salvar no Puter FS
+        await puter.fs.write(`worker_${currentProjectId}.js`, code);
+        
+        // Criar ou atualizar worker
+        const workerName = `codehub_${currentProjectId.substring(0, 10)}`;
+        
+        try {
+          // Tentar deletar se existir
+          await puter.workers.delete(workerName);
+        } catch(e) {}
+        
+        const w = await puter.workers.create(workerName, `worker_${currentProjectId}.js`);
+        currentWorker = w;
+        
+        const rota = pegarRota(code);
+        const urlFinal = w.url + rota;
+        
+        workerLog(`Worker criado/atualizado: ${workerName}`);
+        workerLog(`URL base: ${w.url}`);
+        workerLog(`Rota detectada: ${rota}`);
+        
+        // Salvar info do worker no Firebase
+        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/workerInfo`).set({
+          name: workerName,
+          url: w.url,
+          route: rota,
+          fullUrl: urlFinal,
+          updatedAt: new Date().toISOString()
+        });
+        
+        await displayWorkerInfo();
+        showNotification(`Worker criado/atualizado!`, 'success');
+        
+      } catch (e) {
+        workerLog(`Erro: ${e.message}`);
+        showNotification(`Erro: ${e.message}`, 'error');
+      }
+    }
+
+    async function displayWorkerInfo() {
+      if (!currentProjectId) return;
+      
+      try {
+        const workerInfoSnap = await db.ref(`projects/${currentUser.uid}/${currentProjectId}/workerInfo`).once('value');
+        const workerInfo = workerInfoSnap.val();
+        
+        if (!workerInfo) {
+          elements.workersList.innerHTML = '<div class="no-workers">📭 Nenhum worker criado para este projeto</div>';
+          return;
+        }
+        
+        // Carregar código do worker
+        const workerCodeSnap = await db.ref(`projects/${currentUser.uid}/${currentProjectId}/worker`).once('value');
+        if (workerCodeSnap.val()) {
+          elements.workerCode.value = workerCodeSnap.val().code;
+        }
+        
+        elements.workersList.innerHTML = `
+          <div class="worker-item">
+            <div class="worker-name">📦 ${workerInfo.name}</div>
+            <div class="worker-url">🔗 ${workerInfo.url}</div>
+            <div class="worker-route">🎯 Rota: ${workerInfo.route}</div>
+            <div class="worker-buttons">
+              <button onclick="testWorker('${workerInfo.url}', '${workerInfo.route}')">▶️ Testar API</button>
+              <button onclick="window.open('${workerInfo.fullUrl}', '_blank')" class="open">🔗 Abrir Rota</button>
+              <button onclick="window.open('${workerInfo.url}', '_blank')">🌐 Abrir Base</button>
+            </div>
+          </div>
+        `;
+        
+      } catch(e) {
+        console.error(e);
+      }
+    }
+
+    async function testWorker(url, route) {
+      try {
+        const fullUrl = url + route;
+        addChatMessage(`🧪 Testando worker...`, 'system');
+        const res = await fetch(fullUrl);
+        const data = await res.json();
+        addChatMessage(`✅ Resposta: ${JSON.stringify(data, null, 2)}`, 'system');
+        showNotification(`Worker respondeu!`, 'success');
+      } catch(e) {
+        addChatMessage(`❌ Erro: ${e.message}`, 'system');
+      }
+    }
+
+    async function deleteCurrentWorker() {
+      if (!currentProjectId) return;
+      
+      try {
+        const workerInfoSnap = await db.ref(`projects/${currentUser.uid}/${currentProjectId}/workerInfo`).once('value');
+        const workerInfo = workerInfoSnap.val();
+        
+        if (!workerInfo) {
+          workerLog("Nenhum worker para deletar");
+          return;
+        }
+        
+        if (confirm(`Deletar worker "${workerInfo.name}" permanentemente?`)) {
+          await puter.workers.delete(workerInfo.name);
+          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/worker`).remove();
+          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/workerInfo`).remove();
+          currentWorker = null;
+          elements.workersList.innerHTML = '<div class="no-workers">📭 Nenhum worker criado para este projeto</div>';
+          workerLog(`Worker deletado: ${workerInfo.name}`);
+          showNotification(`Worker deletado!`, 'success');
+        }
+      } catch(e) {
+        workerLog(`Erro: ${e.message}`);
+      }
+    }
+
+    async function loadProjectWorker() {
+      if (!currentProjectId) return;
+      
+      try {
+        const workerInfoSnap = await db.ref(`projects/${currentUser.uid}/${currentProjectId}/workerInfo`).once('value');
+        const workerInfo = workerInfoSnap.val();
+        
+        if (workerInfo) {
+          currentWorker = workerInfo;
+        }
+        
+        const workerCodeSnap = await db.ref(`projects/${currentUser.uid}/${currentProjectId}/worker`).once('value');
+        if (workerCodeSnap.val()) {
+          elements.workerCode.value = workerCodeSnap.val().code;
+        } else {
+          elements.workerCode.value = `// Worker do projeto ${elements.projectName.value || 'Meu Projeto'}
+// Crie suas rotas aqui!
+
+router.get('/api/hello', async () => {
+    return {
+        message: 'Olá do CodeHUB!',
+        project: '${elements.projectName.value || 'Meu Projeto'}',
+        timestamp: new Date().toISOString()
+    };
+});`;
+        }
+        
+        await displayWorkerInfo();
+        
+      } catch(e) {
+        console.error(e);
+      }
+    }
+
+    // ==================== MODO ====================
     function setMode(mode) {
       currentMode = mode;
       if (mode === 'chat') {
@@ -735,7 +1056,7 @@
         elements.chatMessages.appendChild(msgDiv);
       });
       if (elements.chatMessages.children.length === 0) {
-        addChatMessage('🤖 Olá! Sou seu assistente IA.<br><br>📝 <strong>Modos:</strong><br>• 💬 Conversar: analiso seu código<br>• ✏️ Editar: crio, edito, deleto e publico<br><br>💡 Escolha o modo nos botões acima!', 'system');
+        addChatMessage('🤖 Olá! Sou seu assistente IA.<br><br>📝 <strong>Modos:</strong><br>• 💬 Conversar: analiso seu código<br>• ✏️ Editar: crio, edito, deleto e publico<br><br>⚡ <strong>Workers:</strong> Cada projeto tem seu próprio worker! Crie APIs serverless!', 'system');
       }
     }
 
@@ -942,7 +1263,7 @@
       } catch(e) { addChatMessage(`❌ Erro: ${e.message}`, 'system'); throw e; }
     }
 
-    // ==================== STREAMING REAL COM SSE ====================
+    // ==================== STREAMING REAL ====================
     
     async function sendToAI() {
       const userMessage = elements.chatInput.value.trim();
@@ -951,7 +1272,6 @@
       addChatMessage(userMessage, 'user');
       elements.chatInput.value = '';
       
-      // Criar elemento para streaming
       const streamingMsgDiv = document.createElement('div');
       streamingMsgDiv.className = 'message ai streaming';
       const contentSpan = document.createElement('span');
@@ -994,47 +1314,12 @@
             OU {"action":"atualizar","message":"msg"}`;
         }
         
-        // Usar fetch com streaming real
-        const response = await fetch('https://api.puter.com/v1/ai/chat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('puter_token')}`
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: [{ role: 'user', content: prompt }],
-            stream: true
-          })
-        });
+        const res = await puter.ai.chat(prompt, { stream: true });
         
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-        
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
-          
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') continue;
-              try {
-                const parsed = JSON.parse(data);
-                const chunk = parsed.choices?.[0]?.delta?.content || '';
-                if (chunk) {
-                  fullResponse += chunk;
-                  contentSpan.innerHTML = fullResponse.replace(/\n/g, '<br>');
-                  elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
-                }
-              } catch(e) {}
-            }
-          }
+        for await (const chunk of res) {
+          fullResponse += chunk;
+          contentSpan.innerHTML = fullResponse.replace(/\n/g, '<br>');
+          elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
         }
         
         streamingMsgDiv.classList.remove('streaming');
@@ -1118,6 +1403,7 @@
       await loadProjectData();
       await loadChatHistory();
       await loadActivities();
+      await loadProjectWorker();
       updateTabs();
       window.history.pushState({}, '', `?projectId=${projectId}`);
     }
@@ -1159,6 +1445,7 @@
     <div class="container">
         <h1>🚀 ${name}</h1>
         <p>Bem-vindo ao seu projeto!</p>
+        <p>Crie workers para sua API clicando em "Criar/Atualizar" no painel ao lado!</p>
     </div>
 </body>
 </html>`;
@@ -1223,6 +1510,7 @@
 <body>
     <div class="container">
         <h1>🚀 Bem-vindo!</h1>
+        <p>Crie workers para sua API!</p>
     </div>
 </body>
 </html>`;
@@ -1288,6 +1576,7 @@
           await loadProjectData();
           await loadChatHistory();
           await loadActivities();
+          await loadProjectWorker();
         } else if (allProjects.length > 0) {
           await selectProject(allProjects[0].id);
         } else {
@@ -1460,6 +1749,9 @@
     window.closeFile = closeFile;
     window.deleteActivity = deleteActivity;
     window.setMode = setMode;
+    window.createWorker = createWorker;
+    window.deleteCurrentWorker = deleteCurrentWorker;
+    window.testWorker = testWorker;
   </script>
 </body>
 </html>
