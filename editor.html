@@ -7,6 +7,18 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <!-- Monaco Editor carregado de forma assíncrona -->
+  <script>
+    // Flag para controlar loading
+    window.monacoLoaded = false;
+    window.monacoTimeout = setTimeout(() => {
+      if (!window.monacoLoaded) {
+        document.getElementById('loading-screen').style.display = 'none';
+        document.getElementById('app-content').style.display = 'flex';
+        document.getElementById('simple-editor-warning').style.display = 'block';
+      }
+    }, 3000);
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
   <script src="https://js.puter.com/v2/"></script>
   <style>
@@ -38,7 +50,7 @@
     }
     
     .loader {
-      width: 120px;
+      width: 80px;
       animation: spin 1s linear infinite;
       border-radius: 50%;
     }
@@ -123,7 +135,6 @@
       width: 250px;
     }
     
-    /* Sidebar esquerda */
     #left-sidebar {
       width: 280px;
       background: #252526;
@@ -296,6 +307,34 @@
     #container {
       flex: 1;
       overflow: hidden;
+      position: relative;
+    }
+    
+    /* Editor simples fallback */
+    #simple-editor {
+      width: 100%;
+      height: 100%;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      font-family: 'Consolas', monospace;
+      font-size: 13px;
+      padding: 10px;
+      border: none;
+      resize: none;
+      outline: none;
+    }
+    
+    #simple-editor-warning {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background: #ff9800;
+      color: #1e1e1e;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      display: none;
+      z-index: 10;
     }
     
     #ai-sidebar {
@@ -587,8 +626,6 @@
       to { transform: translateX(0); opacity: 1; }
     }
     
-    .monaco-editor { width: 100%; height: 100%; }
-    
     .puter-status {
       display: flex;
       align-items: center;
@@ -625,6 +662,7 @@
   <div id="loading-screen">
     <img src="https://alexandre7888.github.io/CodeHUB/CodeFOX/foto1.jpg" class="loader" alt="Loading">
     <h2>Carregando CodeHUB...</h2>
+    <p style="font-size: 12px; margin-top: 10px; color: #888;">Isso pode levar alguns segundos...</p>
   </div>
 
   <div id="app-content" style="display: none; height: 100vh; display: flex; flex-direction: column;">
@@ -670,7 +708,10 @@
 
       <div id="editor-container">
         <div id="tabs"></div>
-        <div id="container"></div>
+        <div id="container">
+          <textarea id="simple-editor" placeholder="Editor carregando... Você já pode digitar!" style="width:100%; height:100%; background:#1e1e1e; color:#d4d4d4; font-family:monospace; padding:10px; border:none; resize:none;"></textarea>
+          <div id="simple-editor-warning">⚠️ Editor Monaco lento - usando modo simples</div>
+        </div>
       </div>
 
       <div id="ai-sidebar">
@@ -688,7 +729,7 @@
             <button class="mode-toggle-btn edit-mode active" id="editModeBtn" onclick="setMode('edit')">✏️ Editar</button>
           </div>
           <div class="chat-input-wrapper">
-            <textarea id="chatInput" placeholder="Digite seu comando... Ex: 'Crie um worker .sc com rota /api/hello que retorna Olá'" rows="2"></textarea>
+            <textarea id="chatInput" placeholder="Digite seu comando... Ex: 'Crie um site bonito com HTML, CSS e JS'" rows="2"></textarea>
             <button id="sendChatBtn">Enviar</button>
           </div>
         </div>
@@ -697,18 +738,14 @@
           <div class="worker-editor-header">
             <span>📝 Código do Worker (.sc)</span>
             <div class="worker-editor-buttons">
-              <button onclick="saveWorker()">💾 Salvar Worker</button>
-              <button onclick="deployWorker()">🚀 Publicar Worker</button>
+              <button onclick="saveWorker()">💾 Salvar</button>
+              <button onclick="deployWorker()">🚀 Publicar</button>
             </div>
           </div>
-          <textarea id="workerCode" rows="8" placeholder="// Código do Worker .sc
-// Exemplo com rota /api/hello.sc
-
+          <textarea id="workerCode" rows="6" placeholder="// Código do Worker .sc
+// Exemplo:
 router.get('/api/hello.sc', async () => {
-    return {
-        message: 'Olá do Worker .sc!',
-        status: 'online'
-    };
+    return { message: 'Olá do Worker!' };
 });"></textarea>
         </div>
         
@@ -731,8 +768,8 @@ router.get('/api/hello.sc', async () => {
       <h3>🚀 Publicar Worker?</h3>
       <p>Deseja publicar este worker no Puter agora?</p>
       <div class="publish-modal-buttons">
-        <button class="btn-publish-yes" id="publishYesBtn">✅ Sim, publicar</button>
-        <button class="btn-publish-no" id="publishNoBtn">❌ Não, depois</button>
+        <button class="btn-publish-yes" id="publishYesBtn">✅ Sim</button>
+        <button class="btn-publish-no" id="publishNoBtn">❌ Não</button>
       </div>
     </div>
   </div>
@@ -757,13 +794,13 @@ router.get('/api/hello.sc', async () => {
     let currentUser = null;
     let currentFile = null;
     let files = {};
-    let models = {};
     let userStorage = { used: 0, limit: 5 * 1024 * 1024 };
     let currentHostingUrl = null;
     let currentHostingSubdomain = null;
     let currentHostingDirectory = null;
     let allProjects = [];
     let currentMode = 'edit';
+    let useSimpleEditor = true;
     
     let projectWorkers = [];
     let currentWorkerData = null;
@@ -772,6 +809,9 @@ router.get('/api/hello.sc', async () => {
     const ACTIVITY_SCRIPT_URL = "https://code.codehub.ct.ws/atividade.js";
     
     let sidebarWidth = 420;
+
+    const simpleEditor = document.getElementById('simple-editor');
+    const container = document.getElementById('container');
 
     const elements = {
       loadingScreen: document.getElementById('loading-screen'),
@@ -805,29 +845,18 @@ router.get('/api/hello.sc', async () => {
       aiSidebar: document.getElementById('ai-sidebar'),
       resizeHandle: document.getElementById('resizeHandle'),
       chatModeBtn: document.getElementById('chatModeBtn'),
-      editModeBtn: document.getElementById('editModeBtn')
+      editModeBtn: document.getElementById('editModeBtn'),
+      simpleEditor: document.getElementById('simple-editor')
     };
 
-    // ==================== FUNÇÕES DE SUBSTITUIÇÃO DE URL ====================
-    
-    function replaceWorkerUrlsInHtml(htmlContent, workerUrls) {
-      let newHtml = htmlContent;
-      
-      // Substituir padrões como '/api/hello.sc' pela URL completa do worker
-      for (const [route, fullUrl] of Object.entries(workerUrls)) {
-        // Substituir caminho relativo pela URL completa
-        const regex = new RegExp(`(['"\`])(${route})(['"\`])`, 'g');
-        newHtml = newHtml.replace(regex, `$1${fullUrl}$3`);
-        
-        // Também substituir em fetch
-        const fetchRegex = new RegExp(`fetch\\(['"\`](${route})['"\`]`, 'g');
-        newHtml = newHtml.replace(fetchRegex, `fetch('${fullUrl}')`);
+    simpleEditor.addEventListener('input', () => {
+      if (currentFile && useSimpleEditor) {
+        files[currentFile].content = simpleEditor.value;
+        elements.saveFileBtn.disabled = false;
       }
-      
-      return newHtml;
-    }
+    });
 
-    // ==================== WORKERS .sc FUNCTIONS ====================
+    // ==================== WORKERS ====================
     
     function workerLog(msg) {
       addChatMessage(`⚡ Worker: ${msg}`, 'system');
@@ -840,27 +869,18 @@ router.get('/api/hello.sc', async () => {
 
     async function loadProjectWorkers() {
       if (!currentProjectId) return;
-      
       try {
         const workersRef = db.ref(`workers/${currentUser.uid}/${currentProjectId}`);
         const snapshot = await workersRef.once('value');
         projectWorkers = [];
-        
         snapshot.forEach(child => {
-          projectWorkers.push({
-            id: child.key,
-            ...child.val()
-          });
+          projectWorkers.push({ id: child.key, ...child.val() });
         });
-        
         renderWorkersList();
-        
         if (projectWorkers.length > 0 && !currentWorkerData) {
           selectWorker(projectWorkers[0].id);
         }
-      } catch(e) {
-        console.error(e);
-      }
+      } catch(e) { console.error(e); }
     }
 
     function renderWorkersList() {
@@ -868,7 +888,6 @@ router.get('/api/hello.sc', async () => {
         elements.workersList.innerHTML = '<div class="no-workers">📭 Nenhum worker .sc criado</div>';
         return;
       }
-      
       elements.workersList.innerHTML = projectWorkers.map(w => `
         <div class="worker-item" onclick="selectWorker('${w.id}')">
           <div class="worker-name">📦 ${w.name || 'Sem nome'}</div>
@@ -886,251 +905,98 @@ router.get('/api/hello.sc', async () => {
     async function selectWorker(workerId) {
       const worker = projectWorkers.find(w => w.id === workerId);
       if (!worker) return;
-      
       currentWorkerData = worker;
       elements.workerCode.value = worker.code || '';
       workerLog(`Selecionado worker: ${worker.name}`);
     }
 
     async function createNewWorker() {
-      const name = prompt('Nome do worker (ex: hello, test):', 'meu-worker');
+      const name = prompt('Nome do worker (ex: hello):', 'meu-worker');
       if (!name) return;
-      
       const route = `/api/${name}.sc`;
       const defaultCode = `// Worker .sc: ${name}
-// Rota: ${route}
-
 router.get('${route}', async () => {
     return {
         message: 'Olá do worker ${name}!',
-        timestamp: new Date().toISOString(),
-        route: '${route}'
-    };
-});
-
-// Você pode adicionar mais rotas
-router.post('${route}', async (req) => {
-    return {
-        received: req.body,
-        message: 'Dados recebidos com sucesso!'
+        timestamp: new Date().toISOString()
     };
 });`;
-      
       const newWorkerRef = db.ref(`workers/${currentUser.uid}/${currentProjectId}`).push();
       const workerId = newWorkerRef.key;
-      
-      const workerData = {
-        id: workerId,
-        name: name,
-        route: route,
-        code: defaultCode,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      
-      await newWorkerRef.set(workerData);
+      await newWorkerRef.set({ id: workerId, name, route, code: defaultCode, createdAt: new Date().toISOString() });
       await loadProjectWorkers();
       await selectWorker(workerId);
       workerLog(`Worker "${name}" criado!`);
-      showNotification(`Worker "${name}" criado!`, 'success');
+      showNotification(`Worker criado!`, 'success');
     }
 
     async function saveWorker() {
-      if (!currentWorkerData) {
-        showNotification('Selecione um worker primeiro', 'warning');
-        return;
-      }
-      
+      if (!currentWorkerData) { showNotification('Selecione um worker', 'warning'); return; }
       const newCode = elements.workerCode.value;
       const newRoute = extractRouteFromCode(newCode);
-      
       await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({
-        code: newCode,
-        route: newRoute,
-        updatedAt: new Date().toISOString()
+        code: newCode, route: newRoute, updatedAt: new Date().toISOString()
       });
-      
       currentWorkerData.code = newCode;
       currentWorkerData.route = newRoute;
-      
-      workerLog(`Worker "${currentWorkerData.name}" salvo!`);
+      workerLog(`Worker salvo!`);
       showNotification('Worker salvo!', 'success');
       await loadProjectWorkers();
     }
 
     async function deployWorker() {
-      if (!currentWorkerData) {
-        showNotification('Selecione um worker primeiro', 'warning');
-        return;
-      }
-      
+      if (!currentWorkerData) { showNotification('Selecione um worker', 'warning'); return; }
       showPublishModal(async () => {
-        workerLog(`Publicando worker "${currentWorkerData.name}"...`);
-        
+        workerLog(`Publicando worker...`);
         try {
           const fileName = `worker_${currentWorkerData.name}.sc`;
           await puter.fs.write(fileName, currentWorkerData.code);
-          
           const workerName = `${currentProjectId.substring(0, 15)}_${currentWorkerData.name}`;
-          
-          try {
-            await puter.workers.delete(workerName);
-          } catch(e) {}
-          
+          try { await puter.workers.delete(workerName); } catch(e) {}
           const w = await puter.workers.create(workerName, fileName);
           const fullUrl = w.url + currentWorkerData.route;
-          
           await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({
-            url: w.url,
-            fullUrl: fullUrl,
-            deployedAt: new Date().toISOString()
+            url: w.url, fullUrl, deployedAt: new Date().toISOString()
           });
-          
           currentWorkerData.url = w.url;
           currentWorkerData.fullUrl = fullUrl;
-          
-          workerLog(`Worker publicado!`);
-          workerLog(`URL completa: ${fullUrl}`);
-          
-          showNotification(`Worker publicado em ${fullUrl}`, 'success');
+          workerLog(`Publicado! URL: ${fullUrl}`);
+          showNotification(`Worker publicado!`, 'success');
           await loadProjectWorkers();
-          
-          // Atualizar arquivos HTML com as URLs dos workers
-          await updateHtmlFilesWithWorkerUrls();
-          
-        } catch(e) {
-          workerLog(`Erro: ${e.message}`);
-          showNotification(`Erro: ${e.message}`, 'error');
-        }
+        } catch(e) { workerLog(`Erro: ${e.message}`); showNotification(`Erro: ${e.message}`, 'error'); }
       }, () => {});
-    }
-
-    async function updateHtmlFilesWithWorkerUrls() {
-      // Coletar todas as URLs dos workers
-      const workerUrls = {};
-      for (const worker of projectWorkers) {
-        if (worker.fullUrl) {
-          workerUrls[worker.route] = worker.fullUrl;
-        }
-      }
-      
-      if (Object.keys(workerUrls).length === 0) return;
-      
-      // Atualizar todos os arquivos HTML
-      let updated = false;
-      for (const [key, file] of Object.entries(files)) {
-        if (file.name.endsWith('.html') && file.content) {
-          const newContent = replaceWorkerUrlsInHtml(file.content, workerUrls);
-          if (newContent !== file.content) {
-            files[key].content = newContent;
-            files[key].updatedAt = new Date().toISOString();
-            updated = true;
-            
-            if (key === currentFile) {
-              const model = editor.getModel();
-              if (model) model.setValue(newContent);
-            }
-          }
-        }
-      }
-      
-      if (updated) {
-        await saveProject();
-        workerLog("Arquivos HTML atualizados com as URLs dos workers!");
-        showNotification("URLs dos workers inseridas nos HTMLs!", 'success');
-      }
     }
 
     async function testWorker(workerId) {
       const worker = projectWorkers.find(w => w.id === workerId);
-      if (!worker || !worker.fullUrl) {
-        workerLog(`Worker não publicado ainda. Publique primeiro.`);
-        return;
-      }
-      
+      if (!worker || !worker.fullUrl) { workerLog(`Worker não publicado`); return; }
       try {
         workerLog(`Testando ${worker.fullUrl}...`);
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-        
+        setTimeout(() => controller.abort(), 10000);
         const res = await fetch(worker.fullUrl, { signal: controller.signal });
-        clearTimeout(timeoutId);
-        
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-        
         const data = await res.json();
         workerLog(`✅ Resposta: ${JSON.stringify(data, null, 2)}`);
         showNotification(`Worker respondeu!`, 'success');
-      } catch(e) {
-        workerLog(`❌ Erro: ${e.message}`);
-        if (e.message.includes('abort')) {
-          workerLog(`Timeout: Worker não respondeu em 10 segundos`);
-        } else if (e.message.includes('Failed to fetch')) {
-          workerLog(`Erro de conexão. Verifique se o worker está online.`);
-        }
-        showNotification(`Erro ao testar worker: ${e.message}`, 'error');
-      }
+      } catch(e) { workerLog(`❌ Erro: ${e.message}`); }
     }
 
-    async function editWorker(workerId) {
-      await selectWorker(workerId);
-    }
+    async function editWorker(workerId) { await selectWorker(workerId); }
 
     async function deleteWorker(workerId) {
-      if (!confirm('Tem certeza que deseja deletar este worker?')) return;
-      
+      if (!confirm('Deletar worker?')) return;
       const worker = projectWorkers.find(w => w.id === workerId);
       if (worker) {
-        try {
-          const workerName = `${currentProjectId.substring(0, 15)}_${worker.name}`;
-          await puter.workers.delete(workerName);
-        } catch(e) {}
-        
+        try { await puter.workers.delete(`${currentProjectId.substring(0,15)}_${worker.name}`); } catch(e) {}
         await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${workerId}`).remove();
         await loadProjectWorkers();
-        
         if (currentWorkerData && currentWorkerData.id === workerId) {
           currentWorkerData = null;
           elements.workerCode.value = '';
         }
-        
-        workerLog(`Worker "${worker.name}" deletado`);
+        workerLog(`Worker deletado`);
         showNotification(`Worker deletado!`, 'success');
       }
-    }
-
-    // ==================== IA TREINADA ====================
-    
-    async function createWorkerFromAI(workerName, route, code) {
-      if (!workerName || !route || !code) {
-        workerLog('Dados do worker incompletos');
-        return;
-      }
-      
-      const newWorkerRef = db.ref(`workers/${currentUser.uid}/${currentProjectId}`).push();
-      const workerId = newWorkerRef.key;
-      
-      const workerData = {
-        id: workerId,
-        name: workerName,
-        route: route,
-        code: code,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      
-      await newWorkerRef.set(workerData);
-      await loadProjectWorkers();
-      await selectWorker(workerId);
-      workerLog(`Worker "${workerName}" criado pela IA! Rota: ${route}`);
-      
-      showPublishModal(async () => {
-        await deployWorker();
-      }, () => {});
-      
-      return workerId;
     }
 
     // ==================== MODO ====================
@@ -1139,11 +1005,11 @@ router.post('${route}', async (req) => {
       if (mode === 'chat') {
         elements.chatModeBtn.classList.add('active');
         elements.editModeBtn.classList.remove('active');
-        showNotification('💬 Modo Conversar - Posso ANALISAR seu código, mas NÃO edito!', 'info');
+        showNotification('💬 Modo Conversar - Apenas análise', 'info');
       } else {
         elements.editModeBtn.classList.add('active');
         elements.chatModeBtn.classList.remove('active');
-        showNotification('✏️ Modo Editar - Posso CRIAR, EDITAR, DELETAR e PUBLICAR!', 'success');
+        showNotification('✏️ Modo Editar - Posso criar/editar/deletar/publicar!', 'success');
       }
       localStorage.setItem('codehub_mode', mode);
     }
@@ -1190,7 +1056,6 @@ router.post('${route}', async (req) => {
       msgDiv.innerHTML = text.replace(/\n/g, '<br>');
       elements.chatMessages.appendChild(msgDiv);
       elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
-      
       if (currentProjectId && currentUser) {
         db.ref(`chats/${currentUser.uid}/${currentProjectId}`).push({ text, type, timestamp: Date.now() });
       }
@@ -1208,7 +1073,7 @@ router.post('${route}', async (req) => {
         elements.chatMessages.appendChild(msgDiv);
       });
       if (elements.chatMessages.children.length === 0) {
-        addChatMessage('🤖 Olá! Sou seu assistente IA.<br><br>📝 <strong>Modos:</strong><br>• 💬 Conversar: analiso seu código<br>• ✏️ Editar: crio, edito, deleto e publico<br><br>⚡ <strong>Workers .sc:</strong> Crie APIs com extensão .sc!<br><br>💡 <strong>Exemplos:</strong><br>• "Crie um worker .sc chamado hello com rota /api/hello.sc"<br>• "Crie um worker que retorna usuários"<br>• "Edite o worker hello"<br>• "Publique o worker"', 'system');
+        addChatMessage('🤖 Olá! Sou seu assistente IA.<br><br>📝 <strong>Modos:</strong><br>• 💬 Conversar: analiso seu código<br>• ✏️ Editar: crio, edito, deleto e publico<br><br>⚡ <strong>Workers .sc:</strong> Crie APIs com extensão .sc!', 'system');
       }
     }
 
@@ -1285,22 +1150,19 @@ router.post('${route}', async (req) => {
           else if (content.includes('router.')) fileName += '.sc';
           else fileName += '.js';
         }
-        
         if (fileName.endsWith('.sc')) {
           const route = extractRouteFromCode(content);
           const workerName = fileName.replace('.sc', '');
-          await createWorkerFromAI(workerName, route, content);
+          const newWorkerRef = db.ref(`workers/${currentUser.uid}/${currentProjectId}`).push();
+          await newWorkerRef.set({ id: newWorkerRef.key, name: workerName, route, code: content, createdAt: new Date().toISOString() });
+          await loadProjectWorkers();
         }
-        
         if (fileName.endsWith('.html')) {
           content = validateAndFixHTML(content);
           content = injectActivityScript(content);
         }
         const fileKey = btoa(fileName).replace(/=/g, '');
-        files[fileKey] = {
-          name: fileName, originalName: fileName, content: content,
-          size: content.length, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
-        };
+        files[fileKey] = { name: fileName, originalName: fileName, content, size: content.length, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
         created.push(fileName);
       }
       await saveProject();
@@ -1316,28 +1178,19 @@ router.post('${route}', async (req) => {
         addChatMessage('⚠️ Modo Conversar - Para editar, mude para "✏️ Editar"', 'system');
         return false;
       }
-      
       if (fileName.endsWith('.sc')) {
         const route = extractRouteFromCode(newContent);
         const workerName = fileName.replace('.sc', '');
         const existingWorker = projectWorkers.find(w => w.name === workerName);
         if (existingWorker) {
-          await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${existingWorker.id}`).update({
-            code: newContent,
-            route: route,
-            updatedAt: new Date().toISOString()
-          });
+          await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${existingWorker.id}`).update({ code: newContent, route, updatedAt: new Date().toISOString() });
           await loadProjectWorkers();
-          workerLog(`Worker "${workerName}" atualizado!`);
         }
       }
-      
       let targetKey = null;
       for (const key in files) {
-        if (files[key].name.toLowerCase() === fileName.toLowerCase() ||
-            files[key].name.toLowerCase().includes(fileName.toLowerCase())) {
-          targetKey = key;
-          break;
+        if (files[key].name.toLowerCase() === fileName.toLowerCase() || files[key].name.toLowerCase().includes(fileName.toLowerCase())) {
+          targetKey = key; break;
         }
       }
       if (!targetKey && currentFile) targetKey = currentFile;
@@ -1349,7 +1202,10 @@ router.post('${route}', async (req) => {
       }
       await saveFile(targetKey, finalContent);
       await saveProject();
-      if (targetKey === currentFile && editor) editor.setValue(finalContent);
+      if (targetKey === currentFile) {
+        if (useSimpleEditor) simpleEditor.value = finalContent;
+        else if (editor) editor.setValue(finalContent);
+      }
       return files[targetKey].name;
     }
 
@@ -1358,31 +1214,28 @@ router.post('${route}', async (req) => {
         addChatMessage('⚠️ Modo Conversar - Para deletar, mude para "✏️ Editar"', 'system');
         return false;
       }
-      
       if (fileName.endsWith('.sc')) {
         const workerName = fileName.replace('.sc', '');
         const worker = projectWorkers.find(w => w.name === workerName);
-        if (worker) {
-          await deleteWorker(worker.id);
-        }
+        if (worker) await deleteWorker(worker.id);
       }
-      
       let targetKey = null;
       for (const key in files) {
-        if (files[key].name.toLowerCase() === fileName.toLowerCase() ||
-            files[key].name.toLowerCase().includes(fileName.toLowerCase())) {
-          targetKey = key;
-          break;
+        if (files[key].name.toLowerCase() === fileName.toLowerCase() || files[key].name.toLowerCase().includes(fileName.toLowerCase())) {
+          targetKey = key; break;
         }
       }
       if (!targetKey) return false;
       const deletedName = files[targetKey].name;
       delete files[targetKey];
-      delete models[targetKey];
       if (targetKey === currentFile) {
         const remaining = Object.keys(files);
         if (remaining.length > 0) await openFile(remaining[0]);
-        else editor.setModel(null);
+        else {
+          if (useSimpleEditor) simpleEditor.value = '';
+          else if (editor) editor.setModel(null);
+          currentFile = null;
+        }
       }
       await saveProject();
       updateTabs();
@@ -1397,14 +1250,7 @@ router.post('${route}', async (req) => {
       const auth = await ensurePuterAuth();
       if (!auth) return false;
       const hasIndex = Object.values(files).some(f => f.name === 'index.html');
-      if (!hasIndex) {
-        addChatMessage('❌ Falta o arquivo index.html', 'system');
-        return false;
-      }
-      
-      // Antes de publicar, atualizar HTMLs com URLs dos workers
-      await updateHtmlFilesWithWorkerUrls();
-      
+      if (!hasIndex) { addChatMessage('❌ Falta o arquivo index.html', 'system'); return false; }
       addChatMessage('🚀 Publicando site...', 'system');
       try {
         const dirName = `codehub_${currentUser.uid}_${Date.now()}`;
@@ -1440,9 +1286,6 @@ router.post('${route}', async (req) => {
         return false;
       }
       if (!currentHostingSubdomain) return await publishProject();
-      
-      await updateHtmlFilesWithWorkerUrls();
-      
       addChatMessage('🔄 Atualizando site...', 'system');
       try {
         for (const file of Object.values(files)) {
@@ -1482,32 +1325,26 @@ router.post('${route}', async (req) => {
           existingFiles.push({ name: file.name, content: file.content || '' });
         }
         
-        const workersInfo = projectWorkers.map(w => `- ${w.name}: rota ${w.route}${w.fullUrl ? ` (${w.fullUrl})` : ' (não publicado)'}`).join('\n');
-        
         let prompt = '';
         if (currentMode === 'chat') {
           prompt = `Você é um assistente de programação amigável que só ANALISA código.
             PROJETO: ${elements.projectName.value}
             ARQUIVOS: ${existingFiles.map(f => f.name).join(', ')}
-            WORKERS .sc: ${workersInfo || 'Nenhum'}
             COMANDO: "${userMessage}"
-            
-            IMPORTANTE: Modo CONVERSAR - NÃO pode criar, editar ou deletar. Apenas ANALISE.
-            Responda em português. Se sugerir código, use blocos \`\`\`.`;
+            Modo CONVERSAR - NÃO pode criar, editar ou deletar. Apenas ANALISE.`;
         } else {
           prompt = `Você é um assistente que EXECUTA ações no código.
             PROJETO: ${elements.projectName.value}
             ARQUIVOS: ${existingFiles.map(f => f.name).join(', ')}
-            WORKERS EXISTENTES: ${workersInfo || 'Nenhum'}
+            CONTEÚDO: ${existingFiles.map(f => `--- ${f.name} ---\n${f.content.substring(0, 500)}`).join('\n\n')}
             COMANDO: "${userMessage}"
             
             Responda SOMENTE com um JSON:
-            {"action":"criar","files":[{"name":"index.html","content":"..."}],"message":"msg"}
+            {"action":"criar","files":[{"name":"index.html","content":"<!DOCTYPE html>..."}],"message":"msg"}
             OU {"action":"editar","targetFile":"index.html","newContent":"...","message":"msg"}
             OU {"action":"deletar","targetFile":"style.css","message":"msg"}
             OU {"action":"publicar","message":"msg"}
-            OU {"action":"atualizar","message":"msg"}
-            OU {"action":"criar_worker","workerName":"nome","route":"/api/nome.sc","code":"código do worker","message":"msg"}`;
+            OU {"action":"atualizar","message":"msg"}`;
         }
         
         const res = await puter.ai.chat(prompt, { stream: true });
@@ -1525,10 +1362,7 @@ router.post('${route}', async (req) => {
             const jsonMatch = fullResponse.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
               const result = JSON.parse(jsonMatch[0]);
-              if (result.action === 'criar_worker' && result.workerName && result.route && result.code) {
-                await createWorkerFromAI(result.workerName, result.route, result.code);
-                addChatMessage(`✅ ${result.message || `Worker "${result.workerName}" criado!`}`, 'ai');
-              } else if (result.action) {
+              if (result.action) {
                 switch(result.action) {
                   case 'criar':
                     if (result.files) {
@@ -1613,52 +1447,7 @@ router.post('${route}', async (req) => {
       const newProjectRef = db.ref(`projects/${currentUser.uid}`).push();
       const projectId = newProjectRef.key;
       const fileKey = btoa('index.html').replace(/=/g, '');
-      const defaultHTML = `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${name}</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .container {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-            text-align: center;
-        }
-        h1 { color: #667eea; margin-bottom: 20px; }
-        p { color: #666; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🚀 ${name}</h1>
-        <p>Bem-vindo ao seu projeto!</p>
-        <p>Crie workers .sc na sidebar esquerda!</p>
-        <p>Exemplo de chamada worker: <span id="demo"></span></p>
-        <script>
-            // Exemplo de como chamar um worker .sc
-            // O caminho '/api/hello.sc' será automaticamente substituído pela URL completa quando publicado
-            fetch('/api/hello.sc')
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('demo').innerText = data.message;
-                })
-                .catch(err => console.error(err));
-        </script>
-    </div>
-</body>
-</html>`;
+      const defaultHTML = `<!DOCTYPE html><html><head><title>${name}</title></head><body><h1>${name}</h1><p>Bem-vindo!</p></body></html>`;
       const content = injectActivityScript(defaultHTML);
       await newProjectRef.set({ name, files: { [fileKey]: { name: 'index.html', content, size: content.length, createdAt: new Date().toISOString() } }, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
       await loadProjects();
@@ -1691,45 +1480,7 @@ router.post('${route}', async (req) => {
     async function createDefaultIndexHtml() {
       const fileName = 'index.html';
       const fileKey = btoa(fileName).replace(/=/g, '');
-      const defaultHTML = `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${elements.projectName.value || 'Projeto'}</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .container {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-            text-align: center;
-        }
-        h1 { color: #667eea; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🚀 Bem-vindo!</h1>
-        <p>Crie workers .sc na sidebar esquerda!</p>
-        <script>
-            fetch('/api/hello.sc')
-                .then(res => res.json())
-                .then(data => console.log(data))
-                .catch(err => console.error(err));
-        </script>
-    </div>
-</body>
-</html>`;
+      const defaultHTML = `<!DOCTYPE html><html><head><title>${elements.projectName.value || 'Projeto'}</title></head><body><h1>Bem-vindo!</h1></body></html>`;
       const content = injectActivityScript(defaultHTML);
       files[fileKey] = { name: fileName, originalName: fileName, content, size: content.length, createdAt: new Date().toISOString() };
       await saveProject();
@@ -1748,7 +1499,7 @@ router.post('${route}', async (req) => {
 
     async function saveFile(fileKey, content) {
       const fileData = files[fileKey];
-      const size = getContentSize(content);
+      const size = new Blob([content]).size;
       const oldSize = fileData.size || 0;
       userStorage.used = userStorage.used - oldSize + size;
       files[fileKey] = { ...fileData, content, size, updatedAt: new Date().toISOString() };
@@ -1757,8 +1508,6 @@ router.post('${route}', async (req) => {
       return true;
     }
 
-    function getContentSize(content) { return new Blob([content]).size; }
-
     function updateStorageDisplay() {
       const usedMB = (userStorage.used / (1024 * 1024)).toFixed(2);
       const limitMB = (userStorage.limit / (1024 * 1024)).toFixed(0);
@@ -1766,17 +1515,8 @@ router.post('${route}', async (req) => {
       elements.storageLimit.textContent = limitMB;
     }
 
-    require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
-
-    require(['vs/editor/editor.main'], function() {
-      editor = monaco.editor.create(elements.container, {
-        theme: 'vs-dark', automaticLayout: true, minimap: { enabled: false }, language: 'html', fontSize: 13
-      });
-      editor.onDidChangeModelContent(() => { if (currentFile) elements.saveFileBtn.disabled = false; });
-      initializeApp();
-    });
-
-    async function initializeApp() {
+    // Inicialização sem bloquear
+    function initializeApp() {
       auth.onAuthStateChanged(async user => {
         if (!user) { window.location.href = 'auth.html'; return; }
         currentUser = user;
@@ -1799,16 +1539,37 @@ router.post('${route}', async (req) => {
           await createNewProject();
         }
         
-        elements.loadingScreen.style.opacity = '0';
+        // Esconder loading
+        const loadingScreen = document.getElementById('loading-screen');
+        loadingScreen.style.opacity = '0';
         setTimeout(() => {
-          elements.loadingScreen.style.display = 'none';
-          elements.appContent.style.display = 'flex';
-        }, 500);
+          loadingScreen.style.display = 'none';
+          document.getElementById('app-content').style.display = 'flex';
+        }, 300);
+        
+        clearTimeout(window.monacoTimeout);
         
         setupEventListeners();
         initPuter();
         loadPreferences();
         initResizing();
+        
+        // Carregar Monaco em segundo plano (não bloqueia)
+        setTimeout(() => {
+          require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
+          require(['vs/editor/editor.main'], function() {
+            window.monacoLoaded = true;
+            useSimpleEditor = false;
+            document.getElementById('simple-editor').style.display = 'none';
+            const container = document.getElementById('container');
+            container.innerHTML = '<div id="monaco-editor" style="width:100%;height:100%;"></div>';
+            editor = monaco.editor.create(document.getElementById('monaco-editor'), {
+              theme: 'vs-dark', automaticLayout: true, minimap: { enabled: false }, language: 'html', fontSize: 13
+            });
+            editor.onDidChangeModelContent(() => { if (currentFile) elements.saveFileBtn.disabled = false; });
+            if (currentFile && files[currentFile]) editor.setValue(files[currentFile].content || '');
+          });
+        }, 500);
       });
     }
 
@@ -1820,33 +1581,28 @@ router.post('${route}', async (req) => {
     }
 
     async function openFile(fileKey) {
-      if (!files[fileKey] || !editor) return;
+      if (!files[fileKey]) return;
       currentFile = fileKey;
       const fileData = files[fileKey];
-      let lang = 'plaintext';
-      const ext = (fileData.name || '').split('.').pop().toLowerCase();
-      if (ext === 'html') lang = 'html';
-      else if (ext === 'css') lang = 'css';
-      else if (ext === 'js') lang = 'javascript';
-      else if (ext === 'sc') lang = 'javascript';
-      
       const content = fileData.content || '';
-      let model = models[fileKey];
-      if (!model) {
-        model = monaco.editor.createModel(content, lang, monaco.Uri.parse(`file:///${fileData.name}`));
-        models[fileKey] = model;
-      } else {
-        model.setValue(content);
-        monaco.editor.setModelLanguage(model, lang);
+      
+      if (useSimpleEditor) {
+        simpleEditor.value = content;
+      } else if (editor) {
+        editor.setValue(content);
       }
-      editor.setModel(model);
+      
       updateTabs();
       elements.saveFileBtn.disabled = true;
     }
 
     async function saveCurrentFile() {
-      if (!currentFile || !editor) return;
-      const content = editor.getModel().getValue();
+      if (!currentFile) return;
+      let content;
+      if (useSimpleEditor) content = simpleEditor.value;
+      else if (editor) content = editor.getValue();
+      else return;
+      
       const success = await saveFile(currentFile, content);
       if (success) {
         await saveProject();
@@ -1953,6 +1709,9 @@ router.post('${route}', async (req) => {
         }
       });
     }
+
+    // Iniciar
+    initializeApp();
 
     window.selectProject = selectProject;
     window.createNewProject = createNewProject;
