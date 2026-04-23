@@ -861,7 +861,6 @@ router.get('/api/hello.sc', async () => {
       }
     });
 
-    // ==================== FUNÇÕES DE ATUALIZAÇÃO DO BOTÃO ====================
     function updateSitePublishButton() {
       if (sitePublished && currentHostingUrl) {
         elements.sitePublishBtn.textContent = '🔄 Atualizar Site';
@@ -884,8 +883,8 @@ router.get('/api/hello.sc', async () => {
 
     // ==================== WORKERS ====================
     
-    function workerLog(msg) {
-      addChatMessage(`⚡ Worker: ${msg}`, 'system');
+    function workerLog(msg, isError = false) {
+      addChatMessage(`⚡ Worker: ${msg}`, isError ? 'system' : 'system');
     }
 
     function extractRouteFromCode(code) {
@@ -921,7 +920,7 @@ router.get('/api/hello.sc', async () => {
           <div class="worker-status ${w.fullUrl ? 'published' : 'not-published'}">${w.fullUrl ? '✅ Publicado' : '📝 Rascunho'}</div>
           <div class="worker-url">🔗 ${w.fullUrl ? w.fullUrl.substring(0, 50) + '...' : 'Não publicado'}</div>
           <div class="worker-actions">
-            <button class="test" onclick="event.stopPropagation(); testWorker('${w.id}')">▶️ Testar</button>
+            ${w.fullUrl ? `<button class="test" onclick="event.stopPropagation(); testWorker('${w.id}')">▶️ Testar</button>` : ''}
             <button onclick="event.stopPropagation(); editWorker('${w.id}')">✏️ Editar</button>
             <button class="delete" onclick="event.stopPropagation(); deleteWorker('${w.id}')">🗑️ Deletar</button>
             ${w.fullUrl ? `<button class="update-worker" onclick="event.stopPropagation(); updateWorker('${w.id}')">🔄 Atualizar</button>` : ''}
@@ -978,21 +977,27 @@ router.get('${route}', async () => {
       
       elements.modalTitle.textContent = currentWorkerData.fullUrl ? '🔄 Atualizar Worker?' : '🚀 Publicar Worker?';
       elements.modalMessage.textContent = currentWorkerData.fullUrl ? 
-        'Deseja atualizar este worker no Puter?' : 
-        'Deseja publicar este worker no Puter agora?';
+        'Isso vai ATUALIZAR o worker existente no Puter. Deseja continuar?' : 
+        'Isso vai PUBLICAR o worker no Puter. Deseja continuar?';
       
       elements.publishModal.style.display = 'flex';
       const confirmHandler = async () => {
         elements.publishModal.style.display = 'none';
         elements.publishYesBtn.removeEventListener('click', confirmHandler);
+        elements.publishNoBtn.removeEventListener('click', cancelHandler);
         
         workerLog(`${currentWorkerData.fullUrl ? 'Atualizando' : 'Publicando'} worker...`);
         try {
           const fileName = `worker_${currentWorkerData.name}.sc`;
           await puter.fs.write(fileName, currentWorkerData.code);
           const workerName = `${currentProjectId.substring(0, 15)}_${currentWorkerData.name}`;
-          try { await puter.workers.delete(workerName); } catch(e) {}
+          try { await puter.workers.delete(workerName); } catch(e) { console.log('Worker não existia, criando novo'); }
           const w = await puter.workers.create(workerName, fileName);
+          
+          if (!w || !w.url) {
+            throw new Error('Resposta do worker inválida');
+          }
+          
           const fullUrl = w.url + currentWorkerData.route;
           await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({
             url: w.url, fullUrl, deployedAt: new Date().toISOString()
@@ -1003,7 +1008,10 @@ router.get('${route}', async () => {
           showNotification(`Worker ${currentWorkerData.fullUrl ? 'atualizado' : 'publicado'}!`, 'success');
           await loadProjectWorkers();
           updateWorkerPublishButton();
-        } catch(e) { workerLog(`Erro: ${e.message}`); showNotification(`Erro: ${e.message}`, 'error'); }
+        } catch(e) { 
+          workerLog(`Erro: ${e.message}`, true); 
+          showNotification(`Erro: ${e.message}`, 'error');
+        }
       };
       const cancelHandler = () => {
         elements.publishModal.style.display = 'none';
@@ -1025,12 +1033,18 @@ router.get('${route}', async () => {
       try {
         workerLog(`Testando ${worker.fullUrl}...`);
         const controller = new AbortController();
-        setTimeout(() => controller.abort(), 10000);
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
         const res = await fetch(worker.fullUrl, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         workerLog(`✅ Resposta: ${JSON.stringify(data, null, 2)}`);
         showNotification(`Worker respondeu!`, 'success');
-      } catch(e) { workerLog(`❌ Erro: ${e.message}`); }
+      } catch(e) { 
+        workerLog(`❌ Erro: ${e.message}`, true);
+        if (e.name === 'AbortError') workerLog(`Timeout: Worker não respondeu em 10 segundos`);
+      }
     }
 
     async function editWorker(workerId) { await selectWorker(workerId); }
@@ -1039,12 +1053,16 @@ router.get('${route}', async () => {
       if (!confirm('Deletar worker?')) return;
       const worker = projectWorkers.find(w => w.id === workerId);
       if (worker) {
-        try { await puter.workers.delete(`${currentProjectId.substring(0,15)}_${worker.name}`); } catch(e) {}
+        try { 
+          const workerName = `${currentProjectId.substring(0,15)}_${worker.name}`;
+          await puter.workers.delete(workerName);
+        } catch(e) { console.log('Worker não estava no Puter'); }
         await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${workerId}`).remove();
         await loadProjectWorkers();
         if (currentWorkerData && currentWorkerData.id === workerId) {
           currentWorkerData = null;
           elements.workerCode.value = '';
+          updateWorkerPublishButton();
         }
         workerLog(`Worker deletado`);
         showNotification(`Worker deletado!`, 'success');
@@ -1060,13 +1078,14 @@ router.get('${route}', async () => {
       
       elements.modalTitle.textContent = sitePublished ? '🔄 Atualizar Site?' : '🚀 Publicar Site?';
       elements.modalMessage.textContent = sitePublished ? 
-        'Deseja atualizar o site no Puter?' : 
-        'Deseja publicar este site no Puter agora?';
+        'Isso vai ATUALIZAR o site existente. Deseja continuar?' : 
+        'Isso vai PUBLICAR o site no Puter. Deseja continuar?';
       
       elements.publishModal.style.display = 'flex';
       const confirmHandler = async () => {
         elements.publishModal.style.display = 'none';
         elements.publishYesBtn.removeEventListener('click', confirmHandler);
+        elements.publishNoBtn.removeEventListener('click', cancelHandler);
         
         addChatMessage(`${sitePublished ? 'Atualizando' : 'Publicando'} site...`, 'system');
         try {
@@ -1544,7 +1563,6 @@ router.get('${route}', async () => {
       elements.storageLimit.textContent = limitMB;
     }
 
-    // Inicialização
     function initializeApp() {
       auth.onAuthStateChanged(async user => {
         if (!user) { window.location.href = 'auth.html'; return; }
