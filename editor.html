@@ -114,6 +114,7 @@
   <div id="loading-screen">
     <img src="https://alexandre7888.github.io/CodeHUB/CodeFOX/foto1.jpg" class="loader" alt="Loading">
     <h2>Carregando CodeHUB...</h2>
+    <p style="font-size:12px;margin-top:10px;">Aguardando Firebase e Puter...</p>
   </div>
 
   <div id="app-content" style="display: none; height: 100vh; display: flex; flex-direction: column;">
@@ -368,7 +369,7 @@
       }
     }
 
-    // ==================== SITE - CORRIGIDO ====================
+    // ==================== SITE - CORRIGIDO SEGUNDO DOCUMENTAÇÃO PUTER ====================
     async function publishSite() {
       const auth = await ensurePuterAuth();
       if (!auth) return false;
@@ -386,11 +387,11 @@
         
         addChatMessage(`${sitePublished ? 'Atualizando' : 'Publicando'} site...`, 'system');
         try {
-          // Criar diretório único para esta publicação
+          // 1. Criar diretório com todos os arquivos do projeto
           const dirName = `codehub_${currentUser.uid}_${currentProjectId}_${Date.now()}`;
           await puter.fs.mkdir(dirName);
           
-          // Salvar todos os arquivos no diretório
+          // 2. Salvar todos os arquivos no diretório
           for (const [key, file] of Object.entries(files)) {
             let content = file.content || '';
             if (file.name.endsWith('.html') && !content.includes('atividade.js')) {
@@ -402,15 +403,15 @@
           let finalUrl = '';
           
           if (!sitePublished || !currentHostingSubdomain) {
-            // Primeira publicação - criar novo hosting
-            const subdomain = `codehub-${Math.random().toString(36).substring(2, 10)}`;
+            // Primeira publicação - criar novo hosting (como no exemplo do Puter)
+            const subdomain = puter.randName();
             const site = await puter.hosting.create(subdomain, dirName);
             currentHostingSubdomain = site.subdomain;
             currentHostingDirectory = dirName;
             finalUrl = `https://${site.subdomain}.puter.site`;
             sitePublished = true;
           } else {
-            // Atualização - usar hosting existente
+            // Atualização - usar hosting.update (como no exemplo do Puter)
             await puter.hosting.update(currentHostingSubdomain, dirName);
             currentHostingDirectory = dirName;
             finalUrl = currentHostingUrl;
