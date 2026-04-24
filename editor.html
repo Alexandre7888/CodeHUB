@@ -190,6 +190,8 @@
     let files = {};
     let userStorage = { used: 0, limit: 5 * 1024 * 1024 };
     let currentHostingUrl = null;
+    let currentHostingSubdomain = null;
+    let currentHostingDirectory = null;
     let allProjects = [];
     let currentMode = 'edit';
     let useSimpleEditor = true;
@@ -201,7 +203,6 @@
     let sidebarWidth = 420;
 
     const simpleEditor = document.getElementById('simple-editor');
-    const container = document.getElementById('container');
 
     const elements = {
       loadingScreen: document.getElementById('loading-screen'), appContent: document.getElementById('app-content'),
@@ -227,13 +228,23 @@
     simpleEditor.addEventListener('input', () => { if (currentFile && useSimpleEditor) { files[currentFile].content = simpleEditor.value; elements.saveFileBtn.disabled = false; } });
 
     function updateSitePublishButton() {
-      elements.sitePublishBtn.textContent = '🚀 Publicar Site';
-      elements.sitePublishBtn.style.background = '#22c55e';
+      if (currentHostingSubdomain && currentHostingUrl) {
+        elements.sitePublishBtn.textContent = '🔄 Atualizar Site';
+        elements.sitePublishBtn.style.background = '#ff9800';
+      } else {
+        elements.sitePublishBtn.textContent = '🚀 Publicar Site';
+        elements.sitePublishBtn.style.background = '#22c55e';
+      }
     }
 
     function updateWorkerPublishButton() {
-      if (currentWorkerData && currentWorkerData.fullUrl) { elements.workerPublishBtn.textContent = '🔄 Atualizar Worker'; elements.workerPublishBtn.style.background = '#ff9800'; }
-      else { elements.workerPublishBtn.textContent = '🚀 Publicar Worker'; elements.workerPublishBtn.style.background = '#22c55e'; }
+      if (currentWorkerData && currentWorkerData.fullUrl) { 
+        elements.workerPublishBtn.textContent = '🔄 Atualizar Worker'; 
+        elements.workerPublishBtn.style.background = '#ff9800'; 
+      } else { 
+        elements.workerPublishBtn.textContent = '🚀 Publicar Worker'; 
+        elements.workerPublishBtn.style.background = '#22c55e'; 
+      }
     }
 
     function workerLog(msg) { addChatMessage(`⚡ Worker: ${msg}`, 'system'); }
@@ -338,6 +349,7 @@
     }
 
     async function updateWorker(workerId) { await selectWorker(workerId); await publishWorker(); }
+    
     async function testWorker(workerId) {
       const worker = projectWorkers.find(w => w.id === workerId);
       if (!worker || !worker.fullUrl) { workerLog(`Worker não publicado. Clique em "Publicar Worker" primeiro.`); return; }
@@ -352,7 +364,9 @@
         showNotification(`Worker respondeu!`, 'success');
       } catch(e) { workerLog(`❌ Erro: ${e.message}`, true); if (e.name === 'AbortError') workerLog(`Timeout: Worker não respondeu em 15 segundos`); }
     }
+    
     async function editWorker(workerId) { await selectWorker(workerId); }
+    
     async function deleteWorker(workerId) {
       if (!confirm('Deletar worker?')) return;
       const worker = projectWorkers.find(w => w.id === workerId);
@@ -366,15 +380,17 @@
       }
     }
 
-    // ==================== SITE - NOVA VERSÃO (CRIA NOVO SITE A CADA PUBLICAÇÃO) ====================
+    // ==================== SITE - CORRIGIDO ====================
     async function publishSite() {
       const auth = await ensurePuterAuth();
       if (!auth) return false;
       const hasIndex = Object.values(files).some(f => f.name === 'index.html');
       if (!hasIndex) { addChatMessage('❌ Falta o arquivo index.html', 'system'); return false; }
       
-      elements.modalTitle.textContent = '🚀 Publicar Site?';
-      elements.modalMessage.textContent = 'Isso vai CRIAR um NOVO site no Puter. Deseja continuar?';
+      const isUpdate = currentHostingSubdomain && currentHostingUrl;
+      
+      elements.modalTitle.textContent = isUpdate ? '🔄 Atualizar Site?' : '🚀 Publicar Site?';
+      elements.modalMessage.textContent = isUpdate ? 'Isso vai ATUALIZAR o site existente. Deseja continuar?' : 'Isso vai PUBLICAR o site no Puter. Deseja continuar?';
       elements.publishModal.style.display = 'flex';
       
       const confirmHandler = async () => {
@@ -382,7 +398,7 @@
         elements.publishYesBtn.removeEventListener('click', confirmHandler);
         elements.publishNoBtn.removeEventListener('click', cancelHandler);
         
-        addChatMessage(`Publicando site...`, 'system');
+        addChatMessage(isUpdate ? 'Atualizando site...' : 'Publicando site...', 'system');
         try {
           // Criar diretório com todos os arquivos do projeto
           const dirName = `codehub_${currentUser.uid}_${currentProjectId}_${Date.now()}`;
@@ -397,28 +413,36 @@
             await puter.fs.write(`${dirName}/${file.name}`, content);
           }
           
-          // Criar novo site
-          const subdomain = puter.randName();
-          const site = await puter.hosting.create(subdomain, dirName);
-          const newUrl = `https://${site.subdomain}.puter.site`;
+          if (isUpdate) {
+            // ATUALIZAÇÃO: usa o update (como no exemplo oficial do Puter)
+            await puter.hosting.update(currentHostingSubdomain, dirName);
+            addChatMessage(`✅ Site atualizado com sucesso! 🔗 ${currentHostingUrl}`, 'ai');
+          } else {
+            // PRIMEIRA PUBLICAÇÃO: cria novo
+            const subdomain = puter.randName();
+            const site = await puter.hosting.create(subdomain, dirName);
+            currentHostingSubdomain = site.subdomain;
+            currentHostingUrl = `https://${site.subdomain}.puter.site`;
+            addChatMessage(`✅ Site publicado com sucesso! 🔗 ${currentHostingUrl}`, 'ai');
+          }
+          
+          currentHostingDirectory = dirName;
           
           // Salvar informações no Firebase
           await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({ 
-            url: newUrl, 
-            subdomain: site.subdomain, 
-            directory: dirName, 
+            url: currentHostingUrl, 
+            subdomain: currentHostingSubdomain, 
+            directory: currentHostingDirectory, 
             publishedAt: new Date().toISOString() 
           });
           
-          currentHostingUrl = newUrl;
           elements.fileUrlTop.value = currentHostingUrl;
           elements.urlPanelTop.style.display = 'flex';
           updateSitePublishButton();
-          addChatMessage(`✅ Site publicado! 🔗 ${currentHostingUrl}`, 'ai');
-          showNotification(`Site publicado com sucesso!`, 'success');
+          showNotification(isUpdate ? 'Site atualizado!' : 'Site publicado!', 'success');
           
         } catch(e) { 
-          addChatMessage(`❌ Erro ao publicar site: ${e.message}`, 'system');
+          addChatMessage(`❌ Erro ao ${isUpdate ? 'atualizar' : 'publicar'} site: ${e.message}`, 'system');
           showNotification(`Erro: ${e.message}`, 'error');
         }
       };
@@ -436,19 +460,105 @@
     // ==================== MODO ====================
     function setMode(mode) {
       currentMode = mode;
-      if (mode === 'chat') { elements.chatModeBtn.classList.add('active'); elements.editModeBtn.classList.remove('active'); showNotification('💬 Modo Conversar - Apenas análise', 'info'); }
-      else { elements.editModeBtn.classList.add('active'); elements.chatModeBtn.classList.remove('active'); showNotification('✏️ Modo Editar - Posso criar/editar/deletar!', 'success'); }
+      if (mode === 'chat') { 
+        elements.chatModeBtn.classList.add('active'); 
+        elements.editModeBtn.classList.remove('active'); 
+        showNotification('💬 Modo Conversar - Apenas análise', 'info'); 
+      } else { 
+        elements.editModeBtn.classList.add('active'); 
+        elements.chatModeBtn.classList.remove('active'); 
+        showNotification('✏️ Modo Editar - Posso criar/editar/deletar!', 'success'); 
+      }
       localStorage.setItem('codehub_mode', mode);
     }
 
-    function showNotification(msg, type = 'info') { const n = document.createElement('div'); n.className = `notification ${type}`; n.textContent = msg; document.body.appendChild(n); setTimeout(() => n.remove(), 4000); }
-    function updatePuterStatus(connected) { if (connected) { elements.puterStatusDot.classList.add('connected'); elements.puterStatusText.textContent = 'Online'; } else { elements.puterStatusDot.classList.remove('connected'); elements.puterStatusText.textContent = 'Offline'; } }
-    function addChatMessage(text, type) { const msgDiv = document.createElement('div'); msgDiv.className = `message ${type}`; msgDiv.innerHTML = text.replace(/\n/g, '<br>'); elements.chatMessages.appendChild(msgDiv); elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight; if (currentProjectId && currentUser) { db.ref(`chats/${currentUser.uid}/${currentProjectId}`).push({ text, type, timestamp: Date.now() }); } }
-    async function loadChatHistory() { if (!currentProjectId || !currentUser) return; const snapshot = await db.ref(`chats/${currentUser.uid}/${currentProjectId}`).orderByChild('timestamp').once('value'); elements.chatMessages.innerHTML = ''; snapshot.forEach(child => { const msg = child.val(); const msgDiv = document.createElement('div'); msgDiv.className = `message ${msg.type}`; msgDiv.innerHTML = msg.text.replace(/\n/g, '<br>'); elements.chatMessages.appendChild(msgDiv); }); if (elements.chatMessages.children.length === 0) { addChatMessage('🤖 Olá! 💡 Dica: Clique em "Salvar" para salvar localmente, e "Publicar" para ir pra internet!', 'system'); } }
-    async function loadActivities() { if (!currentProjectId) return; try { const res = await fetch(`${ACTIVITIES_DB_URL}/${currentProjectId}.json`); const data = await res.json(); if (!data) { elements.activitiesList.innerHTML = '<div class="no-activities">📭 Nenhuma atividade registrada</div>'; return; } const now = Date.now(); const elapsed = data.time || Math.floor((now - (data.start || now)) / 1000); const isOnline = (now - (data.lastSeen || 0)) < 10000; elements.activitiesList.innerHTML = `<div class="activity-item"><div><span class="${isOnline ? 'activity-online' : 'activity-offline'}">${isOnline ? '🟢 ONLINE' : '⚫ OFFLINE'}</span></div><div>📅 Primeira visita: ${new Date(data.start || now).toLocaleString()}</div><div>⏱ Tempo: ${Math.floor(elapsed/60)}min ${elapsed%60}s</div><div>🔄 Visitas: ${data.visits || 1}</div><button class="activity-delete-btn" onclick="deleteActivity('${currentProjectId}')">🗑 Limpar</button></div>`; if (isOnline) setTimeout(loadActivities, 5000); } catch(e) { console.error(e); } }
-    async function deleteActivity(projectId) { if (confirm('Limpar atividades?')) { await fetch(`${ACTIVITIES_DB_URL}/${projectId}.json`, { method: "DELETE" }); showNotification('Atividades limpas!', 'success'); loadActivities(); } }
-    function injectActivityScript(htmlContent) { const script = `<script src="${ACTIVITY_SCRIPT_URL}?projectid=${currentProjectId}"><\/script>`; if (htmlContent.includes('</body>')) return htmlContent.replace('</body>', script + '\n</body>'); if (htmlContent.includes('</html>')) return htmlContent.replace('</html>', script + '\n</html>'); return htmlContent + script; }
-    function validateAndFixHTML(content) { let html = content; if (!html.includes('<!DOCTYPE')) html = '<!DOCTYPE html>\n' + html; if (!html.includes('<html')) html = html.replace('<!DOCTYPE html>\n', '<!DOCTYPE html>\n<html>\n'); if (!html.includes('</html>')) html += '\n</html>'; if (!html.includes('<head>')) html = html.replace('<html>', '<html>\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>CodeHUB</title>\n</head>'); if (!html.includes('<body>')) html = html.replace('</head>', '</head>\n<body>'); if (!html.includes('</body>')) html = html.replace('</html>', '</body>\n</html>'); return html; }
+    function showNotification(msg, type = 'info') { 
+      const n = document.createElement('div'); 
+      n.className = `notification ${type}`; 
+      n.textContent = msg; 
+      document.body.appendChild(n); 
+      setTimeout(() => n.remove(), 4000); 
+    }
+    
+    function updatePuterStatus(connected) { 
+      if (connected) { 
+        elements.puterStatusDot.classList.add('connected'); 
+        elements.puterStatusText.textContent = 'Online'; 
+      } else { 
+        elements.puterStatusDot.classList.remove('connected'); 
+        elements.puterStatusText.textContent = 'Offline'; 
+      } 
+    }
+    
+    function addChatMessage(text, type) { 
+      const msgDiv = document.createElement('div'); 
+      msgDiv.className = `message ${type}`; 
+      msgDiv.innerHTML = text.replace(/\n/g, '<br>'); 
+      elements.chatMessages.appendChild(msgDiv); 
+      elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight; 
+      if (currentProjectId && currentUser) { 
+        db.ref(`chats/${currentUser.uid}/${currentProjectId}`).push({ text, type, timestamp: Date.now() }); 
+      } 
+    }
+    
+    async function loadChatHistory() { 
+      if (!currentProjectId || !currentUser) return; 
+      const snapshot = await db.ref(`chats/${currentUser.uid}/${currentProjectId}`).orderByChild('timestamp').once('value'); 
+      elements.chatMessages.innerHTML = ''; 
+      snapshot.forEach(child => { 
+        const msg = child.val(); 
+        const msgDiv = document.createElement('div'); 
+        msgDiv.className = `message ${msg.type}`; 
+        msgDiv.innerHTML = msg.text.replace(/\n/g, '<br>'); 
+        elements.chatMessages.appendChild(msgDiv); 
+      }); 
+      if (elements.chatMessages.children.length === 0) { 
+        addChatMessage('🤖 Olá! 💡 Dica: Clique em "Salvar" para salvar localmente, e "Publicar" para ir pra internet!', 'system'); 
+      } 
+    }
+    
+    async function loadActivities() { 
+      if (!currentProjectId) return; 
+      try { 
+        const res = await fetch(`${ACTIVITIES_DB_URL}/${currentProjectId}.json`); 
+        const data = await res.json(); 
+        if (!data) { 
+          elements.activitiesList.innerHTML = '<div class="no-activities">📭 Nenhuma atividade registrada</div>'; 
+          return; 
+        } 
+        const now = Date.now(); 
+        const elapsed = data.time || Math.floor((now - (data.start || now)) / 1000); 
+        const isOnline = (now - (data.lastSeen || 0)) < 10000; 
+        elements.activitiesList.innerHTML = `<div class="activity-item"><div><span class="${isOnline ? 'activity-online' : 'activity-offline'}">${isOnline ? '🟢 ONLINE' : '⚫ OFFLINE'}</span></div><div>📅 Primeira visita: ${new Date(data.start || now).toLocaleString()}</div><div>⏱ Tempo: ${Math.floor(elapsed/60)}min ${elapsed%60}s</div><div>🔄 Visitas: ${data.visits || 1}</div><button class="activity-delete-btn" onclick="deleteActivity('${currentProjectId}')">🗑 Limpar</button></div>`; 
+        if (isOnline) setTimeout(loadActivities, 5000); 
+      } catch(e) { console.error(e); } 
+    }
+    
+    async function deleteActivity(projectId) { 
+      if (confirm('Limpar atividades?')) { 
+        await fetch(`${ACTIVITIES_DB_URL}/${projectId}.json`, { method: "DELETE" }); 
+        showNotification('Atividades limpas!', 'success'); 
+        loadActivities(); 
+      } 
+    }
+    
+    function injectActivityScript(htmlContent) { 
+      const script = `<script src="${ACTIVITY_SCRIPT_URL}?projectid=${currentProjectId}"><\/script>`; 
+      if (htmlContent.includes('</body>')) return htmlContent.replace('</body>', script + '\n</body>'); 
+      if (htmlContent.includes('</html>')) return htmlContent.replace('</html>', script + '\n</html>'); 
+      return htmlContent + script; 
+    }
+    
+    function validateAndFixHTML(content) { 
+      let html = content; 
+      if (!html.includes('<!DOCTYPE')) html = '<!DOCTYPE html>\n' + html; 
+      if (!html.includes('<html')) html = html.replace('<!DOCTYPE html>\n', '<!DOCTYPE html>\n<html>\n'); 
+      if (!html.includes('</html>')) html += '\n</html>'; 
+      if (!html.includes('<head>')) html = html.replace('<html>', '<html>\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>CodeHUB</title>\n</head>'); 
+      if (!html.includes('<body>')) html = html.replace('</head>', '</head>\n<body>'); 
+      if (!html.includes('</body>')) html = html.replace('</html>', '</body>\n</html>'); 
+      return html; 
+    }
 
     async function createFiles(filesData) {
       if (currentMode === 'chat') { addChatMessage('⚠️ Modo Conversar - Para criar, mude para "✏️ Editar"', 'system'); return []; }
@@ -572,17 +682,26 @@
       allProjects.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
       renderProjectsList();
     }
+    
     function renderProjectsList() {
       if (allProjects.length === 0) { elements.projectsList.innerHTML = '<div style="text-align:center; padding:20px;">Nenhum projeto<br><button class="new-project-btn" onclick="createNewProject()">+ Criar</button></div>'; return; }
       elements.projectsList.innerHTML = allProjects.map(p => `<div class="project-item ${currentProjectId === p.id ? 'active' : ''}" onclick="selectProject('${p.id}')"><div class="project-name">📄 ${escapeHtml(p.name)}</div><div class="project-date">${new Date(p.updatedAt).toLocaleDateString()}</div></div>`).join('');
     }
+    
     async function selectProject(projectId) { if (currentProjectId === projectId) return; currentProjectId = projectId; await loadProjectData(); await loadChatHistory(); await loadActivities(); await loadProjectWorkers(); updateTabs(); window.history.pushState({}, '', `?projectId=${projectId}`); }
+    
     async function createNewProject() { const name = prompt('Nome do projeto:', 'Meu Projeto'); if (!name) return; const newProjectRef = db.ref(`projects/${currentUser.uid}`).push(); const projectId = newProjectRef.key; const fileKey = btoa('index.html').replace(/=/g, ''); const defaultHTML = `<!DOCTYPE html><html><head><title>${name}</title></head><body><h1>${name}</h1><p>Bem-vindo!</p></body></html>`; const content = injectActivityScript(defaultHTML); await newProjectRef.set({ name, files: { [fileKey]: { name: 'index.html', content, size: content.length, createdAt: new Date().toISOString() } }, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }); await loadProjects(); await selectProject(projectId); showNotification(`Projeto "${name}" criado!`, 'success'); }
-    async function loadProjectData() { const snapshot = await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).once('value'); const data = snapshot.val(); if (!data) return; elements.projectName.value = data.name || 'Projeto'; files = data.files || {}; if (data.hosting && data.hosting.url) { currentHostingUrl = data.hosting.url; elements.fileUrlTop.value = currentHostingUrl; elements.urlPanelTop.style.display = 'flex'; } updateSitePublishButton(); const fileKeys = Object.keys(files); if (fileKeys.length > 0) await openFile(fileKeys[0]); else await createDefaultIndexHtml(); updateTabs(); renderProjectsList(); }
+    
+    async function loadProjectData() { const snapshot = await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).once('value'); const data = snapshot.val(); if (!data) return; elements.projectName.value = data.name || 'Projeto'; files = data.files || {}; if (data.hosting && data.hosting.url) { currentHostingUrl = data.hosting.url; currentHostingSubdomain = data.hosting.subdomain; currentHostingDirectory = data.hosting.directory; elements.fileUrlTop.value = currentHostingUrl; elements.urlPanelTop.style.display = 'flex'; } updateSitePublishButton(); const fileKeys = Object.keys(files); if (fileKeys.length > 0) await openFile(fileKeys[0]); else await createDefaultIndexHtml(); updateTabs(); renderProjectsList(); }
+    
     async function createDefaultIndexHtml() { const fileName = 'index.html'; const fileKey = btoa(fileName).replace(/=/g, ''); const defaultHTML = `<!DOCTYPE html><html><head><title>${elements.projectName.value || 'Projeto'}</title></head><body><h1>Bem-vindo!</h1></body></html>`; const content = injectActivityScript(defaultHTML); files[fileKey] = { name: fileName, originalName: fileName, content, size: content.length, createdAt: new Date().toISOString() }; await saveProject(); await openFile(fileKey); }
+    
     async function saveProject() { await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ files, updatedAt: new Date().toISOString() }); }
+    
     function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+    
     async function saveFile(fileKey, content) { const fileData = files[fileKey]; const size = new Blob([content]).size; const oldSize = fileData.size || 0; userStorage.used = userStorage.used - oldSize + size; files[fileKey] = { ...fileData, content, size, updatedAt: new Date().toISOString() }; await db.ref(`users/${currentUser.uid}/storage`).set({ used: userStorage.used, limit: userStorage.limit }); updateStorageDisplay(); return true; }
+    
     function updateStorageDisplay() { const usedMB = (userStorage.used / (1024 * 1024)).toFixed(2); const limitMB = (userStorage.limit / (1024 * 1024)).toFixed(0); elements.storageUsed.textContent = usedMB; elements.storageLimit.textContent = limitMB; }
 
     function initializeApp() {
@@ -619,17 +738,29 @@
     }
 
     async function loadUserStorage() { const snapshot = await db.ref(`users/${currentUser.uid}/storage`).once('value'); const data = snapshot.val(); if (data) { userStorage.used = data.used || 0; userStorage.limit = data.limit || 5 * 1024 * 1024; } updateStorageDisplay(); }
+    
     async function openFile(fileKey) { if (!files[fileKey]) return; currentFile = fileKey; const content = files[fileKey].content || ''; if (useSimpleEditor) simpleEditor.value = content; else if (editor) editor.setValue(content); updateTabs(); elements.saveFileBtn.disabled = true; }
+    
     async function saveCurrentFile() { if (!currentFile) return; let content; if (useSimpleEditor) content = simpleEditor.value; else if (editor) content = editor.getValue(); else return; const success = await saveFile(currentFile, content); if (success) { await saveProject(); elements.saveFileBtn.disabled = true; elements.saveFileBtn.textContent = '✓'; setTimeout(() => { elements.saveFileBtn.textContent = '💾 Salvar'; }, 1500); showNotification('Arquivo salvo localmente!', 'success'); } }
+    
     function updateTabs() { elements.tabsContainer.innerHTML = ''; Object.keys(files).forEach(key => { const tab = document.createElement('button'); tab.className = `tab-btn ${key === currentFile ? 'active' : ''}`; tab.onclick = () => openFile(key); tab.innerHTML = `${files[key].name} <button class="close-tab-btn" onclick="event.stopPropagation(); closeFile('${key}')">&times;</button>`; elements.tabsContainer.appendChild(tab); }); }
+    
     async function closeFile(fileKey) { if (Object.keys(files).length <= 1) { showNotification('Não pode fechar o último arquivo', 'warning'); return; } delete files[fileKey]; await saveProject(); if (fileKey === currentFile) await openFile(Object.keys(files)[0]); updateTabs(); }
+    
     async function initPuter() { try { const user = await puter.auth.getUser(); updatePuterStatus(!!user); } catch(e) { updatePuterStatus(false); } }
+    
     async function ensurePuterAuth() { try { const user = await puter.auth.getUser(); if (user) { updatePuterStatus(true); return true; } } catch(e) {} try { await puter.auth.signIn(); updatePuterStatus(true); return true; } catch(e) { return false; } }
+    
     function openPuterDashboard() { window.open('https://puter.com', '_blank'); }
+    
     function previewProject() { const index = Object.values(files).find(f => f.name === 'index.html'); if (index?.content) { const blob = new Blob([index.content], { type: 'text/html' }); const url = URL.createObjectURL(blob); window.open(url, '_blank'); setTimeout(() => URL.revokeObjectURL(url), 1000); } else { showNotification('Crie um index.html primeiro', 'warning'); } }
+    
     function loadPreferences() { const savedSidebarWidth = localStorage.getItem('codehub_sidebar_width'); if (savedSidebarWidth) { sidebarWidth = parseInt(savedSidebarWidth); elements.aiSidebar.style.width = sidebarWidth + 'px'; } const savedMode = localStorage.getItem('codehub_mode'); if (savedMode === 'chat') setMode('chat'); else setMode('edit'); }
+    
     function savePreferences() { localStorage.setItem('codehub_sidebar_width', sidebarWidth); }
+    
     function initResizing() { let isResizing = false; elements.resizeHandle.addEventListener('mousedown', (e) => { isResizing = true; document.body.style.cursor = 'ew-resize'; e.preventDefault(); }); document.addEventListener('mousemove', (e) => { if (!isResizing) return; const newWidth = window.innerWidth - e.clientX; if (newWidth >= 250 && newWidth <= 600) { sidebarWidth = newWidth; elements.aiSidebar.style.width = sidebarWidth + 'px'; } }); document.addEventListener('mouseup', () => { if (isResizing) { isResizing = false; document.body.style.cursor = ''; savePreferences(); } }); }
+    
     function setupEventListeners() {
       elements.saveFileBtn.addEventListener('click', saveCurrentFile);
       elements.previewBtn.addEventListener('click', previewProject);
