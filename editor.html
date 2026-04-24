@@ -10,108 +10,399 @@
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
   <script src="https://js.puter.com/v2/"></script>
   <style>
+    :root {
+      --zoom-level: 1;
+      --bg-primary: #1e1e1e;
+      --bg-secondary: #252526;
+      --bg-tertiary: #2d2d2d;
+      --border-color: #333;
+      --text-primary: #fff;
+      --text-secondary: #888;
+      --accent-blue: #4361ee;
+      --accent-cyan: #4cc9f0;
+      --accent-green: #22c55e;
+      --accent-orange: #ff9800;
+      --accent-red: #f44336;
+      --accent-purple: #9c27b0;
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1e1e1e; color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-    #loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, #1e293b, #0f172a); display: flex; justify-content: center; align-items: center; flex-direction: column; z-index: 9999; transition: opacity 0.5s ease; }
+    
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      background: var(--bg-primary); 
+      color: var(--text-primary); 
+      height: 100vh; 
+      display: flex; 
+      flex-direction: column; 
+      overflow: hidden;
+      zoom: var(--zoom-level);
+    }
+    
+    #loading-screen { 
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+      background: radial-gradient(circle at center, #1e293b, #0f172a); 
+      display: flex; justify-content: center; align-items: center; flex-direction: column; 
+      z-index: 9999; transition: opacity 0.5s ease; 
+    }
     .loader { width: 80px; animation: spin 1s linear infinite; border-radius: 50%; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    #top-bar { display: flex; padding: 8px 12px; background: #1e1e1e; align-items: center; border-bottom: 1px solid #333; flex-wrap: wrap; gap: 8px; }
-    #project-name { background: #252526; color: white; border: 1px solid #333; border-radius: 4px; padding: 6px 10px; width: 200px; }
-    button { background: #4361ee; border: none; color: white; padding: 6px 12px; cursor: pointer; border-radius: 4px; font-size: 13px; transition: all 0.2s; }
+    
+    #top-bar { 
+      display: flex; padding: 8px 12px; background: var(--bg-primary); 
+      align-items: center; border-bottom: 1px solid var(--border-color); 
+      flex-wrap: wrap; gap: 8px; z-index: 100;
+    }
+    #project-name { 
+      background: var(--bg-secondary); color: var(--text-primary); 
+      border: 1px solid var(--border-color); border-radius: 4px; padding: 6px 10px; width: 200px; 
+    }
+    button { 
+      background: var(--accent-blue); border: none; color: white; padding: 6px 12px; 
+      cursor: pointer; border-radius: 4px; font-size: 13px; transition: all 0.2s; 
+    }
     button:hover { filter: brightness(1.2); }
     button:disabled { background: #555; cursor: not-allowed; }
-    #saveFileBtn { background: #4cc9f0; }
+    #saveFileBtn { background: var(--accent-cyan); }
     #previewBtn { background: #4895ef; }
-    #sitePublishBtn { background: #22c55e; }
-    .logout-btn { background: #f44336; }
+    #sitePublishBtn { background: var(--accent-green); }
+    .logout-btn { background: var(--accent-red); }
+    
     #storage-info { background: #333; padding: 4px 10px; border-radius: 5px; font-size: 11px; margin-left: 10px; }
     #user-info { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-    .url-panel-top { display: flex; align-items: center; gap: 8px; background: #2d2d2d; padding: 4px 10px; border-radius: 6px; margin-left: 10px; font-size: 11px; }
-    .url-panel-top input { background: #1e1e1e; border: 1px solid #333; color: white; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-size: 10px; width: 250px; }
-    .url-panel-top button { padding: 4px 8px; font-size: 11px; }
-    #left-sidebar { width: 280px; background: #252526; border-right: 1px solid #333; display: flex; flex-direction: column; overflow-y: auto; }
-    .section-header { padding: 12px; background: #2d2d2d; font-weight: bold; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+    
+    .url-panel-top { 
+      display: flex; align-items: center; gap: 8px; background: var(--bg-tertiary); 
+      padding: 4px 10px; border-radius: 6px; margin-left: 10px; font-size: 11px; 
+    }
+    .url-panel-top input { 
+      background: var(--bg-primary); border: 1px solid var(--border-color); 
+      color: var(--text-primary); padding: 4px 8px; border-radius: 4px; 
+      font-family: monospace; font-size: 10px; width: 250px; 
+    }
+    
+    .zoom-controls {
+      display: flex; align-items: center; gap: 5px; margin-left: 10px;
+      background: var(--bg-tertiary); padding: 4px 8px; border-radius: 6px;
+    }
+    .zoom-controls button {
+      padding: 2px 8px; font-size: 14px; background: var(--bg-secondary);
+      border-radius: 4px; min-width: 28px;
+    }
+    .zoom-controls span {
+      font-size: 11px; min-width: 40px; text-align: center; color: var(--accent-cyan);
+    }
+    
+    #left-sidebar { 
+      width: 280px; background: var(--bg-secondary); border-right: 1px solid var(--border-color); 
+      display: flex; flex-direction: column; overflow-y: auto; 
+    }
+    .section-header { 
+      padding: 12px; background: var(--bg-tertiary); font-weight: bold; 
+      border-bottom: 1px solid var(--border-color); display: flex; 
+      justify-content: space-between; align-items: center; font-size: 13px; 
+    }
     .projects-list { flex: 1; overflow-y: auto; padding: 8px; max-height: 40%; }
-    .project-item { padding: 10px; margin-bottom: 8px; background: #1e1e1e; border-radius: 6px; cursor: pointer; transition: all 0.2s; border: 1px solid #333; }
-    .project-item:hover { background: #2d2d2d; border-color: #4cc9f0; }
-    .project-item.active { background: #4361ee; border-color: #4cc9f0; }
+    .project-item { 
+      padding: 10px; margin-bottom: 8px; background: var(--bg-primary); 
+      border-radius: 6px; cursor: pointer; transition: all 0.2s; border: 1px solid var(--border-color); 
+    }
+    .project-item:hover { background: var(--bg-tertiary); border-color: var(--accent-cyan); }
+    .project-item.active { background: var(--accent-blue); border-color: var(--accent-cyan); }
     .project-name { font-weight: bold; margin-bottom: 4px; font-size: 13px; }
-    .project-date { font-size: 10px; color: #888; }
-    .workers-list { flex: 1; overflow-y: auto; padding: 8px; border-top: 1px solid #333; }
-    .worker-item { background: #1e1e1e; border-radius: 6px; padding: 10px; margin-bottom: 8px; border: 1px solid #333; cursor: pointer; }
-    .worker-item:hover { border-color: #4cc9f0; }
-    .worker-name { font-weight: bold; color: #4cc9f0; font-size: 12px; margin-bottom: 4px; }
-    .worker-route { font-size: 11px; color: #22c55e; font-family: monospace; margin-bottom: 4px; }
-    .worker-url { font-size: 10px; color: #888; word-break: break-all; margin-bottom: 8px; }
-    .worker-status { font-size: 10px; display: inline-block; padding: 2px 6px; border-radius: 4px; margin-bottom: 6px; }
-    .worker-status.published { background: #22c55e; color: #1e1e1e; }
-    .worker-status.not-published { background: #f44336; }
+    .project-date { font-size: 10px; color: var(--text-secondary); }
+    
+    .workers-list { flex: 1; overflow-y: auto; padding: 8px; border-top: 1px solid var(--border-color); }
+    .worker-item { 
+      background: var(--bg-primary); border-radius: 6px; padding: 10px; 
+      margin-bottom: 8px; border: 1px solid var(--border-color); cursor: pointer; 
+    }
+    .worker-item:hover { border-color: var(--accent-cyan); }
+    .worker-name { font-weight: bold; color: var(--accent-cyan); font-size: 12px; margin-bottom: 4px; }
+    .worker-route { font-size: 11px; color: var(--accent-green); font-family: monospace; margin-bottom: 4px; }
+    .worker-url { font-size: 10px; color: var(--text-secondary); word-break: break-all; margin-bottom: 8px; }
+    .worker-status { 
+      font-size: 10px; display: inline-block; padding: 2px 6px; border-radius: 4px; margin-bottom: 6px; 
+    }
+    .worker-status.published { background: var(--accent-green); color: var(--bg-primary); }
+    .worker-status.not-published { background: var(--accent-red); }
     .worker-actions { display: flex; gap: 5px; flex-wrap: wrap; }
-    .worker-actions button { background: #4361ee; padding: 3px 8px; font-size: 10px; }
-    .worker-actions button.delete { background: #f44336; }
-    .worker-actions button.test { background: #22c55e; }
-    .worker-actions button.update-worker { background: #ff9800; }
-    .no-workers { text-align: center; color: #888; padding: 20px; font-size: 12px; }
+    .worker-actions button { background: var(--accent-blue); padding: 3px 8px; font-size: 10px; }
+    .worker-actions button.delete { background: var(--accent-red); }
+    .worker-actions button.test { background: var(--accent-green); }
+    .worker-actions button.update-worker { background: var(--accent-orange); }
+    .no-workers { text-align: center; color: var(--text-secondary); padding: 20px; font-size: 12px; }
+    
     .main-container { display: flex; flex: 1; overflow: hidden; }
     #editor-container { flex: 2; display: flex; flex-direction: column; overflow: hidden; }
-    #tabs { display: flex; background: #252526; align-items: center; gap: 1px; overflow-x: auto; min-height: 36px; }
-    .tab-btn { background: #2d2d2d; padding: 6px 12px; position: relative; padding-right: 25px; border-radius: 0; font-size: 12px; }
-    .tab-btn.active { background: #1e1e1e; color: white; }
-    .close-tab-btn { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #999; cursor: pointer; font-size: 14px; }
+    #tabs { 
+      display: flex; background: var(--bg-secondary); align-items: center; 
+      gap: 1px; overflow-x: auto; min-height: 36px; 
+    }
+    .tab-btn { 
+      background: var(--bg-tertiary); padding: 6px 12px; position: relative; 
+      padding-right: 25px; border-radius: 0; font-size: 12px; white-space: nowrap;
+    }
+    .tab-btn.active { background: var(--bg-primary); color: var(--text-primary); }
+    .close-tab-btn { 
+      position: absolute; right: 5px; top: 50%; transform: translateY(-50%); 
+      background: transparent; border: none; color: #999; cursor: pointer; font-size: 14px; 
+    }
     #container { flex: 1; overflow: hidden; position: relative; }
-    #simple-editor { width: 100%; height: 100%; background: #1e1e1e; color: #d4d4d4; font-family: 'Consolas', monospace; font-size: 13px; padding: 10px; border: none; resize: none; outline: none; }
-    #ai-sidebar { width: 420px; background: #252526; border-left: 1px solid #333; display: flex; flex-direction: column; position: relative; min-width: 250px; max-width: 600px; }
-    .resize-handle { position: absolute; left: -3px; top: 0; width: 6px; height: 100%; cursor: ew-resize; background: transparent; z-index: 100; }
-    .resize-handle:hover { background: #4cc9f0; }
-    .sidebar-header { padding: 12px; background: #2d2d2d; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
-    .chat-messages { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
-    .message { padding: 10px 14px; border-radius: 12px; max-width: 95%; word-wrap: break-word; font-size: 13px; animation: fadeIn 0.3s ease; }
+    #simple-editor { 
+      width: 100%; height: 100%; background: var(--bg-primary); color: #d4d4d4; 
+      font-family: 'Consolas', monospace; font-size: 13px; padding: 10px; 
+      border: none; resize: none; outline: none; 
+    }
+    
+    #ai-sidebar { 
+      width: 420px; background: var(--bg-secondary); border-left: 1px solid var(--border-color); 
+      display: flex; flex-direction: column; position: relative; min-width: 250px; max-width: 600px; 
+    }
+    .resize-handle { 
+      position: absolute; left: -3px; top: 0; width: 6px; height: 100%; 
+      cursor: ew-resize; background: transparent; z-index: 100; 
+    }
+    .resize-handle:hover { background: var(--accent-cyan); }
+    
+    .sidebar-header { 
+      padding: 12px; background: var(--bg-tertiary); display: flex; 
+      justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); 
+    }
+    .chat-messages { 
+      flex: 1; overflow-y: auto; padding: 12px; display: flex; 
+      flex-direction: column; gap: 12px; min-height: 0; 
+    }
+    .message { 
+      padding: 10px 14px; border-radius: 12px; max-width: 95%; 
+      word-wrap: break-word; font-size: 13px; animation: fadeIn 0.3s ease; 
+    }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .message.user { background: #4361ee; align-self: flex-end; border-bottom-right-radius: 4px; }
+    .message.user { background: var(--accent-blue); align-self: flex-end; border-bottom-right-radius: 4px; }
     .message.ai { background: #3d3d3d; align-self: flex-start; border-bottom-left-radius: 4px; white-space: pre-wrap; }
-    .message.ai.streaming { border-left: 3px solid #9c27b0; }
-    .message.system { background: #ff9800; align-self: center; font-size: 12px; border-radius: 20px; }
-    .message pre { background: #1e1e1e; padding: 10px; border-radius: 8px; overflow-x: auto; margin-top: 10px; font-size: 12px; }
-    .chat-controls { padding: 12px; border-top: 1px solid #333; background: #252526; }
+    .message.ai.streaming { border-left: 3px solid var(--accent-purple); }
+    .message.system { background: var(--accent-orange); align-self: center; font-size: 12px; border-radius: 20px; }
+    
+    .chat-controls { padding: 12px; border-top: 1px solid var(--border-color); background: var(--bg-secondary); }
     .mode-toggle { display: flex; gap: 10px; margin-bottom: 10px; justify-content: center; }
     .mode-toggle-btn { flex: 1; background: #333; padding: 8px; font-size: 13px; border-radius: 8px; }
-    .mode-toggle-btn.active { background: #9c27b0; }
+    .mode-toggle-btn.active { background: var(--accent-purple); }
     .mode-toggle-btn.edit-mode.active { background: #4caf50; }
     .chat-input-wrapper { display: flex; gap: 10px; }
-    .chat-input-wrapper textarea { flex: 1; background: #1e1e1e; border: 1px solid #333; color: white; padding: 10px; border-radius: 8px; resize: none; font-family: inherit; font-size: 13px; }
-    .chat-input-wrapper button { background: #9c27b0; padding: 10px 20px; border-radius: 8px; }
-    .quick-actions { display: flex; gap: 5px; flex-wrap: wrap; padding: 8px 12px; background: #1e1e1e; border-top: 1px solid #333; }
-    .quick-actions button { background: #333; padding: 4px 8px; font-size: 10px; border-radius: 12px; }
-    .quick-actions button:hover { background: #4361ee; }
-    .worker-editor { background: #1e1e1e; border-top: 1px solid #333; padding: 8px; }
-    .worker-editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 11px; color: #4cc9f0; }
-    .worker-editor-buttons { display: flex; gap: 8px; }
-    .worker-editor-buttons button { padding: 4px 10px; font-size: 10px; }
-    .worker-editor-buttons button.update-worker { background: #ff9800; }
-    #workerCode { width: 100%; background: #1e1e1e; border: 1px solid #333; color: #d4d4d4; font-family: 'Consolas', monospace; font-size: 12px; padding: 10px; border-radius: 6px; resize: vertical; }
-    .activities-panel { background: #1e1e1e; border-top: 1px solid #333; display: flex; flex-direction: column; min-height: 150px; max-height: 180px; }
-    .activities-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #2d2d2d; font-size: 11px; color: #4cc9f0; border-bottom: 1px solid #333; }
-    .activities-content { flex: 1; overflow-y: auto; padding: 8px; font-size: 11px; }
-    .activity-item { background: #2d2d2d; border-radius: 6px; padding: 6px; margin-top: 6px; }
-    .activity-online { color: #4caf50; font-weight: bold; }
-    .activity-offline { color: #f44336; }
-    .activity-delete-btn { background: #f44336; color: white; border: none; padding: 3px 6px; border-radius: 4px; cursor: pointer; font-size: 9px; margin-top: 4px; }
-    .no-activities { text-align: center; color: #888; padding: 10px; font-size: 11px; }
-    .publish-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 10001; }
-    .publish-modal-content { background: #2d2d2d; border-radius: 16px; padding: 30px; max-width: 400px; width: 90%; text-align: center; }
+    .chat-input-wrapper textarea { 
+      flex: 1; background: var(--bg-primary); border: 1px solid var(--border-color); 
+      color: var(--text-primary); padding: 10px; border-radius: 8px; resize: none; 
+      font-family: inherit; font-size: 13px; 
+    }
+    .chat-input-wrapper button { background: var(--accent-purple); padding: 10px 20px; border-radius: 8px; }
+    
+    .quick-actions { 
+      display: flex; gap: 5px; flex-wrap: wrap; padding: 8px 12px; 
+      background: var(--bg-primary); border-top: 1px solid var(--border-color); 
+    }
+    .quick-actions button { 
+      background: #333; padding: 4px 8px; font-size: 10px; border-radius: 12px; 
+    }
+    .quick-actions button:hover { background: var(--accent-blue); }
+    
+    /* ============== WORKER EDITOR COMO JANELA FLUTUANTE ============== */
+    .worker-editor-window {
+      position: fixed;
+      background: var(--bg-secondary);
+      border: 2px solid var(--accent-cyan);
+      border-radius: 12px;
+      z-index: 500;
+      min-width: 350px;
+      min-height: 250px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      resize: both;
+      overflow: hidden;
+    }
+    .worker-editor-header-window {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      background: var(--bg-tertiary);
+      cursor: move;
+      user-select: none;
+      border-radius: 10px 10px 0 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .worker-editor-header-window .title {
+      font-weight: bold;
+      color: var(--accent-cyan);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .worker-editor-header-window .window-controls {
+      display: flex;
+      gap: 6px;
+    }
+    .worker-editor-header-window .window-controls button {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      font-size: 14px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .worker-editor-header-window .window-controls button.minimize:hover { background: var(--accent-orange); border-color: var(--accent-orange); }
+    .worker-editor-header-window .window-controls button.maximize:hover { background: var(--accent-green); border-color: var(--accent-green); }
+    .worker-editor-header-window .window-controls button.close:hover { background: var(--accent-red); border-color: var(--accent-red); }
+    
+    .worker-editor-body-window {
+      flex: 1;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: auto;
+    }
+    .worker-editor-body-window textarea {
+      flex: 1;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      color: #d4d4d4;
+      font-family: 'Consolas', monospace;
+      font-size: 12px;
+      padding: 10px;
+      border-radius: 6px;
+      resize: none;
+      min-height: 120px;
+    }
+    .worker-editor-body-window .worker-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .worker-editor-body-window .worker-buttons button {
+      padding: 6px 12px;
+      font-size: 11px;
+    }
+    
+    .worker-editor-window.minimized {
+      min-height: auto !important;
+      height: auto !important;
+      resize: none;
+    }
+    .worker-editor-window.minimized .worker-editor-body-window {
+      display: none;
+    }
+    
+    /* ============== MENU DE CONTEXTO (BOTÃO DIREITO) ============== */
+    .context-menu {
+      position: fixed;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 8px 0;
+      z-index: 10000;
+      min-width: 200px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+      display: none;
+      animation: fadeIn 0.15s ease;
+    }
+    .context-menu .menu-item {
+      padding: 10px 16px;
+      cursor: pointer;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background 0.15s;
+      color: var(--text-primary);
+    }
+    .context-menu .menu-item:hover {
+      background: var(--accent-blue);
+    }
+    .context-menu .menu-item.danger:hover {
+      background: var(--accent-red);
+    }
+    .context-menu .menu-divider {
+      height: 1px;
+      background: var(--border-color);
+      margin: 6px 0;
+    }
+    .context-menu .menu-shortcut {
+      margin-left: auto;
+      color: var(--text-secondary);
+      font-size: 11px;
+    }
+    
+    /* ============== PAINEL DE ATIVIDADES COMO JANELA ============== */
+    .activities-window {
+      position: fixed;
+      background: var(--bg-secondary);
+      border: 2px solid var(--accent-purple);
+      border-radius: 12px;
+      z-index: 500;
+      min-width: 320px;
+      min-height: 200px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      resize: both;
+      overflow: hidden;
+    }
+    .activities-window .activities-header-window {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      background: var(--bg-tertiary);
+      cursor: move;
+      user-select: none;
+      border-radius: 10px 10px 0 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .activities-window .activities-body-window {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    
+    .publish-modal { 
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+      background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); 
+      display: none; justify-content: center; align-items: center; z-index: 10001; 
+    }
+    .publish-modal-content { 
+      background: var(--bg-tertiary); border-radius: 16px; padding: 30px; 
+      max-width: 400px; width: 90%; text-align: center; 
+    }
     .publish-modal-buttons { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
     .btn-publish-yes { background: #4caf50; }
-    .btn-publish-no { background: #f44336; }
-    .notification { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; color: white; z-index: 1000; animation: slideIn 0.3s ease; font-size: 13px; }
+    .btn-publish-no { background: var(--accent-red); }
+    
+    .notification { 
+      position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; 
+      border-radius: 8px; color: white; z-index: 1000; animation: slideIn 0.3s ease; font-size: 13px; 
+    }
     .notification.success { background: #4caf50; }
-    .notification.error { background: #f44336; }
+    .notification.error { background: var(--accent-red); }
     .notification.info { background: #2196f3; }
     @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-    .puter-status { display: flex; align-items: center; gap: 5px; background: #333; padding: 2px 8px; border-radius: 20px; font-size: 11px; }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #f44336; }
+    
+    .puter-status { 
+      display: flex; align-items: center; gap: 5px; background: #333; 
+      padding: 2px 8px; border-radius: 20px; font-size: 11px; 
+    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-red); }
     .status-dot.connected { background: #4caf50; }
     .new-project-btn { background: #4caf50; font-size: 11px; padding: 4px 8px; }
-    .new-worker-btn { background: #22c55e; font-size: 11px; padding: 4px 8px; }
+    .new-worker-btn { background: var(--accent-green); font-size: 11px; padding: 4px 8px; }
   </style>
 </head>
 <body>
@@ -122,16 +413,22 @@
 
   <div id="app-content" style="display: none; height: 100vh; display: flex; flex-direction: column;">
     <div id="top-bar">
-      <button id="puterDashboardBtn">🚀 Puter Dashboard</button>
+      <button id="puterDashboardBtn">🚀 Puter</button>
       <input type="text" id="project-name" placeholder="Nome do Projeto">
       <button id="saveFileBtn" disabled>💾 Salvar</button>
       <button id="previewBtn">👁️ Preview</button>
       <button id="sitePublishBtn">🚀 Publicar Site</button>
-      <div id="storage-info">📦 <span id="storage-used">0</span> / <span id="storage-limit">5</span> MB</div>
-      <div class="url-panel-top" id="urlPanelTop" style="display: none;">
+      <div id="storage-info">📦 <span id="storage-used">0</span>/<span id="storage-limit">5</span>MB</div>
+      <div class="url-panel-top" id="urlPanelTop" style="display:none;">
         <span>🔗</span>
         <input type="text" id="fileUrlTop" readonly onclick="this.select()">
         <button id="openUrlTopBtn">Abrir</button>
+      </div>
+      <div class="zoom-controls">
+        <button onclick="changeZoom(-0.1)" title="Diminuir zoom">➖</button>
+        <span id="zoomLevel">100%</span>
+        <button onclick="changeZoom(0.1)" title="Aumentar zoom">➕</button>
+        <button onclick="resetZoom()" title="Resetar zoom">↺</button>
       </div>
       <div id="user-info">
         <span id="user-name"></span>
@@ -143,14 +440,14 @@
     <div class="main-container">
       <div id="left-sidebar">
         <div class="section-header"><span>📁 Meus Projetos</span><button class="new-project-btn" onclick="createNewProject()">+ Novo</button></div>
-        <div class="projects-list" id="projects-list"><div style="text-align:center; padding:20px; color:#888;">Carregando...</div></div>
+        <div class="projects-list" id="projects-list"><div style="text-align:center;padding:20px;color:#888;">Carregando...</div></div>
         <div class="section-header"><span>⚡ Workers .sc</span><button class="new-worker-btn" onclick="createNewWorker()">+ Worker</button></div>
-        <div class="workers-list" id="workers-list"><div class="no-workers">📭 Nenhum worker criado</div></div>
+        <div class="workers-list" id="workers-list"><div class="no-workers">📭 Nenhum worker</div></div>
       </div>
 
       <div id="editor-container">
         <div id="tabs"></div>
-        <div id="container"><textarea id="simple-editor" placeholder="Editor - você já pode digitar!" style="width:100%; height:100%; background:#1e1e1e; color:#d4d4d4; font-family:monospace; padding:10px; border:none; resize:none;"></textarea></div>
+        <div id="container"><textarea id="simple-editor" placeholder="Editor - você já pode digitar!" style="width:100%;height:100%;background:#1e1e1e;color:#d4d4d4;font-family:monospace;padding:10px;border:none;resize:none;"></textarea></div>
       </div>
 
       <div id="ai-sidebar">
@@ -160,28 +457,98 @@
         <div class="quick-actions" id="quickActions">
           <button onclick="quickAction('criar-worker')">➕ Criar Worker</button>
           <button onclick="quickAction('editar-worker')">✏️ Editar Worker</button>
-          <button onclick="quickAction('explicar-worker')">📖 Explicar Worker</button>
+          <button onclick="quickAction('explicar-worker')">📖 Explicar</button>
           <button onclick="quickAction('criar-api')">🔧 Criar API</button>
-          <button onclick="quickAction('adicionar-rota')">🛣️ Adicionar Rota</button>
-          <button onclick="quickAction('corrigir-worker')">🔧 Corrigir Worker</button>
-          <button onclick="quickAction('listar-workers')">📋 Listar Workers</button>
+          <button onclick="quickAction('adicionar-rota')">🛣️ Add Rota</button>
+          <button onclick="quickAction('corrigir-worker')">🔧 Corrigir</button>
+          <button onclick="quickAction('listar-workers')">📋 Listar</button>
         </div>
         <div class="chat-controls">
-          <div class="mode-toggle"><button class="mode-toggle-btn" id="chatModeBtn" onclick="setMode('chat')">💬 Conversar</button><button class="mode-toggle-btn edit-mode active" id="editModeBtn" onclick="setMode('edit')">✏️ Editar</button></div>
-          <div class="chat-input-wrapper"><textarea id="chatInput" placeholder="Digite seu comando... Ex: crie um worker chamado api" rows="2"></textarea><button id="sendChatBtn">Enviar</button></div>
+          <div class="mode-toggle">
+            <button class="mode-toggle-btn" id="chatModeBtn" onclick="setMode('chat')">💬 Conversar</button>
+            <button class="mode-toggle-btn edit-mode active" id="editModeBtn" onclick="setMode('edit')">✏️ Editar</button>
+          </div>
+          <div class="chat-input-wrapper">
+            <textarea id="chatInput" placeholder="Digite seu comando... Ex: crie um worker chamado api" rows="2"></textarea>
+            <button id="sendChatBtn">Enviar</button>
+          </div>
         </div>
-        <div class="worker-editor">
-          <div class="worker-editor-header"><span>📝 Código do Worker (.sc)</span><div class="worker-editor-buttons"><button onclick="saveWorkerCode()">💾 Salvar</button><button id="workerPublishBtn" class="update-worker">🚀 Publicar Worker</button></div></div>
-          <textarea id="workerCode" rows="6" placeholder="// Código do Worker .sc\n// Exemplo:\nrouter.get('/api/hello.sc', async () => {\n    return { message: 'Olá do Worker!' };\n});"></textarea>
+        <div class="activities-panel" style="background:#1e1e1e;border-top:1px solid #333;padding:8px;max-height:150px;overflow-y:auto;">
+          <div class="activities-header" style="font-size:11px;color:#4cc9f0;margin-bottom:6px;">📊 Atividades</div>
+          <div id="activitiesList"><div class="no-activities">🔍 Carregando...</div></div>
         </div>
-        <div class="activities-panel"><div class="activities-header"><span>📊 Atividades do Usuário</span></div><div class="activities-content" id="activitiesContent"><div id="activitiesList"><div class="no-activities">🔍 Carregando atividades...</div></div></div></div>
       </div>
     </div>
   </div>
 
-  <div id="publishModal" class="publish-modal"><div class="publish-modal-content"><h3 id="modalTitle">🚀 Publicar?</h3><p id="modalMessage">Deseja publicar no Puter agora?</p><div class="publish-modal-buttons"><button class="btn-publish-yes" id="publishYesBtn">✅ Sim</button><button class="btn-publish-no" id="publishNoBtn">❌ Não</button></div></div></div>
+  <!-- Worker Editor Flutuante -->
+  <div class="worker-editor-window" id="workerEditorWindow" style="display:none;top:100px;left:100px;width:500px;height:400px;">
+    <div class="worker-editor-header-window" id="workerEditorHeader">
+      <div class="title">📝 <span id="workerWindowTitle">Editor de Worker</span></div>
+      <div class="window-controls">
+        <button class="minimize" onclick="toggleWorkerWindowSize()" title="Minimizar/Maximizar">━</button>
+        <button class="close" onclick="closeWorkerWindow()" title="Fechar">✕</button>
+      </div>
+    </div>
+    <div class="worker-editor-body-window">
+      <textarea id="workerCodeWindow" rows="10" placeholder="// Código do Worker .sc
+// Exemplo:
+router.get('/api/hello.sc', async () => {
+    return { message: 'Olá do Worker!' };
+});"></textarea>
+      <div class="worker-buttons">
+        <button onclick="saveWorkerCodeWindow()">💾 Salvar</button>
+        <button id="workerPublishBtnWindow" class="update-worker" onclick="publishWorkerWindow()" style="background:#ff9800;">🚀 Publicar Worker</button>
+        <button onclick="testWorkerWindow()" style="background:#22c55e;">▶️ Testar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Activities Window Flutuante -->
+  <div class="activities-window" id="activitiesWindow" style="display:none;top:150px;right:50px;width:380px;height:300px;">
+    <div class="activities-header-window" id="activitiesHeader">
+      <span style="font-weight:bold;color:#9c27b0;">📊 Atividades do Usuário</span>
+      <div class="window-controls">
+        <button class="close" onclick="closeActivitiesWindow()" style="width:28px;height:28px;border-radius:50%;background:transparent;border:1px solid #333;color:white;cursor:pointer;">✕</button>
+      </div>
+    </div>
+    <div class="activities-body-window" id="activitiesBodyWindow">
+      <div class="no-activities">🔍 Carregando atividades...</div>
+    </div>
+  </div>
+
+  <!-- Menu de Contexto (Botão Direito) -->
+  <div class="context-menu" id="contextMenu">
+    <div class="menu-item" onclick="contextAction('newFile')">📄 Novo Arquivo <span class="menu-shortcut">Ctrl+N</span></div>
+    <div class="menu-item" onclick="contextAction('newWorker')">⚡ Novo Worker <span class="menu-shortcut">Ctrl+W</span></div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" onclick="contextAction('saveFile')">💾 Salvar Arquivo <span class="menu-shortcut">Ctrl+S</span></div>
+    <div class="menu-item" onclick="contextAction('preview')">👁️ Preview <span class="menu-shortcut">Ctrl+P</span></div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" onclick="contextAction('openWorkerEditor')">📝 Abrir Editor de Worker</div>
+    <div class="menu-item" onclick="contextAction('openActivities')">📊 Abrir Atividades</div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" onclick="contextAction('zoomIn')">🔍 Zoom +</div>
+    <div class="menu-item" onclick="contextAction('zoomOut')">🔍 Zoom -</div>
+    <div class="menu-item" onclick="contextAction('zoomReset')">↺ Reset Zoom</div>
+    <div class="menu-divider"></div>
+    <div class="menu-item danger" onclick="contextAction('clearChat')">🗑️ Limpar Chat</div>
+  </div>
+
+  <!-- Modal de Publicação -->
+  <div id="publishModal" class="publish-modal">
+    <div class="publish-modal-content">
+      <h3 id="modalTitle">🚀 Publicar?</h3>
+      <p id="modalMessage">Deseja publicar no Puter agora?</p>
+      <div class="publish-modal-buttons">
+        <button class="btn-publish-yes" id="publishYesBtn">✅ Sim</button>
+        <button class="btn-publish-no" id="publishNoBtn">❌ Não</button>
+      </div>
+    </div>
+  </div>
 
   <script>
+    // ============== CONFIGURAÇÃO FIREBASE ==============
     const firebaseConfig = {
       apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
       authDomain: "html-15e80.firebaseapp.com",
@@ -196,6 +563,7 @@
     const auth = firebase.auth();
     const db = firebase.database();
     
+    // ============== VARIÁVEIS GLOBAIS ==============
     let editor = null;
     let currentProjectId = null;
     let currentUser = null;
@@ -211,257 +579,425 @@
     let useSimpleEditor = true;
     let projectWorkers = [];
     let currentWorkerData = null;
+    let currentZoom = 1;
 
     const ACTIVITIES_DB_URL = "https://html-785e3-default-rtdb.firebaseio.com/activities";
     const ACTIVITY_SCRIPT_URL = "https://code.codehub.ct.ws/atividade.js";
     let sidebarWidth = 420;
 
-    const simpleEditor = document.getElementById('simple-editor');
+    // ============== ZOOM ==============
+    function changeZoom(delta) {
+      currentZoom = Math.max(0.5, Math.min(2, currentZoom + delta));
+      document.body.style.zoom = currentZoom;
+      document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
+      localStorage.setItem('codehub_zoom', currentZoom);
+    }
 
-    const elements = {
-      loadingScreen: document.getElementById('loading-screen'), appContent: document.getElementById('app-content'),
-      projectName: document.getElementById('project-name'), saveFileBtn: document.getElementById('saveFileBtn'),
-      previewBtn: document.getElementById('previewBtn'), sitePublishBtn: document.getElementById('sitePublishBtn'),
-      puterDashboardBtn: document.getElementById('puterDashboardBtn'), storageUsed: document.getElementById('storage-used'),
-      storageLimit: document.getElementById('storage-limit'), userName: document.getElementById('user-name'),
-      logoutBtn: document.getElementById('logoutBtn'), tabsContainer: document.getElementById('tabs'),
-      container: document.getElementById('container'), urlPanelTop: document.getElementById('urlPanelTop'),
-      fileUrlTop: document.getElementById('fileUrlTop'), openUrlTopBtn: document.getElementById('openUrlTopBtn'),
-      chatMessages: document.getElementById('chatMessages'), chatInput: document.getElementById('chatInput'),
-      sendChatBtn: document.getElementById('sendChatBtn'), projectsList: document.getElementById('projects-list'),
-      workersList: document.getElementById('workers-list'), workerCode: document.getElementById('workerCode'),
-      workerPublishBtn: document.getElementById('workerPublishBtn'), puterStatusDot: document.getElementById('puterStatusDot'),
-      puterStatusText: document.getElementById('puterStatusText'), publishModal: document.getElementById('publishModal'),
-      publishYesBtn: document.getElementById('publishYesBtn'), publishNoBtn: document.getElementById('publishNoBtn'),
-      activitiesList: document.getElementById('activitiesList'), aiSidebar: document.getElementById('ai-sidebar'),
-      resizeHandle: document.getElementById('resizeHandle'), chatModeBtn: document.getElementById('chatModeBtn'),
-      editModeBtn: document.getElementById('editModeBtn'), simpleEditor: document.getElementById('simple-editor'),
-      modalTitle: document.getElementById('modalTitle'), modalMessage: document.getElementById('modalMessage'),
-      quickActions: document.getElementById('quickActions')
-    };
+    function resetZoom() {
+      currentZoom = 1;
+      document.body.style.zoom = 1;
+      document.getElementById('zoomLevel').textContent = '100%';
+      localStorage.setItem('codehub_zoom', 1);
+    }
 
-    simpleEditor.addEventListener('input', () => { if (currentFile && useSimpleEditor) { files[currentFile].content = simpleEditor.value; elements.saveFileBtn.disabled = false; } });
+    // ============== WORKER WINDOW (JANELA FLUTUANTE) ==============
+    function initWorkerWindow() {
+      const win = document.getElementById('workerEditorWindow');
+      const header = document.getElementById('workerEditorHeader');
+      let isDragging = false;
+      let startX, startY, startLeft, startTop;
 
-    function updateSitePublishButton() {
-      if (siteCreated && currentHostingSubdomain) {
-        elements.sitePublishBtn.textContent = '🔄 Atualizar Site';
-        elements.sitePublishBtn.style.background = '#ff9800';
+      header.addEventListener('mousedown', (e) => {
+        if (e.target.tagName === 'BUTTON') return;
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startLeft = win.offsetLeft;
+        startTop = win.offsetTop;
+        win.style.transition = 'none';
+        document.body.style.userSelect = 'none';
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        win.style.left = Math.max(0, startLeft + dx) + 'px';
+        win.style.top = Math.max(0, startTop + dy) + 'px';
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (isDragging) {
+          isDragging = false;
+          win.style.transition = '';
+          document.body.style.userSelect = '';
+          saveWindowPositions();
+        }
+      });
+    }
+
+    function initActivitiesWindow() {
+      const win = document.getElementById('activitiesWindow');
+      const header = document.getElementById('activitiesHeader');
+      let isDragging = false;
+      let startX, startY, startLeft, startTop;
+
+      header.addEventListener('mousedown', (e) => {
+        if (e.target.tagName === 'BUTTON') return;
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startLeft = win.offsetLeft;
+        startTop = win.offsetTop;
+        win.style.transition = 'none';
+        document.body.style.userSelect = 'none';
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        win.style.left = Math.max(0, startLeft + dx) + 'px';
+        win.style.top = Math.max(0, startTop + dy) + 'px';
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (isDragging) {
+          isDragging = false;
+          win.style.transition = '';
+          document.body.style.userSelect = '';
+          saveWindowPositions();
+        }
+      });
+    }
+
+    function saveWindowPositions() {
+      const workerWin = document.getElementById('workerEditorWindow');
+      const activitiesWin = document.getElementById('activitiesWindow');
+      localStorage.setItem('workerWindowPos', JSON.stringify({
+        left: workerWin.style.left || '100px',
+        top: workerWin.style.top || '100px',
+        width: workerWin.style.width || '500px',
+        height: workerWin.style.height || '400px',
+        display: workerWin.style.display
+      }));
+      localStorage.setItem('activitiesWindowPos', JSON.stringify({
+        left: activitiesWin.style.left || '150px',
+        top: activitiesWin.style.top || '50px',
+        width: activitiesWin.style.width || '380px',
+        height: activitiesWin.style.height || '300px',
+        display: activitiesWin.style.display
+      }));
+    }
+
+    function loadWindowPositions() {
+      try {
+        const wp = JSON.parse(localStorage.getItem('workerWindowPos'));
+        if (wp) {
+          const win = document.getElementById('workerEditorWindow');
+          win.style.left = wp.left;
+          win.style.top = wp.top;
+          if (wp.width) win.style.width = wp.width;
+          if (wp.height) win.style.height = wp.height;
+        }
+        const ap = JSON.parse(localStorage.getItem('activitiesWindowPos'));
+        if (ap) {
+          const win = document.getElementById('activitiesWindow');
+          win.style.left = ap.left;
+          win.style.top = ap.top;
+          if (ap.width) win.style.width = ap.width;
+          if (ap.height) win.style.height = ap.height;
+        }
+      } catch(e) {}
+    }
+
+    function openWorkerWindow() {
+      const win = document.getElementById('workerEditorWindow');
+      win.style.display = 'flex';
+      if (currentWorkerData) {
+        document.getElementById('workerCodeWindow').value = currentWorkerData.code || '';
+        document.getElementById('workerWindowTitle').textContent = 'Worker: ' + currentWorkerData.name;
+      }
+      saveWindowPositions();
+      updateWorkerPublishButtonWindow();
+    }
+
+    function closeWorkerWindow() {
+      document.getElementById('workerEditorWindow').style.display = 'none';
+      saveWindowPositions();
+    }
+
+    function toggleWorkerWindowSize() {
+      const win = document.getElementById('workerEditorWindow');
+      win.classList.toggle('minimized');
+    }
+
+    function openActivitiesWindow() {
+      document.getElementById('activitiesWindow').style.display = 'flex';
+      loadActivitiesToWindow();
+      saveWindowPositions();
+    }
+
+    function closeActivitiesWindow() {
+      document.getElementById('activitiesWindow').style.display = 'none';
+      saveWindowPositions();
+    }
+
+    function updateWorkerPublishButtonWindow() {
+      const btn = document.getElementById('workerPublishBtnWindow');
+      if (currentWorkerData && currentWorkerData.fullUrl) {
+        btn.textContent = '🔄 Atualizar Worker';
+        btn.style.background = '#ff9800';
       } else {
-        elements.sitePublishBtn.textContent = '🚀 Publicar Site';
-        elements.sitePublishBtn.style.background = '#22c55e';
+        btn.textContent = '🚀 Publicar Worker';
+        btn.style.background = '#22c55e';
       }
     }
 
-    function updateWorkerPublishButton() {
-      if (currentWorkerData && currentWorkerData.fullUrl) { 
-        elements.workerPublishBtn.textContent = '🔄 Atualizar Worker'; 
-        elements.workerPublishBtn.style.background = '#ff9800'; 
-      } else { 
-        elements.workerPublishBtn.textContent = '🚀 Publicar Worker'; 
-        elements.workerPublishBtn.style.background = '#22c55e'; 
+    async function saveWorkerCodeWindow() {
+      if (!currentWorkerData) { showNotification('Selecione um worker primeiro', 'warning'); return; }
+      const newCode = document.getElementById('workerCodeWindow').value;
+      const newRoute = extractRouteFromCode(newCode);
+      await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({
+        code: newCode, route: newRoute, updatedAt: new Date().toISOString()
+      });
+      currentWorkerData.code = newCode;
+      currentWorkerData.route = newRoute;
+      await loadProjectWorkers();
+      showNotification('Worker salvo!', 'success');
+    }
+
+    async function publishWorkerWindow() {
+      if (!currentWorkerData) { showNotification('Selecione um worker', 'warning'); return; }
+      // Salva primeiro
+      await saveWorkerCodeWindow();
+      // Publica
+      await publishWorker();
+    }
+
+    async function testWorkerWindow() {
+      if (!currentWorkerData || !currentWorkerData.fullUrl) {
+        showNotification('Worker não publicado ainda', 'warning');
+        return;
+      }
+      await testWorker(currentWorkerData.id);
+    }
+
+    async function loadActivitiesToWindow() {
+      if (!currentProjectId) return;
+      try {
+        const res = await fetch(`${ACTIVITIES_DB_URL}/${currentProjectId}.json`);
+        const data = await res.json();
+        const body = document.getElementById('activitiesBodyWindow');
+        if (!data) {
+          body.innerHTML = '<div class="no-activities">📭 Nenhuma atividade</div>';
+          return;
+        }
+        const now = Date.now();
+        const elapsed = data.time || Math.floor((now - (data.start || now)) / 1000);
+        const isOnline = (now - (data.lastSeen || 0)) < 10000;
+        body.innerHTML = `
+          <div class="activity-item" style="background:#2d2d2d;border-radius:6px;padding:10px;margin-bottom:8px;">
+            <div><span style="color:${isOnline ? '#4caf50' : '#f44336'};font-weight:bold;">${isOnline ? '🟢 ONLINE' : '⚫ OFFLINE'}</span></div>
+            <div style="margin-top:6px;">📅 ${new Date(data.start || now).toLocaleString()}</div>
+            <div>⏱ ${Math.floor(elapsed/60)}min ${elapsed%60}s</div>
+            <div>🔄 Visitas: ${data.visits || 1}</div>
+            <button onclick="deleteActivity('${currentProjectId}')" style="background:#f44336;margin-top:6px;padding:4px 8px;font-size:10px;">🗑 Limpar</button>
+          </div>`;
+      } catch(e) {}
+    }
+
+    // ============== MENU DE CONTEXTO (BOTÃO DIREITO) ==============
+    function initContextMenu() {
+      const menu = document.getElementById('contextMenu');
+      
+      document.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        menu.style.display = 'block';
+        menu.style.left = Math.min(e.clientX, window.innerWidth - 220) + 'px';
+        menu.style.top = Math.min(e.clientY, window.innerHeight - 300) + 'px';
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!menu.contains(e.target)) {
+          menu.style.display = 'none';
+        }
+      });
+
+      // Atalhos de teclado
+      document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey || e.metaKey) {
+          switch(e.key.toLowerCase()) {
+            case 's':
+              e.preventDefault();
+              contextAction('saveFile');
+              break;
+            case 'n':
+              e.preventDefault();
+              contextAction('newFile');
+              break;
+            case 'w':
+              e.preventDefault();
+              contextAction('newWorker');
+              break;
+            case 'p':
+              e.preventDefault();
+              contextAction('preview');
+              break;
+            case '=':
+            case '+':
+              e.preventDefault();
+              changeZoom(0.1);
+              break;
+            case '-':
+              e.preventDefault();
+              changeZoom(-0.1);
+              break;
+            case '0':
+              e.preventDefault();
+              resetZoom();
+              break;
+          }
+        }
+      });
+    }
+
+    function contextAction(action) {
+      document.getElementById('contextMenu').style.display = 'none';
+      switch(action) {
+        case 'newFile':
+          const newName = prompt('Nome do arquivo:', 'novo.js');
+          if (newName) {
+            const key = btoa(newName).replace(/=/g, '');
+            files[key] = { name: newName, content: '', size: 0, createdAt: new Date().toISOString() };
+            saveProject();
+            openFile(key);
+            updateTabs();
+          }
+          break;
+        case 'newWorker':
+          createNewWorker();
+          break;
+        case 'saveFile':
+          if (currentWorkerData) saveWorkerCodeWindow();
+          else saveCurrentFile();
+          break;
+        case 'preview':
+          previewProject();
+          break;
+        case 'openWorkerEditor':
+          openWorkerWindow();
+          break;
+        case 'openActivities':
+          openActivitiesWindow();
+          break;
+        case 'zoomIn':
+          changeZoom(0.1);
+          break;
+        case 'zoomOut':
+          changeZoom(-0.1);
+          break;
+        case 'zoomReset':
+          resetZoom();
+          break;
+        case 'clearChat':
+          if (confirm('Limpar chat?')) {
+            db.ref(`chats/${currentUser.uid}/${currentProjectId}`).remove();
+            document.getElementById('chatMessages').innerHTML = '';
+            addChatMessage('🤖 Chat limpo!', 'system');
+          }
+          break;
       }
     }
 
-    function workerLog(msg) { addChatMessage(`⚡ Worker: ${msg}`, 'system'); }
-    function extractRouteFromCode(code) { const match = code.match(/router\.(get|post|put|delete)\(['"`](.*?)['"`]/); return match ? match[2] : "/api/hello.sc"; }
-    
-    // Gera um nome limpo para o worker (sem caracteres estranhos)
+    // ============== FUNÇÕES AUXILIARES ==============
+    function updateSitePublishButton() {
+      const btn = document.getElementById('sitePublishBtn');
+      if (siteCreated && currentHostingSubdomain) {
+        btn.textContent = '🔄 Atualizar Site';
+        btn.style.background = '#ff9800';
+      } else {
+        btn.textContent = '🚀 Publicar Site';
+        btn.style.background = '#22c55e';
+      }
+    }
+
+    function showNotification(msg, type = 'info') {
+      const n = document.createElement('div');
+      n.className = `notification ${type}`;
+      n.textContent = msg;
+      document.body.appendChild(n);
+      setTimeout(() => n.remove(), 4000);
+    }
+
+    function addChatMessage(text, type) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `message ${type}`;
+      msgDiv.innerHTML = text.replace(/\n/g, '<br>');
+      document.getElementById('chatMessages').appendChild(msgDiv);
+      document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+      if (currentProjectId && currentUser) {
+        db.ref(`chats/${currentUser.uid}/${currentProjectId}`).push({ text, type, timestamp: Date.now() });
+      }
+    }
+
+    function extractRouteFromCode(code) { 
+      const match = code.match(/router\.(get|post|put|delete)\(['"`](.*?)['"`]/); 
+      return match ? match[2] : "/api/hello.sc"; 
+    }
+
     function generateCleanWorkerName(baseName) {
       const clean = baseName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
       const shortId = Date.now().toString(36).substring(0, 4);
       return `${clean}_${shortId}`;
     }
 
-    // ============== FUNÇÕES DE WORKER ==============
-    
-    async function createWorkerWithCode(name, code, route) {
-      if (!name || !code) return null;
-      const finalRoute = route || extractRouteFromCode(code) || `/api/${name.replace(/[^a-zA-Z0-9]/g, '')}.sc`;
-      const newWorkerRef = db.ref(`workers/${currentUser.uid}/${currentProjectId}`).push();
-      const workerId = newWorkerRef.key;
-      const workerData = {
-        id: workerId,
-        name: name,
-        route: finalRoute,
-        code: code,
-        createdAt: new Date().toISOString()
-      };
-      await newWorkerRef.set(workerData);
-      await loadProjectWorkers();
-      await selectWorker(workerId);
-      workerLog(`Worker "${name}" criado com sucesso!`);
-      return workerData;
-    }
-
-    async function editWorkerCode(workerIdentifier, newCode) {
-      let worker = projectWorkers.find(w => w.id === workerIdentifier || w.name === workerIdentifier);
-      if (!worker && currentWorkerData && (currentWorkerData.name === workerIdentifier || currentWorkerData.id === workerIdentifier)) {
-        worker = currentWorkerData;
-      }
-      if (!worker) {
-        workerLog(`Worker "${workerIdentifier}" não encontrado`);
-        return false;
-      }
-      const newRoute = extractRouteFromCode(newCode) || worker.route;
-      await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${worker.id}`).update({
-        code: newCode, route: newRoute, updatedAt: new Date().toISOString()
-      });
-      if (currentWorkerData && currentWorkerData.id === worker.id) {
-        currentWorkerData.code = newCode;
-        currentWorkerData.route = newRoute;
-        elements.workerCode.value = newCode;
-      }
-      await loadProjectWorkers();
-      workerLog(`Worker "${worker.name}" editado com sucesso!`);
-      showNotification(`Worker "${worker.name}" atualizado!`, 'success');
-      return true;
-    }
-
-    async function addRouteToWorker(workerIdentifier, method, route, handlerCode) {
-      let worker = projectWorkers.find(w => w.id === workerIdentifier || w.name === workerIdentifier);
-      if (!worker && currentWorkerData) worker = currentWorkerData;
-      if (!worker) { workerLog(`Worker "${workerIdentifier}" não encontrado`); return false; }
-      const methodLower = (method || 'get').toLowerCase();
-      const newRouteCode = `\nrouter.${methodLower}('${route}', async () => {\n    ${handlerCode || 'return { message: "ok" };'}\n});`;
-      const newCode = (worker.code || '') + newRouteCode;
-      await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${worker.id}`).update({
-        code: newCode, updatedAt: new Date().toISOString()
-      });
-      if (currentWorkerData && currentWorkerData.id === worker.id) {
-        currentWorkerData.code = newCode;
-        elements.workerCode.value = newCode;
-      }
-      await loadProjectWorkers();
-      workerLog(`Rota ${method.toUpperCase()} ${route} adicionada ao worker "${worker.name}"!`);
-      showNotification(`Rota adicionada!`, 'success');
-      return true;
-    }
-
-    function listAllWorkers() {
-      if (projectWorkers.length === 0) {
-        addChatMessage('📭 Nenhum worker encontrado neste projeto', 'system');
-        return;
-      }
-      let listMsg = '📋 <b>Workers do projeto:</b>\n\n';
-      projectWorkers.forEach((w, i) => {
-        const routes = w.code?.match(/router\.(get|post|put|delete)\(['"`](.*?)['"`]/g) || [];
-        listMsg += `${i + 1}. <b>${w.name}</b> (${w.fullUrl ? '✅ Publicado' : '📝 Rascunho'})\n`;
-        listMsg += `   🛣️ Rotas: ${routes.length > 0 ? routes.map(r => r.match(/['"`](.*?)['"`]/)[1]).join(', ') : 'Nenhuma'}\n`;
-        if (w.fullUrl) listMsg += `   🔗 ${w.fullUrl}\n`;
-        listMsg += '\n';
-      });
-      addChatMessage(listMsg, 'ai');
-    }
-
-    function explainWorker(workerIdentifier) {
-      let worker = projectWorkers.find(w => w.id === workerIdentifier || w.name === workerIdentifier);
-      if (!worker && currentWorkerData) worker = currentWorkerData;
-      if (!worker) { addChatMessage(`Worker "${workerIdentifier}" não encontrado`, 'system'); return; }
-      const routes = worker.code?.match(/router\.(get|post|put|delete)\(['"`](.*?)['"`]/g) || [];
-      let explanation = `📖 <b>Worker: ${worker.name}</b>\n\n`;
-      explanation += `📝 Status: ${worker.fullUrl ? '✅ Publicado' : '📝 Rascunho'}\n`;
-      explanation += `🛣️ Rotas: ${routes.length}\n\n`;
-      if (routes.length > 0) {
-        explanation += `<b>Rotas:</b>\n`;
-        routes.forEach(r => {
-          const method = r.match(/router\.(\w+)/)[1].toUpperCase();
-          const path = r.match(/['"`](.*?)['"`]/)[1];
-          explanation += `• ${method} ${path}\n`;
-        });
-      }
-      if (worker.fullUrl) {
-        explanation += `\n🔗 URL: ${worker.fullUrl}\n`;
-      }
-      addChatMessage(explanation, 'ai');
-    }
-
-    function fixWorkerCode(code) {
-      let fixed = code;
-      if (!fixed.includes('router.')) {
-        fixed = `router.get('/api/hello.sc', async () => {\n    return { message: 'Hello World!' };\n});`;
-      }
-      fixed = fixed.replace(/router\.(\w+)\((['"`].*?['"`]),\s*\(\)\s*=>\s*{/g, (match, method, route) => {
-        return `router.${method}(${route}, async () => {`;
-      });
-      return fixed;
-    }
-
-    // ============== QUICK ACTIONS ==============
-    
-    async function quickAction(action) {
-      switch(action) {
-        case 'criar-worker':
-          elements.chatInput.value = 'Crie um worker chamado api com rota GET /api/dados.sc que retorna {dados: [1,2,3]}';
-          elements.chatInput.focus();
-          break;
-        case 'editar-worker':
-          if (currentWorkerData) {
-            elements.chatInput.value = `Edite o worker ${currentWorkerData.name} para retornar também a hora atual`;
-          } else {
-            elements.chatInput.value = 'Edite o worker [nome] para adicionar um timestamp';
-          }
-          elements.chatInput.focus();
-          break;
-        case 'explicar-worker':
-          if (currentWorkerData) explainWorker(currentWorkerData.id);
-          else listAllWorkers();
-          break;
-        case 'criar-api':
-          elements.chatInput.value = 'Crie um worker chamado api-rest com rotas GET, POST, PUT e DELETE em /api/items.sc';
-          elements.chatInput.focus();
-          break;
-        case 'adicionar-rota':
-          if (currentWorkerData) {
-            elements.chatInput.value = `Adicione uma rota POST no worker ${currentWorkerData.name} em /api/salvar.sc`;
-          } else {
-            elements.chatInput.value = 'Adicione uma rota GET no worker [nome] em /api/status.sc';
-          }
-          elements.chatInput.focus();
-          break;
-        case 'corrigir-worker':
-          if (currentWorkerData) {
-            const fixed = fixWorkerCode(currentWorkerData.code);
-            if (fixed !== currentWorkerData.code) {
-              await editWorkerCode(currentWorkerData.id, fixed);
-              addChatMessage('✅ Worker corrigido!', 'ai');
-            } else {
-              addChatMessage('✅ Nenhum erro encontrado!', 'ai');
-            }
-          } else {
-            addChatMessage('Selecione um worker primeiro', 'system');
-          }
-          break;
-        case 'listar-workers':
-          listAllWorkers();
-          break;
+    function updatePuterStatus(connected) {
+      const dot = document.getElementById('puterStatusDot');
+      const text = document.getElementById('puterStatusText');
+      if (connected) {
+        dot.classList.add('connected');
+        text.textContent = 'Online';
+      } else {
+        dot.classList.remove('connected');
+        text.textContent = 'Offline';
       }
     }
 
+    async function ensurePuterAuth() {
+      try { await puter.auth.getUser(); updatePuterStatus(true); return true; } catch(e) {}
+      try { await puter.auth.signIn(); updatePuterStatus(true); return true; } catch(e) { return false; }
+    }
+
+    // ============== WORKERS ==============
     async function loadProjectWorkers() {
       if (!currentProjectId) return;
       try {
-        const workersRef = db.ref(`workers/${currentUser.uid}/${currentProjectId}`);
-        const snapshot = await workersRef.once('value');
+        const snapshot = await db.ref(`workers/${currentUser.uid}/${currentProjectId}`).once('value');
         projectWorkers = [];
         snapshot.forEach(child => { projectWorkers.push({ id: child.key, ...child.val() }); });
         renderWorkersList();
         if (projectWorkers.length > 0 && !currentWorkerData) selectWorker(projectWorkers[0].id);
-      } catch(e) { console.error(e); }
+      } catch(e) {}
     }
 
     function renderWorkersList() {
-      if (!projectWorkers.length) { elements.workersList.innerHTML = '<div class="no-workers">📭 Nenhum worker .sc criado</div>'; return; }
-      elements.workersList.innerHTML = projectWorkers.map(w => `
-        <div class="worker-item" onclick="selectWorker('${w.id}')">
+      const list = document.getElementById('workers-list');
+      if (!projectWorkers.length) { 
+        list.innerHTML = '<div class="no-workers">📭 Nenhum worker</div>'; 
+        return; 
+      }
+      list.innerHTML = projectWorkers.map(w => `
+        <div class="worker-item" onclick="selectWorker('${w.id}')" oncontextmenu="event.stopPropagation();showWorkerContextMenu(event,'${w.id}')">
           <div class="worker-name">📦 ${w.name || 'Sem nome'}</div>
           <div class="worker-route">🎯 ${w.route || '/api/unknown.sc'}</div>
           <div class="worker-status ${w.fullUrl ? 'published' : 'not-published'}">${w.fullUrl ? '✅ Publicado' : '📝 Rascunho'}</div>
-          <div class="worker-url">🔗 ${w.fullUrl ? w.fullUrl : 'Não publicado'}</div>
+          <div class="worker-url">🔗 ${w.fullUrl || 'Não publicado'}</div>
           <div class="worker-actions">
-            ${w.fullUrl ? `<button class="test" onclick="event.stopPropagation(); testWorker('${w.id}')">▶️ Testar</button>` : ''}
-            <button onclick="event.stopPropagation(); editWorker('${w.id}')">✏️ Editar</button>
-            <button class="delete" onclick="event.stopPropagation(); deleteWorker('${w.id}')">🗑️ Deletar</button>
-            ${w.fullUrl ? `<button class="update-worker" onclick="event.stopPropagation(); updateWorker('${w.id}')">🔄 Atualizar</button>` : ''}
+            ${w.fullUrl ? `<button class="test" onclick="event.stopPropagation();testWorker('${w.id}')">▶️ Testar</button>` : ''}
+            <button onclick="event.stopPropagation();editWorker('${w.id}')">✏️ Editar</button>
+            <button class="delete" onclick="event.stopPropagation();deleteWorker('${w.id}')">🗑️ Deletar</button>
+            ${w.fullUrl ? `<button class="update-worker" onclick="event.stopPropagation();updateWorker('${w.id}')">🔄 Atualizar</button>` : ''}
           </div>
         </div>
       `).join('');
@@ -471,9 +1007,10 @@
       const worker = projectWorkers.find(w => w.id === workerId);
       if (!worker) return;
       currentWorkerData = worker;
-      elements.workerCode.value = worker.code || '';
-      updateWorkerPublishButton();
-      workerLog(`Worker selecionado: ${worker.name}`);
+      document.getElementById('workerCodeWindow').value = worker.code || '';
+      document.getElementById('workerWindowTitle').textContent = 'Worker: ' + worker.name;
+      updateWorkerPublishButtonWindow();
+      openWorkerWindow();
     }
 
     async function createNewWorker() {
@@ -481,198 +1018,127 @@
       if (!name) return;
       const cleanName = name.replace(/[^a-zA-Z0-9]/g, '');
       const route = `/api/${cleanName}.sc`;
-      const defaultCode = `router.get('${route}', async () => {\n    return { message: 'Olá do ${name}!', timestamp: new Date().toISOString() };\n});`;
-      await createWorkerWithCode(name, defaultCode, route);
-    }
-
-    async function saveWorkerCode() {
-      if (!currentWorkerData) { showNotification('Selecione um worker', 'warning'); return; }
-      const newCode = elements.workerCode.value;
-      const newRoute = extractRouteFromCode(newCode);
-      await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({ 
-        code: newCode, route: newRoute, updatedAt: new Date().toISOString() 
-      });
-      currentWorkerData.code = newCode;
-      currentWorkerData.route = newRoute;
-      workerLog(`Worker salvo localmente!`);
-      showNotification('Worker salvo! Clique em Publicar para colocar online', 'success');
+      const code = `router.get('${route}', async () => {\n    return { message: 'Olá do ${name}!', timestamp: new Date().toISOString() };\n});`;
+      const ref = db.ref(`workers/${currentUser.uid}/${currentProjectId}`).push();
+      const id = ref.key;
+      await ref.set({ id, name, route, code, createdAt: new Date().toISOString() });
       await loadProjectWorkers();
+      await selectWorker(id);
+      showNotification(`Worker "${name}" criado!`, 'success');
     }
 
-    // ============== PUBLISH WORKER - CORRIGIDO ==============
-    async function publishWorker() {
-      if (!currentWorkerData) { showNotification('Selecione um worker primeiro', 'warning'); return; }
-      
-      elements.modalTitle.textContent = currentWorkerData.fullUrl ? '🔄 Atualizar Worker?' : '🚀 Publicar Worker?';
-      elements.modalMessage.textContent = currentWorkerData.fullUrl ? 
-        `Atualizar worker "${currentWorkerData.name}" no Puter?` : 
-        `Publicar worker "${currentWorkerData.name}" no Puter?`;
-      elements.publishModal.style.display = 'flex';
-      
-      const confirmHandler = async () => {
-        elements.publishModal.style.display = 'none';
-        elements.publishYesBtn.removeEventListener('click', confirmHandler);
-        elements.publishNoBtn.removeEventListener('click', cancelHandler);
-        
-        workerLog(`${currentWorkerData.fullUrl ? '🔄 Atualizando' : '🚀 Publicando'} worker "${currentWorkerData.name}"...`);
-        elements.workerPublishBtn.disabled = true;
-        
-        try {
-          // Verificar autenticação
-          const authUser = await ensurePuterAuth();
-          if (!authUser) throw new Error('Faça login no Puter primeiro (clique em Puter Dashboard)');
-          
-          // Criar um nome de arquivo limpo
-          const cleanName = currentWorkerData.name.replace(/[^a-zA-Z0-9]/g, '').substring(0, 15);
-          const fileName = `${cleanName}_${Date.now().toString(36)}.sc`;
-          
-          // Salvar o código no Puter
-          workerLog(`Salvando arquivo: ${fileName}`);
-          await puter.fs.write(fileName, currentWorkerData.code);
-          
-          // Gerar um nome limpo para o worker (sem underscores extras)
-          const workerDeployName = generateCleanWorkerName(cleanName);
-          workerLog(`Nome do deploy: ${workerDeployName}`);
-          
-          // Se já existe, deleta o antigo primeiro
-          if (currentWorkerData.fullUrl && currentWorkerData.deployedName) {
-            try {
-              workerLog(`Removendo worker antigo: ${currentWorkerData.deployedName}`);
-              await puter.workers.delete(currentWorkerData.deployedName);
-            } catch(e) {
-              workerLog(`Aviso: Não foi possível remover worker antigo: ${e.message}`);
-            }
-          }
-          
-          // Criar o worker
-          workerLog(`Criando worker: ${workerDeployName}`);
-          const w = await puter.workers.create(workerDeployName, fileName);
-          
-          if (!w || !w.address) {
-            throw new Error('Worker criado mas sem endereço. Tente novamente.');
-          }
-          
-          // Construir a URL correta
-          // O formato da URL do Puter workers é: https://[worker-name].[username].puter.work
-          const fullUrl = `https://${workerDeployName}.${w.username || w.address?.split('.')[1] || 'puter'}.work${currentWorkerData.route}`;
-          
-          workerLog(`URL do worker: ${fullUrl}`);
-          
-          // Salvar no Firebase
-          await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({
-            url: fullUrl,
-            fullUrl: fullUrl,
-            deployedName: workerDeployName,
-            fileName: fileName,
-            deployedAt: new Date().toISOString()
-          });
-          
-          // Atualizar dados locais
-          currentWorkerData.url = fullUrl;
-          currentWorkerData.fullUrl = fullUrl;
-          currentWorkerData.deployedName = workerDeployName;
-          
-          await loadProjectWorkers();
-          updateWorkerPublishButton();
-          
-          workerLog(`✅ Worker publicado! URL: ${fullUrl}`);
-          showNotification('Worker publicado com sucesso!', 'success');
-          
-        } catch(e) {
-          console.error('Erro ao publicar worker:', e);
-          workerLog(`❌ Erro: ${e.message}`);
-          showNotification(`Erro: ${e.message}`, 'error');
-        } finally {
-          elements.workerPublishBtn.disabled = false;
-        }
-      };
-      
-      const cancelHandler = () => { 
-        elements.publishModal.style.display = 'none'; 
-        elements.publishYesBtn.removeEventListener('click', confirmHandler); 
-        elements.publishNoBtn.removeEventListener('click', cancelHandler); 
-      };
-      
-      elements.publishYesBtn.addEventListener('click', confirmHandler);
-      elements.publishNoBtn.addEventListener('click', cancelHandler);
-    }
-
-    async function updateWorker(workerId) { await selectWorker(workerId); await publishWorker(); }
-    
-    async function testWorker(workerId) {
-      const worker = projectWorkers.find(w => w.id === workerId);
-      if (!worker || !worker.fullUrl) { 
-        workerLog('Worker não publicado. Clique em "Publicar Worker" primeiro.'); 
-        return; 
-      }
-      workerLog(`🧪 Testando: ${worker.fullUrl}`);
-      try {
-        const controller = new AbortController();
-        setTimeout(() => controller.abort(), 15000);
-        const res = await fetch(worker.fullUrl, { signal: controller.signal });
-        const text = await res.text();
-        let data;
-        try { data = JSON.parse(text); } catch(e) { data = text; }
-        workerLog(`✅ Resposta (${res.status}): ${typeof data === 'object' ? JSON.stringify(data, null, 2) : data}`);
-        showNotification('Worker respondeu!', 'success');
-      } catch(e) { 
-        workerLog(`❌ Erro: ${e.message}`);
-        if (e.name === 'AbortError') workerLog('Timeout: Worker não respondeu em 15 segundos');
-      }
-    }
-    
     async function editWorker(workerId) { await selectWorker(workerId); }
-    
+
     async function deleteWorker(workerId) {
-      if (!confirm('Deletar este worker permanentemente?')) return;
+      if (!confirm('Deletar worker?')) return;
       const worker = projectWorkers.find(w => w.id === workerId);
       if (worker) {
-        try { 
-          if (worker.deployedName) {
-            workerLog(`Removendo worker do Puter: ${worker.deployedName}`);
-            await puter.workers.delete(worker.deployedName); 
-          }
-        } catch(e) {
-          workerLog(`Aviso: ${e.message}`);
-        }
+        try { if (worker.deployedName) await puter.workers.delete(worker.deployedName); } catch(e) {}
         await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${workerId}`).remove();
         await loadProjectWorkers();
-        if (currentWorkerData && currentWorkerData.id === workerId) { 
-          currentWorkerData = null; 
-          elements.workerCode.value = ''; 
-          updateWorkerPublishButton(); 
+        if (currentWorkerData && currentWorkerData.id === workerId) {
+          currentWorkerData = null;
+          document.getElementById('workerCodeWindow').value = '';
         }
-        workerLog(`Worker "${worker.name}" deletado`);
         showNotification('Worker deletado!', 'success');
       }
     }
 
-    // ============== PUBLISH SITE - MANTIDO COMO ESTÁ ==============
-    async function publishSite() {
-      addChatMessage('🔐 Verificando autenticação no Puter...', 'system');
-      try { await puter.auth.getUser(); updatePuterStatus(true); } 
-      catch(e) {
-        addChatMessage('🔐 Fazendo login no Puter...', 'system');
-        try { await puter.auth.signIn(); updatePuterStatus(true); } 
-        catch(loginError) {
-          addChatMessage('❌ Faça login no Puter primeiro!', 'system');
-          showNotification('Faça login no Puter primeiro!', 'error');
-          return false;
-        }
-      }
-      const hasIndex = Object.values(files).some(f => f.name === 'index.html');
-      if (!hasIndex) { addChatMessage('❌ Falta index.html', 'system'); return false; }
-      
-      elements.modalTitle.textContent = siteCreated ? '🔄 Atualizar Site?' : '🚀 Publicar Site?';
-      elements.modalMessage.textContent = siteCreated ? `Atualizar: ${currentHostingUrl}` : 'Publicar no Puter?';
-      elements.publishModal.style.display = 'flex';
+    async function publishWorker() {
+      if (!currentWorkerData) { showNotification('Selecione um worker', 'warning'); return; }
+      const modal = document.getElementById('publishModal');
+      document.getElementById('modalTitle').textContent = currentWorkerData.fullUrl ? '🔄 Atualizar Worker?' : '🚀 Publicar Worker?';
+      document.getElementById('modalMessage').textContent = currentWorkerData.fullUrl ? `Atualizar "${currentWorkerData.name}"?` : `Publicar "${currentWorkerData.name}"?`;
+      modal.style.display = 'flex';
       
       const confirmHandler = async () => {
-        elements.publishModal.style.display = 'none';
-        elements.publishYesBtn.removeEventListener('click', confirmHandler);
-        elements.publishNoBtn.removeEventListener('click', cancelHandler);
+        modal.style.display = 'none';
+        document.getElementById('publishYesBtn').removeEventListener('click', confirmHandler);
+        document.getElementById('publishNoBtn').removeEventListener('click', cancelHandler);
+        
+        addChatMessage(`🚀 Publicando worker "${currentWorkerData.name}"...`, 'system');
+        try {
+          if (!await ensurePuterAuth()) throw new Error('Faça login no Puter primeiro');
+          
+          const cleanName = currentWorkerData.name.replace(/[^a-zA-Z0-9]/g, '').substring(0, 15);
+          const fileName = `${cleanName}_${Date.now().toString(36)}.sc`;
+          await puter.fs.write(fileName, currentWorkerData.code);
+          
+          const deployName = generateCleanWorkerName(cleanName);
+          if (currentWorkerData.deployedName) {
+            try { await puter.workers.delete(currentWorkerData.deployedName); } catch(e) {}
+          }
+          
+          const w = await puter.workers.create(deployName, fileName);
+          const fullUrl = `https://${deployName}.${w.username || 'puter'}.work${currentWorkerData.route}`;
+          
+          await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({
+            url: fullUrl, fullUrl, deployedName: deployName, fileName, deployedAt: new Date().toISOString()
+          });
+          
+          currentWorkerData.url = fullUrl;
+          currentWorkerData.fullUrl = fullUrl;
+          currentWorkerData.deployedName = deployName;
+          
+          await loadProjectWorkers();
+          updateWorkerPublishButtonWindow();
+          addChatMessage(`✅ Worker publicado!<br>🔗 ${fullUrl}`, 'ai');
+          showNotification('Worker publicado!', 'success');
+        } catch(e) {
+          addChatMessage(`❌ Erro: ${e.message}`, 'system');
+          showNotification(`Erro: ${e.message}`, 'error');
+        }
+      };
+      
+      const cancelHandler = () => {
+        modal.style.display = 'none';
+        document.getElementById('publishYesBtn').removeEventListener('click', confirmHandler);
+        document.getElementById('publishNoBtn').removeEventListener('click', cancelHandler);
+      };
+      
+      document.getElementById('publishYesBtn').addEventListener('click', confirmHandler);
+      document.getElementById('publishNoBtn').addEventListener('click', cancelHandler);
+    }
+
+    async function updateWorker(workerId) { await selectWorker(workerId); await publishWorker(); }
+
+    async function testWorker(workerId) {
+      const worker = projectWorkers.find(w => w.id === workerId);
+      if (!worker?.fullUrl) { showNotification('Worker não publicado', 'warning'); return; }
+      addChatMessage(`🧪 Testando: ${worker.fullUrl}`, 'system');
+      try {
+        const res = await fetch(worker.fullUrl, { signal: AbortSignal.timeout(15000) });
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch(e) { data = text; }
+        addChatMessage(`✅ Resposta (${res.status}): ${typeof data === 'object' ? JSON.stringify(data, null, 2) : data}`, 'ai');
+      } catch(e) {
+        addChatMessage(`❌ Erro: ${e.message}`, 'system');
+      }
+    }
+
+    // ============== PUBLISH SITE ==============
+    async function publishSite() {
+      if (!await ensurePuterAuth()) {
+        addChatMessage('❌ Faça login no Puter primeiro!', 'system');
+        return;
+      }
+      if (!Object.values(files).some(f => f.name === 'index.html')) {
+        addChatMessage('❌ Falta index.html', 'system');
+        return;
+      }
+      
+      const modal = document.getElementById('publishModal');
+      document.getElementById('modalTitle').textContent = siteCreated ? '🔄 Atualizar Site?' : '🚀 Publicar Site?';
+      document.getElementById('modalMessage').textContent = siteCreated ? `Atualizar: ${currentHostingUrl}` : 'Publicar no Puter?';
+      modal.style.display = 'flex';
+      
+      const confirmHandler = async () => {
+        modal.style.display = 'none';
+        document.getElementById('publishYesBtn').removeEventListener('click', confirmHandler);
+        document.getElementById('publishNoBtn').removeEventListener('click', cancelHandler);
+        
         addChatMessage(siteCreated ? '🔄 Atualizando site...' : '🚀 Publicando site...', 'system');
-        elements.sitePublishBtn.disabled = true;
         try {
           if (!siteCreated) {
             currentHostingDirectory = puter.randName();
@@ -680,9 +1146,7 @@
           }
           for (const [key, file] of Object.entries(files)) {
             let content = file.content || '';
-            if (file.name.endsWith('.html') && !content.includes('atividade.js')) {
-              content = injectActivityScript(content);
-            }
+            if (file.name.endsWith('.html')) content = injectActivityScript(content);
             await puter.fs.write(`${currentHostingDirectory}/${file.name}`, content);
           }
           if (!siteCreated) {
@@ -693,272 +1157,121 @@
           } else {
             await puter.hosting.update(currentHostingSubdomain, currentHostingDirectory);
           }
-          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({ 
-            url: currentHostingUrl, subdomain: currentHostingSubdomain, 
-            directory: currentHostingDirectory, publishedAt: new Date().toISOString() 
+          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({
+            url: currentHostingUrl, subdomain: currentHostingSubdomain,
+            directory: currentHostingDirectory, publishedAt: new Date().toISOString()
           });
-          elements.fileUrlTop.value = currentHostingUrl;
-          elements.urlPanelTop.style.display = 'flex';
+          document.getElementById('fileUrlTop').value = currentHostingUrl;
+          document.getElementById('urlPanelTop').style.display = 'flex';
           updateSitePublishButton();
           addChatMessage(`✅ Site ${siteCreated ? 'atualizado' : 'publicado'}!<br>🔗 ${currentHostingUrl}`, 'ai');
-          showNotification('✅ Sucesso!', 'success');
+          showNotification('Sucesso!', 'success');
         } catch(e) {
           addChatMessage(`❌ Erro: ${e.message}`, 'system');
-          showNotification(`Erro: ${e.message}`, 'error');
           if (!siteCreated) currentHostingDirectory = null;
-        } finally { elements.sitePublishBtn.disabled = false; }
+        }
       };
       
-      const cancelHandler = () => { 
-        elements.publishModal.style.display = 'none'; 
-        elements.publishYesBtn.removeEventListener('click', confirmHandler); 
-        elements.publishNoBtn.removeEventListener('click', cancelHandler); 
+      const cancelHandler = () => {
+        modal.style.display = 'none';
+        document.getElementById('publishYesBtn').removeEventListener('click', confirmHandler);
+        document.getElementById('publishNoBtn').removeEventListener('click', cancelHandler);
       };
-      elements.publishYesBtn.addEventListener('click', confirmHandler);
-      elements.publishNoBtn.addEventListener('click', cancelHandler);
+      
+      document.getElementById('publishYesBtn').addEventListener('click', confirmHandler);
+      document.getElementById('publishNoBtn').addEventListener('click', cancelHandler);
     }
 
-    // ============== MODO ==============
+    function injectActivityScript(html) {
+      const script = `<script src="${ACTIVITY_SCRIPT_URL}?projectid=${currentProjectId}"><\/script>`;
+      if (html.includes('</body>')) return html.replace('</body>', script + '\n</body>');
+      if (html.includes('</html>')) return html.replace('</html>', script + '\n</html>');
+      return html + script;
+    }
+
+    // ============== QUICK ACTIONS ==============
+    async function quickAction(action) {
+      const input = document.getElementById('chatInput');
+      switch(action) {
+        case 'criar-worker': input.value = 'Crie um worker chamado api com rota GET /api/dados.sc'; break;
+        case 'editar-worker': input.value = currentWorkerData ? `Edite o worker ${currentWorkerData.name} para retornar a hora atual` : 'Edite o worker [nome]'; break;
+        case 'explicar-worker': if (currentWorkerData) addChatMessage(`📖 Worker: ${currentWorkerData.name}\nCódigo: ${currentWorkerData.code?.substring(0, 200)}`, 'ai'); else addChatMessage('Selecione um worker', 'system'); break;
+        case 'criar-api': input.value = 'Crie um worker chamado api-rest com GET, POST, PUT, DELETE em /api/items.sc'; break;
+        case 'adicionar-rota': input.value = currentWorkerData ? `Adicione rota POST no worker ${currentWorkerData.name} em /api/salvar.sc` : 'Adicione rota no worker [nome]'; break;
+        case 'corrigir-worker': if (currentWorkerData) { const c = currentWorkerData.code; if (!c.includes('async')) { currentWorkerData.code = c.replace(/\(\)\s*=>/g, 'async () =>'); document.getElementById('workerCodeWindow').value = currentWorkerData.code; addChatMessage('✅ async adicionado!', 'ai'); } } break;
+        case 'listar-workers': 
+          if (projectWorkers.length === 0) addChatMessage('📭 Nenhum worker', 'system');
+          else projectWorkers.forEach(w => addChatMessage(`📦 ${w.name} | ${w.route} | ${w.fullUrl || 'Não publicado'}`, 'ai'));
+          break;
+      }
+      input.focus();
+    }
+
     function setMode(mode) {
       currentMode = mode;
-      if (mode === 'chat') { 
-        elements.chatModeBtn.classList.add('active'); 
-        elements.editModeBtn.classList.remove('active'); 
-      } else { 
-        elements.editModeBtn.classList.add('active'); 
-        elements.chatModeBtn.classList.remove('active'); 
-      }
+      document.getElementById('chatModeBtn').classList.toggle('active', mode === 'chat');
+      document.getElementById('editModeBtn').classList.toggle('active', mode === 'edit');
       localStorage.setItem('codehub_mode', mode);
     }
 
-    function showNotification(msg, type = 'info') { 
-      const n = document.createElement('div'); 
-      n.className = `notification ${type}`; 
-      n.textContent = msg; 
-      document.body.appendChild(n); 
-      setTimeout(() => n.remove(), 4000); 
-    }
-    
-    function updatePuterStatus(connected) { 
-      if (connected) { 
-        elements.puterStatusDot.classList.add('connected'); 
-        elements.puterStatusText.textContent = 'Online'; 
-      } else { 
-        elements.puterStatusDot.classList.remove('connected'); 
-        elements.puterStatusText.textContent = 'Offline'; 
-      } 
-    }
-    
-    function addChatMessage(text, type) { 
-      const msgDiv = document.createElement('div'); 
-      msgDiv.className = `message ${type}`; 
-      msgDiv.innerHTML = text.replace(/\n/g, '<br>'); 
-      elements.chatMessages.appendChild(msgDiv); 
-      elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight; 
-      if (currentProjectId && currentUser) { 
-        db.ref(`chats/${currentUser.uid}/${currentProjectId}`).push({ text, type, timestamp: Date.now() }); 
-      } 
-    }
-    
-    async function loadChatHistory() { 
-      if (!currentProjectId || !currentUser) return; 
-      const snapshot = await db.ref(`chats/${currentUser.uid}/${currentProjectId}`).orderByChild('timestamp').once('value'); 
-      elements.chatMessages.innerHTML = ''; 
-      snapshot.forEach(child => { 
-        const msg = child.val(); 
-        const msgDiv = document.createElement('div'); 
-        msgDiv.className = `message ${msg.type}`; 
-        msgDiv.innerHTML = msg.text.replace(/\n/g, '<br>'); 
-        elements.chatMessages.appendChild(msgDiv); 
-      }); 
-      if (elements.chatMessages.children.length === 0) { 
-        addChatMessage('🤖 Olá! Use os botões rápidos ou digite comandos!', 'system'); 
-      } 
-    }
-    
-    async function loadActivities() { 
-      if (!currentProjectId) return; 
-      try { 
-        const res = await fetch(`${ACTIVITIES_DB_URL}/${currentProjectId}.json`); 
-        const data = await res.json(); 
-        if (!data) { 
-          elements.activitiesList.innerHTML = '<div class="no-activities">📭 Nenhuma atividade</div>'; 
-          return; 
-        } 
-        const now = Date.now(); 
-        const elapsed = data.time || Math.floor((now - (data.start || now)) / 1000); 
-        const isOnline = (now - (data.lastSeen || 0)) < 10000; 
-        elements.activitiesList.innerHTML = `<div class="activity-item"><div><span class="${isOnline ? 'activity-online' : 'activity-offline'}">${isOnline ? '🟢 ONLINE' : '⚫ OFFLINE'}</span></div><div>📅 ${new Date(data.start || now).toLocaleString()}</div><div>⏱ ${Math.floor(elapsed/60)}min ${elapsed%60}s</div><button class="activity-delete-btn" onclick="deleteActivity('${currentProjectId}')">🗑 Limpar</button></div>`; 
-        if (isOnline) setTimeout(loadActivities, 5000); 
-      } catch(e) { console.error(e); } 
-    }
-    
-    async function deleteActivity(projectId) { 
-      if (confirm('Limpar?')) { 
-        await fetch(`${ACTIVITIES_DB_URL}/${projectId}.json`, { method: "DELETE" }); 
-        loadActivities(); 
-      } 
-    }
-    
-    function injectActivityScript(htmlContent) { 
-      const script = `<script src="${ACTIVITY_SCRIPT_URL}?projectid=${currentProjectId}"><\/script>`; 
-      if (htmlContent.includes('</body>')) return htmlContent.replace('</body>', script + '\n</body>'); 
-      if (htmlContent.includes('</html>')) return htmlContent.replace('</html>', script + '\n</html>'); 
-      return htmlContent + script; 
-    }
-    
-    function validateAndFixHTML(content) { 
-      let html = content; 
-      if (!html.includes('<!DOCTYPE')) html = '<!DOCTYPE html>\n' + html; 
-      if (!html.includes('<html')) html = html.replace('<!DOCTYPE html>\n', '<!DOCTYPE html>\n<html>\n'); 
-      if (!html.includes('</html>')) html += '\n</html>'; 
-      return html; 
-    }
-
-    async function createFiles(filesData) {
-      if (currentMode === 'chat') { addChatMessage('⚠️ Mude para modo Editar', 'system'); return []; }
-      const created = [];
-      for (const fileInfo of filesData) {
-        let fileName = fileInfo.name;
-        let content = fileInfo.content;
-        if (!fileName || fileName === 'unknown') {
-          if (content.includes('<!DOCTYPE') || content.includes('<html')) fileName = 'index.html';
-          else if (content.includes('router.')) fileName = 'worker.sc';
-          else fileName = 'script.js';
-        }
-        if (!fileName.includes('.')) {
-          if (content.includes('router.')) fileName += '.sc';
-          else fileName += '.js';
-        }
-        if (fileName.endsWith('.sc')) {
-          const workerName = fileName.replace('.sc', '');
-          await createWorkerWithCode(workerName, content);
-          continue;
-        }
-        if (fileName.endsWith('.html')) { content = validateAndFixHTML(content); content = injectActivityScript(content); }
-        const fileKey = btoa(fileName).replace(/=/g, '');
-        files[fileKey] = { name: fileName, content, size: content.length, createdAt: new Date().toISOString() };
-        created.push(fileName);
-      }
-      await saveProject();
-      if (created.length > 0) await openFile(btoa(created[0]).replace(/=/g, ''));
-      return created;
-    }
-
-    async function editFile(fileName, newContent) {
-      if (currentMode === 'chat') { addChatMessage('⚠️ Mude para modo Editar', 'system'); return false; }
-      if (fileName.endsWith('.sc')) {
-        const workerName = fileName.replace('.sc', '');
-        return await editWorkerCode(workerName, newContent);
-      }
-      let targetKey = null;
-      for (const key in files) { 
-        if (files[key].name.toLowerCase() === fileName.toLowerCase()) { targetKey = key; break; } 
-      }
-      if (!targetKey && currentFile) targetKey = currentFile;
-      if (!targetKey) return false;
-      let finalContent = newContent;
-      if (files[targetKey].name.endsWith('.html')) { 
-        finalContent = validateAndFixHTML(newContent); 
-        finalContent = injectActivityScript(finalContent); 
-      }
-      await saveFile(targetKey, finalContent);
-      await saveProject();
-      if (targetKey === currentFile) { 
-        if (useSimpleEditor) simpleEditor.value = finalContent; 
-        else if (editor) editor.setValue(finalContent); 
-      }
-      return files[targetKey].name;
-    }
-
-    async function deleteFile(fileName) {
-      if (currentMode === 'chat') { addChatMessage('⚠️ Mude para modo Editar', 'system'); return false; }
-      if (fileName.endsWith('.sc')) { 
-        const workerName = fileName.replace('.sc', ''); 
-        const worker = projectWorkers.find(w => w.name === workerName); 
-        if (worker) await deleteWorker(worker.id); 
-        return workerName; 
-      }
-      let targetKey = null;
-      for (const key in files) { 
-        if (files[key].name.toLowerCase() === fileName.toLowerCase()) { targetKey = key; break; } 
-      }
-      if (!targetKey) return false;
-      delete files[targetKey];
-      if (targetKey === currentFile) {
-        const remaining = Object.keys(files);
-        if (remaining.length > 0) await openFile(remaining[0]);
-        else { simpleEditor.value = ''; currentFile = null; }
-      }
-      await saveProject();
-      updateTabs();
-      return true;
-    }
-
+    // ============== SEND TO AI ==============
     async function sendToAI() {
-      const userMessage = elements.chatInput.value.trim();
+      const userMessage = document.getElementById('chatInput').value.trim();
       if (!userMessage) return;
       addChatMessage(userMessage, 'user');
-      elements.chatInput.value = '';
+      document.getElementById('chatInput').value = '';
       
-      const streamingMsgDiv = document.createElement('div');
-      streamingMsgDiv.className = 'message ai streaming';
+      const streamingDiv = document.createElement('div');
+      streamingDiv.className = 'message ai streaming';
       const contentSpan = document.createElement('span');
-      streamingMsgDiv.appendChild(contentSpan);
-      elements.chatMessages.appendChild(streamingMsgDiv);
+      streamingDiv.appendChild(contentSpan);
+      document.getElementById('chatMessages').appendChild(streamingDiv);
       
       let fullResponse = '';
       try {
         await ensurePuterAuth();
-        const workersInfo = projectWorkers.map(w => 
-          `Worker: ${w.name}, Rota: ${w.route}, Código: ${w.code?.substring(0, 300) || 'vazio'}`
-        ).join('\n');
-        
-        let prompt = `Você é um assistente que EDITA CÓDIGO E WORKERS.\n\nWORKERS EXISTENTES:\n${workersInfo}\n\nCOMANDO: "${userMessage}"\n\nResponda SOMENTE com JSON:\n\nPara CRIAR worker: {"action":"criar-worker","name":"nome","code":"router.get('/api/nome.sc', async () => { return { ok: true }; });","message":"msg"}\n\nPara EDITAR worker: {"action":"editar-worker","targetWorker":"nome","newCode":"código completo","message":"msg"}\n\nPara ADICIONAR rota: {"action":"adicionar-rota","targetWorker":"nome","method":"get","route":"/api/nova.sc","handlerCode":"return { ok: true };","message":"msg"}`;
+        const workersInfo = projectWorkers.map(w => `Worker: ${w.name}, Rota: ${w.route}, Código: ${w.code?.substring(0, 300)}`).join('\n');
+        const prompt = `Você edita workers. WORKERS:\n${workersInfo}\n\nCOMANDO: "${userMessage}"\n\nResponda JSON:\nCriar: {"action":"criar-worker","name":"nome","code":"router.get('/api/nome.sc', async () => { return { ok: true }; });"}\nEditar: {"action":"editar-worker","targetWorker":"nome","newCode":"código completo"}`;
         
         const res = await puter.ai.chat(prompt, { stream: true });
-        for await (const chunk of res) { 
-          fullResponse += chunk; 
-          contentSpan.innerHTML = fullResponse.replace(/\n/g, '<br>'); 
-          elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight; 
+        for await (const chunk of res) {
+          fullResponse += chunk;
+          contentSpan.innerHTML = fullResponse.replace(/\n/g, '<br>');
+          document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
         }
-        streamingMsgDiv.classList.remove('streaming');
+        streamingDiv.classList.remove('streaming');
         
         try {
-          const jsonMatch = fullResponse.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            const result = JSON.parse(jsonMatch[0]);
-            if (result.action) {
-              switch(result.action) {
-                case 'criar-worker':
-                  if (result.name && result.code) {
-                    await createWorkerWithCode(result.name, result.code);
-                    addChatMessage(`✅ Worker "${result.name}" criado!`, 'ai');
-                  }
-                  break;
-                case 'editar-worker':
-                  if (result.targetWorker && result.newCode) {
-                    await editWorkerCode(result.targetWorker, result.newCode);
-                    addChatMessage(`✅ Worker editado!`, 'ai');
-                  }
-                  break;
-                case 'adicionar-rota':
-                  if (result.targetWorker && result.route) {
-                    await addRouteToWorker(result.targetWorker, result.method || 'get', result.route, result.handlerCode);
-                    addChatMessage(`✅ Rota adicionada!`, 'ai');
-                  }
-                  break;
+          const json = fullResponse.match(/\{[\s\S]*\}/);
+          if (json) {
+            const r = JSON.parse(json[0]);
+            if (r.action === 'criar-worker' && r.name && r.code) {
+              const ref = db.ref(`workers/${currentUser.uid}/${currentProjectId}`).push();
+              await ref.set({ id: ref.key, name: r.name, route: extractRouteFromCode(r.code), code: r.code, createdAt: new Date().toISOString() });
+              await loadProjectWorkers();
+              await selectWorker(ref.key);
+              addChatMessage(`✅ Worker "${r.name}" criado!`, 'ai');
+            } else if (r.action === 'editar-worker' && r.targetWorker && r.newCode) {
+              let worker = projectWorkers.find(w => w.name === r.targetWorker || w.id === r.targetWorker);
+              if (worker) {
+                await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${worker.id}`).update({ code: r.newCode, updatedAt: new Date().toISOString() });
+                await loadProjectWorkers();
+                if (currentWorkerData?.id === worker.id) {
+                  currentWorkerData.code = r.newCode;
+                  document.getElementById('workerCodeWindow').value = r.newCode;
+                }
+                addChatMessage(`✅ Worker editado!`, 'ai');
               }
             }
           }
         } catch(e) {}
-      } catch (error) { 
-        streamingMsgDiv.classList.remove('streaming'); 
-        contentSpan.innerHTML = `❌ Erro: ${error.message}`; 
+      } catch(e) {
+        streamingDiv.classList.remove('streaming');
+        contentSpan.innerHTML = `❌ Erro: ${e.message}`;
       }
     }
 
-    // ============== RESTANTE (MANTIDO) ==============
+    // ============== PROJETOS ==============
     async function loadProjects() {
       const snapshot = await db.ref(`projects/${currentUser.uid}`).once('value');
       allProjects = [];
@@ -966,263 +1279,208 @@
       allProjects.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
       renderProjectsList();
     }
-    
+
     function renderProjectsList() {
-      if (!allProjects.length) { 
-        elements.projectsList.innerHTML = '<div style="text-align:center;padding:20px;">Nenhum projeto<br><button class="new-project-btn" onclick="createNewProject()">+ Criar</button></div>'; 
-        return; 
+      const list = document.getElementById('projects-list');
+      if (!allProjects.length) {
+        list.innerHTML = '<div style="text-align:center;padding:20px;">Nenhum projeto</div>';
+        return;
       }
-      elements.projectsList.innerHTML = allProjects.map(p => 
-        `<div class="project-item ${currentProjectId === p.id ? 'active' : ''}" onclick="selectProject('${p.id}')">
+      list.innerHTML = allProjects.map(p => `
+        <div class="project-item ${currentProjectId === p.id ? 'active' : ''}" onclick="selectProject('${p.id}')">
           <div class="project-name">📄 ${escapeHtml(p.name || 'Sem nome')}</div>
           <div class="project-date">${new Date(p.updatedAt).toLocaleDateString()}</div>
-        </div>`
-      ).join('');
+        </div>
+      `).join('');
     }
-    
-    async function selectProject(projectId) { 
-      if (currentProjectId === projectId) return; 
-      currentProjectId = projectId; 
-      await loadProjectData(); 
-      await loadChatHistory(); 
-      await loadActivities(); 
-      await loadProjectWorkers(); 
-      updateTabs(); 
+
+    async function selectProject(projectId) {
+      if (currentProjectId === projectId) return;
+      currentProjectId = projectId;
+      await loadProjectData();
+      await loadProjectWorkers();
       window.history.pushState({}, '', `?projectId=${projectId}`);
-      const hostingSnap = await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).once('value');
-      const hostingData = hostingSnap.val();
-      if (hostingData?.subdomain) {
-        currentHostingSubdomain = hostingData.subdomain;
-        currentHostingUrl = hostingData.url;
-        currentHostingDirectory = hostingData.directory;
-        siteCreated = true;
-      } else {
-        siteCreated = false;
-        currentHostingSubdomain = null;
-        currentHostingUrl = null;
-        currentHostingDirectory = null;
-      }
-      updateSitePublishButton();
     }
-    
-    async function createNewProject() { 
-      const name = prompt('Nome do projeto:', 'Meu Projeto'); 
-      if (!name) return; 
-      const ref = db.ref(`projects/${currentUser.uid}`).push(); 
-      const projectId = ref.key; 
-      const fileKey = btoa('index.html').replace(/=/g, ''); 
-      const html = `<!DOCTYPE html><html><head><title>${name}</title></head><body><h1>${name}</h1></body></html>`; 
-      await ref.set({ name, files: { [fileKey]: { name: 'index.html', content: html, size: html.length, createdAt: new Date().toISOString() } }, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }); 
-      await loadProjects(); 
-      await selectProject(projectId); 
+
+    async function createNewProject() {
+      const name = prompt('Nome do projeto:', 'Meu Projeto');
+      if (!name) return;
+      const ref = db.ref(`projects/${currentUser.uid}`).push();
+      const id = ref.key;
+      const key = btoa('index.html').replace(/=/g, '');
+      await ref.set({
+        name, files: { [key]: { name: 'index.html', content: `<!DOCTYPE html><html><head><title>${name}</title></head><body><h1>${name}</h1></body></html>`, size: 100, createdAt: new Date().toISOString() } },
+        createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+      });
+      await loadProjects();
+      await selectProject(id);
     }
-    
-    async function loadProjectData() { 
-      const snapshot = await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).once('value'); 
-      const data = snapshot.val(); 
-      if (!data) return; 
-      elements.projectName.value = data.name || ''; 
-      files = data.files || {}; 
+
+    async function loadProjectData() {
+      const snapshot = await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).once('value');
+      const data = snapshot.val();
+      if (!data) return;
+      document.getElementById('project-name').value = data.name || '';
+      files = data.files || {};
       if (data.hosting?.url) {
         currentHostingUrl = data.hosting.url;
         currentHostingSubdomain = data.hosting.subdomain;
         siteCreated = true;
-        elements.fileUrlTop.value = currentHostingUrl;
-        elements.urlPanelTop.style.display = 'flex';
+        document.getElementById('fileUrlTop').value = currentHostingUrl;
+        document.getElementById('urlPanelTop').style.display = 'flex';
       }
-      updateSitePublishButton(); 
-      const keys = Object.keys(files); 
-      if (keys.length > 0) await openFile(keys[0]); 
-      updateTabs(); 
-      renderProjectsList(); 
-    }
-    
-    async function saveProject() { 
-      await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ files, updatedAt: new Date().toISOString() }); 
-    }
-    
-    function escapeHtml(text) { 
-      const div = document.createElement('div'); 
-      div.textContent = text; 
-      return div.innerHTML; 
-    }
-    
-    async function saveFile(fileKey, content) { 
-      const oldSize = files[fileKey]?.size || 0;
-      const size = new Blob([content]).size; 
-      userStorage.used = userStorage.used - oldSize + size; 
-      files[fileKey] = { ...files[fileKey], content, size, updatedAt: new Date().toISOString() }; 
-      await db.ref(`users/${currentUser.uid}/storage`).set({ used: userStorage.used, limit: userStorage.limit }); 
-      updateStorageDisplay(); 
-    }
-    
-    function updateStorageDisplay() { 
-      elements.storageUsed.textContent = (userStorage.used / 1048576).toFixed(2); 
-      elements.storageLimit.textContent = (userStorage.limit / 1048576).toFixed(0); 
+      updateSitePublishButton();
+      const keys = Object.keys(files);
+      if (keys.length > 0) await openFile(keys[0]);
+      updateTabs();
+      renderProjectsList();
     }
 
-    async function loadUserStorage() { 
-      const snapshot = await db.ref(`users/${currentUser.uid}/storage`).once('value'); 
-      if (snapshot.val()) { userStorage = snapshot.val(); } 
-      updateStorageDisplay(); 
-    }
-    
-    async function openFile(fileKey) { 
-      if (!files[fileKey]) return; 
-      currentFile = fileKey; 
-      const content = files[fileKey].content || ''; 
-      if (useSimpleEditor) simpleEditor.value = content; 
-      else if (editor) editor.setValue(content); 
-      updateTabs(); 
-      elements.saveFileBtn.disabled = true; 
-    }
-    
-    async function saveCurrentFile() { 
-      if (!currentFile) return; 
-      let content = useSimpleEditor ? simpleEditor.value : editor?.getValue(); 
-      if (!content) return; 
-      await saveFile(currentFile, content); 
-      await saveProject(); 
-      elements.saveFileBtn.disabled = true; 
-      showNotification('Salvo!', 'success'); 
-    }
-    
-    function updateTabs() { 
-      elements.tabsContainer.innerHTML = ''; 
-      Object.keys(files).forEach(key => { 
-        const tab = document.createElement('button'); 
-        tab.className = `tab-btn ${key === currentFile ? 'active' : ''}`; 
-        tab.onclick = () => openFile(key); 
-        tab.innerHTML = `${files[key].name} <button class="close-tab-btn" onclick="event.stopPropagation();closeFile('${key}')">&times;</button>`; 
-        elements.tabsContainer.appendChild(tab); 
-      }); 
-    }
-    
-    async function closeFile(fileKey) { 
-      if (Object.keys(files).length <= 1) return; 
-      delete files[fileKey]; 
-      await saveProject(); 
-      if (fileKey === currentFile) await openFile(Object.keys(files)[0]); 
-      updateTabs(); 
-    }
-    
-    async function initPuter() { 
-      try { 
-        await puter.auth.getUser(); 
-        updatePuterStatus(true); 
-      } catch(e) { 
-        updatePuterStatus(false); 
-      } 
-    }
-    
-    async function ensurePuterAuth() { 
-      try { 
-        await puter.auth.getUser(); 
-        updatePuterStatus(true); 
-        return true; 
-      } catch(e) {} 
-      try { 
-        await puter.auth.signIn(); 
-        updatePuterStatus(true); 
-        return true; 
-      } catch(e) { 
-        return false; 
-      } 
-    }
-    
-    function openPuterDashboard() { window.open('https://puter.com', '_blank'); }
-    
-    function previewProject() { 
-      const index = Object.values(files).find(f => f.name === 'index.html'); 
-      if (index?.content) { 
-        const blob = new Blob([index.content], { type: 'text/html' }); 
-        window.open(URL.createObjectURL(blob), '_blank'); 
-      } else { 
-        showNotification('Crie um index.html primeiro', 'warning'); 
-      } 
-    }
-    
-    function loadPreferences() { 
-      const w = localStorage.getItem('codehub_sidebar_width'); 
-      if (w) { sidebarWidth = parseInt(w); elements.aiSidebar.style.width = w + 'px'; } 
-      const m = localStorage.getItem('codehub_mode'); 
-      setMode(m === 'chat' ? 'chat' : 'edit'); 
-    }
-    
-    function initResizing() { 
-      let isResizing = false; 
-      elements.resizeHandle.addEventListener('mousedown', (e) => { isResizing = true; e.preventDefault(); }); 
-      document.addEventListener('mousemove', (e) => { 
-        if (!isResizing) return; 
-        const w = window.innerWidth - e.clientX; 
-        if (w >= 250 && w <= 600) { sidebarWidth = w; elements.aiSidebar.style.width = w + 'px'; } 
-      }); 
-      document.addEventListener('mouseup', () => { 
-        if (isResizing) { isResizing = false; localStorage.setItem('codehub_sidebar_width', sidebarWidth); } 
-      }); 
+    async function saveProject() {
+      await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ files, updatedAt: new Date().toISOString() });
     }
 
-    function setupEventListeners() {
-      elements.saveFileBtn.addEventListener('click', saveCurrentFile);
-      elements.previewBtn.addEventListener('click', previewProject);
-      elements.sitePublishBtn.addEventListener('click', publishSite);
-      elements.puterDashboardBtn.addEventListener('click', openPuterDashboard);
-      elements.openUrlTopBtn?.addEventListener('click', () => { if (currentHostingUrl) window.open(currentHostingUrl, '_blank'); });
-      elements.sendChatBtn.addEventListener('click', sendToAI);
-      elements.workerPublishBtn.addEventListener('click', publishWorker);
-      elements.chatInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendToAI(); } });
-      elements.logoutBtn.addEventListener('click', () => auth.signOut().then(() => window.location.href = 'auth.html'));
-      elements.projectName.addEventListener('blur', async () => { 
-        const name = elements.projectName.value.trim(); 
-        if (name && currentProjectId) { 
-          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/name`).set(name); 
-          await loadProjects(); 
-        } 
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    async function openFile(fileKey) {
+      if (!files[fileKey]) return;
+      currentFile = fileKey;
+      const content = files[fileKey].content || '';
+      document.getElementById('simple-editor').value = content;
+      updateTabs();
+    }
+
+    async function saveCurrentFile() {
+      if (!currentFile) return;
+      const content = document.getElementById('simple-editor').value;
+      const size = new Blob([content]).size;
+      files[currentFile] = { ...files[currentFile], content, size, updatedAt: new Date().toISOString() };
+      await saveProject();
+      showNotification('Salvo!', 'success');
+    }
+
+    function updateTabs() {
+      const tabs = document.getElementById('tabs');
+      tabs.innerHTML = '';
+      Object.keys(files).forEach(key => {
+        const tab = document.createElement('button');
+        tab.className = `tab-btn ${key === currentFile ? 'active' : ''}`;
+        tab.onclick = () => openFile(key);
+        tab.innerHTML = `${files[key].name} <button class="close-tab-btn" onclick="event.stopPropagation();closeFile('${key}')">&times;</button>`;
+        tabs.appendChild(tab);
       });
+    }
+
+    async function closeFile(fileKey) {
+      if (Object.keys(files).length <= 1) return;
+      delete files[fileKey];
+      await saveProject();
+      if (fileKey === currentFile) await openFile(Object.keys(files)[0]);
+      updateTabs();
+    }
+
+    function previewProject() {
+      const index = Object.values(files).find(f => f.name === 'index.html');
+      if (index?.content) {
+        const blob = new Blob([index.content], { type: 'text/html' });
+        window.open(URL.createObjectURL(blob), '_blank');
+      } else {
+        showNotification('Crie um index.html primeiro', 'warning');
+      }
+    }
+
+    // ============== INICIALIZAÇÃO ==============
+    function setupEventListeners() {
+      document.getElementById('saveFileBtn').addEventListener('click', saveCurrentFile);
+      document.getElementById('previewBtn').addEventListener('click', previewProject);
+      document.getElementById('sitePublishBtn').addEventListener('click', publishSite);
+      document.getElementById('puterDashboardBtn').addEventListener('click', () => window.open('https://puter.com', '_blank'));
+      document.getElementById('openUrlTopBtn')?.addEventListener('click', () => { if (currentHostingUrl) window.open(currentHostingUrl, '_blank'); });
+      document.getElementById('sendChatBtn').addEventListener('click', sendToAI);
+      document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendToAI(); } });
+      document.getElementById('logoutBtn').addEventListener('click', () => auth.signOut().then(() => window.location.href = 'auth.html'));
+      document.getElementById('project-name').addEventListener('blur', async () => {
+        const name = document.getElementById('project-name').value.trim();
+        if (name && currentProjectId) {
+          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/name`).set(name);
+          await loadProjects();
+        }
+      });
+      
+      // Resize handle
+      const handle = document.getElementById('resizeHandle');
+      let isResizing = false;
+      handle.addEventListener('mousedown', (e) => { isResizing = true; e.preventDefault(); });
+      document.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+        const w = window.innerWidth - e.clientX;
+        if (w >= 250 && w <= 600) {
+          sidebarWidth = w;
+          document.getElementById('ai-sidebar').style.width = w + 'px';
+          localStorage.setItem('codehub_sidebar_width', w);
+        }
+      });
+      document.addEventListener('mouseup', () => { isResizing = false; });
     }
 
     function initializeApp() {
       auth.onAuthStateChanged(async user => {
         if (!user) { window.location.href = 'auth.html'; return; }
-        currentUser = user; 
-        elements.userName.textContent = user.displayName || user.email?.split('@')[0] || 'Usuário';
+        currentUser = user;
+        document.getElementById('user-name').textContent = user.displayName || user.email?.split('@')[0] || 'Usuário';
+        
         const params = new URLSearchParams(window.location.search);
         currentProjectId = params.get('projectId');
-        await loadUserStorage();
+        
+        // Carregar zoom salvo
+        const savedZoom = localStorage.getItem('codehub_zoom');
+        if (savedZoom) { currentZoom = parseFloat(savedZoom); document.body.style.zoom = currentZoom; }
+        document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
+        
+        // Carregar sidebar width
+        const savedWidth = localStorage.getItem('codehub_sidebar_width');
+        if (savedWidth) { sidebarWidth = parseInt(savedWidth); document.getElementById('ai-sidebar').style.width = savedWidth + 'px'; }
+        
+        // Carregar modo
+        const savedMode = localStorage.getItem('codehub_mode');
+        setMode(savedMode === 'chat' ? 'chat' : 'edit');
+        
         await loadProjects();
-        if (currentProjectId && allProjects.some(p => p.id === currentProjectId)) { 
-          await loadProjectData(); await loadChatHistory(); await loadActivities(); await loadProjectWorkers(); 
-        } else if (allProjects.length > 0) { 
-          await selectProject(allProjects[0].id); 
-        } else { 
-          await createNewProject(); 
+        if (currentProjectId && allProjects.some(p => p.id === currentProjectId)) {
+          await loadProjectData();
+          await loadProjectWorkers();
+        } else if (allProjects.length > 0) {
+          await selectProject(allProjects[0].id);
+        } else {
+          await createNewProject();
         }
-        elements.loadingScreen.style.opacity = '0';
-        setTimeout(() => { 
-          elements.loadingScreen.style.display = 'none'; 
-          elements.appContent.style.display = 'flex'; 
-        }, 300);
-        setupEventListeners();
-        initPuter();
-        loadPreferences();
-        initResizing();
-        // Tenta carregar Monaco Editor
+        
+        document.getElementById('loading-screen').style.opacity = '0';
         setTimeout(() => {
-          try {
-            require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
-            require(['vs/editor/editor.main'], function() {
-              useSimpleEditor = false;
-              document.getElementById('simple-editor').style.display = 'none';
-              elements.container.innerHTML = '<div id="monaco-editor" style="width:100%;height:100%;"></div>';
-              editor = monaco.editor.create(document.getElementById('monaco-editor'), { 
-                theme: 'vs-dark', automaticLayout: true, minimap: { enabled: false }, fontSize: 13 
-              });
-              editor.onDidChangeModelContent(() => { if (currentFile) elements.saveFileBtn.disabled = false; });
-              if (currentFile && files[currentFile]) editor.setValue(files[currentFile].content || '');
-            });
-          } catch(e) { console.log('Monaco não carregou, usando editor simples'); }
-        }, 500);
+          document.getElementById('loading-screen').style.display = 'none';
+          document.getElementById('app-content').style.display = 'flex';
+        }, 300);
+        
+        setupEventListeners();
+        initWorkerWindow();
+        initActivitiesWindow();
+        initContextMenu();
+        loadWindowPositions();
+        initPuter();
       });
+    }
+
+    async function initPuter() {
+      try { await puter.auth.getUser(); updatePuterStatus(true); } catch(e) { updatePuterStatus(false); }
+    }
+
+    async function loadUserStorage() {
+      const snapshot = await db.ref(`users/${currentUser.uid}/storage`).once('value');
+      if (snapshot.val()) userStorage = snapshot.val();
     }
 
     initializeApp();
@@ -1230,25 +1488,30 @@
     // Expor funções globalmente
     window.selectProject = selectProject;
     window.createNewProject = createNewProject;
-    window.clearChat = () => { 
-      if (confirm('Limpar chat?')) { 
-        db.ref(`chats/${currentUser.uid}/${currentProjectId}`).remove(); 
-        elements.chatMessages.innerHTML = ''; 
-        addChatMessage('🤖 Chat limpo!', 'system'); 
-      } 
-    };
-    window.closeFile = closeFile;
-    window.deleteActivity = deleteActivity;
-    window.setMode = setMode;
-    window.createNewWorker = createNewWorker;
     window.selectWorker = selectWorker;
-    window.saveWorkerCode = saveWorkerCode;
-    window.publishWorker = publishWorker;
-    window.updateWorker = updateWorker;
-    window.testWorker = testWorker;
+    window.createNewWorker = createNewWorker;
     window.editWorker = editWorker;
     window.deleteWorker = deleteWorker;
+    window.updateWorker = updateWorker;
+    window.testWorker = testWorker;
+    window.publishWorker = publishWorker;
+    window.closeFile = closeFile;
+    window.setMode = setMode;
     window.quickAction = quickAction;
+    window.contextAction = contextAction;
+    window.changeZoom = changeZoom;
+    window.resetZoom = resetZoom;
+    window.deleteActivity = async (id) => {
+      await fetch(`${ACTIVITIES_DB_URL}/${id}.json`, { method: 'DELETE' });
+      loadActivitiesToWindow();
+    };
+    window.showWorkerContextMenu = (event, workerId) => {
+      const menu = document.getElementById('contextMenu');
+      menu.style.display = 'block';
+      menu.style.left = Math.min(event.clientX, window.innerWidth - 220) + 'px';
+      menu.style.top = Math.min(event.clientY, window.innerHeight - 300) + 'px';
+      // Aqui pode adicionar itens específicos para o worker
+    };
   </script>
 </body>
 </html>
