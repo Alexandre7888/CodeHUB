@@ -368,44 +368,87 @@
       }
     }
 
+    // ==================== SITE - CORRIGIDO ====================
     async function publishSite() {
       const auth = await ensurePuterAuth();
       if (!auth) return false;
       const hasIndex = Object.values(files).some(f => f.name === 'index.html');
       if (!hasIndex) { addChatMessage('❌ Falta o arquivo index.html', 'system'); return false; }
+      
       elements.modalTitle.textContent = sitePublished ? '🔄 Atualizar Site?' : '🚀 Publicar Site?';
       elements.modalMessage.textContent = sitePublished ? 'Isso vai ATUALIZAR o site existente. Deseja continuar?' : 'Isso vai PUBLICAR o site no Puter. Deseja continuar?';
       elements.publishModal.style.display = 'flex';
+      
       const confirmHandler = async () => {
         elements.publishModal.style.display = 'none';
         elements.publishYesBtn.removeEventListener('click', confirmHandler);
         elements.publishNoBtn.removeEventListener('click', cancelHandler);
+        
         addChatMessage(`${sitePublished ? 'Atualizando' : 'Publicando'} site...`, 'system');
         try {
-          const dirName = `codehub_${currentUser.uid}_${Date.now()}`;
+          // Criar diretório único para esta publicação
+          const dirName = `codehub_${currentUser.uid}_${currentProjectId}_${Date.now()}`;
           await puter.fs.mkdir(dirName);
-          for (const file of Object.values(files)) {
+          
+          // Salvar todos os arquivos no diretório
+          for (const [key, file] of Object.entries(files)) {
             let content = file.content || '';
-            if (file.name.endsWith('.html') && !content.includes('atividade.js')) content = injectActivityScript(content);
+            if (file.name.endsWith('.html') && !content.includes('atividade.js')) {
+              content = injectActivityScript(content);
+            }
             await puter.fs.write(`${dirName}/${file.name}`, content);
           }
+          
+          let finalUrl = '';
+          
           if (!sitePublished || !currentHostingSubdomain) {
+            // Primeira publicação - criar novo hosting
             const subdomain = `codehub-${Math.random().toString(36).substring(2, 10)}`;
             const site = await puter.hosting.create(subdomain, dirName);
-            currentHostingSubdomain = site.subdomain; currentHostingDirectory = dirName;
-            currentHostingUrl = `https://${site.subdomain}.puter.site`; sitePublished = true;
-          } else { await puter.hosting.update(currentHostingSubdomain, dirName); currentHostingDirectory = dirName; }
-          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({ url: currentHostingUrl, subdomain: currentHostingSubdomain, directory: currentHostingDirectory, publishedAt: new Date().toISOString() });
-          elements.fileUrlTop.value = currentHostingUrl; elements.urlPanelTop.style.display = 'flex';
+            currentHostingSubdomain = site.subdomain;
+            currentHostingDirectory = dirName;
+            finalUrl = `https://${site.subdomain}.puter.site`;
+            sitePublished = true;
+          } else {
+            // Atualização - usar hosting existente
+            await puter.hosting.update(currentHostingSubdomain, dirName);
+            currentHostingDirectory = dirName;
+            finalUrl = currentHostingUrl;
+          }
+          
+          currentHostingUrl = finalUrl;
+          
+          // Salvar informações no Firebase
+          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({ 
+            url: currentHostingUrl, 
+            subdomain: currentHostingSubdomain, 
+            directory: currentHostingDirectory, 
+            publishedAt: new Date().toISOString() 
+          });
+          
+          elements.fileUrlTop.value = currentHostingUrl;
+          elements.urlPanelTop.style.display = 'flex';
           updateSitePublishButton();
           addChatMessage(`✅ Site ${sitePublished ? 'atualizado' : 'publicado'}! 🔗 ${currentHostingUrl}`, 'ai');
-        } catch(e) { addChatMessage(`❌ Erro: ${e.message}`, 'system'); }
+          showNotification(`Site ${sitePublished ? 'atualizado' : 'publicado'} com sucesso!`, 'success');
+          
+        } catch(e) { 
+          addChatMessage(`❌ Erro ao ${sitePublished ? 'atualizar' : 'publicar'} site: ${e.message}`, 'system');
+          showNotification(`Erro: ${e.message}`, 'error');
+        }
       };
-      const cancelHandler = () => { elements.publishModal.style.display = 'none'; elements.publishYesBtn.removeEventListener('click', confirmHandler); elements.publishNoBtn.removeEventListener('click', cancelHandler); };
+      
+      const cancelHandler = () => { 
+        elements.publishModal.style.display = 'none'; 
+        elements.publishYesBtn.removeEventListener('click', confirmHandler); 
+        elements.publishNoBtn.removeEventListener('click', cancelHandler); 
+      };
+      
       elements.publishYesBtn.addEventListener('click', confirmHandler);
       elements.publishNoBtn.addEventListener('click', cancelHandler);
     }
 
+    // ==================== MODO ====================
     function setMode(mode) {
       currentMode = mode;
       if (mode === 'chat') { elements.chatModeBtn.classList.add('active'); elements.editModeBtn.classList.remove('active'); showNotification('💬 Modo Conversar - Apenas análise', 'info'); }
