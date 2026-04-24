@@ -190,12 +190,9 @@
     let files = {};
     let userStorage = { used: 0, limit: 5 * 1024 * 1024 };
     let currentHostingUrl = null;
-    let currentHostingSubdomain = null;
-    let currentHostingDirectory = null;
     let allProjects = [];
     let currentMode = 'edit';
     let useSimpleEditor = true;
-    let sitePublished = false;
     let projectWorkers = [];
     let currentWorkerData = null;
 
@@ -230,9 +227,10 @@
     simpleEditor.addEventListener('input', () => { if (currentFile && useSimpleEditor) { files[currentFile].content = simpleEditor.value; elements.saveFileBtn.disabled = false; } });
 
     function updateSitePublishButton() {
-      if (sitePublished && currentHostingUrl) { elements.sitePublishBtn.textContent = '🔄 Atualizar Site'; elements.sitePublishBtn.style.background = '#ff9800'; }
-      else { elements.sitePublishBtn.textContent = '🚀 Publicar Site'; elements.sitePublishBtn.style.background = '#22c55e'; }
+      elements.sitePublishBtn.textContent = '🚀 Publicar Site';
+      elements.sitePublishBtn.style.background = '#22c55e';
     }
+
     function updateWorkerPublishButton() {
       if (currentWorkerData && currentWorkerData.fullUrl) { elements.workerPublishBtn.textContent = '🔄 Atualizar Worker'; elements.workerPublishBtn.style.background = '#ff9800'; }
       else { elements.workerPublishBtn.textContent = '🚀 Publicar Worker'; elements.workerPublishBtn.style.background = '#22c55e'; }
@@ -368,15 +366,15 @@
       }
     }
 
-    // ==================== SITE - CORRIGIDO SEGUNDO DOCUMENTAÇÃO PUTER ====================
+    // ==================== SITE - NOVA VERSÃO (CRIA NOVO SITE A CADA PUBLICAÇÃO) ====================
     async function publishSite() {
       const auth = await ensurePuterAuth();
       if (!auth) return false;
       const hasIndex = Object.values(files).some(f => f.name === 'index.html');
       if (!hasIndex) { addChatMessage('❌ Falta o arquivo index.html', 'system'); return false; }
       
-      elements.modalTitle.textContent = sitePublished ? '🔄 Atualizar Site?' : '🚀 Publicar Site?';
-      elements.modalMessage.textContent = sitePublished ? 'Isso vai ATUALIZAR o site existente. Deseja continuar?' : 'Isso vai PUBLICAR o site no Puter. Deseja continuar?';
+      elements.modalTitle.textContent = '🚀 Publicar Site?';
+      elements.modalMessage.textContent = 'Isso vai CRIAR um NOVO site no Puter. Deseja continuar?';
       elements.publishModal.style.display = 'flex';
       
       const confirmHandler = async () => {
@@ -384,13 +382,13 @@
         elements.publishYesBtn.removeEventListener('click', confirmHandler);
         elements.publishNoBtn.removeEventListener('click', cancelHandler);
         
-        addChatMessage(`${sitePublished ? 'Atualizando' : 'Publicando'} site...`, 'system');
+        addChatMessage(`Publicando site...`, 'system');
         try {
-          // PASSO 1: Criar diretório com todos os arquivos do projeto
+          // Criar diretório com todos os arquivos do projeto
           const dirName = `codehub_${currentUser.uid}_${currentProjectId}_${Date.now()}`;
           await puter.fs.mkdir(dirName);
           
-          // PASSO 2: Salvar todos os arquivos no diretório
+          // Salvar todos os arquivos no diretório
           for (const [key, file] of Object.entries(files)) {
             let content = file.content || '';
             if (file.name.endsWith('.html') && !content.includes('atividade.js')) {
@@ -399,42 +397,28 @@
             await puter.fs.write(`${dirName}/${file.name}`, content);
           }
           
-          let finalUrl = '';
-          
-          if (!sitePublished || !currentHostingSubdomain) {
-            // PRIMEIRA PUBLICAÇÃO: usar puter.hosting.create (como no exemplo)
-            const subdomain = puter.randName();
-            const site = await puter.hosting.create(subdomain, dirName);
-            currentHostingSubdomain = site.subdomain;
-            currentHostingDirectory = dirName;
-            finalUrl = `https://${site.subdomain}.puter.site`;
-            sitePublished = true;
-          } else {
-            // ATUALIZAÇÃO: usar puter.hosting.update (como no exemplo)
-            // O método correto é: puter.hosting.update(subdomain, newDirectory)
-            await puter.hosting.update(currentHostingSubdomain, dirName);
-            currentHostingDirectory = dirName;
-            finalUrl = currentHostingUrl;
-          }
-          
-          currentHostingUrl = finalUrl;
+          // Criar novo site
+          const subdomain = puter.randName();
+          const site = await puter.hosting.create(subdomain, dirName);
+          const newUrl = `https://${site.subdomain}.puter.site`;
           
           // Salvar informações no Firebase
           await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({ 
-            url: currentHostingUrl, 
-            subdomain: currentHostingSubdomain, 
-            directory: currentHostingDirectory, 
+            url: newUrl, 
+            subdomain: site.subdomain, 
+            directory: dirName, 
             publishedAt: new Date().toISOString() 
           });
           
+          currentHostingUrl = newUrl;
           elements.fileUrlTop.value = currentHostingUrl;
           elements.urlPanelTop.style.display = 'flex';
           updateSitePublishButton();
-          addChatMessage(`✅ Site ${sitePublished ? 'atualizado' : 'publicado'}! 🔗 ${currentHostingUrl}`, 'ai');
-          showNotification(`Site ${sitePublished ? 'atualizado' : 'publicado'} com sucesso!`, 'success');
+          addChatMessage(`✅ Site publicado! 🔗 ${currentHostingUrl}`, 'ai');
+          showNotification(`Site publicado com sucesso!`, 'success');
           
         } catch(e) { 
-          addChatMessage(`❌ Erro ao ${sitePublished ? 'atualizar' : 'publicar'} site: ${e.message}`, 'system');
+          addChatMessage(`❌ Erro ao publicar site: ${e.message}`, 'system');
           showNotification(`Erro: ${e.message}`, 'error');
         }
       };
@@ -594,7 +578,7 @@
     }
     async function selectProject(projectId) { if (currentProjectId === projectId) return; currentProjectId = projectId; await loadProjectData(); await loadChatHistory(); await loadActivities(); await loadProjectWorkers(); updateTabs(); window.history.pushState({}, '', `?projectId=${projectId}`); }
     async function createNewProject() { const name = prompt('Nome do projeto:', 'Meu Projeto'); if (!name) return; const newProjectRef = db.ref(`projects/${currentUser.uid}`).push(); const projectId = newProjectRef.key; const fileKey = btoa('index.html').replace(/=/g, ''); const defaultHTML = `<!DOCTYPE html><html><head><title>${name}</title></head><body><h1>${name}</h1><p>Bem-vindo!</p></body></html>`; const content = injectActivityScript(defaultHTML); await newProjectRef.set({ name, files: { [fileKey]: { name: 'index.html', content, size: content.length, createdAt: new Date().toISOString() } }, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }); await loadProjects(); await selectProject(projectId); showNotification(`Projeto "${name}" criado!`, 'success'); }
-    async function loadProjectData() { const snapshot = await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).once('value'); const data = snapshot.val(); if (!data) return; elements.projectName.value = data.name || 'Projeto'; files = data.files || {}; if (data.hosting && data.hosting.url) { currentHostingUrl = data.hosting.url; currentHostingSubdomain = data.hosting.subdomain; currentHostingDirectory = data.hosting.directory; sitePublished = true; elements.fileUrlTop.value = currentHostingUrl; elements.urlPanelTop.style.display = 'flex'; } else { sitePublished = false; } updateSitePublishButton(); const fileKeys = Object.keys(files); if (fileKeys.length > 0) await openFile(fileKeys[0]); else await createDefaultIndexHtml(); updateTabs(); renderProjectsList(); }
+    async function loadProjectData() { const snapshot = await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).once('value'); const data = snapshot.val(); if (!data) return; elements.projectName.value = data.name || 'Projeto'; files = data.files || {}; if (data.hosting && data.hosting.url) { currentHostingUrl = data.hosting.url; elements.fileUrlTop.value = currentHostingUrl; elements.urlPanelTop.style.display = 'flex'; } updateSitePublishButton(); const fileKeys = Object.keys(files); if (fileKeys.length > 0) await openFile(fileKeys[0]); else await createDefaultIndexHtml(); updateTabs(); renderProjectsList(); }
     async function createDefaultIndexHtml() { const fileName = 'index.html'; const fileKey = btoa(fileName).replace(/=/g, ''); const defaultHTML = `<!DOCTYPE html><html><head><title>${elements.projectName.value || 'Projeto'}</title></head><body><h1>Bem-vindo!</h1></body></html>`; const content = injectActivityScript(defaultHTML); files[fileKey] = { name: fileName, originalName: fileName, content, size: content.length, createdAt: new Date().toISOString() }; await saveProject(); await openFile(fileKey); }
     async function saveProject() { await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ files, updatedAt: new Date().toISOString() }); }
     function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
