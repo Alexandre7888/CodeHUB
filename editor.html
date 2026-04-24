@@ -38,7 +38,8 @@
     .project-name { font-weight: bold; margin-bottom: 4px; font-size: 13px; }
     .project-date { font-size: 10px; color: #888; }
     .workers-list { flex: 1; overflow-y: auto; padding: 8px; border-top: 1px solid #333; }
-    .worker-item { background: #1e1e1e; border-radius: 6px; padding: 10px; margin-bottom: 8px; border: 1px solid #333; }
+    .worker-item { background: #1e1e1e; border-radius: 6px; padding: 10px; margin-bottom: 8px; border: 1px solid #333; cursor: pointer; }
+    .worker-item:hover { border-color: #4cc9f0; }
     .worker-name { font-weight: bold; color: #4cc9f0; font-size: 12px; margin-bottom: 4px; }
     .worker-route { font-size: 11px; color: #22c55e; font-family: monospace; margin-bottom: 4px; }
     .worker-url { font-size: 10px; color: #888; word-break: break-all; margin-bottom: 8px; }
@@ -167,7 +168,7 @@
         </div>
         <div class="chat-controls">
           <div class="mode-toggle"><button class="mode-toggle-btn" id="chatModeBtn" onclick="setMode('chat')">💬 Conversar</button><button class="mode-toggle-btn edit-mode active" id="editModeBtn" onclick="setMode('edit')">✏️ Editar</button></div>
-          <div class="chat-input-wrapper"><textarea id="chatInput" placeholder="Digite seu comando... Ex: Edite o worker hello para retornar também a data atual" rows="2"></textarea><button id="sendChatBtn">Enviar</button></div>
+          <div class="chat-input-wrapper"><textarea id="chatInput" placeholder="Digite seu comando... Ex: crie um worker chamado api" rows="2"></textarea><button id="sendChatBtn">Enviar</button></div>
         </div>
         <div class="worker-editor">
           <div class="worker-editor-header"><span>📝 Código do Worker (.sc)</span><div class="worker-editor-buttons"><button onclick="saveWorkerCode()">💾 Salvar</button><button id="workerPublishBtn" class="update-worker">🚀 Publicar Worker</button></div></div>
@@ -262,16 +263,20 @@
     }
 
     function workerLog(msg) { addChatMessage(`⚡ Worker: ${msg}`, 'system'); }
-    function extractRouteFromCode(code) { const match = code.match(/router\.(get|post|put|delete)\(['"`](.*?)['"`]/); return match ? match[2] : "/api/unknown.sc"; }
-
-    // ============== NOVAS FUNÇÕES DE WORKER ==============
+    function extractRouteFromCode(code) { const match = code.match(/router\.(get|post|put|delete)\(['"`](.*?)['"`]/); return match ? match[2] : "/api/hello.sc"; }
     
-    /**
-     * Cria um novo worker com código personalizado
-     */
+    // Gera um nome limpo para o worker (sem caracteres estranhos)
+    function generateCleanWorkerName(baseName) {
+      const clean = baseName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
+      const shortId = Date.now().toString(36).substring(0, 4);
+      return `${clean}_${shortId}`;
+    }
+
+    // ============== FUNÇÕES DE WORKER ==============
+    
     async function createWorkerWithCode(name, code, route) {
       if (!name || !code) return null;
-      const finalRoute = route || extractRouteFromCode(code) || `/api/${name}.sc`;
+      const finalRoute = route || extractRouteFromCode(code) || `/api/${name.replace(/[^a-zA-Z0-9]/g, '')}.sc`;
       const newWorkerRef = db.ref(`workers/${currentUser.uid}/${currentProjectId}`).push();
       const workerId = newWorkerRef.key;
       const workerData = {
@@ -288,193 +293,96 @@
       return workerData;
     }
 
-    /**
-     * Edita o código de um worker existente
-     */
     async function editWorkerCode(workerIdentifier, newCode) {
-      // Procura o worker por nome ou ID
       let worker = projectWorkers.find(w => w.id === workerIdentifier || w.name === workerIdentifier);
-      
-      if (!worker) {
-        // Se não encontrar, procura nos workers atuais
-        if (currentWorkerData && (currentWorkerData.name === workerIdentifier || currentWorkerData.id === workerIdentifier)) {
-          worker = currentWorkerData;
-        }
+      if (!worker && currentWorkerData && (currentWorkerData.name === workerIdentifier || currentWorkerData.id === workerIdentifier)) {
+        worker = currentWorkerData;
       }
-      
       if (!worker) {
         workerLog(`Worker "${workerIdentifier}" não encontrado`);
         return false;
       }
-      
       const newRoute = extractRouteFromCode(newCode) || worker.route;
-      
-      // Atualiza no Firebase
       await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${worker.id}`).update({
-        code: newCode,
-        route: newRoute,
-        updatedAt: new Date().toISOString()
+        code: newCode, route: newRoute, updatedAt: new Date().toISOString()
       });
-      
-      // Atualiza localmente
       if (currentWorkerData && currentWorkerData.id === worker.id) {
         currentWorkerData.code = newCode;
         currentWorkerData.route = newRoute;
         elements.workerCode.value = newCode;
       }
-      
       await loadProjectWorkers();
       workerLog(`Worker "${worker.name}" editado com sucesso!`);
       showNotification(`Worker "${worker.name}" atualizado!`, 'success');
       return true;
     }
 
-    /**
-     * Adiciona uma nova rota a um worker existente
-     */
     async function addRouteToWorker(workerIdentifier, method, route, handlerCode) {
       let worker = projectWorkers.find(w => w.id === workerIdentifier || w.name === workerIdentifier);
       if (!worker && currentWorkerData) worker = currentWorkerData;
-      
-      if (!worker) {
-        workerLog(`Worker "${workerIdentifier}" não encontrado`);
-        return false;
-      }
-      
+      if (!worker) { workerLog(`Worker "${workerIdentifier}" não encontrado`); return false; }
       const methodLower = (method || 'get').toLowerCase();
-      const newRouteCode = `\nrouter.${methodLower}('${route}', async () => {\n    ${handlerCode || 'return { message: "Nova rota!" };'}\n});`;
+      const newRouteCode = `\nrouter.${methodLower}('${route}', async () => {\n    ${handlerCode || 'return { message: "ok" };'}\n});`;
       const newCode = (worker.code || '') + newRouteCode;
-      
       await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${worker.id}`).update({
-        code: newCode,
-        updatedAt: new Date().toISOString()
+        code: newCode, updatedAt: new Date().toISOString()
       });
-      
       if (currentWorkerData && currentWorkerData.id === worker.id) {
         currentWorkerData.code = newCode;
         elements.workerCode.value = newCode;
       }
-      
       await loadProjectWorkers();
-      workerLog(`Rota ${methodUpper} ${route} adicionada ao worker "${worker.name}"!`);
+      workerLog(`Rota ${method.toUpperCase()} ${route} adicionada ao worker "${worker.name}"!`);
       showNotification(`Rota adicionada!`, 'success');
       return true;
     }
 
-    /**
-     * Remove uma rota de um worker
-     */
-    async function removeRouteFromWorker(workerIdentifier, routeToRemove) {
-      let worker = projectWorkers.find(w => w.id === workerIdentifier || w.name === workerIdentifier);
-      if (!worker && currentWorkerData) worker = currentWorkerData;
-      
-      if (!worker) {
-        workerLog(`Worker "${workerIdentifier}" não encontrado`);
-        return false;
-      }
-      
-      // Regex para encontrar e remover a rota específica
-      const regex = new RegExp(`router\\.(get|post|put|delete)\\(['"\`]${routeToRemove.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"\`][\\s\\S]*?\\n\\}\);`, 'g');
-      const newCode = worker.code.replace(regex, '').trim();
-      
-      await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${worker.id}`).update({
-        code: newCode,
-        updatedAt: new Date().toISOString()
-      });
-      
-      if (currentWorkerData && currentWorkerData.id === worker.id) {
-        currentWorkerData.code = newCode;
-        elements.workerCode.value = newCode;
-      }
-      
-      await loadProjectWorkers();
-      workerLog(`Rota ${routeToRemove} removida do worker "${worker.name}"`);
-      return true;
-    }
-
-    /**
-     * Lista todos os workers e suas rotas
-     */
     function listAllWorkers() {
       if (projectWorkers.length === 0) {
         addChatMessage('📭 Nenhum worker encontrado neste projeto', 'system');
         return;
       }
-      
-      let listMsg = '📋 **Workers do projeto:**\n\n';
+      let listMsg = '📋 <b>Workers do projeto:</b>\n\n';
       projectWorkers.forEach((w, i) => {
-        const routes = w.code.match(/router\.(get|post|put|delete)\(['"`](.*?)['"`]/g) || [];
-        listMsg += `${i + 1}. **${w.name}** (${w.fullUrl ? '✅ Publicado' : '📝 Rascunho'})\n`;
-        listMsg += `   🆔 ID: ${w.id.substring(0, 8)}...\n`;
+        const routes = w.code?.match(/router\.(get|post|put|delete)\(['"`](.*?)['"`]/g) || [];
+        listMsg += `${i + 1}. <b>${w.name}</b> (${w.fullUrl ? '✅ Publicado' : '📝 Rascunho'})\n`;
         listMsg += `   🛣️ Rotas: ${routes.length > 0 ? routes.map(r => r.match(/['"`](.*?)['"`]/)[1]).join(', ') : 'Nenhuma'}\n`;
         if (w.fullUrl) listMsg += `   🔗 ${w.fullUrl}\n`;
         listMsg += '\n';
       });
-      
       addChatMessage(listMsg, 'ai');
     }
 
-    /**
-     * Explica o código de um worker
-     */
     function explainWorker(workerIdentifier) {
       let worker = projectWorkers.find(w => w.id === workerIdentifier || w.name === workerIdentifier);
       if (!worker && currentWorkerData) worker = currentWorkerData;
-      
-      if (!worker) {
-        addChatMessage(`Worker "${workerIdentifier}" não encontrado`, 'system');
-        return;
-      }
-      
-      const routes = worker.code.match(/router\.(get|post|put|delete)\(['"`](.*?)['"`]/g) || [];
-      let explanation = `📖 **Explicação do Worker "${worker.name}":**\n\n`;
-      explanation += `📝 **Status:** ${worker.fullUrl ? 'Publicado' : 'Rascunho'}\n`;
-      explanation += `🛣️ **Total de rotas:** ${routes.length}\n\n`;
-      
+      if (!worker) { addChatMessage(`Worker "${workerIdentifier}" não encontrado`, 'system'); return; }
+      const routes = worker.code?.match(/router\.(get|post|put|delete)\(['"`](.*?)['"`]/g) || [];
+      let explanation = `📖 <b>Worker: ${worker.name}</b>\n\n`;
+      explanation += `📝 Status: ${worker.fullUrl ? '✅ Publicado' : '📝 Rascunho'}\n`;
+      explanation += `🛣️ Rotas: ${routes.length}\n\n`;
       if (routes.length > 0) {
-        explanation += `**Rotas encontradas:**\n`;
+        explanation += `<b>Rotas:</b>\n`;
         routes.forEach(r => {
           const method = r.match(/router\.(\w+)/)[1].toUpperCase();
           const path = r.match(/['"`](.*?)['"`]/)[1];
           explanation += `• ${method} ${path}\n`;
         });
       }
-      
       if (worker.fullUrl) {
-        explanation += `\n🔗 **URL Base:** ${worker.url}\n`;
-        explanation += `🌐 **URL Completa:** ${worker.fullUrl}\n`;
+        explanation += `\n🔗 URL: ${worker.fullUrl}\n`;
       }
-      
-      explanation += `\n📅 **Criado em:** ${new Date(worker.createdAt).toLocaleString()}\n`;
-      if (worker.updatedAt) explanation += `🔄 **Atualizado em:** ${new Date(worker.updatedAt).toLocaleString()}\n`;
-      
       addChatMessage(explanation, 'ai');
     }
 
-    /**
-     * Corrige erros comuns em código de worker
-     */
     function fixWorkerCode(code) {
       let fixed = code;
-      
-      // Corrige sintaxe básica
       if (!fixed.includes('router.')) {
         fixed = `router.get('/api/hello.sc', async () => {\n    return { message: 'Hello World!' };\n});`;
       }
-      
-      // Corrige funções async sem await
       fixed = fixed.replace(/router\.(\w+)\((['"`].*?['"`]),\s*\(\)\s*=>\s*{/g, (match, method, route) => {
         return `router.${method}(${route}, async () => {`;
       });
-      
-      // Corrige falta de return
-      fixed = fixed.replace(/router\.(\w+)\((['"`].*?['"`]),\s*async\s*\(\)\s*=>\s*{/g, (match) => {
-        if (!match.includes('return')) {
-          return match + '\n    return { message: "OK" };';
-        }
-        return match;
-      });
-      
       return fixed;
     }
 
@@ -483,64 +391,51 @@
     async function quickAction(action) {
       switch(action) {
         case 'criar-worker':
-          elements.chatInput.value = 'Crie um worker chamado api com uma rota GET /api/dados.sc que retorna {dados: [1,2,3], status: "ok"}';
+          elements.chatInput.value = 'Crie um worker chamado api com rota GET /api/dados.sc que retorna {dados: [1,2,3]}';
           elements.chatInput.focus();
-          addChatMessage('💡 Comando pronto! Clique em Enviar para criar o worker', 'system');
           break;
-          
         case 'editar-worker':
           if (currentWorkerData) {
-            elements.chatInput.value = `Edite o worker ${currentWorkerData.name} para adicionar uma rota POST /api/salvar.sc que recebe dados e retorna {salvo: true}`;
+            elements.chatInput.value = `Edite o worker ${currentWorkerData.name} para retornar também a hora atual`;
           } else {
-            elements.chatInput.value = 'Edite o worker [nome] para retornar também a hora atual';
+            elements.chatInput.value = 'Edite o worker [nome] para adicionar um timestamp';
           }
           elements.chatInput.focus();
-          addChatMessage('💡 Diga o que quer editar no worker!', 'system');
           break;
-          
         case 'explicar-worker':
-          if (currentWorkerData) {
-            explainWorker(currentWorkerData.id);
-          } else {
-            listAllWorkers();
-          }
+          if (currentWorkerData) explainWorker(currentWorkerData.id);
+          else listAllWorkers();
           break;
-          
         case 'criar-api':
           elements.chatInput.value = 'Crie um worker chamado api-rest com rotas GET, POST, PUT e DELETE em /api/items.sc';
           elements.chatInput.focus();
           break;
-          
         case 'adicionar-rota':
           if (currentWorkerData) {
-            elements.chatInput.value = `Adicione uma rota DELETE no worker ${currentWorkerData.name} em /api/deletar.sc`;
+            elements.chatInput.value = `Adicione uma rota POST no worker ${currentWorkerData.name} em /api/salvar.sc`;
           } else {
-            elements.chatInput.value = 'Adicione uma rota GET no worker [nome] em /api/nova-rota.sc';
+            elements.chatInput.value = 'Adicione uma rota GET no worker [nome] em /api/status.sc';
           }
           elements.chatInput.focus();
           break;
-          
         case 'corrigir-worker':
           if (currentWorkerData) {
-            const fixedCode = fixWorkerCode(currentWorkerData.code);
-            if (fixedCode !== currentWorkerData.code) {
-              await editWorkerCode(currentWorkerData.id, fixedCode);
-              addChatMessage('✅ Código do worker corrigido!', 'ai');
+            const fixed = fixWorkerCode(currentWorkerData.code);
+            if (fixed !== currentWorkerData.code) {
+              await editWorkerCode(currentWorkerData.id, fixed);
+              addChatMessage('✅ Worker corrigido!', 'ai');
             } else {
-              addChatMessage('✅ Nenhum erro encontrado no worker!', 'ai');
+              addChatMessage('✅ Nenhum erro encontrado!', 'ai');
             }
           } else {
             addChatMessage('Selecione um worker primeiro', 'system');
           }
           break;
-          
         case 'listar-workers':
           listAllWorkers();
           break;
       }
     }
-
-    // ============== FUNÇÕES ORIGINAIS (NÃO ALTERADAS) ==============
 
     async function loadProjectWorkers() {
       if (!currentProjectId) return;
@@ -561,7 +456,7 @@
           <div class="worker-name">📦 ${w.name || 'Sem nome'}</div>
           <div class="worker-route">🎯 ${w.route || '/api/unknown.sc'}</div>
           <div class="worker-status ${w.fullUrl ? 'published' : 'not-published'}">${w.fullUrl ? '✅ Publicado' : '📝 Rascunho'}</div>
-          <div class="worker-url">🔗 ${w.fullUrl ? w.fullUrl.substring(0, 50) + '...' : 'Não publicado'}</div>
+          <div class="worker-url">🔗 ${w.fullUrl ? w.fullUrl : 'Não publicado'}</div>
           <div class="worker-actions">
             ${w.fullUrl ? `<button class="test" onclick="event.stopPropagation(); testWorker('${w.id}')">▶️ Testar</button>` : ''}
             <button onclick="event.stopPropagation(); editWorker('${w.id}')">✏️ Editar</button>
@@ -578,182 +473,117 @@
       currentWorkerData = worker;
       elements.workerCode.value = worker.code || '';
       updateWorkerPublishButton();
-      workerLog(`Selecionado worker: ${worker.name}`);
+      workerLog(`Worker selecionado: ${worker.name}`);
     }
 
     async function createNewWorker() {
-      const name = prompt('Nome do worker (ex: hello):', 'meu-worker');
+      const name = prompt('Nome do worker:', 'meu-worker');
       if (!name) return;
-      const route = `/api/${name}.sc`;
-      const defaultCode = `// Worker .sc: ${name}\nrouter.get('${route}', async () => {\n    return { message: 'Olá do worker ${name}!', timestamp: new Date().toISOString() };\n});`;
-      const newWorkerRef = db.ref(`workers/${currentUser.uid}/${currentProjectId}`).push();
-      const workerId = newWorkerRef.key;
-      await newWorkerRef.set({ id: workerId, name, route, code: defaultCode, createdAt: new Date().toISOString() });
-      await loadProjectWorkers();
-      await selectWorker(workerId);
-      workerLog(`Worker "${name}" criado!`);
-      showNotification(`Worker criado!`, 'success');
+      const cleanName = name.replace(/[^a-zA-Z0-9]/g, '');
+      const route = `/api/${cleanName}.sc`;
+      const defaultCode = `router.get('${route}', async () => {\n    return { message: 'Olá do ${name}!', timestamp: new Date().toISOString() };\n});`;
+      await createWorkerWithCode(name, defaultCode, route);
     }
 
     async function saveWorkerCode() {
       if (!currentWorkerData) { showNotification('Selecione um worker', 'warning'); return; }
       const newCode = elements.workerCode.value;
       const newRoute = extractRouteFromCode(newCode);
-      await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({ code: newCode, route: newRoute, updatedAt: new Date().toISOString() });
+      await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({ 
+        code: newCode, route: newRoute, updatedAt: new Date().toISOString() 
+      });
       currentWorkerData.code = newCode;
       currentWorkerData.route = newRoute;
       workerLog(`Worker salvo localmente!`);
-      showNotification('Worker salvo! (Clique em Publicar para ir para internet)', 'success');
+      showNotification('Worker salvo! Clique em Publicar para colocar online', 'success');
       await loadProjectWorkers();
     }
 
-    // FUNÇÃO publishWorker - MANTIDA COMO ESTÁ
+    // ============== PUBLISH WORKER - CORRIGIDO ==============
     async function publishWorker() {
-      if (!currentWorkerData) { showNotification('Selecione um worker', 'warning'); return; }
+      if (!currentWorkerData) { showNotification('Selecione um worker primeiro', 'warning'); return; }
+      
       elements.modalTitle.textContent = currentWorkerData.fullUrl ? '🔄 Atualizar Worker?' : '🚀 Publicar Worker?';
-      elements.modalMessage.textContent = currentWorkerData.fullUrl ? 'Isso vai ATUALIZAR o worker existente no Puter. Deseja continuar?' : 'Isso vai PUBLICAR o worker no Puter. Deseja continuar?';
+      elements.modalMessage.textContent = currentWorkerData.fullUrl ? 
+        `Atualizar worker "${currentWorkerData.name}" no Puter?` : 
+        `Publicar worker "${currentWorkerData.name}" no Puter?`;
       elements.publishModal.style.display = 'flex';
+      
       const confirmHandler = async () => {
         elements.publishModal.style.display = 'none';
         elements.publishYesBtn.removeEventListener('click', confirmHandler);
         elements.publishNoBtn.removeEventListener('click', cancelHandler);
-        workerLog(`${currentWorkerData.fullUrl ? 'Atualizando' : 'Publicando'} worker...`);
+        
+        workerLog(`${currentWorkerData.fullUrl ? '🔄 Atualizando' : '🚀 Publicando'} worker "${currentWorkerData.name}"...`);
+        elements.workerPublishBtn.disabled = true;
+        
         try {
+          // Verificar autenticação
           const authUser = await ensurePuterAuth();
-          if (!authUser) throw new Error('Não foi possível autenticar no Puter');
-          const fileName = `worker_${currentWorkerData.name}_${Date.now()}.sc`;
+          if (!authUser) throw new Error('Faça login no Puter primeiro (clique em Puter Dashboard)');
+          
+          // Criar um nome de arquivo limpo
+          const cleanName = currentWorkerData.name.replace(/[^a-zA-Z0-9]/g, '').substring(0, 15);
+          const fileName = `${cleanName}_${Date.now().toString(36)}.sc`;
+          
+          // Salvar o código no Puter
+          workerLog(`Salvando arquivo: ${fileName}`);
           await puter.fs.write(fileName, currentWorkerData.code);
-          const workerName = `${currentProjectId.substring(0, 10)}_${currentWorkerData.name}_${Date.now().toString(36)}`;
-          if (currentWorkerData.fullUrl) { try { if (currentWorkerData.deployedName) await puter.workers.delete(currentWorkerData.deployedName); } catch(e) {} }
-          const w = await puter.workers.create(workerName, fileName);
-          if (!w || !w.url) throw new Error('Resposta do worker inválida - sem URL');
-          const fullUrl = w.url + currentWorkerData.route;
-          await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({ url: w.url, fullUrl: fullUrl, deployedName: workerName, deployedAt: new Date().toISOString() });
-          currentWorkerData.url = w.url; currentWorkerData.fullUrl = fullUrl; currentWorkerData.deployedName = workerName;
-          workerLog(`${currentWorkerData.fullUrl ? 'Atualizado' : 'Publicado'}! URL: ${fullUrl}`);
-          showNotification(`Worker ${currentWorkerData.fullUrl ? 'atualizado' : 'publicado'}!`, 'success');
-          await loadProjectWorkers();
-          updateWorkerPublishButton();
-        } catch(e) { workerLog(`Erro: ${e.message}`, true); showNotification(`Erro: ${e.message}`, 'error'); }
-      };
-      const cancelHandler = () => { elements.publishModal.style.display = 'none'; elements.publishYesBtn.removeEventListener('click', confirmHandler); elements.publishNoBtn.removeEventListener('click', cancelHandler); };
-      elements.publishYesBtn.addEventListener('click', confirmHandler);
-      elements.publishNoBtn.addEventListener('click', cancelHandler);
-    }
-
-    async function updateWorker(workerId) { await selectWorker(workerId); await publishWorker(); }
-    
-    async function testWorker(workerId) {
-      const worker = projectWorkers.find(w => w.id === workerId);
-      if (!worker || !worker.fullUrl) { workerLog(`Worker não publicado. Clique em "Publicar Worker" primeiro.`); return; }
-      try {
-        workerLog(`Testando ${worker.fullUrl}...`);
-        const controller = new AbortController();
-        setTimeout(() => controller.abort(), 15000);
-        const res = await fetch(worker.fullUrl, { signal: controller.signal });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        workerLog(`✅ Resposta: ${JSON.stringify(data, null, 2)}`);
-        showNotification(`Worker respondeu!`, 'success');
-      } catch(e) { workerLog(`❌ Erro: ${e.message}`, true); if (e.name === 'AbortError') workerLog(`Timeout: Worker não respondeu em 15 segundos`); }
-    }
-    
-    async function editWorker(workerId) { await selectWorker(workerId); }
-    
-    async function deleteWorker(workerId) {
-      if (!confirm('Deletar worker?')) return;
-      const worker = projectWorkers.find(w => w.id === workerId);
-      if (worker) {
-        try { if (worker.deployedName) await puter.workers.delete(worker.deployedName); } catch(e) {}
-        await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${workerId}`).remove();
-        await loadProjectWorkers();
-        if (currentWorkerData && currentWorkerData.id === workerId) { currentWorkerData = null; elements.workerCode.value = ''; updateWorkerPublishButton(); }
-        workerLog(`Worker "${worker.name}" deletado`);
-        showNotification(`Worker deletado!`, 'success');
-      }
-    }
-
-    // FUNÇÃO publishSite - MANTIDA COMO ESTÁ
-    async function publishSite() {
-      addChatMessage('🔐 Verificando autenticação no Puter...', 'system');
-      try {
-        await puter.auth.getUser();
-        updatePuterStatus(true);
-      } catch(e) {
-        addChatMessage('🔐 Fazendo login no Puter...', 'system');
-        try {
-          await puter.auth.signIn();
-          updatePuterStatus(true);
-        } catch(loginError) {
-          addChatMessage('❌ Erro: Faça login no Puter primeiro!', 'system');
-          showNotification('Faça login no Puter primeiro!', 'error');
-          return false;
-        }
-      }
-      
-      const hasIndex = Object.values(files).some(f => f.name === 'index.html');
-      if (!hasIndex) { addChatMessage('❌ Falta o arquivo index.html', 'system'); return false; }
-      
-      elements.modalTitle.textContent = siteCreated ? '🔄 Atualizar Site?' : '🚀 Publicar Site?';
-      elements.modalMessage.textContent = siteCreated ? `Atualizar: ${currentHostingUrl}` : 'Publicar no Puter?';
-      elements.publishModal.style.display = 'flex';
-      
-      const confirmHandler = async () => {
-        elements.publishModal.style.display = 'none';
-        elements.publishYesBtn.removeEventListener('click', confirmHandler);
-        elements.publishNoBtn.removeEventListener('click', cancelHandler);
-        
-        addChatMessage(siteCreated ? '🔄 Atualizando site...' : '🚀 Publicando site...', 'system');
-        elements.sitePublishBtn.disabled = true;
-        
-        try {
-          if (!siteCreated) {
-            currentHostingDirectory = puter.randName();
-            addChatMessage(`📁 Criando: ${currentHostingDirectory}`, 'system');
-            await puter.fs.mkdir(currentHostingDirectory);
-          }
           
-          addChatMessage(`💾 Enviando ${Object.keys(files).length} arquivos...`, 'system');
-          for (const [key, file] of Object.entries(files)) {
-            let content = file.content || '';
-            if (file.name.endsWith('.html') && !content.includes('atividade.js')) {
-              content = injectActivityScript(content);
+          // Gerar um nome limpo para o worker (sem underscores extras)
+          const workerDeployName = generateCleanWorkerName(cleanName);
+          workerLog(`Nome do deploy: ${workerDeployName}`);
+          
+          // Se já existe, deleta o antigo primeiro
+          if (currentWorkerData.fullUrl && currentWorkerData.deployedName) {
+            try {
+              workerLog(`Removendo worker antigo: ${currentWorkerData.deployedName}`);
+              await puter.workers.delete(currentWorkerData.deployedName);
+            } catch(e) {
+              workerLog(`Aviso: Não foi possível remover worker antigo: ${e.message}`);
             }
-            await puter.fs.write(`${currentHostingDirectory}/${file.name}`, content);
           }
           
-          if (!siteCreated) {
-            addChatMessage('🌐 Criando site...', 'system');
-            const site = await puter.hosting.create(currentHostingDirectory);
-            currentHostingSubdomain = site.subdomain;
-            currentHostingUrl = `https://${site.subdomain}.puter.site`;
-            siteCreated = true;
-            addChatMessage(`✅ Publicado!<br>🔗 ${currentHostingUrl}`, 'ai');
-          } else {
-            addChatMessage(`🔄 Atualizando ${currentHostingSubdomain}...`, 'system');
-            await puter.hosting.update(currentHostingSubdomain, currentHostingDirectory);
-            addChatMessage(`✅ Atualizado!<br>🔗 ${currentHostingUrl}`, 'ai');
+          // Criar o worker
+          workerLog(`Criando worker: ${workerDeployName}`);
+          const w = await puter.workers.create(workerDeployName, fileName);
+          
+          if (!w || !w.address) {
+            throw new Error('Worker criado mas sem endereço. Tente novamente.');
           }
           
-          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({ 
-            url: currentHostingUrl, 
-            subdomain: currentHostingSubdomain, 
-            directory: currentHostingDirectory, 
-            publishedAt: new Date().toISOString() 
+          // Construir a URL correta
+          // O formato da URL do Puter workers é: https://[worker-name].[username].puter.work
+          const fullUrl = `https://${workerDeployName}.${w.username || w.address?.split('.')[1] || 'puter'}.work${currentWorkerData.route}`;
+          
+          workerLog(`URL do worker: ${fullUrl}`);
+          
+          // Salvar no Firebase
+          await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({
+            url: fullUrl,
+            fullUrl: fullUrl,
+            deployedName: workerDeployName,
+            fileName: fileName,
+            deployedAt: new Date().toISOString()
           });
           
-          elements.fileUrlTop.value = currentHostingUrl;
-          elements.urlPanelTop.style.display = 'flex';
-          updateSitePublishButton();
-          showNotification('✅ Site publicado com sucesso!', 'success');
+          // Atualizar dados locais
+          currentWorkerData.url = fullUrl;
+          currentWorkerData.fullUrl = fullUrl;
+          currentWorkerData.deployedName = workerDeployName;
+          
+          await loadProjectWorkers();
+          updateWorkerPublishButton();
+          
+          workerLog(`✅ Worker publicado! URL: ${fullUrl}`);
+          showNotification('Worker publicado com sucesso!', 'success');
           
         } catch(e) {
-          console.error('Erro:', e);
-          addChatMessage(`❌ Erro: ${e.message}`, 'system');
+          console.error('Erro ao publicar worker:', e);
+          workerLog(`❌ Erro: ${e.message}`);
           showNotification(`Erro: ${e.message}`, 'error');
-          if (!siteCreated) currentHostingDirectory = null;
         } finally {
-          elements.sitePublishBtn.disabled = false;
+          elements.workerPublishBtn.disabled = false;
         }
       };
       
@@ -767,17 +597,136 @@
       elements.publishNoBtn.addEventListener('click', cancelHandler);
     }
 
-    // ==================== MODO ====================
+    async function updateWorker(workerId) { await selectWorker(workerId); await publishWorker(); }
+    
+    async function testWorker(workerId) {
+      const worker = projectWorkers.find(w => w.id === workerId);
+      if (!worker || !worker.fullUrl) { 
+        workerLog('Worker não publicado. Clique em "Publicar Worker" primeiro.'); 
+        return; 
+      }
+      workerLog(`🧪 Testando: ${worker.fullUrl}`);
+      try {
+        const controller = new AbortController();
+        setTimeout(() => controller.abort(), 15000);
+        const res = await fetch(worker.fullUrl, { signal: controller.signal });
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch(e) { data = text; }
+        workerLog(`✅ Resposta (${res.status}): ${typeof data === 'object' ? JSON.stringify(data, null, 2) : data}`);
+        showNotification('Worker respondeu!', 'success');
+      } catch(e) { 
+        workerLog(`❌ Erro: ${e.message}`);
+        if (e.name === 'AbortError') workerLog('Timeout: Worker não respondeu em 15 segundos');
+      }
+    }
+    
+    async function editWorker(workerId) { await selectWorker(workerId); }
+    
+    async function deleteWorker(workerId) {
+      if (!confirm('Deletar este worker permanentemente?')) return;
+      const worker = projectWorkers.find(w => w.id === workerId);
+      if (worker) {
+        try { 
+          if (worker.deployedName) {
+            workerLog(`Removendo worker do Puter: ${worker.deployedName}`);
+            await puter.workers.delete(worker.deployedName); 
+          }
+        } catch(e) {
+          workerLog(`Aviso: ${e.message}`);
+        }
+        await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${workerId}`).remove();
+        await loadProjectWorkers();
+        if (currentWorkerData && currentWorkerData.id === workerId) { 
+          currentWorkerData = null; 
+          elements.workerCode.value = ''; 
+          updateWorkerPublishButton(); 
+        }
+        workerLog(`Worker "${worker.name}" deletado`);
+        showNotification('Worker deletado!', 'success');
+      }
+    }
+
+    // ============== PUBLISH SITE - MANTIDO COMO ESTÁ ==============
+    async function publishSite() {
+      addChatMessage('🔐 Verificando autenticação no Puter...', 'system');
+      try { await puter.auth.getUser(); updatePuterStatus(true); } 
+      catch(e) {
+        addChatMessage('🔐 Fazendo login no Puter...', 'system');
+        try { await puter.auth.signIn(); updatePuterStatus(true); } 
+        catch(loginError) {
+          addChatMessage('❌ Faça login no Puter primeiro!', 'system');
+          showNotification('Faça login no Puter primeiro!', 'error');
+          return false;
+        }
+      }
+      const hasIndex = Object.values(files).some(f => f.name === 'index.html');
+      if (!hasIndex) { addChatMessage('❌ Falta index.html', 'system'); return false; }
+      
+      elements.modalTitle.textContent = siteCreated ? '🔄 Atualizar Site?' : '🚀 Publicar Site?';
+      elements.modalMessage.textContent = siteCreated ? `Atualizar: ${currentHostingUrl}` : 'Publicar no Puter?';
+      elements.publishModal.style.display = 'flex';
+      
+      const confirmHandler = async () => {
+        elements.publishModal.style.display = 'none';
+        elements.publishYesBtn.removeEventListener('click', confirmHandler);
+        elements.publishNoBtn.removeEventListener('click', cancelHandler);
+        addChatMessage(siteCreated ? '🔄 Atualizando site...' : '🚀 Publicando site...', 'system');
+        elements.sitePublishBtn.disabled = true;
+        try {
+          if (!siteCreated) {
+            currentHostingDirectory = puter.randName();
+            await puter.fs.mkdir(currentHostingDirectory);
+          }
+          for (const [key, file] of Object.entries(files)) {
+            let content = file.content || '';
+            if (file.name.endsWith('.html') && !content.includes('atividade.js')) {
+              content = injectActivityScript(content);
+            }
+            await puter.fs.write(`${currentHostingDirectory}/${file.name}`, content);
+          }
+          if (!siteCreated) {
+            const site = await puter.hosting.create(currentHostingDirectory);
+            currentHostingSubdomain = site.subdomain;
+            currentHostingUrl = `https://${site.subdomain}.puter.site`;
+            siteCreated = true;
+          } else {
+            await puter.hosting.update(currentHostingSubdomain, currentHostingDirectory);
+          }
+          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({ 
+            url: currentHostingUrl, subdomain: currentHostingSubdomain, 
+            directory: currentHostingDirectory, publishedAt: new Date().toISOString() 
+          });
+          elements.fileUrlTop.value = currentHostingUrl;
+          elements.urlPanelTop.style.display = 'flex';
+          updateSitePublishButton();
+          addChatMessage(`✅ Site ${siteCreated ? 'atualizado' : 'publicado'}!<br>🔗 ${currentHostingUrl}`, 'ai');
+          showNotification('✅ Sucesso!', 'success');
+        } catch(e) {
+          addChatMessage(`❌ Erro: ${e.message}`, 'system');
+          showNotification(`Erro: ${e.message}`, 'error');
+          if (!siteCreated) currentHostingDirectory = null;
+        } finally { elements.sitePublishBtn.disabled = false; }
+      };
+      
+      const cancelHandler = () => { 
+        elements.publishModal.style.display = 'none'; 
+        elements.publishYesBtn.removeEventListener('click', confirmHandler); 
+        elements.publishNoBtn.removeEventListener('click', cancelHandler); 
+      };
+      elements.publishYesBtn.addEventListener('click', confirmHandler);
+      elements.publishNoBtn.addEventListener('click', cancelHandler);
+    }
+
+    // ============== MODO ==============
     function setMode(mode) {
       currentMode = mode;
       if (mode === 'chat') { 
         elements.chatModeBtn.classList.add('active'); 
         elements.editModeBtn.classList.remove('active'); 
-        showNotification('💬 Modo Conversar - Apenas análise', 'info'); 
       } else { 
         elements.editModeBtn.classList.add('active'); 
         elements.chatModeBtn.classList.remove('active'); 
-        showNotification('✏️ Modo Editar - Posso criar/editar/deletar!', 'success'); 
       }
       localStorage.setItem('codehub_mode', mode);
     }
@@ -823,7 +772,7 @@
         elements.chatMessages.appendChild(msgDiv); 
       }); 
       if (elements.chatMessages.children.length === 0) { 
-        addChatMessage('🤖 Olá! Use os botões rápidos ou digite comandos para editar workers!', 'system'); 
+        addChatMessage('🤖 Olá! Use os botões rápidos ou digite comandos!', 'system'); 
       } 
     }
     
@@ -833,21 +782,20 @@
         const res = await fetch(`${ACTIVITIES_DB_URL}/${currentProjectId}.json`); 
         const data = await res.json(); 
         if (!data) { 
-          elements.activitiesList.innerHTML = '<div class="no-activities">📭 Nenhuma atividade registrada</div>'; 
+          elements.activitiesList.innerHTML = '<div class="no-activities">📭 Nenhuma atividade</div>'; 
           return; 
         } 
         const now = Date.now(); 
         const elapsed = data.time || Math.floor((now - (data.start || now)) / 1000); 
         const isOnline = (now - (data.lastSeen || 0)) < 10000; 
-        elements.activitiesList.innerHTML = `<div class="activity-item"><div><span class="${isOnline ? 'activity-online' : 'activity-offline'}">${isOnline ? '🟢 ONLINE' : '⚫ OFFLINE'}</span></div><div>📅 Primeira visita: ${new Date(data.start || now).toLocaleString()}</div><div>⏱ Tempo: ${Math.floor(elapsed/60)}min ${elapsed%60}s</div><div>🔄 Visitas: ${data.visits || 1}</div><button class="activity-delete-btn" onclick="deleteActivity('${currentProjectId}')">🗑 Limpar</button></div>`; 
+        elements.activitiesList.innerHTML = `<div class="activity-item"><div><span class="${isOnline ? 'activity-online' : 'activity-offline'}">${isOnline ? '🟢 ONLINE' : '⚫ OFFLINE'}</span></div><div>📅 ${new Date(data.start || now).toLocaleString()}</div><div>⏱ ${Math.floor(elapsed/60)}min ${elapsed%60}s</div><button class="activity-delete-btn" onclick="deleteActivity('${currentProjectId}')">🗑 Limpar</button></div>`; 
         if (isOnline) setTimeout(loadActivities, 5000); 
       } catch(e) { console.error(e); } 
     }
     
     async function deleteActivity(projectId) { 
-      if (confirm('Limpar atividades?')) { 
+      if (confirm('Limpar?')) { 
         await fetch(`${ACTIVITIES_DB_URL}/${projectId}.json`, { method: "DELETE" }); 
-        showNotification('Atividades limpas!', 'success'); 
         loadActivities(); 
       } 
     }
@@ -864,29 +812,22 @@
       if (!html.includes('<!DOCTYPE')) html = '<!DOCTYPE html>\n' + html; 
       if (!html.includes('<html')) html = html.replace('<!DOCTYPE html>\n', '<!DOCTYPE html>\n<html>\n'); 
       if (!html.includes('</html>')) html += '\n</html>'; 
-      if (!html.includes('<head>')) html = html.replace('<html>', '<html>\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>CodeHUB</title>\n</head>'); 
-      if (!html.includes('<body>')) html = html.replace('</head>', '</head>\n<body>'); 
-      if (!html.includes('</body>')) html = html.replace('</html>', '</body>\n</html>'); 
       return html; 
     }
 
     async function createFiles(filesData) {
-      if (currentMode === 'chat') { addChatMessage('⚠️ Modo Conversar - Para criar, mude para "✏️ Editar"', 'system'); return []; }
+      if (currentMode === 'chat') { addChatMessage('⚠️ Mude para modo Editar', 'system'); return []; }
       const created = [];
       for (const fileInfo of filesData) {
         let fileName = fileInfo.name;
         let content = fileInfo.content;
         if (!fileName || fileName === 'unknown') {
           if (content.includes('<!DOCTYPE') || content.includes('<html')) fileName = 'index.html';
-          else if (content.includes('{') && content.includes('}') && !content.includes('router.')) fileName = 'style.css';
-          else if (content.includes('function') || content.includes('const')) fileName = 'script.js';
           else if (content.includes('router.')) fileName = 'worker.sc';
-          else fileName = 'arquivo.txt';
+          else fileName = 'script.js';
         }
         if (!fileName.includes('.')) {
-          if (content.includes('<!DOCTYPE') || content.includes('<html')) fileName += '.html';
-          else if (content.includes('{') && content.includes('}') && !content.includes('router.')) fileName += '.css';
-          else if (content.includes('router.')) fileName += '.sc';
+          if (content.includes('router.')) fileName += '.sc';
           else fileName += '.js';
         }
         if (fileName.endsWith('.sc')) {
@@ -896,178 +837,147 @@
         }
         if (fileName.endsWith('.html')) { content = validateAndFixHTML(content); content = injectActivityScript(content); }
         const fileKey = btoa(fileName).replace(/=/g, '');
-        files[fileKey] = { name: fileName, originalName: fileName, content, size: content.length, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+        files[fileKey] = { name: fileName, content, size: content.length, createdAt: new Date().toISOString() };
         created.push(fileName);
       }
       await saveProject();
-      if (created.length > 0) { const firstKey = btoa(created[0]).replace(/=/g, ''); await openFile(firstKey); }
+      if (created.length > 0) await openFile(btoa(created[0]).replace(/=/g, ''));
       return created;
     }
 
     async function editFile(fileName, newContent) {
-      if (currentMode === 'chat') { addChatMessage('⚠️ Modo Conversar - Para editar, mude para "✏️ Editar"', 'system'); return false; }
-      
-      // Se for arquivo .sc, edita o worker
+      if (currentMode === 'chat') { addChatMessage('⚠️ Mude para modo Editar', 'system'); return false; }
       if (fileName.endsWith('.sc')) {
         const workerName = fileName.replace('.sc', '');
         return await editWorkerCode(workerName, newContent);
       }
-      
       let targetKey = null;
-      for (const key in files) { if (files[key].name.toLowerCase() === fileName.toLowerCase() || files[key].name.toLowerCase().includes(fileName.toLowerCase())) { targetKey = key; break; } }
+      for (const key in files) { 
+        if (files[key].name.toLowerCase() === fileName.toLowerCase()) { targetKey = key; break; } 
+      }
       if (!targetKey && currentFile) targetKey = currentFile;
       if (!targetKey) return false;
       let finalContent = newContent;
-      if (files[targetKey].name.endsWith('.html')) { finalContent = validateAndFixHTML(newContent); finalContent = injectActivityScript(finalContent); }
+      if (files[targetKey].name.endsWith('.html')) { 
+        finalContent = validateAndFixHTML(newContent); 
+        finalContent = injectActivityScript(finalContent); 
+      }
       await saveFile(targetKey, finalContent);
       await saveProject();
-      if (targetKey === currentFile) { if (useSimpleEditor) simpleEditor.value = finalContent; else if (editor) editor.setValue(finalContent); }
+      if (targetKey === currentFile) { 
+        if (useSimpleEditor) simpleEditor.value = finalContent; 
+        else if (editor) editor.setValue(finalContent); 
+      }
       return files[targetKey].name;
     }
 
     async function deleteFile(fileName) {
-      if (currentMode === 'chat') { addChatMessage('⚠️ Modo Conversar - Para deletar, mude para "✏️ Editar"', 'system'); return false; }
-      if (fileName.endsWith('.sc')) { const workerName = fileName.replace('.sc', ''); const worker = projectWorkers.find(w => w.name === workerName); if (worker) await deleteWorker(worker.id); return workerName; }
+      if (currentMode === 'chat') { addChatMessage('⚠️ Mude para modo Editar', 'system'); return false; }
+      if (fileName.endsWith('.sc')) { 
+        const workerName = fileName.replace('.sc', ''); 
+        const worker = projectWorkers.find(w => w.name === workerName); 
+        if (worker) await deleteWorker(worker.id); 
+        return workerName; 
+      }
       let targetKey = null;
-      for (const key in files) { if (files[key].name.toLowerCase() === fileName.toLowerCase() || files[key].name.toLowerCase().includes(fileName.toLowerCase())) { targetKey = key; break; } }
+      for (const key in files) { 
+        if (files[key].name.toLowerCase() === fileName.toLowerCase()) { targetKey = key; break; } 
+      }
       if (!targetKey) return false;
-      const deletedName = files[targetKey].name;
       delete files[targetKey];
       if (targetKey === currentFile) {
         const remaining = Object.keys(files);
         if (remaining.length > 0) await openFile(remaining[0]);
-        else { if (useSimpleEditor) simpleEditor.value = ''; else if (editor) editor.setModel(null); currentFile = null; }
+        else { simpleEditor.value = ''; currentFile = null; }
       }
       await saveProject();
       updateTabs();
-      return deletedName;
+      return true;
     }
 
-    // ============== SEND TO AI - MELHORADO PARA WORKERS ==============
-    
     async function sendToAI() {
       const userMessage = elements.chatInput.value.trim();
       if (!userMessage) return;
       addChatMessage(userMessage, 'user');
       elements.chatInput.value = '';
+      
       const streamingMsgDiv = document.createElement('div');
       streamingMsgDiv.className = 'message ai streaming';
       const contentSpan = document.createElement('span');
       streamingMsgDiv.appendChild(contentSpan);
       elements.chatMessages.appendChild(streamingMsgDiv);
-      elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+      
       let fullResponse = '';
       try {
         await ensurePuterAuth();
-        const existingFiles = [];
-        for (const [key, file] of Object.entries(files)) { existingFiles.push({ name: file.name, content: file.content || '' }); }
+        const workersInfo = projectWorkers.map(w => 
+          `Worker: ${w.name}, Rota: ${w.route}, Código: ${w.code?.substring(0, 300) || 'vazio'}`
+        ).join('\n');
         
-        // Incluir informações dos workers no prompt
-        const workersInfo = projectWorkers.map(w => `Worker: ${w.name} (${w.id}), Rota: ${w.route}, Código: ${w.code?.substring(0, 300)}`).join('\n');
-        
-        let prompt = '';
-        if (currentMode === 'chat') { 
-          prompt = `Você é um assistente de programação que ANALISA código e workers.\nPROJETO: ${elements.projectName.value}\nARQUIVOS: ${existingFiles.map(f => f.name).join(', ')}\nWORKERS: ${workersInfo}\nCOMANDO: "${userMessage}"\nModo CONVERSAR - NÃO pode criar, editar ou deletar. Apenas ANALISE e EXPLIQUE.`; 
-        } else { 
-          prompt = `Você é um assistente que EXECUTA ações no código E NOS WORKERS.\nPROJETO: ${elements.projectName.value}\nARQUIVOS: ${existingFiles.map(f => f.name).join(', ')}\nWORKERS:\n${workersInfo}\n\nCONTEÚDO DOS ARQUIVOS:\n${existingFiles.map(f => `--- ${f.name} ---\n${f.content?.substring(0, 500)}`).join('\n\n')}\n\nCOMANDO DO USUÁRIO: "${userMessage}"\n\nResponda SOMENTE com um JSON válido:\n\nPara CRIAR ARQUIVO:\n{"action":"criar","files":[{"name":"index.html","content":"..."}],"message":"msg"}\n\nPara CRIAR WORKER:\n{"action":"criar-worker","name":"nome","code":"router.get('/api/nome.sc', async () => { return { ok: true }; });","message":"msg"}\n\nPara EDITAR ARQUIVO:\n{"action":"editar","targetFile":"index.html","newContent":"...","message":"msg"}\n\nPara EDITAR WORKER:\n{"action":"editar-worker","targetWorker":"nome-do-worker","newCode":"router.get('/api/novo.sc', async () => { return { data: 123 }; });","message":"msg"}\n\nPara ADICIONAR ROTA AO WORKER:\n{"action":"adicionar-rota","targetWorker":"nome","method":"get","route":"/api/nova.sc","handlerCode":"return { ok: true };","message":"msg"}\n\nPara DELETAR:\n{"action":"deletar","targetFile":"style.css","message":"msg"}\n\nPara DELETAR WORKER:\n{"action":"deletar-worker","targetWorker":"nome","message":"msg"}\n\nPara EXPLICAR WORKER:\n{"action":"explicar-worker","targetWorker":"nome","message":"msg"}`; 
-        }
+        let prompt = `Você é um assistente que EDITA CÓDIGO E WORKERS.\n\nWORKERS EXISTENTES:\n${workersInfo}\n\nCOMANDO: "${userMessage}"\n\nResponda SOMENTE com JSON:\n\nPara CRIAR worker: {"action":"criar-worker","name":"nome","code":"router.get('/api/nome.sc', async () => { return { ok: true }; });","message":"msg"}\n\nPara EDITAR worker: {"action":"editar-worker","targetWorker":"nome","newCode":"código completo","message":"msg"}\n\nPara ADICIONAR rota: {"action":"adicionar-rota","targetWorker":"nome","method":"get","route":"/api/nova.sc","handlerCode":"return { ok: true };","message":"msg"}`;
         
         const res = await puter.ai.chat(prompt, { stream: true });
-        for await (const chunk of res) { fullResponse += chunk; contentSpan.innerHTML = fullResponse.replace(/\n/g, '<br>'); elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight; }
+        for await (const chunk of res) { 
+          fullResponse += chunk; 
+          contentSpan.innerHTML = fullResponse.replace(/\n/g, '<br>'); 
+          elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight; 
+        }
         streamingMsgDiv.classList.remove('streaming');
         
-        if (currentMode === 'edit') {
-          try {
-            const jsonMatch = fullResponse.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-              const result = JSON.parse(jsonMatch[0]);
-              if (result.action) {
-                switch(result.action) {
-                  case 'criar': 
-                    if (result.files) { 
-                      const created = await createFiles(result.files); 
-                      addChatMessage(`✅ ${result.message || 'Arquivos criados: ' + created.join(', ')}`, 'ai'); 
-                    } 
-                    break;
-                    
-                  case 'criar-worker':
-                    if (result.name && result.code) {
-                      await createWorkerWithCode(result.name, result.code);
-                      addChatMessage(`✅ ${result.message || 'Worker criado: ' + result.name}`, 'ai');
-                    }
-                    break;
-                    
-                  case 'editar': 
-                    if (result.targetFile && result.newContent) { 
-                      const edited = await editFile(result.targetFile, result.newContent); 
-                      if (edited) addChatMessage(`✅ ${result.message || 'Arquivo editado!'}`, 'ai'); 
-                    } 
-                    break;
-                    
-                  case 'editar-worker':
-                    if (result.targetWorker && result.newCode) {
-                      const edited = await editWorkerCode(result.targetWorker, result.newCode);
-                      if (edited) addChatMessage(`✅ ${result.message || 'Worker editado!'}`, 'ai');
-                    }
-                    break;
-                    
-                  case 'adicionar-rota':
-                    if (result.targetWorker && result.route) {
-                      const added = await addRouteToWorker(result.targetWorker, result.method || 'get', result.route, result.handlerCode);
-                      if (added) addChatMessage(`✅ ${result.message || 'Rota adicionada!'}`, 'ai');
-                    }
-                    break;
-                    
-                  case 'deletar': 
-                    if (result.targetFile) { 
-                      const deleted = await deleteFile(result.targetFile); 
-                      if (deleted) addChatMessage(`✅ ${result.message || 'Arquivo deletado!'}`, 'ai'); 
-                    } 
-                    break;
-                    
-                  case 'deletar-worker':
-                    if (result.targetWorker) {
-                      const worker = projectWorkers.find(w => w.name === result.targetWorker || w.id === result.targetWorker);
-                      if (worker) {
-                        await deleteWorker(worker.id);
-                        addChatMessage(`✅ ${result.message || 'Worker deletado!'}`, 'ai');
-                      }
-                    }
-                    break;
-                    
-                  case 'explicar-worker':
-                    if (result.targetWorker) {
-                      explainWorker(result.targetWorker);
-                    }
-                    break;
-                }
+        try {
+          const jsonMatch = fullResponse.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const result = JSON.parse(jsonMatch[0]);
+            if (result.action) {
+              switch(result.action) {
+                case 'criar-worker':
+                  if (result.name && result.code) {
+                    await createWorkerWithCode(result.name, result.code);
+                    addChatMessage(`✅ Worker "${result.name}" criado!`, 'ai');
+                  }
+                  break;
+                case 'editar-worker':
+                  if (result.targetWorker && result.newCode) {
+                    await editWorkerCode(result.targetWorker, result.newCode);
+                    addChatMessage(`✅ Worker editado!`, 'ai');
+                  }
+                  break;
+                case 'adicionar-rota':
+                  if (result.targetWorker && result.route) {
+                    await addRouteToWorker(result.targetWorker, result.method || 'get', result.route, result.handlerCode);
+                    addChatMessage(`✅ Rota adicionada!`, 'ai');
+                  }
+                  break;
               }
             }
-          } catch(e) {
-            console.error('Erro ao processar resposta:', e);
           }
-        }
+        } catch(e) {}
       } catch (error) { 
         streamingMsgDiv.classList.remove('streaming'); 
         contentSpan.innerHTML = `❌ Erro: ${error.message}`; 
-        console.error(error); 
       }
     }
 
-    // ============== RESTANTE DAS FUNÇÕES (MANTIDAS) ==============
-
+    // ============== RESTANTE (MANTIDO) ==============
     async function loadProjects() {
-      const projectsRef = db.ref(`projects/${currentUser.uid}`);
-      const snapshot = await projectsRef.once('value');
+      const snapshot = await db.ref(`projects/${currentUser.uid}`).once('value');
       allProjects = [];
-      snapshot.forEach(child => { allProjects.push({ id: child.key, name: child.val().name || 'Sem nome', updatedAt: child.val().updatedAt || new Date().toISOString() }); });
+      snapshot.forEach(child => { allProjects.push({ id: child.key, ...child.val() }); });
       allProjects.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
       renderProjectsList();
     }
     
     function renderProjectsList() {
-      if (allProjects.length === 0) { elements.projectsList.innerHTML = '<div style="text-align:center; padding:20px;">Nenhum projeto<br><button class="new-project-btn" onclick="createNewProject()">+ Criar</button></div>'; return; }
-      elements.projectsList.innerHTML = allProjects.map(p => `<div class="project-item ${currentProjectId === p.id ? 'active' : ''}" onclick="selectProject('${p.id}')"><div class="project-name">📄 ${escapeHtml(p.name)}</div><div class="project-date">${new Date(p.updatedAt).toLocaleDateString()}</div></div>`).join('');
+      if (!allProjects.length) { 
+        elements.projectsList.innerHTML = '<div style="text-align:center;padding:20px;">Nenhum projeto<br><button class="new-project-btn" onclick="createNewProject()">+ Criar</button></div>'; 
+        return; 
+      }
+      elements.projectsList.innerHTML = allProjects.map(p => 
+        `<div class="project-item ${currentProjectId === p.id ? 'active' : ''}" onclick="selectProject('${p.id}')">
+          <div class="project-name">📄 ${escapeHtml(p.name || 'Sem nome')}</div>
+          <div class="project-date">${new Date(p.updatedAt).toLocaleDateString()}</div>
+        </div>`
+      ).join('');
     }
     
     async function selectProject(projectId) { 
@@ -1079,96 +989,179 @@
       await loadProjectWorkers(); 
       updateTabs(); 
       window.history.pushState({}, '', `?projectId=${projectId}`);
-      
-      if (currentProjectId) {
-        const hostingSnap = await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).once('value');
-        const hostingData = hostingSnap.val();
-        if (hostingData && hostingData.subdomain) {
-          currentHostingSubdomain = hostingData.subdomain;
-          currentHostingUrl = hostingData.url;
-          currentHostingDirectory = hostingData.directory;
-          siteCreated = true;
-        } else {
-          siteCreated = false;
-          currentHostingSubdomain = null;
-          currentHostingUrl = null;
-          currentHostingDirectory = null;
-        }
-        updateSitePublishButton();
+      const hostingSnap = await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).once('value');
+      const hostingData = hostingSnap.val();
+      if (hostingData?.subdomain) {
+        currentHostingSubdomain = hostingData.subdomain;
+        currentHostingUrl = hostingData.url;
+        currentHostingDirectory = hostingData.directory;
+        siteCreated = true;
+      } else {
+        siteCreated = false;
+        currentHostingSubdomain = null;
+        currentHostingUrl = null;
+        currentHostingDirectory = null;
       }
+      updateSitePublishButton();
     }
     
-    async function createNewProject() { const name = prompt('Nome do projeto:', 'Meu Projeto'); if (!name) return; const newProjectRef = db.ref(`projects/${currentUser.uid}`).push(); const projectId = newProjectRef.key; const fileKey = btoa('index.html').replace(/=/g, ''); const defaultHTML = `<!DOCTYPE html><html><head><title>${name}</title></head><body><h1>${name}</h1><p>Bem-vindo!</p></body></html>`; const content = injectActivityScript(defaultHTML); await newProjectRef.set({ name, files: { [fileKey]: { name: 'index.html', content, size: content.length, createdAt: new Date().toISOString() } }, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }); await loadProjects(); await selectProject(projectId); showNotification(`Projeto "${name}" criado!`, 'success'); }
+    async function createNewProject() { 
+      const name = prompt('Nome do projeto:', 'Meu Projeto'); 
+      if (!name) return; 
+      const ref = db.ref(`projects/${currentUser.uid}`).push(); 
+      const projectId = ref.key; 
+      const fileKey = btoa('index.html').replace(/=/g, ''); 
+      const html = `<!DOCTYPE html><html><head><title>${name}</title></head><body><h1>${name}</h1></body></html>`; 
+      await ref.set({ name, files: { [fileKey]: { name: 'index.html', content: html, size: html.length, createdAt: new Date().toISOString() } }, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }); 
+      await loadProjects(); 
+      await selectProject(projectId); 
+    }
     
-    async function loadProjectData() { const snapshot = await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).once('value'); const data = snapshot.val(); if (!data) return; elements.projectName.value = data.name || 'Projeto'; files = data.files || {}; if (data.hosting && data.hosting.url) { currentHostingUrl = data.hosting.url; currentHostingSubdomain = data.hosting.subdomain; currentHostingDirectory = data.hosting.directory; siteCreated = true; elements.fileUrlTop.value = currentHostingUrl; elements.urlPanelTop.style.display = 'flex'; } else { siteCreated = false; } updateSitePublishButton(); const fileKeys = Object.keys(files); if (fileKeys.length > 0) await openFile(fileKeys[0]); else await createDefaultIndexHtml(); updateTabs(); renderProjectsList(); }
+    async function loadProjectData() { 
+      const snapshot = await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).once('value'); 
+      const data = snapshot.val(); 
+      if (!data) return; 
+      elements.projectName.value = data.name || ''; 
+      files = data.files || {}; 
+      if (data.hosting?.url) {
+        currentHostingUrl = data.hosting.url;
+        currentHostingSubdomain = data.hosting.subdomain;
+        siteCreated = true;
+        elements.fileUrlTop.value = currentHostingUrl;
+        elements.urlPanelTop.style.display = 'flex';
+      }
+      updateSitePublishButton(); 
+      const keys = Object.keys(files); 
+      if (keys.length > 0) await openFile(keys[0]); 
+      updateTabs(); 
+      renderProjectsList(); 
+    }
     
-    async function createDefaultIndexHtml() { const fileName = 'index.html'; const fileKey = btoa(fileName).replace(/=/g, ''); const defaultHTML = `<!DOCTYPE html><html><head><title>${elements.projectName.value || 'Projeto'}</title></head><body><h1>Bem-vindo!</h1></body></html>`; const content = injectActivityScript(defaultHTML); files[fileKey] = { name: fileName, originalName: fileName, content, size: content.length, createdAt: new Date().toISOString() }; await saveProject(); await openFile(fileKey); }
+    async function saveProject() { 
+      await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ files, updatedAt: new Date().toISOString() }); 
+    }
     
-    async function saveProject() { await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ files, updatedAt: new Date().toISOString() }); }
+    function escapeHtml(text) { 
+      const div = document.createElement('div'); 
+      div.textContent = text; 
+      return div.innerHTML; 
+    }
     
-    function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+    async function saveFile(fileKey, content) { 
+      const oldSize = files[fileKey]?.size || 0;
+      const size = new Blob([content]).size; 
+      userStorage.used = userStorage.used - oldSize + size; 
+      files[fileKey] = { ...files[fileKey], content, size, updatedAt: new Date().toISOString() }; 
+      await db.ref(`users/${currentUser.uid}/storage`).set({ used: userStorage.used, limit: userStorage.limit }); 
+      updateStorageDisplay(); 
+    }
     
-    async function saveFile(fileKey, content) { const fileData = files[fileKey]; const size = new Blob([content]).size; const oldSize = fileData.size || 0; userStorage.used = userStorage.used - oldSize + size; files[fileKey] = { ...fileData, content, size, updatedAt: new Date().toISOString() }; await db.ref(`users/${currentUser.uid}/storage`).set({ used: userStorage.used, limit: userStorage.limit }); updateStorageDisplay(); return true; }
-    
-    function updateStorageDisplay() { const usedMB = (userStorage.used / (1024 * 1024)).toFixed(2); const limitMB = (userStorage.limit / (1024 * 1024)).toFixed(0); elements.storageUsed.textContent = usedMB; elements.storageLimit.textContent = limitMB; }
-
-    function initializeApp() {
-      auth.onAuthStateChanged(async user => {
-        if (!user) { window.location.href = 'auth.html'; return; }
-        currentUser = user; elements.userName.textContent = user.displayName || user.email.split('@')[0];
-        const urlParams = new URLSearchParams(window.location.search);
-        currentProjectId = urlParams.get('projectId');
-        await loadUserStorage();
-        await loadProjects();
-        if (currentProjectId && allProjects.some(p => p.id === currentProjectId)) { await loadProjectData(); await loadChatHistory(); await loadActivities(); await loadProjectWorkers(); }
-        else if (allProjects.length > 0) { await selectProject(allProjects[0].id); }
-        else { await createNewProject(); }
-        const loadingScreen = document.getElementById('loading-screen');
-        loadingScreen.style.opacity = '0';
-        setTimeout(() => { loadingScreen.style.display = 'none'; document.getElementById('app-content').style.display = 'flex'; }, 300);
-        setupEventListeners();
-        initPuter();
-        loadPreferences();
-        initResizing();
-        setTimeout(() => {
-          require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
-          require(['vs/editor/editor.main'], function() {
-            useSimpleEditor = false;
-            document.getElementById('simple-editor').style.display = 'none';
-            const container = document.getElementById('container');
-            container.innerHTML = '<div id="monaco-editor" style="width:100%;height:100%;"></div>';
-            editor = monaco.editor.create(document.getElementById('monaco-editor'), { theme: 'vs-dark', automaticLayout: true, minimap: { enabled: false }, language: 'html', fontSize: 13 });
-            editor.onDidChangeModelContent(() => { if (currentFile) elements.saveFileBtn.disabled = false; });
-            if (currentFile && files[currentFile]) editor.setValue(files[currentFile].content || '');
-          });
-        }, 500);
-      });
+    function updateStorageDisplay() { 
+      elements.storageUsed.textContent = (userStorage.used / 1048576).toFixed(2); 
+      elements.storageLimit.textContent = (userStorage.limit / 1048576).toFixed(0); 
     }
 
-    async function loadUserStorage() { const snapshot = await db.ref(`users/${currentUser.uid}/storage`).once('value'); const data = snapshot.val(); if (data) { userStorage.used = data.used || 0; userStorage.limit = data.limit || 5 * 1024 * 1024; } updateStorageDisplay(); }
+    async function loadUserStorage() { 
+      const snapshot = await db.ref(`users/${currentUser.uid}/storage`).once('value'); 
+      if (snapshot.val()) { userStorage = snapshot.val(); } 
+      updateStorageDisplay(); 
+    }
     
-    async function openFile(fileKey) { if (!files[fileKey]) return; currentFile = fileKey; const content = files[fileKey].content || ''; if (useSimpleEditor) simpleEditor.value = content; else if (editor) editor.setValue(content); updateTabs(); elements.saveFileBtn.disabled = true; }
+    async function openFile(fileKey) { 
+      if (!files[fileKey]) return; 
+      currentFile = fileKey; 
+      const content = files[fileKey].content || ''; 
+      if (useSimpleEditor) simpleEditor.value = content; 
+      else if (editor) editor.setValue(content); 
+      updateTabs(); 
+      elements.saveFileBtn.disabled = true; 
+    }
     
-    async function saveCurrentFile() { if (!currentFile) return; let content; if (useSimpleEditor) content = simpleEditor.value; else if (editor) content = editor.getValue(); else return; const success = await saveFile(currentFile, content); if (success) { await saveProject(); elements.saveFileBtn.disabled = true; elements.saveFileBtn.textContent = '✓'; setTimeout(() => { elements.saveFileBtn.textContent = '💾 Salvar'; }, 1500); showNotification('Arquivo salvo localmente!', 'success'); } }
+    async function saveCurrentFile() { 
+      if (!currentFile) return; 
+      let content = useSimpleEditor ? simpleEditor.value : editor?.getValue(); 
+      if (!content) return; 
+      await saveFile(currentFile, content); 
+      await saveProject(); 
+      elements.saveFileBtn.disabled = true; 
+      showNotification('Salvo!', 'success'); 
+    }
     
-    function updateTabs() { elements.tabsContainer.innerHTML = ''; Object.keys(files).forEach(key => { const tab = document.createElement('button'); tab.className = `tab-btn ${key === currentFile ? 'active' : ''}`; tab.onclick = () => openFile(key); tab.innerHTML = `${files[key].name} <button class="close-tab-btn" onclick="event.stopPropagation(); closeFile('${key}')">&times;</button>`; elements.tabsContainer.appendChild(tab); }); }
+    function updateTabs() { 
+      elements.tabsContainer.innerHTML = ''; 
+      Object.keys(files).forEach(key => { 
+        const tab = document.createElement('button'); 
+        tab.className = `tab-btn ${key === currentFile ? 'active' : ''}`; 
+        tab.onclick = () => openFile(key); 
+        tab.innerHTML = `${files[key].name} <button class="close-tab-btn" onclick="event.stopPropagation();closeFile('${key}')">&times;</button>`; 
+        elements.tabsContainer.appendChild(tab); 
+      }); 
+    }
     
-    async function closeFile(fileKey) { if (Object.keys(files).length <= 1) { showNotification('Não pode fechar o último arquivo', 'warning'); return; } delete files[fileKey]; await saveProject(); if (fileKey === currentFile) await openFile(Object.keys(files)[0]); updateTabs(); }
+    async function closeFile(fileKey) { 
+      if (Object.keys(files).length <= 1) return; 
+      delete files[fileKey]; 
+      await saveProject(); 
+      if (fileKey === currentFile) await openFile(Object.keys(files)[0]); 
+      updateTabs(); 
+    }
     
-    async function initPuter() { try { const user = await puter.auth.getUser(); updatePuterStatus(!!user); } catch(e) { updatePuterStatus(false); } }
+    async function initPuter() { 
+      try { 
+        await puter.auth.getUser(); 
+        updatePuterStatus(true); 
+      } catch(e) { 
+        updatePuterStatus(false); 
+      } 
+    }
     
-    async function ensurePuterAuth() { try { const user = await puter.auth.getUser(); if (user) { updatePuterStatus(true); return true; } } catch(e) {} try { await puter.auth.signIn(); updatePuterStatus(true); return true; } catch(e) { return false; } }
+    async function ensurePuterAuth() { 
+      try { 
+        await puter.auth.getUser(); 
+        updatePuterStatus(true); 
+        return true; 
+      } catch(e) {} 
+      try { 
+        await puter.auth.signIn(); 
+        updatePuterStatus(true); 
+        return true; 
+      } catch(e) { 
+        return false; 
+      } 
+    }
     
     function openPuterDashboard() { window.open('https://puter.com', '_blank'); }
     
-    function previewProject() { const index = Object.values(files).find(f => f.name === 'index.html'); if (index?.content) { const blob = new Blob([index.content], { type: 'text/html' }); const url = URL.createObjectURL(blob); window.open(url, '_blank'); setTimeout(() => URL.revokeObjectURL(url), 1000); } else { showNotification('Crie um index.html primeiro', 'warning'); } }
+    function previewProject() { 
+      const index = Object.values(files).find(f => f.name === 'index.html'); 
+      if (index?.content) { 
+        const blob = new Blob([index.content], { type: 'text/html' }); 
+        window.open(URL.createObjectURL(blob), '_blank'); 
+      } else { 
+        showNotification('Crie um index.html primeiro', 'warning'); 
+      } 
+    }
     
-    function loadPreferences() { const savedSidebarWidth = localStorage.getItem('codehub_sidebar_width'); if (savedSidebarWidth) { sidebarWidth = parseInt(savedSidebarWidth); elements.aiSidebar.style.width = sidebarWidth + 'px'; } const savedMode = localStorage.getItem('codehub_mode'); if (savedMode === 'chat') setMode('chat'); else setMode('edit'); }
+    function loadPreferences() { 
+      const w = localStorage.getItem('codehub_sidebar_width'); 
+      if (w) { sidebarWidth = parseInt(w); elements.aiSidebar.style.width = w + 'px'; } 
+      const m = localStorage.getItem('codehub_mode'); 
+      setMode(m === 'chat' ? 'chat' : 'edit'); 
+    }
     
-    function savePreferences() { localStorage.setItem('codehub_sidebar_width', sidebarWidth); }
-    
-    function initResizing() { let isResizing = false; elements.resizeHandle.addEventListener('mousedown', (e) => { isResizing = true; document.body.style.cursor = 'ew-resize'; e.preventDefault(); }); document.addEventListener('mousemove', (e) => { if (!isResizing) return; const newWidth = window.innerWidth - e.clientX; if (newWidth >= 250 && newWidth <= 600) { sidebarWidth = newWidth; elements.aiSidebar.style.width = sidebarWidth + 'px'; } }); document.addEventListener('mouseup', () => { if (isResizing) { isResizing = false; document.body.style.cursor = ''; savePreferences(); } }); }
-    
+    function initResizing() { 
+      let isResizing = false; 
+      elements.resizeHandle.addEventListener('mousedown', (e) => { isResizing = true; e.preventDefault(); }); 
+      document.addEventListener('mousemove', (e) => { 
+        if (!isResizing) return; 
+        const w = window.innerWidth - e.clientX; 
+        if (w >= 250 && w <= 600) { sidebarWidth = w; elements.aiSidebar.style.width = w + 'px'; } 
+      }); 
+      document.addEventListener('mouseup', () => { 
+        if (isResizing) { isResizing = false; localStorage.setItem('codehub_sidebar_width', sidebarWidth); } 
+      }); 
+    }
+
     function setupEventListeners() {
       elements.saveFileBtn.addEventListener('click', saveCurrentFile);
       elements.previewBtn.addEventListener('click', previewProject);
@@ -1179,7 +1172,57 @@
       elements.workerPublishBtn.addEventListener('click', publishWorker);
       elements.chatInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendToAI(); } });
       elements.logoutBtn.addEventListener('click', () => auth.signOut().then(() => window.location.href = 'auth.html'));
-      elements.projectName.addEventListener('blur', async () => { const newName = elements.projectName.value.trim(); if (newName && currentProjectId) { await db.ref(`projects/${currentUser.uid}/${currentProjectId}/name`).set(newName); await loadProjects(); } });
+      elements.projectName.addEventListener('blur', async () => { 
+        const name = elements.projectName.value.trim(); 
+        if (name && currentProjectId) { 
+          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/name`).set(name); 
+          await loadProjects(); 
+        } 
+      });
+    }
+
+    function initializeApp() {
+      auth.onAuthStateChanged(async user => {
+        if (!user) { window.location.href = 'auth.html'; return; }
+        currentUser = user; 
+        elements.userName.textContent = user.displayName || user.email?.split('@')[0] || 'Usuário';
+        const params = new URLSearchParams(window.location.search);
+        currentProjectId = params.get('projectId');
+        await loadUserStorage();
+        await loadProjects();
+        if (currentProjectId && allProjects.some(p => p.id === currentProjectId)) { 
+          await loadProjectData(); await loadChatHistory(); await loadActivities(); await loadProjectWorkers(); 
+        } else if (allProjects.length > 0) { 
+          await selectProject(allProjects[0].id); 
+        } else { 
+          await createNewProject(); 
+        }
+        elements.loadingScreen.style.opacity = '0';
+        setTimeout(() => { 
+          elements.loadingScreen.style.display = 'none'; 
+          elements.appContent.style.display = 'flex'; 
+        }, 300);
+        setupEventListeners();
+        initPuter();
+        loadPreferences();
+        initResizing();
+        // Tenta carregar Monaco Editor
+        setTimeout(() => {
+          try {
+            require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
+            require(['vs/editor/editor.main'], function() {
+              useSimpleEditor = false;
+              document.getElementById('simple-editor').style.display = 'none';
+              elements.container.innerHTML = '<div id="monaco-editor" style="width:100%;height:100%;"></div>';
+              editor = monaco.editor.create(document.getElementById('monaco-editor'), { 
+                theme: 'vs-dark', automaticLayout: true, minimap: { enabled: false }, fontSize: 13 
+              });
+              editor.onDidChangeModelContent(() => { if (currentFile) elements.saveFileBtn.disabled = false; });
+              if (currentFile && files[currentFile]) editor.setValue(files[currentFile].content || '');
+            });
+          } catch(e) { console.log('Monaco não carregou, usando editor simples'); }
+        }, 500);
+      });
     }
 
     initializeApp();
@@ -1187,7 +1230,13 @@
     // Expor funções globalmente
     window.selectProject = selectProject;
     window.createNewProject = createNewProject;
-    window.clearChat = () => { if (confirm('Limpar chat?')) { db.ref(`chats/${currentUser.uid}/${currentProjectId}`).remove(); elements.chatMessages.innerHTML = ''; addChatMessage('🤖 Chat limpo!', 'system'); } };
+    window.clearChat = () => { 
+      if (confirm('Limpar chat?')) { 
+        db.ref(`chats/${currentUser.uid}/${currentProjectId}`).remove(); 
+        elements.chatMessages.innerHTML = ''; 
+        addChatMessage('🤖 Chat limpo!', 'system'); 
+      } 
+    };
     window.closeFile = closeFile;
     window.deleteActivity = deleteActivity;
     window.setMode = setMode;
