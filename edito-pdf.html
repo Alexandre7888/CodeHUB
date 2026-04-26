@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodeHUB - Editor de PDF</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://js.puter.com/v2/"></script>
+  <style>
+    :root {
+      --zoom-level: 1;
+      --bg: #1e1e1e;
+      --bg2: #252526;
+      --bg3: #2d2d2d;
+      --border: #333;
+      --text: #fff;
+      --text2: #888;
+      --blue: #4361ee;
+      --cyan: #4cc9f0;
+      --green: #22c55e;
+      --orange: #ff9800;
+      --red: #f44336;
+      --purple: #9c27b0;
+      --pink: #f72585;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      background: var(--bg); 
+      color: var(--text); 
+      height: 100vh; 
+      display: flex; 
+      flex-direction: column; 
+      overflow: hidden;
+      zoom: var(--zoom-level);
+    }
+    
+    #loading-screen { 
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+      background: radial-gradient(circle at center, #1e293b, #0f172a); 
+      display: flex; justify-content: center; align-items: center; flex-direction: column; 
+      z-index: 9999; transition: opacity 0.5s ease; 
+    }
+    .loader { width: 80px; animation: spin 1s linear infinite; border-radius: 50%; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+    #top-bar { 
+      display: flex; padding: 8px 12px; background: var(--bg); 
+      align-items: center; border-bottom: 1px solid var(--border); 
+      flex-wrap: wrap; gap: 8px; z-index: 100;
+    }
+    button { 
+      background: var(--blue); border: none; color: white; padding: 6px 12px; 
+      cursor: pointer; border-radius: 4px; font-size: 13px; transition: all 0.2s; 
+    }
+    button:hover { filter: brightness(1.2); }
+    #savePdfBtn { background: var(--pink); }
+    #copyUrlBtn { background: var(--green); }
+    .logout-btn { background: var(--red); }
+    
+    .zoom-controls {
+      display: flex; align-items: center; gap: 5px; margin-left: 10px;
+      background: var(--bg3); padding: 4px 8px; border-radius: 6px;
+    }
+    .zoom-controls button { padding: 2px 8px; font-size: 14px; background: var(--bg2); border-radius: 4px; min-width: 28px; }
+    .zoom-controls span { font-size: 11px; min-width: 40px; text-align: center; color: var(--cyan); }
+    
+    #user-info { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    
+    .main-container { flex: 1; display: flex; overflow: hidden; }
+    
+    #pdf-editor-area {
+      flex: 1; background: #f0f0f0; overflow-y: auto; padding: 30px;
+      display: flex; justify-content: center;
+    }
+    #pdf-canvas {
+      background: white; width: 100%; max-width: 900px; min-height: 800px;
+      border-radius: 12px; box-shadow: 0 4px 30px rgba(0,0,0,0.3); padding: 50px;
+    }
+    #pdf-title-input {
+      width: 100%; font-size: 32px; font-weight: bold; border: none;
+      border-bottom: 3px solid #e0e0e0; padding: 15px; margin-bottom: 25px;
+      background: transparent; outline: none; font-family: inherit; color: #222;
+    }
+    #pdf-content-editor {
+      width: 100%; min-height: 500px; border: 1px solid #e0e0e0;
+      border-radius: 8px; padding: 20px; font-size: 15px; line-height: 1.9;
+      font-family: inherit; resize: vertical; background: #fafafa; color: #333;
+    }
+    
+    .pdf-toolbar {
+      display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .pdf-toolbar button {
+      background: var(--pink); padding: 8px 14px; font-size: 12px; border-radius: 6px;
+    }
+    .pdf-toolbar button.tool-btn { background: var(--bg3); }
+    .pdf-toolbar button.tool-btn:hover { background: var(--blue); }
+    
+    #ai-sidebar { 
+      width: 380px; background: var(--bg2); border-left: 1px solid var(--border); 
+      display: flex; flex-direction: column; min-width: 250px; max-width: 500px;
+      resize: horizontal; overflow: hidden;
+    }
+    .sidebar-header { padding: 12px; background: var(--bg3); font-weight: bold; border-bottom: 1px solid var(--border); }
+    .chat-messages { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+    .message { padding: 10px 14px; border-radius: 12px; max-width: 95%; word-wrap: break-word; font-size: 13px; animation: fadeIn 0.3s; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .message.user { background: var(--pink); align-self: flex-end; }
+    .message.ai { background: #3d3d3d; align-self: flex-start; white-space: pre-wrap; }
+    .message.system { background: var(--orange); align-self: center; font-size: 12px; border-radius: 20px; }
+    .chat-controls { padding: 12px; border-top: 1px solid var(--border); }
+    .chat-input-wrapper { display: flex; gap: 10px; }
+    .chat-input-wrapper textarea { 
+      flex: 1; background: var(--bg); border: 1px solid var(--border); 
+      color: var(--text); padding: 10px; border-radius: 8px; resize: none; font-family: inherit; font-size: 13px; 
+    }
+    .chat-input-wrapper button { background: var(--purple); padding: 10px 20px; border-radius: 8px; }
+    
+    /* Menu de contexto do PDF */
+    .context-menu {
+      position: fixed; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 10px; padding: 8px 0; z-index: 10000; min-width: 220px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5); display: none;
+    }
+    .context-menu .menu-item {
+      padding: 10px 16px; cursor: pointer; font-size: 13px;
+      display: flex; align-items: center; gap: 10px; transition: background 0.15s; color: var(--text);
+    }
+    .context-menu .menu-item:hover { background: var(--pink); }
+    .context-menu .menu-divider { height: 1px; background: var(--border); margin: 6px 0; }
+    .context-menu .menu-shortcut { margin-left: auto; color: var(--text2); font-size: 11px; }
+    
+    .notification { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; color: white; z-index: 1000; animation: slideIn 0.3s; font-size: 13px; }
+    .notification.success { background: #4caf50; }
+    .notification.error { background: var(--red); }
+    .notification.info { background: #2196f3; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  </style>
+</head>
+<body>
+  <div id="loading-screen">
+    <img src="https://alexandre7888.github.io/CodeHUB/CodeFOX/foto1.jpg" class="loader" alt="Loading">
+    <h2>Carregando Editor PDF...</h2>
+  </div>
+
+  <div id="app-content" style="display:none;height:100vh;display:flex;flex-direction:column;">
+    <div id="top-bar">
+      <button onclick="window.location.href='index.html'">🏠 Início</button>
+      <span style="background:var(--pink);padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;">📄 Editor PDF</span>
+      <input type="text" id="project-name-input" placeholder="Nome do Documento" style="background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:6px 10px;width:220px;">
+      <button id="savePdfBtn">💾 Salvar PDF</button>
+      <button id="copyUrlBtn" style="display:none;">📋 Copiar URL</button>
+      <div class="zoom-controls">
+        <button onclick="changeZoom(-0.1)">➖</button>
+        <span id="zoomLevel">100%</span>
+        <button onclick="changeZoom(0.1)">➕</button>
+        <button onclick="resetZoom()">↺</button>
+      </div>
+      <div id="user-info">
+        <span id="user-name"></span>
+        <button class="logout-btn" onclick="logout()">Sair</button>
+      </div>
+    </div>
+
+    <div class="main-container">
+      <div id="pdf-editor-area">
+        <div id="pdf-canvas">
+          <div class="pdf-toolbar">
+            <button onclick="addPdfPage()">➕ Nova Página</button>
+            <button class="tool-btn" onclick="insertBold()">🔤 <b>N</b></button>
+            <button class="tool-btn" onclick="insertItalic()">📝 <i>I</i></button>
+            <button class="tool-btn" onclick="insertUnderline()">🔲 <u>U</u></button>
+            <button class="tool-btn" onclick="insertList()">📋 Lista</button>
+            <button class="tool-btn" onclick="insertTable()">📊 Tabela</button>
+            <button class="tool-btn" onclick="exportToPdf()">📥 Exportar</button>
+          </div>
+          <input type="text" id="pdf-title-input" placeholder="Título do Documento...">
+          <textarea id="pdf-content-editor" placeholder="Comece a escrever seu documento aqui...&#10;&#10;Dica: Clique com o botão direito para mais opções!"></textarea>
+          <div style="text-align:center;padding:10px;color:#888;font-size:11px;">📄 Página 1 de <span id="pageCount">1</span></div>
+        </div>
+      </div>
+
+      <div id="ai-sidebar">
+        <div class="sidebar-header">🤖 Assistente PDF</div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-controls">
+          <div class="chat-input-wrapper">
+            <textarea id="chatInput" placeholder="Pergunte sobre o documento... Ex: Melhore este texto" rows="2"></textarea>
+            <button onclick="sendToAI()">Enviar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Menu de Contexto do PDF -->
+  <div class="context-menu" id="contextMenu">
+    <div class="menu-item" onclick="contextAction('save')">💾 Salvar Documento <span class="menu-shortcut">Ctrl+S</span></div>
+    <div class="menu-item" onclick="contextAction('newPage')">➕ Nova Página <span class="menu-shortcut">Ctrl+N</span></div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" onclick="contextAction('bold')">🔤 Negrito <span class="menu-shortcut">Ctrl+B</span></div>
+    <div class="menu-item" onclick="contextAction('italic')">📝 Itálico <span class="menu-shortcut">Ctrl+I</span></div>
+    <div class="menu-item" onclick="contextAction('underline')">🔲 Sublinhado <span class="menu-shortcut">Ctrl+U</span></div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" onclick="contextAction('list')">📋 Inserir Lista</div>
+    <div class="menu-item" onclick="contextAction('table')">📊 Inserir Tabela</div>
+    <div class="menu-item" onclick="contextAction('horizontalRule')">➖ Linha Horizontal</div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" onclick="contextAction('copyAll')">📋 Copiar Tudo <span class="menu-shortcut">Ctrl+A</span></div>
+    <div class="menu-item" onclick="contextAction('clearAll')">🗑️ Limpar Documento</div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" onclick="contextAction('zoomIn')">🔍 Zoom +</div>
+    <div class="menu-item" onclick="contextAction('zoomOut')">🔍 Zoom -</div>
+    <div class="menu-item" onclick="contextAction('zoomReset')">↺ Reset Zoom</div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" onclick="contextAction('wordCount')">📊 Contar Palavras</div>
+    <div class="menu-item" onclick="contextAction('uppercase')">🔠 MAIÚSCULAS</div>
+    <div class="menu-item" onclick="contextAction('lowercase')">🔡 minúsculas</div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
+      authDomain: "html-15e80.firebaseapp.com",
+      databaseURL: "https://html-15e80-default-rtdb.firebaseio.com",
+      projectId: "html-15e80",
+      storageBucket: "html-15e80.appspot.com",
+      messagingSenderId: "1068148640439",
+      appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32"
+    };
+
+    const app = firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+    
+    let currentProjectId = null;
+    let currentUser = null;
+    let cloudPath = null;
+    let currentZoom = 1;
+    let hostingUrl = null;
+    let hostingSubdomain = null;
+    let siteCreated = false;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    currentProjectId = urlParams.get('projectId');
+
+    // ============== ZOOM ==============
+    function changeZoom(delta) {
+      currentZoom = Math.max(0.5, Math.min(2, currentZoom + delta));
+      document.body.style.zoom = currentZoom;
+      document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
+      localStorage.setItem('pdf_zoom', currentZoom);
+    }
+    function resetZoom() { currentZoom = 1; document.body.style.zoom = 1; document.getElementById('zoomLevel').textContent = '100%'; localStorage.setItem('pdf_zoom', 1); }
+
+    // ============== CONTEXT MENU ==============
+    function initContextMenu() {
+      const menu = document.getElementById('contextMenu');
+      document.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        menu.style.display = 'block';
+        menu.style.left = Math.min(e.clientX, window.innerWidth - 240) + 'px';
+        menu.style.top = Math.min(e.clientY, window.innerHeight - 400) + 'px';
+      });
+      document.addEventListener('click', (e) => { if (!menu.contains(e.target)) menu.style.display = 'none'; });
+      
+      document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey || e.metaKey) {
+          switch(e.key.toLowerCase()) {
+            case 's': e.preventDefault(); saveDocument(); break;
+            case 'n': e.preventDefault(); addPdfPage(); break;
+            case 'b': e.preventDefault(); insertBold(); break;
+            case 'i': e.preventDefault(); insertItalic(); break;
+            case 'u': e.preventDefault(); insertUnderline(); break;
+            case 'a': e.preventDefault(); document.getElementById('pdf-content-editor').select(); break;
+            case '=': case '+': e.preventDefault(); changeZoom(0.1); break;
+            case '-': e.preventDefault(); changeZoom(-0.1); break;
+            case '0': e.preventDefault(); resetZoom(); break;
+          }
+        }
+      });
+    }
+
+    function contextAction(action) {
+      document.getElementById('contextMenu').style.display = 'none';
+      const editor = document.getElementById('pdf-content-editor');
+      const start = editor.selectionStart;
+      const end = editor.selectionEnd;
+      const text = editor.value.substring(start, end);
+      
+      switch(action) {
+        case 'save': saveDocument(); break;
+        case 'newPage': addPdfPage(); break;
+        case 'bold': insertBold(); break;
+        case 'italic': insertItalic(); break;
+        case 'underline': insertUnderline(); break;
+        case 'list': insertList(); break;
+        case 'table': insertTable(); break;
+        case 'horizontalRule': editor.value = editor.value.substring(0, start) + '\n\n---\n\n' + editor.value.substring(end); break;
+        case 'copyAll': editor.select(); document.execCommand('copy'); showNotification('Tudo copiado!', 'success'); break;
+        case 'clearAll': if (confirm('Limpar todo o documento?')) { document.getElementById('pdf-title-input').value = ''; editor.value = ''; } break;
+        case 'zoomIn': changeZoom(0.1); break;
+        case 'zoomOut': changeZoom(-0.1); break;
+        case 'zoomReset': resetZoom(); break;
+        case 'wordCount': 
+          const words = editor.value.trim() ? editor.value.trim().split(/\s+/).length : 0;
+          const chars = editor.value.length;
+          showNotification(`📊 ${words} palavras, ${chars} caracteres`, 'info');
+          break;
+        case 'uppercase': 
+          if (text) editor.value = editor.value.substring(0, start) + text.toUpperCase() + editor.value.substring(end);
+          break;
+        case 'lowercase':
+          if (text) editor.value = editor.value.substring(0, start) + text.toLowerCase() + editor.value.substring(end);
+          break;
+      }
+    }
+
+    // ============== PDF FUNCTIONS ==============
+    function addPdfPage() {
+      const editor = document.getElementById('pdf-content-editor');
+      editor.value += '\n\n═══════════════════════════\n       NOVA PÁGINA\n═══════════════════════════\n\n';
+      updatePageCount();
+      showNotification('Nova página adicionada!', 'info');
+    }
+
+    function insertBold() {
+      const editor = document.getElementById('pdf-content-editor');
+      const start = editor.selectionStart;
+      const end = editor.selectionEnd;
+      const text = editor.value.substring(start, end) || 'texto em negrito';
+      editor.value = editor.value.substring(0, start) + '**' + text + '**' + editor.value.substring(end);
+      showNotification('Negrito inserido!', 'info');
+    }
+
+    function insertItalic() {
+      const editor = document.getElementById('pdf-content-editor');
+      const start = editor.selectionStart;
+      const end = editor.selectionEnd;
+      const text = editor.value.substring(start, end) || 'texto em itálico';
+      editor.value = editor.value.substring(0, start) + '*' + text + '*' + editor.value.substring(end);
+      showNotification('Itálico inserido!', 'info');
+    }
+
+    function insertUnderline() {
+      const editor = document.getElementById('pdf-content-editor');
+      const start = editor.selectionStart;
+      const end = editor.selectionEnd;
+      const text = editor.value.substring(start, end) || 'texto sublinhado';
+      editor.value = editor.value.substring(0, start) + '__' + text + '__' + editor.value.substring(end);
+    }
+
+    function insertList() {
+      const editor = document.getElementById('pdf-content-editor');
+      editor.value += '\n• Item 1\n• Item 2\n• Item 3\n';
+    }
+
+    function insertTable() {
+      const editor = document.getElementById('pdf-content-editor');
+      editor.value += '\n┌────────┬────────┬────────┐\n│ Célula │ Célula │ Célula │\n├────────┼────────┼────────┤\n│        │        │        │\n├────────┼────────┼────────┤\n│        │        │        │\n└────────┴────────┴────────┘\n';
+    }
+
+    function updatePageCount() {
+      const pages = document.getElementById('pdf-content-editor').value.split('NOVA PÁGINA').length;
+      document.getElementById('pageCount').textContent = pages;
+    }
+
+    function exportToPdf() {
+      const title = document.getElementById('pdf-title-input').value || 'documento';
+      const content = document.getElementById('pdf-content-editor').value;
+      const htmlContent = `
+        <html><head><meta charset="UTF-8"><title>${title}</title>
+        <style>body{font-family:Arial;padding:40px;max-width:800px;margin:0 auto;line-height:1.8;}
+        h1{color:#f72585;border-bottom:3px solid #f72585;padding-bottom:10px;}
+        </style></head><body><h1>${title}</h1>
+        ${content.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\*(.*?)\*/g,'<i>$1</i>')}
+        </body></html>`;
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      showNotification('Exportado!', 'success');
+    }
+
+    // ============== SAVE / LOAD ==============
+    async function saveDocument() {
+      try {
+        // Salvar no Firebase
+        const updateData = {
+          updatedAt: new Date().toISOString()
+        };
+        await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update(updateData);
+        
+        // Salvar no Puter Cloud
+        if (cloudPath) {
+          const data = {
+            title: document.getElementById('pdf-title-input').value,
+            content: document.getElementById('pdf-content-editor').value,
+            updatedAt: new Date().toISOString()
+          };
+          await puter.fs.mkdir(cloudPath).catch(() => {});
+          await puter.fs.write(`${cloudPath}/document.json`, JSON.stringify(data, null, 2));
+          showNotification('✅ Salvo no Cloud!', 'success');
+        } else {
+          showNotification('✅ Salvo no Firebase!', 'success');
+        }
+      } catch(e) {
+        showNotification('Erro: ' + e.message, 'error');
+      }
+    }
+
+    async function loadDocument() {
+      if (!cloudPath) return;
+      try {
+        const blob = await puter.fs.read(`${cloudPath}/document.json`);
+        const text = await blob.text();
+        const data = JSON.parse(text);
+        document.getElementById('pdf-title-input').value = data.title || '';
+        document.getElementById('pdf-content-editor').value = data.content || '';
+        updatePageCount();
+      } catch(e) {
+        console.log('Documento novo');
+        document.getElementById('pdf-title-input').value = document.getElementById('project-name-input').value || '';
+      }
+    }
+
+    // ============== HOSTING ==============
+    async function publishPdf() {
+      try {
+        await puter.auth.getUser();
+        const title = document.getElementById('pdf-title-input').value || 'documento';
+        const content = document.getElementById('pdf-content-editor').value;
+        
+        if (!cloudPath) {
+          cloudPath = `codehub_pdf_${currentProjectId}`;
+          await puter.fs.mkdir(cloudPath);
+        }
+        
+        const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title}</title>
+        <style>body{font-family:Arial;padding:40px;max-width:800px;margin:0 auto;line-height:1.8;background:#f5f5f5;}
+        .container{background:white;padding:50px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.1);}
+        h1{color:#f72585;border-bottom:3px solid #f72585;padding-bottom:15px;}
+        </style></head><body><div class="container"><h1>${title}</h1>
+        ${content.replace(/\n/g,'<br>')}</div></body></html>`;
+        
+        await puter.fs.write(`${cloudPath}/index.html`, htmlContent);
+        
+        if (!siteCreated) {
+          const site = await puter.hosting.create(cloudPath);
+          hostingSubdomain = site.subdomain;
+          hostingUrl = `https://${site.subdomain}.puter.site`;
+          siteCreated = true;
+        } else {
+          await puter.hosting.update(hostingSubdomain, cloudPath);
+        }
+        
+        document.getElementById('copyUrlBtn').style.display = 'inline-block';
+        document.getElementById('copyUrlBtn').setAttribute('data-url', hostingUrl);
+        
+        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({
+          url: hostingUrl, subdomain: hostingSubdomain, directory: cloudPath, publishedAt: new Date().toISOString()
+        });
+        
+        showNotification(`✅ Publicado! URL: ${hostingUrl}`, 'success');
+      } catch(e) {
+        showNotification('Erro: ' + e.message, 'error');
+      }
+    }
+
+    function copyUrl() {
+      const url = document.getElementById('copyUrlBtn').getAttribute('data-url');
+      if (url) {
+        navigator.clipboard.writeText(url);
+        showNotification('📋 URL copiada!', 'success');
+      }
+    }
+
+    // ============== AI CHAT ==============
+    async function sendToAI() {
+      const msg = document.getElementById('chatInput').value.trim();
+      if (!msg) return;
+      addChatMessage(msg, 'user');
+      document.getElementById('chatInput').value = '';
+      
+      try {
+        const title = document.getElementById('pdf-title-input').value;
+        const content = document.getElementById('pdf-content-editor').value.substring(0, 1000);
+        const prompt = `Documento: "${title}"\nConteúdo: ${content}\n\nUsuário: ${msg}\n\nResponda como assistente de documentos.`;
+        const res = await puter.ai.chat(prompt, { stream: false });
+        addChatMessage(res, 'ai');
+      } catch(e) {
+        addChatMessage('Erro ao conectar com IA: ' + e.message, 'system');
+      }
+    }
+
+    function addChatMessage(text, type) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `message ${type}`;
+      msgDiv.innerHTML = text.replace(/\n/g, '<br>');
+      document.getElementById('chatMessages').appendChild(msgDiv);
+      document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+    }
+
+    function showNotification(msg, type) {
+      const n = document.createElement('div');
+      n.className = `notification ${type}`;
+      n.textContent = msg;
+      document.body.appendChild(n);
+      setTimeout(() => n.remove(), 4000);
+    }
+
+    function logout() {
+      auth.signOut().then(() => window.location.href = 'auth.html');
+    }
+
+    // ============== INIT ==============
+    auth.onAuthStateChanged(async user => {
+      if (!user) { window.location.href = 'auth.html'; return; }
+      currentUser = user;
+      document.getElementById('user-name').textContent = user.displayName || user.email?.split('@')[0] || 'Usuário';
+      
+      const savedZoom = localStorage.getItem('pdf_zoom');
+      if (savedZoom) { currentZoom = parseFloat(savedZoom); document.body.style.zoom = currentZoom; }
+      document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
+      
+      if (currentProjectId) {
+        const snapshot = await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).once('value');
+        const data = snapshot.val();
+        if (data) {
+          document.getElementById('project-name-input').value = data.name || '';
+          cloudPath = data.cloudPath || null;
+          
+          if (data.hosting?.url) {
+            hostingUrl = data.hosting.url;
+            hostingSubdomain = data.hosting.subdomain;
+            siteCreated = true;
+            document.getElementById('copyUrlBtn').style.display = 'inline-block';
+            document.getElementById('copyUrlBtn').setAttribute('data-url', hostingUrl);
+          }
+          
+          await loadDocument();
+        }
+      }
+      
+      document.getElementById('loading-screen').style.opacity = '0';
+      setTimeout(() => {
+        document.getElementById('loading-screen').style.display = 'none';
+        document.getElementById('app-content').style.display = 'flex';
+        initContextMenu();
+        addChatMessage('🤖 Olá! Sou seu assistente de PDF. Use o botão direito para opções!', 'system');
+      }, 300);
+    });
+
+    // Event listeners
+    document.getElementById('savePdfBtn').addEventListener('click', saveDocument);
+    document.getElementById('copyUrlBtn').addEventListener('click', copyUrl);
+    document.getElementById('project-name-input').addEventListener('blur', async function() {
+      const name = this.value.trim();
+      if (name && currentProjectId) {
+        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/name`).set(name);
+      }
+    });
+    document.getElementById('pdf-content-editor').addEventListener('input', updatePageCount);
+    document.getElementById('chatInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendToAI(); }
+    });
+
+    // Expor globalmente
+    window.changeZoom = changeZoom;
+    window.resetZoom = resetZoom;
+    window.saveDocument = saveDocument;
+    window.addPdfPage = addPdfPage;
+    window.insertBold = insertBold;
+    window.insertItalic = insertItalic;
+    window.insertUnderline = insertUnderline;
+    window.insertList = insertList;
+    window.insertTable = insertTable;
+    window.exportToPdf = exportToPdf;
+    window.contextAction = contextAction;
+    window.sendToAI = sendToAI;
+    window.logout = logout;
+    window.copyUrl = copyUrl;
+    window.publishPdf = publishPdf;
+  </script>
+</body>
+</html>
