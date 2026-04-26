@@ -3,38 +3,806 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- SEO -->
-  <meta name="keywords" content="CodeHUB, editor de código online, IDE online, programar no navegador, editor HTML, editor CSS, editor JavaScript, desenvolvimento web online, criar sites online, editor de código grátis, IDE para iniciantes, editor responsivo, ferramenta de programação, codar no navegador, editor com terminal, escrever código online, depuração online, editor de código rápido, desenvolvimento colaborativo, criar projetos web, editor frontend, plataforma de codar online, editor de programação, IDE web, editor de scripts, editor JS, editor CSS3, editor HTML5, criar páginas web, prototipagem online, editor web interativo, IDE colaborativa, editor de código com login, projetos online, editor de apps web, editor multiplataforma, editor com versionamento, editor de projetos HTML CSS JS, editor de código para estudantes, IDE para web developers, editor de código com templates, editor de projetos compartilháveis, editor para iniciantes em web, editor rápido e leve, editor de código com terminal integrado, editor de desenvolvimento web, editor de protótipos web, plataforma de aprendizado de programação, editor de sites responsivos, editor de HTML CSS JS online, criar sites responsivos online, editor de front-end, editor com Firebase, editor para projetos pessoais, IDE web gratuita, editor para codar online, editor de código interativo, editor de projetos colaborativos, editor de sites e aplicações, editor para estudantes de programação, editor de código com suporte a frameworks, editor de desenvolvimento ágil, IDE de aprendizado online, editor de projetos rápidos, editor de código para educação, editor de páginas web, editor de apps HTML CSS JS">
-  <meta name="author" content="CodeHUB - Alexandre Braatz Junior, fundador da plataforma">
+  <meta name="keywords" content="CodeHUB, editor de código online, IDE online, programar no navegador, editor HTML, editor CSS, editor JavaScript, desenvolvimento web online, criar sites online, editor de código grátis, editor PDF online, armazenamento cloud, Puter cloud storage">
+  <meta name="author" content="CodeHUB - Alexandre Braatz Junior">
   <meta name="google-site-verification" content="d5deNmIStRgPPphEkAypCTSv-E_1gi9ba16et47RSmA" />
-
-  <title>CodeHUB - Editor de Código Online</title>
+  <title>CodeHUB - Editor de Código e PDF Online</title>
   <link rel="icon" type="image/png" href="https://alexandre7888.github.io/CodeHUB/InShot_20250807_112151490.jpg">
-
-  <!-- Google Analytics -->
+  
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-X4VF1LWB0F"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
     gtag('config', 'G-X4VF1LWB0F');
-    gtag('config', 'G-XQE93JQ3RB');
-    gtag('config', 'G-7RYPMEN60E');
   </script>
 
-  <!-- Scripts Externos -->
   <script src="https://alexandre7888.github.io/CodeHUB/protecao.js"></script>
   <script src="https://alexandre7888.github.io/CodeHUB/Botao/floating-menu.js"></script>
-  <script type="module" src="https://code.codehub.ct.ws/client.js"></script>
-  <script src="https://assistente-ia--socialkoala6579904.on.websim.com/embed.js"></script>
+  <script src="https://js.puter.com/v2/"></script>
 
   <style>
-    /* Loading Screen Styles */
+    :root {
+      --primary: #4361ee;
+      --secondary: #3f37c9;
+      --accent: #4895ef;
+      --danger: #f72585;
+      --success: #4cc9f0;
+      --warning: #ff9800;
+      --dark: #212529;
+      --gray: #6c757d;
+      --light: #f8f9fa;
+      --discord: #5865F2;
+      --bg: #f5f7fa;
+      --card-bg: #fff;
+      --text: #333;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
     #loading-screen {
-      position: fixed;
-      top: 0;
-      left: 0;
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: radial-gradient(circle at center, #1e293b, #0f172a);
+      display: flex; justify-content: center; align-items: center; flex-direction: column;
+      color: white; font-family: Arial, sans-serif; z-index: 9999; transition: opacity 0.5s ease;
+    }
+    #loading-screen h1 { margin-top: 20px; font-size: 1.8em; color: #ff9500; text-shadow: 0 0 10px #ff9500, 0 0 20px #ff7300; animation: glowText 2s infinite alternate; }
+    .loader { width: 280px; height: 280px; animation: spinScale 4s ease-in-out infinite; border-radius: 50%; box-shadow: 0 0 20px rgba(255,149,0,0.5); }
+    @keyframes glowText { 0% { text-shadow: 0 0 5px #ff9500, 0 0 15px #ff7300; } 100% { text-shadow: 0 0 15px #ff9500, 0 0 30px #ff7300; } }
+    @keyframes spinScale { 0% { transform: rotate(0deg) scale(1); } 25% { transform: rotate(90deg) scale(1.1); } 50% { transform: rotate(180deg) scale(0.9); } 75% { transform: rotate(270deg) scale(1.1); } 100% { transform: rotate(360deg) scale(1); } }
+
+    #app-content { display: none; }
+
+    /* ============== HEADER ============== */
+    header {
+      background: linear-gradient(to right, var(--primary), var(--secondary));
+      color: white; padding: 1rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .header-content {
+      max-width: 1300px; margin: 0 auto; display: flex;
+      justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+    }
+    .logo-area { display: flex; align-items: center; gap: 1rem; }
+    .logo-area h1 { font-size: 1.5rem; }
+    .user-info { display: flex; align-items: center; gap: 1rem; }
+    .logout-btn { background: var(--danger); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-weight: 600; }
+    .discord-mini-btn { background: var(--discord); color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-weight: 600; }
+
+    /* ============== PAINEL DE ESTATÍSTICAS DO PUTER ============== */
+    .puter-stats-panel {
+      max-width: 1300px; margin: 1rem auto; padding: 0 1rem;
+    }
+    .stats-toggle-btn {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white; border: none; padding: 10px 20px; border-radius: 10px;
+      cursor: pointer; font-weight: 700; font-size: 14px;
+      display: flex; align-items: center; gap: 8px;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+      transition: all 0.3s;
+    }
+    .stats-toggle-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4); }
+    .stats-container {
+      display: none; background: var(--card-bg); border-radius: 16px;
+      padding: 20px; margin-top: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #eaeaea;
+      animation: fadeIn 0.3s ease;
+    }
+    .stats-container.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px; margin-bottom: 20px;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, #f5f7fa, #e4e9f2);
+      border-radius: 12px; padding: 18px; text-align: center;
+      border: 1px solid #e0e0e0; transition: all 0.3s;
+    }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+    .stat-card .stat-icon { font-size: 32px; margin-bottom: 8px; }
+    .stat-card .stat-value { font-size: 28px; font-weight: 800; color: var(--primary); }
+    .stat-card .stat-label { font-size: 12px; color: var(--gray); margin-top: 4px; }
+    .stat-card.warning .stat-value { color: var(--warning); }
+    .stat-card.danger .stat-value { color: var(--danger); }
+    .stat-card.success .stat-value { color: #22c55e; }
+
+    .storage-bar-container { margin-bottom: 15px; }
+    .storage-bar-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
+    .storage-bar {
+      height: 12px; background: #e0e0e0; border-radius: 10px; overflow: hidden;
+    }
+    .storage-bar-fill {
+      height: 100%; background: linear-gradient(90deg, var(--success), var(--primary));
+      border-radius: 10px; transition: width 0.5s ease;
+    }
+    .storage-bar-fill.warning { background: linear-gradient(90deg, #ff9800, #f44336); }
+    .storage-bar-fill.danger { background: #f44336; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+    .file-manager {
+      background: #f8f9fa; border-radius: 10px; padding: 15px;
+      border: 1px solid #e0e0e0;
+    }
+    .file-manager h4 { margin-bottom: 10px; color: var(--dark); }
+    .file-list { max-height: 250px; overflow-y: auto; }
+    .file-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 14px; background: white; border-radius: 8px;
+      margin-bottom: 6px; border: 1px solid #eee; transition: all 0.2s;
+    }
+    .file-item:hover { border-color: var(--primary); }
+    .file-item .file-info { display: flex; align-items: center; gap: 10px; }
+    .file-item .file-icon { font-size: 20px; }
+    .file-item .file-name { font-weight: 600; font-size: 13px; }
+    .file-item .file-size { font-size: 11px; color: var(--gray); }
+    .file-item .delete-file-btn {
+      background: var(--danger); color: white; border: none;
+      padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 11px;
+      transition: all 0.2s;
+    }
+    .file-item .delete-file-btn:hover { background: #d3165a; }
+    .refresh-btn {
+      background: var(--primary); color: white; border: none;
+      padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600;
+      margin-top: 10px; transition: all 0.3s;
+    }
+    .refresh-btn:hover { background: var(--secondary); }
+
+    /* ============== CONTAINER PRINCIPAL ============== */
+    .container {
+      flex: 1; max-width: 1300px; margin: 1rem auto; padding: 0 1rem; width: 100%;
+    }
+    .projects-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;
+    }
+    .new-project-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+    .new-code-btn, .new-pdf-btn {
+      color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px;
+      cursor: pointer; font-weight: 700; display: flex; align-items: center; gap: 0.5rem;
+      transition: all 0.3s; font-size: 14px; white-space: nowrap;
+    }
+    .new-code-btn { background: linear-gradient(135deg, #4361ee, #4895ef); }
+    .new-code-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3); }
+    .new-pdf-btn { background: linear-gradient(135deg, #f72585, #b5179e); }
+    .new-pdf-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(247, 37, 133, 0.3); }
+
+    /* ============== GRID DE PROJETOS ============== */
+    .projects-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem; margin-bottom: 2rem;
+    }
+    .project-card {
+      background: var(--card-bg); border-radius: 14px; padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: all 0.3s ease;
+      border: 1px solid #eaeaea; display: flex; flex-direction: column;
+      position: relative; overflow: hidden;
+    }
+    .project-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+    .project-card.code-card { border-left: 4px solid var(--primary); }
+    .project-card.pdf-card { border-left: 4px solid #f72585; }
+    .project-type-badge {
+      position: absolute; top: 12px; right: 12px;
+      padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; color: white;
+    }
+    .badge-code { background: var(--primary); }
+    .badge-pdf { background: #f72585; }
+    .project-name { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--dark); padding-right: 60px; }
+    .project-domain { font-size: 0.9rem; color: var(--gray); margin-bottom: 0.5rem; }
+    .project-type-text { font-size: 0.8rem; color: var(--gray); margin-bottom: 1rem; font-style: italic; }
+    .project-actions { display: flex; gap: 0.75rem; margin-top: auto; }
+    .action-btn {
+      padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer;
+      font-weight: 600; font-size: 0.9rem; display: flex; align-items: center;
+      gap: 0.5rem; transition: all 0.2s; flex: 1; justify-content: center;
+    }
+    .edit-btn { background: var(--accent); color: white; }
+    .delete-btn { background: var(--danger); color: white; }
+    .edit-btn:hover, .delete-btn:hover { filter: brightness(1.1); }
+
+    /* ============== MODAL ============== */
+    .modal {
+      display: none; position: fixed; z-index: 1100; left: 0; top: 0;
+      width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px);
+    }
+    .modal-content {
+      background: white; margin: 8% auto; padding: 2rem; border-radius: 16px;
+      width: 90%; max-width: 520px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .modal-header h3 { font-size: 1.5rem; color: var(--dark); }
+    .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--gray); }
+    .form-group { margin-bottom: 1.5rem; }
+    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
+    .form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
+    .form-actions { display: flex; justify-content: flex-end; gap: 1rem; }
+    .cancel-btn { background: var(--gray); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    .confirm-btn { background: var(--primary); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    .project-type-selector { display: flex; gap: 15px; margin-bottom: 20px; }
+    .type-option {
+      flex: 1; padding: 20px; border: 2px solid #e0e0e0; border-radius: 12px;
+      cursor: pointer; text-align: center; transition: all 0.3s; font-weight: 600;
+    }
+    .type-option:hover { border-color: var(--accent); }
+    .type-option.selected { border-color: var(--primary); background: #f0f4ff; }
+    .type-option.code-option.selected { border-color: var(--primary); background: #f0f4ff; }
+    .type-option.pdf-option.selected { border-color: #f72585; background: #fff0f5; }
+    .type-option .type-icon { font-size: 40px; margin-bottom: 8px; }
+    .type-option .type-label { font-size: 15px; }
+    .type-option .type-desc { font-size: 11px; color: var(--gray); margin-top: 4px; }
+
+    /* ============== DISCORD WIDGET ============== */
+    .discord-widget-container { position: fixed; bottom: 20px; left: 20px; z-index: 1000; }
+    .discord-toggle-btn {
+      background: var(--discord); color: white; border: none;
+      padding: 12px 20px; border-radius: 50px; cursor: pointer;
+      display: flex; align-items: center; gap: 10px; font-weight: 700;
+      font-size: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.3s;
+    }
+    .discord-toggle-btn:hover { transform: scale(1.05); }
+    .discord-widget {
+      position: fixed; bottom: 80px; left: 20px; width: 350px; height: 500px;
+      background: #2c2f33; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      overflow: hidden; z-index: 999; display: none; animation: slideInLeft 0.3s ease;
+    }
+    .discord-widget iframe { width: 100%; height: 100%; border: none; }
+    .discord-widget-header {
+      background: #23272a; padding: 12px 16px; display: flex;
+      justify-content: space-between; align-items: center; color: white;
+    }
+    .close-widget-btn { background: none; border: none; color: white; cursor: pointer; font-size: 20px; }
+    @keyframes slideInLeft { from { opacity: 0; transform: translateX(-100px); } to { opacity: 1; transform: translateX(0); } }
+
+    /* ============== COOKIE BANNER ============== */
+    .cookie-banner {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: rgba(0,0,0,0.9); color: white; padding: 1rem;
+      display: flex; flex-wrap: wrap; justify-content: space-between;
+      align-items: center; z-index: 1100;
+    }
+    .cookie-btn { padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-weight: 600; }
+    .cookie-accept { background: var(--success); color: white; border: none; }
+    .cookie-reject { background: transparent; color: white; border: 1px solid white; }
+
+    @media (max-width: 768px) {
+      .projects-grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .new-project-btns { flex-direction: column; }
+      .discord-widget { width: calc(100% - 40px); left: 20px; right: 20px; height: 70vh; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Loading Screen -->
+  <div id="loading-screen">
+    <img id="codefox" src="https://alexandre7888.github.io/CodeHUB/CodeFOX/foto1.jpg" class="loader" alt="CodeFOX">
+    <h1>Carregando...</h1>
+  </div>
+
+  <!-- Main App Content -->
+  <div id="app-content">
+    <header>
+      <div class="header-content">
+        <div class="logo-area">
+          <h1>🚀 CodeHUB</h1>
+          <button class="discord-mini-btn" onclick="toggleDiscordWidget()">💬 Discord</button>
+        </div>
+        <div class="user-info">
+          <span id="username"></span>
+          <button class="logout-btn" onclick="logout()">🚪 Sair</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ============== PAINEL DE ESTATÍSTICAS DO PUTER ============== -->
+    <div class="puter-stats-panel">
+      <button class="stats-toggle-btn" onclick="togglePuterStats()">
+        ☁️ Painel do Puter Cloud
+      </button>
+      <div class="stats-container" id="puterStatsContainer">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">💰</div>
+            <div class="stat-value" id="puterCredits">--</div>
+            <div class="stat-label">Créditos Disponíveis</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📁</div>
+            <div class="stat-value" id="puterFileCount">--</div>
+            <div class="stat-label">Arquivos no Cloud</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">💾</div>
+            <div class="stat-value" id="puterStorageUsed">--</div>
+            <div class="stat-label">Armazenamento Usado</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🌐</div>
+            <div class="stat-value" id="puterSites">--</div>
+            <div class="stat-label">Sites Hospedados</div>
+          </div>
+        </div>
+        <div class="storage-bar-container">
+          <div class="storage-bar-label">
+            <span>📊 Uso do Armazenamento</span>
+            <span id="storagePercentLabel">0%</span>
+          </div>
+          <div class="storage-bar">
+            <div class="storage-bar-fill" id="storageBarFill" style="width: 0%;"></div>
+          </div>
+        </div>
+        <div class="file-manager">
+          <h4>🗂️ Gerenciador de Arquivos Cloud</h4>
+          <div class="file-list" id="fileList">
+            <div style="text-align:center;padding:20px;color:#888;">Carregando arquivos...</div>
+          </div>
+          <button class="refresh-btn" onclick="loadPuterFiles()">🔄 Atualizar Lista</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============== CONTAINER DE PROJETOS ============== -->
+    <div class="container">
+      <div class="projects-header">
+        <h2>📁 Seus Projetos</h2>
+        <div class="new-project-btns">
+          <button class="new-code-btn" onclick="openNewProjectModal('code')">
+            💻 Novo Projeto de Código
+          </button>
+          <button class="new-pdf-btn" onclick="openNewProjectModal('pdf')">
+            📄 Novo Projeto PDF
+          </button>
+        </div>
+      </div>
+      <div id="projects-container" class="projects-grid"></div>
+    </div>
+
+    <!-- Modal de Novo Projeto -->
+    <div id="new-project-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modalTitle">✨ Criar Novo Projeto</h3>
+          <button class="close-btn" onclick="closeNewProjectModal()">&times;</button>
+        </div>
+        <div class="project-type-selector" id="projectTypeSelector">
+          <div class="type-option code-option selected" onclick="selectProjectType('code')" id="typeCode">
+            <div class="type-icon">💻</div>
+            <div class="type-label">Editor de Código</div>
+            <div class="type-desc">HTML, CSS, JavaScript</div>
+          </div>
+          <div class="type-option pdf-option" onclick="selectProjectType('pdf')" id="typePdf">
+            <div class="type-icon">📄</div>
+            <div class="type-label">Editor de PDF</div>
+            <div class="type-desc">Documentos e anotações</div>
+          </div>
+        </div>
+        <form id="project-form">
+          <div class="form-group">
+            <label for="project-name">Nome do Projeto</label>
+            <input type="text" id="project-name" placeholder="Ex: Meu Site Pessoal" required maxlength="50">
+          </div>
+          <input type="hidden" id="project-type" value="code">
+          <div class="form-actions">
+            <button type="button" class="cancel-btn" onclick="closeNewProjectModal()">Cancelar</button>
+            <button type="submit" class="confirm-btn" id="createProjectBtn">Criar Projeto</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Discord Widget -->
+    <div class="discord-widget-container">
+      <button class="discord-toggle-btn" onclick="toggleDiscordWidget()">💬 Discord</button>
+      <div id="discordWidget" class="discord-widget">
+        <div class="discord-widget-header">
+          <h4>💬 Comunidade CodeHUB</h4>
+          <button class="close-widget-btn" onclick="toggleDiscordWidget()">✕</button>
+        </div>
+        <iframe src="https://discord.com/widget?id=1406804799734677667&theme=dark" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
+      </div>
+    </div>
+
+    <!-- Cookie Banner -->
+    <div id="cookie-banner" class="cookie-banner" style="display:none;">
+      <p>🍪 Nós usamos cookies para melhorar sua experiência.</p>
+      <div>
+        <button class="cookie-btn cookie-accept" onclick="acceptCookies()">Aceitar</button>
+        <button class="cookie-btn cookie-reject" onclick="rejectCookies()">Recusar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase + App Script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
+    import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
+    import { getDatabase, ref, push, set, onValue, remove } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
+      authDomain: "html-15e80.firebaseapp.com",
+      databaseURL: "https://html-15e80-default-rtdb.firebaseio.com",
+      projectId: "html-15e80",
+      storageBucket: "html-15e80.appspot.com",
+      messagingSenderId: "1068148640439",
+      appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const database = getDatabase(app);
+
+    let userData = null;
+    let selectedProjectType = 'code';
+    const loadingScreen = document.getElementById('loading-screen');
+    const appContent = document.getElementById('app-content');
+    const codefoxImage = document.getElementById('codefox');
+
+    // Animação do loader
+    const imagens = [
+      "https://alexandre7888.github.io/CodeHUB/CodeFOX/foto1.jpg",
+      "https://alexandre7888.github.io/CodeHUB/CodeFOX/foto2.jpg",
+      "https://alexandre7888.github.io/CodeHUB/CodeFOX/foto3.jpg"
+    ];
+    let imgIndex = 0;
+    const loaderInterval = setInterval(() => {
+      imgIndex = (imgIndex + 1) % imagens.length;
+      if (codefoxImage) codefoxImage.src = imagens[imgIndex];
+    }, 2000);
+
+    function showAppContent() {
+      loadingScreen.style.opacity = '0';
+      setTimeout(() => {
+        loadingScreen.style.display = 'none';
+        appContent.style.display = 'block';
+        clearInterval(loaderInterval);
+      }, 500);
+    }
+
+    // ============== PUTER STATS ==============
+    window.togglePuterStats = function() {
+      const container = document.getElementById('puterStatsContainer');
+      container.classList.toggle('active');
+      if (container.classList.contains('active')) {
+        loadPuterStats();
+        loadPuterFiles();
+      }
+    }
+
+    async function loadPuterStats() {
+      try {
+        // Tentar obter informações do Puter
+        const user = await puter.auth.getUser();
+        if (user) {
+          document.getElementById('puterCredits').textContent = user.credits || 'N/A';
+        }
+        
+        // Contar arquivos
+        try {
+          const items = await puter.fs.readdir('./');
+          const files = items.filter(i => !i.is_dir);
+          const dirs = items.filter(i => i.is_dir);
+          
+          document.getElementById('puterFileCount').textContent = files.length;
+          
+          // Calcular armazenamento
+          let totalSize = 0;
+          for (const file of files) {
+            try {
+              const stat = await puter.fs.stat(file.path);
+              totalSize += stat.size || 0;
+            } catch(e) {}
+          }
+          
+          const sizeMB = (totalSize / (1024 * 1024)).toFixed(2);
+          document.getElementById('puterStorageUsed').textContent = sizeMB + ' MB';
+          document.getElementById('puterSites').textContent = dirs.length;
+          
+          // Barra de progresso
+          const maxStorage = 100 * 1024 * 1024; // 100MB estimado
+          const percent = Math.min(100, (totalSize / maxStorage) * 100).toFixed(1);
+          document.getElementById('storagePercentLabel').textContent = percent + '%';
+          const bar = document.getElementById('storageBarFill');
+          bar.style.width = percent + '%';
+          bar.className = 'storage-bar-fill';
+          if (percent > 80) bar.classList.add('warning');
+          if (percent > 95) bar.classList.add('danger');
+          
+        } catch(e) {
+          document.getElementById('puterFileCount').textContent = 'Erro';
+        }
+      } catch(e) {
+        document.getElementById('puterCredits').textContent = 'Login necessário';
+      }
+    }
+
+    window.loadPuterFiles = async function() {
+      const fileList = document.getElementById('fileList');
+      fileList.innerHTML = '<div style="text-align:center;padding:20px;">Carregando...</div>';
+      
+      try {
+        const items = await puter.fs.readdir('./');
+        const files = items.filter(i => !i.is_dir);
+        
+        if (files.length === 0) {
+          fileList.innerHTML = '<div style="text-align:center;padding:20px;color:#888;">📭 Nenhum arquivo no Cloud</div>';
+          return;
+        }
+        
+        fileList.innerHTML = '';
+        for (const file of files) {
+          let sizeText = 'N/A';
+          try {
+            const stat = await puter.fs.stat(file.path);
+            sizeText = formatBytes(stat.size || 0);
+          } catch(e) {}
+          
+          const div = document.createElement('div');
+          div.className = 'file-item';
+          div.innerHTML = `
+            <div class="file-info">
+              <span class="file-icon">📄</span>
+              <div>
+                <div class="file-name">${escapeHtml(file.name)}</div>
+                <div class="file-size">${sizeText} • ${file.path}</div>
+              </div>
+            </div>
+            <button class="delete-file-btn" onclick="deleteCloudFile('${file.path.replace(/'/g, "\\'")}')">🗑️ Deletar</button>
+          `;
+          fileList.appendChild(div);
+        }
+      } catch(e) {
+        fileList.innerHTML = '<div style="text-align:center;padding:20px;color:#f44336;">Erro ao carregar arquivos</div>';
+      }
+    }
+
+    window.deleteCloudFile = async function(filePath) {
+      if (!confirm(`Deletar "${filePath}" do Cloud?`)) return;
+      try {
+        await puter.fs.delete(filePath);
+        showNotification('Arquivo deletado!', 'success');
+        loadPuterFiles();
+        loadPuterStats();
+      } catch(e) {
+        showNotification('Erro ao deletar: ' + e.message, 'error');
+      }
+    }
+
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function showNotification(msg, type) {
+      const n = document.createElement('div');
+      n.style.cssText = `position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:8px;color:white;z-index:9999;animation:slideIn 0.3s;`;
+      n.style.background = type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : '#2196f3';
+      n.textContent = msg;
+      document.body.appendChild(n);
+      setTimeout(() => n.remove(), 4000);
+    }
+
+    // ============== PROJETOS ==============
+    window.selectProjectType = function(type) {
+      selectedProjectType = type;
+      document.getElementById('project-type').value = type;
+      document.getElementById('typeCode').classList.toggle('selected', type === 'code');
+      document.getElementById('typePdf').classList.toggle('selected', type === 'pdf');
+      const btn = document.getElementById('createProjectBtn');
+      btn.textContent = type === 'code' ? '💻 Criar Projeto de Código' : '📄 Criar Projeto PDF';
+    }
+
+    window.openNewProjectModal = function(type) {
+      selectedProjectType = type || 'code';
+      document.getElementById('project-type').value = selectedProjectType;
+      document.getElementById('typeCode').classList.toggle('selected', selectedProjectType === 'code');
+      document.getElementById('typePdf').classList.toggle('selected', selectedProjectType === 'pdf');
+      document.getElementById('modalTitle').textContent = selectedProjectType === 'code' ? '💻 Novo Projeto de Código' : '📄 Novo Projeto PDF';
+      document.getElementById('createProjectBtn').textContent = selectedProjectType === 'code' ? '💻 Criar Projeto de Código' : '📄 Criar Projeto PDF';
+      document.getElementById('new-project-modal').style.display = 'block';
+      document.getElementById('project-name').focus();
+    }
+
+    window.closeNewProjectModal = function() {
+      document.getElementById('new-project-modal').style.display = 'none';
+      document.getElementById('project-name').value = '';
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ============== AUTENTICAÇÃO ==============
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.href = 'auth.html';
+      } else {
+        userData = {
+          username: user.email?.split('@')[0] || 'usuário',
+          email: user.email || '',
+          uid: user.uid,
+          displayName: user.displayName || user.email?.split('@')[0] || 'usuário'
+        };
+        document.getElementById('username').textContent = userData.displayName;
+        loadProjects(user.uid);
+      }
+    });
+
+    function loadProjects(userId) {
+      const projectsRef = ref(database, `projects/${userId}`);
+      onValue(projectsRef, (snapshot) => {
+        const container = document.getElementById('projects-container');
+        if (!container) return;
+        container.innerHTML = '';
+        const projects = snapshot.val() || {};
+
+        if (Object.keys(projects).length === 0) {
+          container.innerHTML = `
+            <div style="grid-column:1/-1;text-align:center;padding:40px;background:white;border-radius:14px;">
+              <p style="color:#666;">Nenhum projeto ainda. Crie um novo!</p>
+            </div>`;
+          showAppContent();
+          return;
+        }
+
+        // Separar projetos por tipo
+        const codeProjects = [];
+        const pdfProjects = [];
+        
+        for (const [id, project] of Object.entries(projects)) {
+          if (project.type === 'pdf') {
+            pdfProjects.push({ id, ...project });
+          } else {
+            codeProjects.push({ id, ...project });
+          }
+        }
+
+        // Mostrar projetos de código primeiro
+        [...codeProjects, ...pdfProjects].forEach(project => {
+          const isPdf = project.type === 'pdf';
+          const card = document.createElement('div');
+          card.className = `project-card ${isPdf ? 'pdf-card' : 'code-card'}`;
+          card.innerHTML = `
+            <div class="project-type-badge ${isPdf ? 'badge-pdf' : 'badge-code'}">${isPdf ? '📄 PDF' : '💻 Código'}</div>
+            <div class="project-name">${escapeHtml(project.name || 'Sem nome')}</div>
+            <div class="project-domain">👤 ${escapeHtml(project.owner || userData.displayName)}</div>
+            <div class="project-type-text">📅 ${new Date(project.createdAt).toLocaleDateString()}</div>
+            <div class="project-actions">
+              <button class="action-btn edit-btn" onclick="window.location.href='editor.html?projectId=${project.id}'">
+                ✏️ Abrir
+              </button>
+              <button class="action-btn delete-btn" onclick="deleteProject('${project.id}')">
+                🗑️ Excluir
+              </button>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+
+        showAppContent();
+      });
+    }
+
+    // Criar projeto
+    document.getElementById('project-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const projectName = document.getElementById('project-name').value.trim();
+      const projectType = document.getElementById('project-type').value;
+      const user = auth.currentUser;
+
+      if (!projectName || projectName.length > 50) {
+        alert('Nome inválido (1-50 caracteres)');
+        return;
+      }
+
+      try {
+        loadingScreen.style.display = 'flex';
+        loadingScreen.style.opacity = '1';
+        appContent.style.display = 'none';
+
+        const slug = projectName.toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '');
+        const newProjectRef = push(ref(database, `projects/${user.uid}`));
+        const projectId = newProjectRef.key;
+
+        let projectData = {
+          name: projectName,
+          slug: slug,
+          type: projectType,
+          owner: userData.displayName,
+          ownerId: user.uid,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          files: {}
+        };
+
+        if (projectType === 'pdf') {
+          // Projeto PDF - armazena dados no Cloud Storage via Puter
+          const cloudPath = `codehub_pdf_${projectId}`;
+          await puter.fs.mkdir(cloudPath);
+          await puter.fs.write(`${cloudPath}/document.json`, JSON.stringify({
+            title: projectName,
+            content: '',
+            pages: [],
+            createdAt: new Date().toISOString()
+          }));
+          
+          projectData.cloudPath = cloudPath;
+          projectData.files['document.pdf'] = {
+            content: '',
+            language: 'pdf',
+            createdAt: new Date().toISOString(),
+            originalName: 'document.pdf',
+            cloudPath: cloudPath
+          };
+        } else {
+          // Projeto de Código
+          projectData.files['index.html'] = {
+            content: `<!DOCTYPE html>\n<html>\n<head>\n  <title>${escapeHtml(projectName)}</title>\n  <meta charset="UTF-8">\n  <style>\n    body { font-family: Arial; padding: 20px; }\n  </style>\n</head>\n<body>\n  <h1>🚀 ${escapeHtml(projectName)}</h1>\n  <p>Comece a editar!</p>\n</body>\n</html>`,
+            language: 'html',
+            createdAt: new Date().toISOString(),
+            originalName: 'index.html'
+          };
+        }
+
+        await set(newProjectRef, projectData);
+        closeNewProjectModal();
+        window.location.href = `editor.html?projectId=${projectId}`;
+
+      } catch (error) {
+        console.error("Erro:", error);
+        alert('Erro ao criar projeto: ' + error.message);
+        showAppContent();
+      }
+    });
+
+    window.deleteProject = function(projectId) {
+      if (confirm('Excluir projeto? Esta ação é irreversível.')) {
+        remove(ref(database, `projects/${auth.currentUser.uid}/${projectId}`));
+      }
+    }
+
+    window.logout = function() {
+      signOut(auth).then(() => window.location.href = 'auth.html');
+    }
+
+    window.toggleDiscordWidget = function() {
+      const w = document.getElementById('discordWidget');
+      w.style.display = w.style.display === 'none' || w.style.display === '' ? 'block' : 'none';
+    }
+
+    // Cookies
+    if (localStorage.getItem('cookiesAccepted') === null) {
+      document.getElementById('cookie-banner').style.display = 'flex';
+    }
+    window.acceptCookies = function() {
+      localStorage.setItem('cookiesAccepted', 'true');
+      document.getElementById('cookie-banner').style.display = 'none';
+    }
+    window.rejectCookies = function() {
+      localStorage.setItem('cookiesAccepted', 'false');
+      document.getElementById('cookie-banner').style.display = 'none';
+    }
+
+    window.escapeHtml = escapeHtml;
+  </script>
+</body>
+</html>      left: 0;
       width: 100%;
       height: 100%;
       background: radial-gradient(circle at center, #1e293b, #0f172a);
