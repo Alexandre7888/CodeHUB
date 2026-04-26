@@ -3,92 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- SEO -->
-  <meta name="keywords" content="CodeHUB, editor de código online, IDE online, programar no navegador, editor HTML, editor CSS, editor JavaScript, desenvolvimento web online, criar sites online, editor de código grátis, IDE para iniciantes, editor responsivo, ferramenta de programação, codar no navegador, editor com terminal, escrever código online, depuração online, editor de código rápido, desenvolvimento colaborativo, criar projetos web, editor frontend, plataforma de codar online, editor de programação, IDE web, editor de scripts, editor JS, editor CSS3, editor HTML5, criar páginas web, prototipagem online, editor web interativo, IDE colaborativa, editor de código com login, projetos online, editor de apps web, editor multiplataforma, editor com versionamento, editor de projetos HTML CSS JS, editor de código para estudantes, IDE para web developers, editor de código com templates, editor de projetos compartilháveis, editor para iniciantes em web, editor rápido e leve, editor de código com terminal integrado, editor de desenvolvimento web, editor de protótipos web, plataforma de aprendizado de programação, editor de sites responsivos, editor de HTML CSS JS online, criar sites responsivos online, editor de front-end, editor com Firebase, editor para projetos pessoais, IDE web gratuita, editor para codar online, editor de código interativo, editor de projetos colaborativos, editor de sites e aplicações, editor para estudantes de programação, editor de código com suporte a frameworks, editor de desenvolvimento ágil, IDE de aprendizado online, editor de projetos rápidos, editor de código para educação, editor de páginas web, editor de apps HTML CSS JS">
-  <meta name="author" content="CodeHUB - Alexandre Braatz Junior, fundador da plataforma">
+  <meta name="keywords" content="CodeHUB, editor de código online, IDE online, programar no navegador, editor HTML, editor CSS, editor JavaScript, editor PDF online">
+  <meta name="author" content="CodeHUB - Alexandre Braatz Junior">
   <meta name="google-site-verification" content="d5deNmIStRgPPphEkAypCTSv-E_1gi9ba16et47RSmA" />
-
-  <title>CodeHUB - Editor de Código Online</title>
+  <title>CodeHUB - Editor de Código e PDF Online</title>
   <link rel="icon" type="image/png" href="https://alexandre7888.github.io/CodeHUB/InShot_20250807_112151490.jpg">
-
-  <!-- Google Analytics -->
+  
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-X4VF1LWB0F"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
     gtag('config', 'G-X4VF1LWB0F');
-    gtag('config', 'G-XQE93JQ3RB');
-    gtag('config', 'G-7RYPMEN60E');
   </script>
 
-  <!-- Scripts Externos -->
   <script src="https://alexandre7888.github.io/CodeHUB/protecao.js"></script>
   <script src="https://alexandre7888.github.io/CodeHUB/Botao/floating-menu.js"></script>
-  <script type="module" src="https://code.codehub.ct.ws/client.js"></script>
-  <script src="https://assistente-ia--socialkoala6579904.on.websim.com/embed.js"></script>
   <script src="https://js.puter.com/v2/"></script>
 
   <style>
-    /* Loading Screen Styles */
-    #loading-screen {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: radial-gradient(circle at center, #1e293b, #0f172a);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      color: white;
-      font-family: Arial, sans-serif;
-      z-index: 9999;
-      transition: opacity 0.5s ease;
-    }
-
-    #loading-screen h1 {
-      margin-top: 20px;
-      font-size: 1.8em;
-      color: #ff9500;
-      text-shadow: 0 0 10px #ff9500, 0 0 20px #ff7300;
-      animation: glowText 2s infinite alternate;
-    }
-
-    .loader {
-      width: 280px;
-      height: 280px;
-      animation: spinScale 4s ease-in-out infinite, glow 2s ease-in-out infinite alternate;
-      border-radius: 50%;
-      box-shadow: 0 0 20px rgba(255,149,0,0.5);
-      transition: all 0.5s ease-in-out;
-    }
-
-    @keyframes glowText {
-      0% { text-shadow: 0 0 5px #ff9500, 0 0 15px #ff7300; }
-      100% { text-shadow: 0 0 15px #ff9500, 0 0 30px #ff7300; }
-    }
-
-    @keyframes spinScale {
-      0%   { transform: rotate(0deg) scale(1); }
-      25%  { transform: rotate(90deg) scale(1.1); }
-      50%  { transform: rotate(180deg) scale(0.9); }
-      75%  { transform: rotate(270deg) scale(1.1); }
-      100% { transform: rotate(360deg) scale(1); }
-    }
-
-    @keyframes glow {
-      0% { box-shadow: 0 0 20px rgba(255,149,0,0.5), 0 0 40px rgba(255,149,0,0.3); }
-      100% { box-shadow: 0 0 40px rgba(255,149,0,0.8), 0 0 80px rgba(255,149,0,0.5); }
-    }
-
-    /* Main App Styles */
-    #app-content {
-      display: none;
-    }
-
     :root {
       --primary-color: #4361ee;
       --secondary-color: #3f37c9;
@@ -102,11 +35,7 @@
       --pdf-color: #f72585;
     }
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -118,656 +47,177 @@
       flex-direction: column;
     }
 
+    #loading-screen {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: radial-gradient(circle at center, #1e293b, #0f172a);
+      display: flex; justify-content: center; align-items: center; flex-direction: column;
+      color: white; font-family: Arial, sans-serif; z-index: 9999; transition: opacity 0.5s ease;
+    }
+    #loading-screen h1 { margin-top: 20px; font-size: 1.8em; color: #ff9500; text-shadow: 0 0 10px #ff9500, 0 0 20px #ff7300; animation: glowText 2s infinite alternate; }
+    .loader { width: 200px; height: 200px; animation: spinScale 4s ease-in-out infinite; border-radius: 50%; box-shadow: 0 0 20px rgba(255,149,0,0.5); }
+    @keyframes glowText { 0% { text-shadow: 0 0 5px #ff9500; } 100% { text-shadow: 0 0 15px #ff9500; } }
+    @keyframes spinScale { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(0.9); } 100% { transform: rotate(360deg) scale(1); } }
+
+    #app-content { display: none; }
+
     header {
       background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
-      color: white;
-      padding: 1rem;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      color: white; padding: 1rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
-
     .header-content {
-      max-width: 1200px;
-      margin: 0 auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 1rem;
+      max-width: 1200px; margin: 0 auto; display: flex;
+      justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
     }
+    .logo-area { display: flex; align-items: center; gap: 1rem; }
+    .logo-area h1 { font-size: 1.5rem; }
+    .user-info { display: flex; align-items: center; gap: 1rem; }
+    .logout-btn { background: var(--danger-color); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-weight: 600; }
 
-    .logo-area {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
+    .container { flex: 1; max-width: 1200px; margin: 1rem auto; padding: 0 1rem; width: 100%; }
+    .projects-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+    .new-project-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+    .new-code-btn, .new-pdf-btn {
+      color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px;
+      cursor: pointer; font-weight: 700; display: flex; align-items: center; gap: 0.5rem;
+      transition: all 0.3s; font-size: 14px; white-space: nowrap;
     }
+    .new-code-btn { background: linear-gradient(135deg, #4361ee, #4895ef); }
+    .new-code-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(67,97,238,0.3); }
+    .new-pdf-btn { background: linear-gradient(135deg, #f72585, #b5179e); }
+    .new-pdf-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(247,37,133,0.3); }
 
-    .logo-area h1 {
-      font-size: 1.5rem;
-    }
-
-    .discord-mini-btn {
-      background: var(--discord-color);
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-weight: 600;
-      transition: all 0.3s;
-    }
-
-    .discord-mini-btn:hover {
-      background: #4752c4;
-      transform: scale(1.05);
-    }
-
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-
-    .logout-btn {
-      background-color: var(--danger-color);
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: all 0.3s;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .container {
-      flex: 1;
-      max-width: 1200px;
-      margin: 1rem auto;
-      padding: 0 1rem;
-      width: 100%;
-    }
-
-    .projects-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-
-    .new-project-btns {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .new-project-btn {
-      background-color: var(--success-color);
-      color: white;
-      border: none;
-      padding: 0.75rem 1.5rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: all 0.3s;
-      white-space: nowrap;
-    }
-
-    .new-pdf-btn {
-      background-color: var(--pdf-color);
-      color: white;
-      border: none;
-      padding: 0.75rem 1.5rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: all 0.3s;
-      white-space: nowrap;
-    }
-
-    .new-project-btn:hover, .new-pdf-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    }
-
-    /* ============== PAINEL PUTER STATS ============== */
-    .puter-stats-section {
-      max-width: 1200px;
-      margin: 0 auto 1rem;
-      padding: 0 1rem;
-    }
-
+    .puter-stats-section { max-width: 1200px; margin: 0 auto 1rem; padding: 0 1rem; }
     .puter-stats-toggle {
       background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 10px;
-      cursor: pointer;
-      font-weight: 700;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      box-shadow: 0 4px 15px rgba(102,126,234,0.3);
-      transition: all 0.3s;
+      color: white; border: none; padding: 10px 20px; border-radius: 10px;
+      cursor: pointer; font-weight: 700; font-size: 14px;
+      display: flex; align-items: center; gap: 8px;
+      box-shadow: 0 4px 15px rgba(102,126,234,0.3); transition: all 0.3s;
     }
-
-    .puter-stats-toggle:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(102,126,234,0.4);
-    }
-
+    .puter-stats-toggle:hover { transform: translateY(-2px); }
     .puter-stats-panel {
-      display: none;
-      background: white;
-      border-radius: 16px;
-      padding: 20px;
-      margin-top: 10px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-      border: 1px solid #eaeaea;
+      display: none; background: white; border-radius: 16px;
+      padding: 20px; margin-top: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #eaeaea;
     }
+    .puter-stats-panel.active { display: block; }
 
-    .puter-stats-panel.active {
-      display: block;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
     .stat-card {
       background: linear-gradient(135deg, #f5f7fa, #e4e9f2);
-      border-radius: 12px;
-      padding: 18px;
-      text-align: center;
-      border: 1px solid #e0e0e0;
+      border-radius: 12px; padding: 18px; text-align: center; border: 1px solid #e0e0e0;
     }
+    .stat-card .stat-icon { font-size: 28px; margin-bottom: 6px; }
+    .stat-card .stat-value { font-size: 22px; font-weight: 800; color: var(--primary-color); }
+    .stat-card .stat-label { font-size: 11px; color: var(--gray-color); }
 
-    .stat-card .stat-icon {
-      font-size: 32px;
-      margin-bottom: 8px;
-    }
-
-    .stat-card .stat-value {
-      font-size: 24px;
-      font-weight: 800;
-      color: var(--primary-color);
-    }
-
-    .stat-card .stat-label {
-      font-size: 12px;
-      color: var(--gray-color);
-      margin-top: 4px;
-    }
-
-    .file-manager-box {
-      background: #f8f9fa;
-      border-radius: 10px;
-      padding: 15px;
-      border: 1px solid #e0e0e0;
-      margin-top: 15px;
-    }
-
-    .file-manager-box h4 {
-      margin-bottom: 10px;
-    }
-
-    .cloud-file-list {
-      max-height: 250px;
-      overflow-y: auto;
-    }
-
+    .file-manager-box { background: #f8f9fa; border-radius: 10px; padding: 15px; border: 1px solid #e0e0e0; margin-top: 15px; }
+    .file-manager-box h4 { margin-bottom: 10px; }
+    .cloud-file-list { max-height: 250px; overflow-y: auto; }
     .cloud-file-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 14px;
-      background: white;
-      border-radius: 8px;
-      margin-bottom: 6px;
-      border: 1px solid #eee;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 14px; background: white; border-radius: 8px;
+      margin-bottom: 6px; border: 1px solid #eee;
     }
+    .delete-cloud-btn { background: var(--danger-color); color: white; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; }
+    .refresh-cloud-btn { background: var(--primary-color); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 10px; }
 
-    .cloud-file-item .file-info {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .cloud-file-item .delete-cloud-btn {
-      background: var(--danger-color);
-      color: white;
-      border: none;
-      padding: 5px 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 11px;
-    }
-
-    .refresh-cloud-btn {
-      background: var(--primary-color);
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      margin-top: 10px;
-    }
-
-    /* ============== GRID DE PROJETOS ============== */
-    .projects-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 2rem;
-    }
-
+    .projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
     .project-card {
-      background-color: white;
-      border-radius: 10px;
-      padding: 1.5rem;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-      transition: all 0.3s ease;
-      border: 1px solid #eaeaea;
-      display: flex;
-      flex-direction: column;
-      position: relative;
+      background: white; border-radius: 10px; padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: all 0.3s ease;
+      border: 1px solid #eaeaea; display: flex; flex-direction: column; position: relative;
     }
-
-    .project-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-    }
-
-    .project-card.code-card {
-      border-left: 4px solid var(--primary-color);
-    }
-
-    .project-card.pdf-card {
-      border-left: 4px solid var(--pdf-color);
-    }
-
+    .project-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+    .project-card.code-card { border-left: 4px solid var(--primary-color); }
+    .project-card.pdf-card { border-left: 4px solid var(--pdf-color); }
     .project-type-badge {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 10px;
-      font-weight: 700;
-      color: white;
+      position: absolute; top: 12px; right: 12px;
+      padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; color: white;
     }
-
-    .badge-code {
-      background: var(--primary-color);
-    }
-
-    .badge-pdf {
-      background: var(--pdf-color);
-    }
-
-    .project-name {
-      font-size: 1.25rem;
-      font-weight: 700;
-      margin-bottom: 0.5rem;
-      color: var(--dark-color);
-      padding-right: 60px;
-    }
-
-    .project-domain {
-      font-size: 0.9rem;
-      color: var(--gray-color);
-      margin-bottom: 0.5rem;
-    }
-
-    .project-type-text {
-      font-size: 0.8rem;
-      color: var(--gray-color);
-      margin-bottom: 1rem;
-      font-style: italic;
-    }
-
-    .project-actions {
-      display: flex;
-      gap: 0.75rem;
-      margin-top: auto;
-    }
-
+    .badge-code { background: var(--primary-color); }
+    .badge-pdf { background: var(--pdf-color); }
+    .project-name { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--dark-color); padding-right: 60px; }
+    .project-domain { font-size: 0.9rem; color: var(--gray-color); margin-bottom: 0.5rem; }
+    .project-actions { display: flex; gap: 0.75rem; margin-top: auto; }
     .action-btn {
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.9rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: all 0.2s;
-      flex: 1;
-      justify-content: center;
+      padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer;
+      font-weight: 600; font-size: 0.9rem; display: flex; align-items: center;
+      gap: 0.5rem; transition: all 0.2s; flex: 1; justify-content: center;
     }
+    .edit-btn { background: var(--accent-color); color: white; }
+    .delete-btn { background: var(--danger-color); color: white; }
 
-    .edit-btn {
-      background-color: var(--accent-color);
-      color: white;
-    }
-
-    .delete-btn {
-      background-color: var(--danger-color);
-      color: white;
-    }
-
-    /* Discord Widget Floating Button */
-    .discord-widget-container {
-      position: fixed;
-      bottom: 20px;
-      left: 20px;
-      z-index: 1000;
-    }
-
-    .discord-toggle-btn {
-      background: var(--discord-color);
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 50px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 700;
-      font-size: 16px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-      transition: all 0.3s ease;
-    }
-
-    .discord-toggle-btn:hover {
-      transform: scale(1.05);
-      background: #4752c4;
-    }
-
-    .discord-widget {
-      position: fixed;
-      bottom: 80px;
-      left: 20px;
-      width: 350px;
-      height: 500px;
-      background: #2c2f33;
-      border-radius: 16px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-      overflow: hidden;
-      z-index: 999;
-      display: none;
-      animation: slideInLeft 0.3s ease;
-    }
-
-    .discord-widget iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-
-    .discord-widget-header {
-      background: #23272a;
-      padding: 12px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      color: white;
-    }
-
-    .discord-widget-header h4 {
-      margin: 0;
-      font-size: 14px;
-    }
-
-    .close-widget-btn {
-      background: none;
-      border: none;
-      color: white;
-      cursor: pointer;
-      font-size: 20px;
-      padding: 0 5px;
-    }
-
-    @keyframes slideInLeft {
-      from {
-        opacity: 0;
-        transform: translateX(-100px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-
-    /* Modal styles */
     .modal {
-      display: none;
-      position: fixed;
-      z-index: 1100;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(3px);
+      display: none; position: fixed; z-index: 1100; left: 0; top: 0;
+      width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px);
     }
-
     .modal-content {
-      background-color: white;
-      margin: 10% auto;
-      padding: 2rem;
-      border-radius: 10px;
-      width: 90%;
-      max-width: 500px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-      position: relative;
+      background: white; margin: 8% auto; padding: 2rem; border-radius: 16px;
+      width: 90%; max-width: 500px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);
     }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--gray-color); }
+    .form-group { margin-bottom: 1.5rem; }
+    .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
+    .form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
+    .form-actions { display: flex; justify-content: flex-end; gap: 1rem; }
+    .cancel-btn { background: var(--gray-color); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    .confirm-btn { background: var(--primary-color); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 600; }
 
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
+    .discord-widget-container { position: fixed; bottom: 20px; left: 20px; z-index: 1000; }
+    .discord-toggle-btn {
+      background: var(--discord-color); color: white; border: none;
+      padding: 12px 20px; border-radius: 50px; cursor: pointer;
+      display: flex; align-items: center; gap: 10px; font-weight: 700;
+      font-size: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.3s;
     }
-
-    .modal-header h3 {
-      font-size: 1.5rem;
-      color: var(--dark-color);
+    .discord-widget {
+      position: fixed; bottom: 80px; left: 20px; width: 350px; height: 500px;
+      background: #2c2f33; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      overflow: hidden; z-index: 999; display: none; animation: slideInLeft 0.3s ease;
     }
+    .discord-widget iframe { width: 100%; height: 100%; border: none; }
+    .discord-widget-header { background: #23272a; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; color: white; }
+    .close-widget-btn { background: none; border: none; color: white; cursor: pointer; font-size: 20px; }
+    @keyframes slideInLeft { from { opacity: 0; transform: translateX(-100px); } to { opacity: 1; transform: translateX(0); } }
 
-    .close-btn {
-      background: none;
-      border: none;
-      font-size: 1.5rem;
-      cursor: pointer;
-      color: var(--gray-color);
-      padding: 0 0.5rem;
-    }
-
-    .form-group {
-      margin-bottom: 1.5rem;
-    }
-
-    .form-group label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: 600;
-      color: var(--dark-color);
-    }
-
-    .form-group input, .form-group select {
-      width: 100%;
-      padding: 0.75rem;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      font-size: 1rem;
-    }
-
-    .form-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 1rem;
-    }
-
-    .cancel-btn {
-      background-color: var(--gray-color);
-      color: white;
-      border: none;
-      padding: 0.75rem 1.5rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-
-    .confirm-btn {
-      background-color: var(--primary-color);
-      color: white;
-      border: none;
-      padding: 0.75rem 1.5rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-
-    /* Cookie Banner */
     .cookie-banner {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: rgba(0, 0, 0, 0.9);
-      color: white;
-      padding: 1rem;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      z-index: 1100;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: rgba(0,0,0,0.9); color: white; padding: 1rem;
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; z-index: 1100;
     }
+    .cookie-btn { padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-weight: 600; }
+    .cookie-accept { background: var(--success-color); color: white; border: none; }
+    .cookie-reject { background: transparent; color: white; border: 1px solid white; }
 
-    .cookie-banner p {
-      margin: 0.5rem 0;
-      flex: 1;
-      min-width: 250px;
-    }
-
-    .cookie-banner-buttons {
-      display: flex;
-      gap: 1rem;
-    }
-
-    .cookie-btn {
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-
-    .cookie-accept {
-      background-color: var(--success-color);
-      color: white;
-      border: none;
-    }
-
-    .cookie-reject {
-      background-color: transparent;
-      color: white;
-      border: 1px solid white;
-    }
-
-    /* Responsividade */
     @media (max-width: 768px) {
-      .projects-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .project-actions {
-        flex-direction: column;
-      }
-
-      .modal-content {
-        margin: 20% auto;
-      }
-
-      .cookie-banner {
-        flex-direction: column;
-        text-align: center;
-      }
-
-      .cookie-banner-buttons {
-        width: 100%;
-        justify-content: center;
-        margin-top: 1rem;
-      }
-
-      .discord-widget {
-        width: calc(100% - 40px);
-        left: 20px;
-        right: 20px;
-        height: 70vh;
-      }
-
-      .new-project-btns {
-        flex-direction: column;
-      }
+      .projects-grid { grid-template-columns: 1fr; }
+      .new-project-btns { flex-direction: column; }
     }
   </style>
 </head>
 <body>
-  <!-- Loading Screen -->
   <div id="loading-screen">
-    <img id="codefox" src="https://alexandre7888.github.io/CodeHUB/CodeFOX/foto1.jpg" class="loader" alt="CodeFOX girando">
+    <img src="https://alexandre7888.github.io/CodeHUB/CodeFOX/foto1.jpg" class="loader" alt="CodeFOX">
     <h1>Carregando...</h1>
   </div>
 
-  <!-- Main App Content -->
   <div id="app-content">
     <header>
       <div class="header-content">
         <div class="logo-area">
           <h1>🚀 CodeHUB</h1>
-          <button class="discord-mini-btn" onclick="toggleDiscordWidget()">
-            💬 Discord
-          </button>
         </div>
         <div class="user-info">
           <span id="username"></span>
-          <button class="logout-btn" onclick="logout()">
-            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="18" height="18">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-            </svg>
-            Sair
-          </button>
+          <button class="logout-btn" onclick="logout()">🚪 Sair</button>
         </div>
       </div>
     </header>
 
-    <!-- ============== PAINEL DE ESTATÍSTICAS DO PUTER ============== -->
     <div class="puter-stats-section">
-      <button class="puter-stats-toggle" onclick="togglePuterPanel()">
-        ☁️ Painel do Puter Cloud
-      </button>
+      <button class="puter-stats-toggle" onclick="togglePuterPanel()">☁️ Painel do Puter Cloud</button>
       <div class="puter-stats-panel" id="puterStatsPanel">
         <div class="stats-grid">
           <div class="stat-card">
@@ -778,7 +228,7 @@
           <div class="stat-card">
             <div class="stat-icon">📁</div>
             <div class="stat-value" id="statFiles">--</div>
-            <div class="stat-label">Arquivos no Cloud</div>
+            <div class="stat-label">Arquivos</div>
           </div>
           <div class="stat-card">
             <div class="stat-icon">💾</div>
@@ -794,7 +244,7 @@
         <div class="file-manager-box">
           <h4>🗂️ Seus Arquivos no Cloud</h4>
           <div class="cloud-file-list" id="cloudFileList">
-            <div style="text-align:center;padding:20px;color:#888;">Clique em "Atualizar" para carregar</div>
+            <div style="text-align:center;padding:20px;color:#888;">Clique em Atualizar</div>
           </div>
           <button class="refresh-cloud-btn" onclick="loadCloudFiles()">🔄 Atualizar Lista</button>
         </div>
@@ -805,37 +255,26 @@
       <div class="projects-header">
         <h2>📁 Seus Projetos</h2>
         <div class="new-project-btns">
-          <button class="new-project-btn" onclick="openNewProjectModal('code')">
-            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="18" height="18">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-            </svg>
-            Novo Projeto Código
-          </button>
-          <button class="new-pdf-btn" onclick="openNewProjectModal('pdf')">
-            📄 Novo Projeto PDF
-          </button>
+          <button class="new-code-btn" onclick="openNewProjectModal('code')">💻 Novo Código</button>
+          <button class="new-pdf-btn" onclick="openNewProjectModal('pdf')">📄 Novo PDF</button>
         </div>
       </div>
-
-      <div id="projects-container" class="projects-grid">
-        <!-- Projetos serão carregados aqui dinamicamente -->
-      </div>
+      <div id="projects-container" class="projects-grid"></div>
     </div>
 
-    <!-- Modal de Novo Projeto -->
     <div id="new-project-modal" class="modal">
       <div class="modal-content">
         <div class="modal-header">
           <h3 id="modalTitle">✨ Criar Novo Projeto</h3>
-          <button type="button" class="close-btn" onclick="closeNewProjectModal()">&times;</button>
+          <button class="close-btn" onclick="closeNewProjectModal()">&times;</button>
         </div>
         <form id="project-form">
           <div class="form-group">
-            <label for="project-name">Nome do Projeto</label>
-            <input type="text" id="project-name" placeholder="Ex: Meu Site Pessoal" required maxlength="50">
+            <label>Nome do Projeto</label>
+            <input type="text" id="project-name" placeholder="Ex: Meu Site" required maxlength="50">
           </div>
           <div class="form-group">
-            <label for="project-type-select">Tipo de Projeto</label>
+            <label>Tipo de Projeto</label>
             <select id="project-type-select">
               <option value="code">💻 Editor de Código (HTML/CSS/JS)</option>
               <option value="pdf">📄 Editor de PDF</option>
@@ -849,45 +288,31 @@
       </div>
     </div>
 
-    <!-- Discord Floating Widget -->
     <div class="discord-widget-container">
-      <button class="discord-toggle-btn" onclick="toggleDiscordWidget()">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3847-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C2.8084 7.6658 2.0395 10.8955 2.4158 14.0786a.067.067 0 00.0272.0445 19.8759 19.8759 0 004.9823 2.5107.077.077 0 00.0734-.0214c.3826-.5123.7262-1.0535 1.0192-1.6236a.076.076 0 00-.0412-.1055 13.148 13.148 0 01-1.5605-.7442.076.076 0 01-.0185-.1248l.3104-.242c.0159-.0125.0387-.0125.0546 0 3.2693 1.4904 6.804 1.4904 10.0389 0 .0159-.0125.0387-.0125.0546 0l.3104.242c.0459.036.0509.1011.0185.1248a13.221 13.221 0 01-1.5605.7442.076.076 0 00-.0412.1055c.293.5702.6366 1.1113 1.0192 1.6236a.077.077 0 00.0734.0214 19.873 19.873 0 004.9823-2.5107.067.067 0 00.0272-.0445c.439-3.7629-.3292-6.9926-1.4134-9.6821a.069.069 0 00-.0321-.0277zM8.6338 13.086c-.9845 0-1.7951-.905-1.7951-2.0087 0-1.1038.7912-2.0087 1.7951-2.0087 1.0125 0 1.823.9137 1.7951 2.0087 0 1.1038-.7912 2.0087-1.7951 2.0087zm6.7324 0c-.9845 0-1.7951-.905-1.7951-2.0087 0-1.1038.7912-2.0087 1.7951-2.0087 1.0125 0 1.823.9137 1.7951 2.0087 0 1.1038-.7912 2.0087-1.7951 2.0087z"/>
-        </svg>
-        Conectar ao Discord
-      </button>
-
+      <button class="discord-toggle-btn" onclick="toggleDiscordWidget()">💬 Discord</button>
       <div id="discordWidget" class="discord-widget">
         <div class="discord-widget-header">
           <h4>💬 Comunidade CodeHUB</h4>
           <button class="close-widget-btn" onclick="toggleDiscordWidget()">✕</button>
         </div>
-        <iframe src="https://discord.com/widget?id=1406804799734677667&theme=dark" 
-                allowtransparency="true" 
-                frameborder="0"
-                sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts">
-        </iframe>
+        <iframe src="https://discord.com/widget?id=1406804799734677667&theme=dark" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
       </div>
     </div>
 
-    <!-- Cookie Banner -->
-    <div id="cookie-banner" class="cookie-banner" style="display: none;">
-      <p>🍪 Nós usamos cookies para melhorar sua experiência. Ao continuar navegando, você concorda com o uso de cookies.</p>
-      <div class="cookie-banner-buttons">
+    <div id="cookie-banner" class="cookie-banner" style="display:none;">
+      <p>🍪 Usamos cookies para melhorar sua experiência.</p>
+      <div>
         <button class="cookie-btn cookie-accept" onclick="acceptCookies()">Aceitar</button>
         <button class="cookie-btn cookie-reject" onclick="rejectCookies()">Recusar</button>
       </div>
     </div>
   </div>
 
-  <!-- Firebase e App Script -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
     import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
     import { getDatabase, ref, push, set, onValue, remove } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
 
-    // Configuração do Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
       authDomain: "html-15e80.firebaseapp.com",
@@ -895,345 +320,171 @@
       projectId: "html-15e80",
       storageBucket: "html-15e80.appspot.com",
       messagingSenderId: "1068148640439",
-      appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32",
-      measurementId: "G-V57KRZ02HJ"
+      appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32"
     };
 
-    // Inicializar Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const database = getDatabase(app);
 
-    // Variáveis globais
     let userData = null;
-    const loadingScreen = document.getElementById('loading-screen');
-    const appContent = document.getElementById('app-content');
-    const codefoxImage = document.getElementById('codefox');
 
-    // Configurar animação do loader
-    const imagens = [
-      "https://alexandre7888.github.io/CodeHUB/CodeFOX/foto1.jpg",
-      "https://alexandre7888.github.io/CodeHUB/CodeFOX/foto2.jpg",
-      "https://alexandre7888.github.io/CodeHUB/CodeFOX/foto3.jpg"
-    ];
-
-    let index = 0;
-    const loaderInterval = setInterval(() => {
-      index = (index + 1) % imagens.length;
-      if (codefoxImage) codefoxImage.src = imagens[index];
-    }, 2000);
-
-    // Função para mostrar o conteúdo principal
     function showAppContent() {
-      loadingScreen.style.opacity = '0';
+      document.getElementById('loading-screen').style.opacity = '0';
       setTimeout(() => {
-        loadingScreen.style.display = 'none';
-        appContent.style.display = 'block';
-        clearInterval(loaderInterval);
+        document.getElementById('loading-screen').style.display = 'none';
+        document.getElementById('app-content').style.display = 'block';
       }, 500);
     }
 
-    // Função para sanitizar nomes de arquivos (remove caracteres inválidos para Firebase)
     function sanitizeFilename(filename) {
-      // Firebase não aceita: . # $ / [ ]
       return filename.replace(/[.#$/[\]]/g, '_');
     }
 
-    // Função para validar nome do projeto
-    function isValidProjectName(name) {
-      return name && name.trim().length > 0 && name.length <= 50;
-    }
-
-    // Configurar o formulário
-    document.addEventListener('DOMContentLoaded', () => {
-      checkCookies();
-
-      const projectForm = document.getElementById('project-form');
-      if (projectForm) {
-        projectForm.addEventListener('submit', (e) => {
-          e.preventDefault();
-          createProject();
-        });
-      }
-    });
-
-    // Monitorar estado de autenticação
-    onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        window.location.href = 'auth.html';
-      } else {
-        try {
-          userData = {
-            username: user.email?.split('@')[0] || 'usuário',
-            email: user.email || '',
-            uid: user.uid,
-            displayName: user.displayName || user.email?.split('@')[0] || 'usuário'
-          };
-
-          const usernameSpan = document.getElementById('username');
-          if (usernameSpan) usernameSpan.textContent = userData.displayName;
-
-          loadProjects(user.uid);
-        } catch (error) {
-          console.error("Erro ao carregar dados do usuário:", error);
-          alert("Erro ao carregar dados. Por favor, recarregue a página.");
-        }
-      }
-    });
-
-    // Carregar projetos do usuário
-    function loadProjects(userId) {
-      try {
-        const projectsRef = ref(database, `projects/${userId}`);
-
-        onValue(projectsRef, (snapshot) => {
-          try {
-            const projectsContainer = document.getElementById('projects-container');
-            if (!projectsContainer) return;
-
-            projectsContainer.innerHTML = '';
-            const projects = snapshot.val() || {};
-
-            if (Object.keys(projects).length === 0) {
-              projectsContainer.innerHTML = `
-                <div style="grid-column:1/-1; text-align:center; padding:40px; background:white; border-radius:10px;">
-                  <p style="color:#666;">Você ainda não tem projetos. Clique em "Novo Projeto" para começar!</p>
-                </div>
-              `;
-            }
-
-            for (const [projectId, project] of Object.entries(projects)) {
-              if (!projectId || !project) continue;
-
-              const isPdf = project.type === 'pdf';
-              const projectCard = document.createElement('div');
-              projectCard.className = `project-card ${isPdf ? 'pdf-card' : 'code-card'}`;
-              projectCard.innerHTML = `
-                <div class="project-type-badge ${isPdf ? 'badge-pdf' : 'badge-code'}">${isPdf ? '📄 PDF' : '💻 Código'}</div>
-                <div class="project-name">📄 ${escapeHtml(project.name || 'Projeto sem nome')}</div>
-                <div class="project-domain">👤 ${escapeHtml(project.owner || userData?.displayName || 'usuário')}</div>
-                <div class="project-type-text">🕐 ${new Date(project.createdAt).toLocaleDateString()}</div>
-                <div class="project-actions">
-                  <button class="action-btn edit-btn" onclick="window.location.href='editor.html?projectId=${projectId}'">
-                    ✏️ Abrir
-                  </button>
-                  <button class="action-btn delete-btn" onclick="deleteProject('${projectId}')">
-                    🗑️ Excluir
-                  </button>
-                </div>
-              `;
-              projectsContainer.appendChild(projectCard);
-            }
-
-            showAppContent();
-          } catch (error) {
-            console.error("Erro ao renderizar projetos:", error);
-            alert("Erro ao carregar projetos. Por favor, recarregue a página.");
-          }
-        }, (error) => {
-          console.error("Erro ao carregar projetos:", error);
-          alert("Erro ao carregar projetos. Verifique sua conexão e tente novamente.");
-        });
-      } catch (error) {
-        console.error("Erro no carregamento de projetos:", error);
-        alert("Erro no sistema. Por favor, tente novamente mais tarde.");
-      }
-    }
-
-    // Função para escapar HTML
     function escapeHtml(text) {
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
     }
 
-    // Funções do modal
-    window.openNewProjectModal = function(type) {
-      const modal = document.getElementById('new-project-modal');
-      const select = document.getElementById('project-type-select');
-      const title = document.getElementById('modalTitle');
-      
-      if (modal) {
-        modal.style.display = 'block';
-        if (select && type) select.value = type;
-        if (title) {
-          title.textContent = type === 'pdf' ? '📄 Novo Projeto PDF' : '💻 Novo Projeto de Código';
-        }
-        const input = document.getElementById('project-name');
-        if (input) {
-          input.value = '';
-          input.focus();
-        }
+    document.addEventListener('DOMContentLoaded', () => {
+      if (localStorage.getItem('cookiesAccepted') === null) {
+        document.getElementById('cookie-banner').style.display = 'flex';
       }
+      document.getElementById('project-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        createProject();
+      });
+    });
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user) { window.location.href = 'auth.html'; return; }
+      userData = {
+        username: user.email?.split('@')[0] || 'usuário',
+        email: user.email || '',
+        uid: user.uid,
+        displayName: user.displayName || user.email?.split('@')[0] || 'usuário'
+      };
+      document.getElementById('username').textContent = userData.displayName;
+      loadProjects(user.uid);
+    });
+
+    function loadProjects(userId) {
+      const projectsRef = ref(database, `projects/${userId}`);
+      onValue(projectsRef, (snapshot) => {
+        const container = document.getElementById('projects-container');
+        if (!container) return;
+        container.innerHTML = '';
+        const projects = snapshot.val() || {};
+
+        if (Object.keys(projects).length === 0) {
+          container.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;background:white;border-radius:10px;"><p style="color:#666;">Nenhum projeto ainda. Crie um novo!</p></div>`;
+          showAppContent();
+          return;
+        }
+
+        for (const [projectId, project] of Object.entries(projects)) {
+          if (!projectId || !project) continue;
+          const isPdf = project.type === 'pdf';
+          const card = document.createElement('div');
+          card.className = `project-card ${isPdf ? 'pdf-card' : 'code-card'}`;
+          card.innerHTML = `
+            <div class="project-type-badge ${isPdf ? 'badge-pdf' : 'badge-code'}">${isPdf ? '📄 PDF' : '💻 Código'}</div>
+            <div class="project-name">${escapeHtml(project.name || 'Sem nome')}</div>
+            <div class="project-domain">👤 ${escapeHtml(project.owner || userData.displayName)}</div>
+            <div style="font-size:0.8rem;color:#888;margin-bottom:1rem;">🕐 ${new Date(project.createdAt).toLocaleDateString()}</div>
+            <div class="project-actions">
+              <button class="action-btn edit-btn" onclick="window.location.href='${isPdf ? 'editor-pdf.html' : 'editor.html'}?projectId=${projectId}'">✏️ Abrir</button>
+              <button class="action-btn delete-btn" onclick="deleteProject('${projectId}')">🗑️ Excluir</button>
+            </div>
+          `;
+          container.appendChild(card);
+        }
+        showAppContent();
+      });
+    }
+
+    window.openNewProjectModal = function(type) {
+      document.getElementById('project-type-select').value = type || 'code';
+      document.getElementById('modalTitle').textContent = type === 'pdf' ? '📄 Novo Projeto PDF' : '💻 Novo Projeto de Código';
+      document.getElementById('new-project-modal').style.display = 'block';
+      document.getElementById('project-name').value = '';
+      document.getElementById('project-name').focus();
     }
 
     window.closeNewProjectModal = function() {
-      const modal = document.getElementById('new-project-modal');
-      if (modal) {
-        modal.style.display = 'none';
-        const input = document.getElementById('project-name');
-        if (input) input.value = '';
-      }
+      document.getElementById('new-project-modal').style.display = 'none';
     }
 
-    // Criar novo projeto
     async function createProject() {
       const projectName = document.getElementById('project-name').value.trim();
       const projectType = document.getElementById('project-type-select').value;
       const user = auth.currentUser;
 
-      if (!isValidProjectName(projectName)) {
-        alert('Por favor, informe um nome válido para o projeto (1-50 caracteres)');
-        return;
-      }
+      if (!projectName || projectName.length > 50) { alert('Nome inválido (1-50 caracteres)'); return; }
 
       try {
-        loadingScreen.style.display = 'flex';
-        loadingScreen.style.opacity = '1';
-        appContent.style.display = 'none';
+        document.getElementById('loading-screen').style.display = 'flex';
+        document.getElementById('loading-screen').style.opacity = '1';
+        document.getElementById('app-content').style.display = 'none';
 
-        const slug = projectName.toLowerCase()
-          .replace(/\s+/g, '-')
-          .replace(/[^\w\-]+/g, '')
-          .replace(/\-\-+/g, '-')
-          .replace(/^-+/, '')
-          .replace(/-+$/, '');
-
-        if (!slug) {
-          throw new Error('Não foi possível criar um slug válido a partir do nome');
-        }
-
+        const slug = projectName.toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '');
         const newProjectRef = push(ref(database, `projects/${user.uid}`));
         const projectId = newProjectRef.key;
 
-        if (!projectId) {
-          throw new Error('Não foi possível gerar um ID para o projeto');
-        }
-
         let projectData = {
-          name: projectName,
-          slug: slug,
-          type: projectType,
-          owner: userData.displayName || userData.username,
-          ownerId: user.uid,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          name: projectName, slug, type: projectType,
+          owner: userData.displayName, ownerId: user.uid,
+          createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
           files: {}
         };
 
         if (projectType === 'pdf') {
-          // Projeto PDF - usa chave sanitizada (sem ponto) para Firebase
-          const cloudPath = `codehub_pdf_${projectId}`;
-          projectData.cloudPath = cloudPath;
-          // ATENÇÃO: A chave não pode conter "." segundo o Firebase
+          projectData.cloudPath = `codehub_pdf_${projectId}`;
           const safeKey = sanitizeFilename('document_pdf');
           projectData.files[safeKey] = {
-            content: '',
-            language: 'pdf',
+            content: '', language: 'pdf',
             createdAt: new Date().toISOString(),
             originalName: 'document.pdf',
-            cloudPath: cloudPath
+            cloudPath: `codehub_pdf_${projectId}`
           };
         } else {
-          // Projeto de Código
-          const safeKey = sanitizeFilename('index.html');
+          const safeKey = sanitizeFilename('index_html');
           projectData.files[safeKey] = {
-            content: `<!DOCTYPE html>
-<html>
-<head>
-  <title>${escapeHtml(projectName)}</title>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-    .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-    h1 { color: #667eea; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>🚀 ${escapeHtml(projectName)}</h1>
-    <p>Comece a editar seu código aqui!</p>
-  </div>
-</body>
-</html>`,
-            language: 'html',
-            createdAt: new Date().toISOString(),
-            originalName: 'index.html'
+            content: `<!DOCTYPE html>\n<html>\n<head>\n  <title>${escapeHtml(projectName)}</title>\n  <meta charset="UTF-8">\n  <style>\n    body { font-family: Arial; padding: 20px; background: linear-gradient(135deg, #667eea, #764ba2); min-height: 100vh; }\n    .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }\n    h1 { color: #667eea; }\n  </style>\n</head>\n<body>\n  <div class="container">\n    <h1>🚀 ${escapeHtml(projectName)}</h1>\n    <p>Comece a editar!</p>\n  </div>\n</body>\n</html>`,
+            language: 'html', createdAt: new Date().toISOString(), originalName: 'index.html'
           };
         }
 
-        await Promise.race([
-          set(newProjectRef, projectData),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Tempo excedido ao criar projeto')), 5000)
-          )
-        ]);
-
+        await set(newProjectRef, projectData);
         closeNewProjectModal();
-        window.location.href = `editor.html?projectId=${projectId}`;
-
+        window.location.href = projectType === 'pdf' ? `editor-pdf.html?projectId=${projectId}` : `editor.html?projectId=${projectId}`;
       } catch (error) {
-        console.error("Erro detalhado ao criar projeto:", error);
-        alert(`Ocorreu um erro ao criar o projeto. ${error.message}`);
+        console.error("Erro:", error);
+        alert('Erro ao criar projeto: ' + error.message);
         showAppContent();
       }
     }
 
-    // Excluir projeto
     window.deleteProject = function(projectId) {
-      if (confirm('Tem certeza que deseja excluir este projeto? Esta ação não pode ser desfeita.')) {
-        try {
-          const user = auth.currentUser;
-          if (!user || !user.uid) {
-            throw new Error('Usuário não autenticado');
-          }
-
-          remove(ref(database, `projects/${user.uid}/${projectId}`))
-            .then(() => {
-              alert('Projeto excluído com sucesso!');
-            })
-            .catch(error => {
-              console.error("Erro ao excluir projeto:", error);
-              alert('Erro ao excluir projeto. Por favor, tente novamente.');
-            });
-        } catch (error) {
-          console.error("Erro ao excluir projeto:", error);
-          alert('Erro ao excluir projeto. Por favor, tente novamente.');
-        }
+      if (confirm('Excluir projeto?')) {
+        remove(ref(database, `projects/${auth.currentUser.uid}/${projectId}`));
       }
     }
 
-    // Logout
     window.logout = function() {
-      signOut(auth).then(() => {
-        window.location.href = 'auth.html';
-      }).catch(error => {
-        console.error("Erro ao fazer logout:", error);
-        alert('Erro ao fazer logout. Por favor, tente novamente.');
-      });
+      signOut(auth).then(() => window.location.href = 'auth.html');
     }
 
-    // Discord Widget Functions
     window.toggleDiscordWidget = function() {
-      const widget = document.getElementById('discordWidget');
-      if (widget) {
-        if (widget.style.display === 'none' || widget.style.display === '') {
-          widget.style.display = 'block';
-        } else {
-          widget.style.display = 'none';
-        }
-      }
+      const w = document.getElementById('discordWidget');
+      w.style.display = w.style.display === 'none' || w.style.display === '' ? 'block' : 'none';
     }
 
-    // ============== PUTER CLOUD FUNCTIONS ==============
     window.togglePuterPanel = function() {
       const panel = document.getElementById('puterStatsPanel');
       panel.classList.toggle('active');
-      if (panel.classList.contains('active')) {
-        loadPuterStats();
-        loadCloudFiles();
-      }
+      if (panel.classList.contains('active')) { loadPuterStats(); loadCloudFiles(); }
     }
 
     async function loadPuterStats() {
@@ -1241,109 +492,45 @@
         const items = await puter.fs.readdir('./');
         const files = items.filter(i => !i.is_dir);
         const dirs = items.filter(i => i.is_dir);
-        
         document.getElementById('statFiles').textContent = files.length;
         document.getElementById('statSites').textContent = dirs.length;
-        
         let totalSize = 0;
         for (const file of files) {
-          try {
-            const stat = await puter.fs.stat(file.path);
-            totalSize += stat.size || 0;
-          } catch(e) {}
+          try { const stat = await puter.fs.stat(file.path); totalSize += stat.size || 0; } catch(e) {}
         }
-        
-        document.getElementById('statStorage').textContent = (totalSize / (1024 * 1024)).toFixed(2) + ' MB';
-        
-        try {
-          const user = await puter.auth.getUser();
-          document.getElementById('statCredits').textContent = user.credits || 'N/A';
-        } catch(e) {
-          document.getElementById('statCredits').textContent = 'Login';
-        }
-      } catch(e) {
-        console.error('Erro stats:', e);
-      }
+        document.getElementById('statStorage').textContent = (totalSize / 1048576).toFixed(2) + ' MB';
+        try { const user = await puter.auth.getUser(); document.getElementById('statCredits').textContent = user.credits || 'N/A'; } catch(e) {}
+      } catch(e) {}
     }
 
     window.loadCloudFiles = async function() {
       const list = document.getElementById('cloudFileList');
       list.innerHTML = '<div style="text-align:center;padding:20px;">Carregando...</div>';
-      
       try {
         const items = await puter.fs.readdir('./');
         const files = items.filter(i => !i.is_dir);
-        
-        if (files.length === 0) {
-          list.innerHTML = '<div style="text-align:center;padding:20px;color:#888;">📭 Nenhum arquivo</div>';
-          return;
-        }
-        
+        if (files.length === 0) { list.innerHTML = '<div style="text-align:center;padding:20px;color:#888;">📭 Nenhum arquivo</div>'; return; }
         list.innerHTML = '';
         for (const file of files) {
           let sizeText = 'N/A';
-          try {
-            const stat = await puter.fs.stat(file.path);
-            const s = stat.size || 0;
-            sizeText = s > 1048576 ? (s/1048576).toFixed(2)+' MB' : s > 1024 ? (s/1024).toFixed(2)+' KB' : s+' B';
-          } catch(e) {}
-          
+          try { const stat = await puter.fs.stat(file.path); const s = stat.size || 0; sizeText = s > 1048576 ? (s/1048576).toFixed(2)+' MB' : s > 1024 ? (s/1024).toFixed(2)+' KB' : s+' B'; } catch(e) {}
           const div = document.createElement('div');
           div.className = 'cloud-file-item';
-          div.innerHTML = `
-            <div class="file-info">
-              <span>📄</span>
-              <div>
-                <div style="font-weight:600;font-size:13px;">${escapeHtml(file.name)}</div>
-                <div style="font-size:11px;color:#888;">${sizeText}</div>
-              </div>
-            </div>
-            <button class="delete-cloud-btn" data-path="${file.path.replace(/'/g, "\\'")}">🗑️ Deletar</button>
-          `;
+          div.innerHTML = `<div style="display:flex;align-items:center;gap:10px;"><span>📄</span><div><div style="font-weight:600;font-size:13px;">${escapeHtml(file.name)}</div><div style="font-size:11px;color:#888;">${sizeText}</div></div></div><button class="delete-cloud-btn" data-path="${file.path.replace(/'/g, "\\'")}">🗑️</button>`;
           div.querySelector('.delete-cloud-btn').addEventListener('click', async function() {
-            const path = this.getAttribute('data-path');
-            if (confirm(`Deletar "${path}"?`)) {
-              await puter.fs.delete(path);
+            if (confirm(`Deletar "${this.getAttribute('data-path')}"?`)) {
+              await puter.fs.delete(this.getAttribute('data-path'));
               loadCloudFiles();
               loadPuterStats();
             }
           });
           list.appendChild(div);
         }
-      } catch(e) {
-        list.innerHTML = '<div style="text-align:center;padding:20px;color:#f44336;">Erro ao carregar</div>';
-      }
+      } catch(e) { list.innerHTML = '<div style="text-align:center;padding:20px;color:#f44336;">Erro</div>'; }
     }
 
-    // Cookie functions
-    function checkCookies() {
-      if (localStorage.getItem('cookiesAccepted') === null) {
-        const banner = document.getElementById('cookie-banner');
-        if (banner) banner.style.display = 'flex';
-      }
-    }
-
-    window.acceptCookies = function() {
-      localStorage.setItem('cookiesAccepted', 'true');
-      const banner = document.getElementById('cookie-banner');
-      if (banner) banner.style.display = 'none';
-      if (typeof gtag !== 'undefined') {
-        gtag('consent', 'update', {
-          'analytics_storage': 'granted'
-        });
-      }
-    }
-
-    window.rejectCookies = function() {
-      localStorage.setItem('cookiesAccepted', 'false');
-      const banner = document.getElementById('cookie-banner');
-      if (banner) banner.style.display = 'none';
-      if (typeof gtag !== 'undefined') {
-        gtag('consent', 'update', {
-          'analytics_storage': 'denied'
-        });
-      }
-    }
+    window.acceptCookies = function() { localStorage.setItem('cookiesAccepted','true'); document.getElementById('cookie-banner').style.display='none'; }
+    window.rejectCookies = function() { localStorage.setItem('cookiesAccepted','false'); document.getElementById('cookie-banner').style.display='none'; }
   </script>
 </body>
 </html>
