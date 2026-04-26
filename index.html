@@ -933,8 +933,9 @@
       }, 500);
     }
 
-    // Função para sanitizar nomes de arquivos
+    // Função para sanitizar nomes de arquivos (remove caracteres inválidos para Firebase)
     function sanitizeFilename(filename) {
+      // Firebase não aceita: . # $ / [ ]
       return filename.replace(/[.#$/[\]]/g, '_');
     }
 
@@ -1059,7 +1060,10 @@
           title.textContent = type === 'pdf' ? '📄 Novo Projeto PDF' : '💻 Novo Projeto de Código';
         }
         const input = document.getElementById('project-name');
-        if (input) input.focus();
+        if (input) {
+          input.value = '';
+          input.focus();
+        }
       }
     }
 
@@ -1118,10 +1122,12 @@
         };
 
         if (projectType === 'pdf') {
-          // Projeto PDF
+          // Projeto PDF - usa chave sanitizada (sem ponto) para Firebase
           const cloudPath = `codehub_pdf_${projectId}`;
           projectData.cloudPath = cloudPath;
-          projectData.files['document.pdf'] = {
+          // ATENÇÃO: A chave não pode conter "." segundo o Firebase
+          const safeKey = sanitizeFilename('document_pdf');
+          projectData.files[safeKey] = {
             content: '',
             language: 'pdf',
             createdAt: new Date().toISOString(),
@@ -1130,12 +1136,12 @@
           };
         } else {
           // Projeto de Código
-          const mainFileName = sanitizeFilename('index.html');
-          projectData.files[mainFileName] = {
+          const safeKey = sanitizeFilename('index.html');
+          projectData.files[safeKey] = {
             content: `<!DOCTYPE html>
 <html>
 <head>
-  <title>${projectName}</title>
+  <title>${escapeHtml(projectName)}</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
