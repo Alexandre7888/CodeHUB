@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CodeHUB - Editor</title>
+  <title>CodeHUB - Editor com IA</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -67,35 +67,74 @@
     #saveFileBtn { background: var(--accent-cyan); }
     #previewBtn { background: #4895ef; }
     #sitePublishBtn { background: var(--accent-green); }
-    #pdfExportBtn { background: var(--accent-pink); }
+    #pdfExportBtn { background: var(--accent-pink); display: none; }
     .logout-btn { background: var(--accent-red); }
     
-    #storage-info { background: #333; padding: 4px 10px; border-radius: 5px; font-size: 11px; }
+    #storage-info { background: #333; padding: 4px 10px; border-radius: 5px; font-size: 11px; margin-left: 10px; }
     #user-info { margin-left: auto; display: flex; align-items: center; gap: 10px; }
     
     .url-panel-top { 
       display: flex; align-items: center; gap: 8px; background: var(--bg-tertiary); 
-      padding: 4px 10px; border-radius: 6px; font-size: 11px; 
+      padding: 4px 10px; border-radius: 6px; margin-left: 10px; font-size: 11px; 
     }
     .url-panel-top input { 
       background: var(--bg-primary); border: 1px solid var(--border-color); 
       color: var(--text-primary); padding: 4px 8px; border-radius: 4px; 
       font-family: monospace; font-size: 10px; width: 250px; 
     }
+    .url-panel-top button { padding: 4px 8px; font-size: 11px; }
     
     .zoom-controls {
-      display: flex; align-items: center; gap: 5px;
+      display: flex; align-items: center; gap: 5px; margin-left: 10px;
       background: var(--bg-tertiary); padding: 4px 8px; border-radius: 6px;
     }
-    .zoom-controls button { padding: 2px 8px; font-size: 14px; background: var(--bg-secondary); }
+    .zoom-controls button { padding: 2px 8px; font-size: 14px; background: var(--bg-secondary); border-radius: 4px; min-width: 28px; }
     .zoom-controls span { font-size: 11px; min-width: 40px; text-align: center; color: var(--accent-cyan); }
     
     .project-type-indicator {
       background: var(--bg-tertiary); padding: 4px 10px; border-radius: 20px;
       font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 5px;
     }
-    .type-code { color: var(--accent-blue); }
-    .type-pdf { color: var(--accent-pink); }
+    
+    #left-sidebar { 
+      width: 280px; background: var(--bg-secondary); border-right: 1px solid var(--border-color); 
+      display: flex; flex-direction: column; overflow-y: auto; 
+    }
+    .section-header { 
+      padding: 12px; background: var(--bg-tertiary); font-weight: bold; 
+      border-bottom: 1px solid var(--border-color); display: flex; 
+      justify-content: space-between; align-items: center; font-size: 13px; 
+    }
+    .projects-list { flex: 1; overflow-y: auto; padding: 8px; max-height: 40%; }
+    .project-item { 
+      padding: 10px; margin-bottom: 8px; background: var(--bg-primary); 
+      border-radius: 6px; cursor: pointer; transition: all 0.2s; border: 1px solid var(--border-color); 
+    }
+    .project-item:hover { background: var(--bg-tertiary); border-color: var(--accent-cyan); }
+    .project-item.active { background: var(--accent-blue); border-color: var(--accent-cyan); }
+    .project-name { font-weight: bold; margin-bottom: 4px; font-size: 13px; }
+    .project-date { font-size: 10px; color: var(--text-secondary); }
+    
+    .workers-list { flex: 1; overflow-y: auto; padding: 8px; border-top: 1px solid var(--border-color); }
+    .worker-item { 
+      background: var(--bg-primary); border-radius: 6px; padding: 10px; 
+      margin-bottom: 8px; border: 1px solid var(--border-color); cursor: pointer; 
+    }
+    .worker-item:hover { border-color: var(--accent-cyan); }
+    .worker-name { font-weight: bold; color: var(--accent-cyan); font-size: 12px; margin-bottom: 4px; }
+    .worker-route { font-size: 11px; color: var(--accent-green); font-family: monospace; margin-bottom: 4px; }
+    .worker-url { font-size: 10px; color: var(--text-secondary); word-break: break-all; margin-bottom: 8px; }
+    .worker-status { 
+      font-size: 10px; display: inline-block; padding: 2px 6px; border-radius: 4px; margin-bottom: 6px; 
+    }
+    .worker-status.published { background: var(--accent-green); color: var(--bg-primary); }
+    .worker-status.not-published { background: var(--accent-red); }
+    .worker-actions { display: flex; gap: 5px; flex-wrap: wrap; }
+    .worker-actions button { background: var(--accent-blue); padding: 3px 8px; font-size: 10px; }
+    .worker-actions button.delete { background: var(--accent-red); }
+    .worker-actions button.test { background: var(--accent-green); }
+    .worker-actions button.update-worker { background: var(--accent-orange); }
+    .no-workers { text-align: center; color: var(--text-secondary); padding: 20px; font-size: 12px; }
     
     .main-container { display: flex; flex: 1; overflow: hidden; }
     #editor-container { flex: 2; display: flex; flex-direction: column; overflow: hidden; }
@@ -107,7 +146,7 @@
       background: var(--bg-tertiary); padding: 6px 12px; position: relative; 
       padding-right: 25px; border-radius: 0; font-size: 12px; white-space: nowrap;
     }
-    .tab-btn.active { background: var(--bg-primary); }
+    .tab-btn.active { background: var(--bg-primary); color: var(--text-primary); }
     .close-tab-btn { 
       position: absolute; right: 5px; top: 50%; transform: translateY(-50%); 
       background: transparent; border: none; color: #999; cursor: pointer; font-size: 14px; 
@@ -122,7 +161,7 @@
     /* PDF Editor */
     #pdf-editor-container {
       width: 100%; height: 100%; background: #f5f5f5; 
-      display: flex; flex-direction: column; align-items: center; 
+      display: none; flex-direction: column; align-items: center; 
       padding: 30px; overflow-y: auto;
     }
     #pdf-canvas-area {
@@ -133,12 +172,12 @@
     #pdf-title-input {
       width: 100%; font-size: 28px; font-weight: bold; border: none;
       border-bottom: 2px solid #e0e0e0; padding: 10px; margin-bottom: 20px;
-      background: transparent; outline: none; font-family: inherit;
+      background: transparent; outline: none; font-family: inherit; color: #333;
     }
     #pdf-content-editor {
       width: 100%; min-height: 400px; border: 1px solid #e0e0e0;
       border-radius: 8px; padding: 15px; font-size: 14px; line-height: 1.8;
-      font-family: inherit; resize: vertical; background: #fafafa;
+      font-family: inherit; resize: vertical; background: #fafafa; color: #333;
     }
     .pdf-toolbar {
       display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;
@@ -159,19 +198,83 @@
       cursor: ew-resize; background: transparent; z-index: 100; 
     }
     .resize-handle:hover { background: var(--accent-cyan); }
-    .sidebar-header { padding: 12px; background: var(--bg-tertiary); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
-    .chat-messages { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
-    .message { padding: 10px 14px; border-radius: 12px; max-width: 95%; word-wrap: break-word; font-size: 13px; animation: fadeIn 0.3s ease; }
+    
+    .sidebar-header { 
+      padding: 12px; background: var(--bg-tertiary); display: flex; 
+      justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); 
+    }
+    .chat-messages { 
+      flex: 1; overflow-y: auto; padding: 12px; display: flex; 
+      flex-direction: column; gap: 12px; min-height: 0; 
+    }
+    .message { 
+      padding: 10px 14px; border-radius: 12px; max-width: 95%; 
+      word-wrap: break-word; font-size: 13px; animation: fadeIn 0.3s ease; 
+    }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .message.user { background: var(--accent-blue); align-self: flex-end; }
-    .message.ai { background: #3d3d3d; align-self: flex-start; white-space: pre-wrap; }
+    .message.user { background: var(--accent-blue); align-self: flex-end; border-bottom-right-radius: 4px; }
+    .message.ai { background: #3d3d3d; align-self: flex-start; border-bottom-left-radius: 4px; white-space: pre-wrap; }
     .message.ai.streaming { border-left: 3px solid var(--accent-purple); }
     .message.system { background: var(--accent-orange); align-self: center; font-size: 12px; border-radius: 20px; }
+    .message pre { background: var(--bg-primary); padding: 10px; border-radius: 8px; overflow-x: auto; margin-top: 10px; font-size: 12px; }
+    
     .chat-controls { padding: 12px; border-top: 1px solid var(--border-color); background: var(--bg-secondary); }
+    .mode-toggle { display: flex; gap: 10px; margin-bottom: 10px; justify-content: center; }
+    .mode-toggle-btn { flex: 1; background: #333; padding: 8px; font-size: 13px; border-radius: 8px; }
+    .mode-toggle-btn.active { background: var(--accent-purple); }
+    .mode-toggle-btn.edit-mode.active { background: #4caf50; }
     .chat-input-wrapper { display: flex; gap: 10px; }
-    .chat-input-wrapper textarea { flex: 1; background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px; border-radius: 8px; resize: none; }
+    .chat-input-wrapper textarea { 
+      flex: 1; background: var(--bg-primary); border: 1px solid var(--border-color); 
+      color: var(--text-primary); padding: 10px; border-radius: 8px; resize: none; 
+      font-family: inherit; font-size: 13px; 
+    }
     .chat-input-wrapper button { background: var(--accent-purple); padding: 10px 20px; border-radius: 8px; }
     
+    .quick-actions { 
+      display: flex; gap: 5px; flex-wrap: wrap; padding: 8px 12px; 
+      background: var(--bg-primary); border-top: 1px solid var(--border-color); 
+    }
+    .quick-actions button { 
+      background: #333; padding: 4px 8px; font-size: 10px; border-radius: 12px; 
+    }
+    .quick-actions button:hover { background: var(--accent-blue); }
+    
+    /* Worker Editor Window */
+    .worker-editor-window {
+      position: fixed; background: var(--bg-secondary); border: 2px solid var(--accent-cyan);
+      border-radius: 12px; z-index: 500; min-width: 350px; min-height: 250px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.6); display: none; flex-direction: column;
+      resize: both; overflow: hidden;
+    }
+    .worker-editor-header-window {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 14px; background: var(--bg-tertiary); cursor: move;
+      user-select: none; border-radius: 10px 10px 0 0; border-bottom: 1px solid var(--border-color);
+    }
+    .worker-editor-header-window .title { font-weight: bold; color: var(--accent-cyan); font-size: 13px; }
+    .worker-editor-header-window .window-controls { display: flex; gap: 6px; }
+    .worker-editor-header-window .window-controls button {
+      width: 28px; height: 28px; border-radius: 50%; font-size: 14px; padding: 0;
+      display: flex; align-items: center; justify-content: center; background: transparent;
+      border: 1px solid var(--border-color); color: var(--text-primary); cursor: pointer;
+    }
+    .worker-editor-header-window .window-controls button.close:hover { background: var(--accent-red); border-color: var(--accent-red); }
+    .worker-editor-body-window {
+      flex: 1; padding: 10px; display: flex; flex-direction: column; gap: 8px; overflow: auto;
+    }
+    .worker-editor-body-window textarea {
+      flex: 1; background: var(--bg-primary); border: 1px solid var(--border-color);
+      color: #d4d4d4; font-family: 'Consolas', monospace; font-size: 12px;
+      padding: 10px; border-radius: 6px; resize: none; min-height: 120px;
+    }
+    .worker-editor-body-window .worker-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+    .worker-editor-body-window .worker-buttons button { padding: 6px 12px; font-size: 11px; }
+    
+    .worker-editor-window.minimized { min-height: auto !important; height: auto !important; resize: none; }
+    .worker-editor-window.minimized .worker-editor-body-window { display: none; }
+    
+    /* Context Menu */
     .context-menu {
       position: fixed; background: var(--bg-tertiary); border: 1px solid var(--border-color);
       border-radius: 10px; padding: 8px 0; z-index: 10000; min-width: 200px;
@@ -179,61 +282,99 @@
     }
     .context-menu .menu-item {
       padding: 10px 16px; cursor: pointer; font-size: 13px;
-      display: flex; align-items: center; gap: 10px; transition: background 0.15s;
+      display: flex; align-items: center; gap: 10px; transition: background 0.15s; color: var(--text-primary);
     }
     .context-menu .menu-item:hover { background: var(--accent-blue); }
     .context-menu .menu-divider { height: 1px; background: var(--border-color); margin: 6px 0; }
+    .context-menu .menu-shortcut { margin-left: auto; color: var(--text-secondary); font-size: 11px; }
     
-    .notification { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; color: white; z-index: 1000; animation: slideIn 0.3s; }
+    .publish-modal { 
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+      background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); 
+      display: none; justify-content: center; align-items: center; z-index: 10001; 
+    }
+    .publish-modal-content { 
+      background: var(--bg-tertiary); border-radius: 16px; padding: 30px; 
+      max-width: 400px; width: 90%; text-align: center; 
+    }
+    .publish-modal-buttons { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
+    .btn-publish-yes { background: #4caf50; }
+    .btn-publish-no { background: var(--accent-red); }
+    
+    .notification { 
+      position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; 
+      border-radius: 8px; color: white; z-index: 1000; animation: slideIn 0.3s ease; font-size: 13px; 
+    }
     .notification.success { background: #4caf50; }
     .notification.error { background: var(--accent-red); }
+    .notification.info { background: #2196f3; }
     @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     
-    .publish-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 10001; }
-    .publish-modal-content { background: var(--bg-tertiary); border-radius: 16px; padding: 30px; max-width: 400px; width: 90%; text-align: center; }
-    .publish-modal-buttons { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
+    .puter-status { 
+      display: flex; align-items: center; gap: 5px; background: #333; 
+      padding: 2px 8px; border-radius: 20px; font-size: 11px; 
+    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-red); }
+    .status-dot.connected { background: #4caf50; }
+    .new-project-btn { background: #4caf50; font-size: 11px; padding: 4px 8px; }
+    .new-worker-btn { background: var(--accent-green); font-size: 11px; padding: 4px 8px; }
+    
+    .activities-panel { background: var(--bg-primary); border-top: 1px solid var(--border-color); display: flex; flex-direction: column; min-height: 120px; max-height: 160px; }
+    .activities-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: var(--bg-tertiary); font-size: 11px; color: var(--accent-cyan); border-bottom: 1px solid var(--border-color); }
+    .activities-content { flex: 1; overflow-y: auto; padding: 8px; font-size: 11px; }
   </style>
 </head>
 <body>
   <div id="loading-screen">
     <img src="https://alexandre7888.github.io/CodeHUB/CodeFOX/foto1.jpg" class="loader" alt="Loading">
-    <h2>Carregando Editor...</h2>
+    <h2>Carregando CodeHUB...</h2>
   </div>
 
-  <div id="app-content" style="display:none;height:100vh;display:flex;flex-direction:column;">
+  <div id="app-content" style="display: none; height: 100vh; display: flex; flex-direction: column;">
     <div id="top-bar">
       <button onclick="window.location.href='index.html'">🏠 Início</button>
-      <div class="project-type-indicator" id="projectTypeIndicator">
+      <button id="puterDashboardBtn">🚀 Puter Dashboard</button>
+      <div class="project-type-indicator">
         <span id="projectTypeIcon">💻</span>
-        <span id="projectTypeLabel">Código</span>
+        <span id="projectTypeLabel" style="color:#4cc9f0;">Código</span>
       </div>
       <input type="text" id="project-name" placeholder="Nome do Projeto">
       <button id="saveFileBtn" disabled>💾 Salvar</button>
       <button id="previewBtn">👁️ Preview</button>
       <button id="sitePublishBtn">🚀 Publicar Site</button>
-      <button id="pdfExportBtn" style="display:none;background:#f72585;">📄 Exportar PDF</button>
-      <div class="zoom-controls">
-        <button onclick="changeZoom(-0.1)">➖</button>
-        <span id="zoomLevel">100%</span>
-        <button onclick="changeZoom(0.1)">➕</button>
-        <button onclick="resetZoom()">↺</button>
-      </div>
-      <div class="url-panel-top" id="urlPanelTop" style="display:none;">
+      <button id="pdfExportBtn">📄 Salvar PDF</button>
+      <div id="storage-info">📦 <span id="storage-used">0</span> / <span id="storage-limit">5</span> MB</div>
+      <div class="url-panel-top" id="urlPanelTop" style="display: none;">
+        <span>🔗</span>
         <input type="text" id="fileUrlTop" readonly onclick="this.select()">
         <button id="openUrlTopBtn">Abrir</button>
       </div>
+      <div class="zoom-controls">
+        <button onclick="changeZoom(-0.1)" title="Diminuir zoom">➖</button>
+        <span id="zoomLevel">100%</span>
+        <button onclick="changeZoom(0.1)" title="Aumentar zoom">➕</button>
+        <button onclick="resetZoom()" title="Resetar zoom">↺</button>
+      </div>
       <div id="user-info">
         <span id="user-name"></span>
+        <div class="puter-status"><div class="status-dot" id="puterStatusDot"></div><span id="puterStatusText">Puter</span></div>
         <button id="logoutBtn" class="logout-btn">Sair</button>
       </div>
     </div>
 
     <div class="main-container">
+      <div id="left-sidebar">
+        <div class="section-header"><span>📁 Meus Projetos</span><button class="new-project-btn" onclick="createNewProject()">+ Novo</button></div>
+        <div class="projects-list" id="projects-list"><div style="text-align:center; padding:20px; color:#888;">Carregando...</div></div>
+        <div class="section-header"><span>⚡ Workers .sc</span><button class="new-worker-btn" onclick="createNewWorker()">+ Worker</button></div>
+        <div class="workers-list" id="workers-list"><div class="no-workers">📭 Nenhum worker criado</div></div>
+      </div>
+
       <div id="editor-container">
         <div id="tabs"></div>
         <div id="container">
-          <textarea id="simple-editor" placeholder="Editor..." style="width:100%;height:100%;background:#1e1e1e;color:#d4d4d4;font-family:monospace;padding:10px;border:none;resize:none;"></textarea>
-          <div id="pdf-editor-container" style="display:none;">
+          <textarea id="simple-editor" placeholder="Editor - você já pode digitar!" style="width:100%; height:100%; background:#1e1e1e; color:#d4d4d4; font-family:monospace; padding:10px; border:none; resize:none;"></textarea>
+          <div id="pdf-editor-container">
             <div id="pdf-canvas-area">
               <div class="pdf-toolbar">
                 <button onclick="addPdfPage()">➕ Nova Página</button>
@@ -242,8 +383,8 @@
                 <button onclick="savePdfDocument()">💾 Salvar PDF</button>
               </div>
               <input type="text" id="pdf-title-input" placeholder="Título do Documento...">
-              <textarea id="pdf-content-editor" placeholder="Comece a escrever seu documento..."></textarea>
-              <div class="pdf-page-indicator">Página 1 de 1</div>
+              <textarea id="pdf-content-editor" placeholder="Comece a escrever seu documento aqui..."></textarea>
+              <div class="pdf-page-indicator">📄 Página 1 de 1</div>
             </div>
           </div>
         </div>
@@ -253,35 +394,82 @@
         <div class="resize-handle" id="resizeHandle"></div>
         <div class="sidebar-header"><h3>🤖 Assistente IA</h3></div>
         <div class="chat-messages" id="chatMessages"></div>
+        <div class="quick-actions" id="quickActions">
+          <button onclick="quickAction('criar-worker')">➕ Criar Worker</button>
+          <button onclick="quickAction('editar-worker')">✏️ Editar Worker</button>
+          <button onclick="quickAction('explicar-worker')">📖 Explicar Worker</button>
+          <button onclick="quickAction('criar-api')">🔧 Criar API</button>
+          <button onclick="quickAction('adicionar-rota')">🛣️ Adicionar Rota</button>
+          <button onclick="quickAction('corrigir-worker')">🔧 Corrigir Worker</button>
+          <button onclick="quickAction('listar-workers')">📋 Listar Workers</button>
+        </div>
         <div class="chat-controls">
+          <div class="mode-toggle">
+            <button class="mode-toggle-btn" id="chatModeBtn" onclick="setMode('chat')">💬 Conversar</button>
+            <button class="mode-toggle-btn edit-mode active" id="editModeBtn" onclick="setMode('edit')">✏️ Editar</button>
+          </div>
           <div class="chat-input-wrapper">
-            <textarea id="chatInput" placeholder="Digite seu comando..." rows="2"></textarea>
+            <textarea id="chatInput" placeholder="Digite seu comando... Ex: crie um worker chamado api" rows="2"></textarea>
             <button id="sendChatBtn">Enviar</button>
           </div>
+        </div>
+        <div class="worker-editor">
+          <div class="worker-editor-header"><span>📝 Código do Worker (.sc)</span><div class="worker-editor-buttons"><button onclick="saveWorkerCode()">💾 Salvar</button><button id="workerPublishBtn" class="update-worker">🚀 Publicar Worker</button></div></div>
+          <textarea id="workerCode" rows="6" placeholder="// Código do Worker .sc\n// Exemplo:\nrouter.get('/api/hello.sc', async () => {\n    return { message: 'Olá do Worker!' };\n});"></textarea>
+        </div>
+        <div class="activities-panel">
+          <div class="activities-header"><span>📊 Atividades do Usuário</span></div>
+          <div class="activities-content" id="activitiesContent"><div id="activitiesList"><div class="no-activities">🔍 Carregando atividades...</div></div></div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Worker Editor Flutuante -->
+  <div class="worker-editor-window" id="workerEditorWindow" style="top:100px;left:150px;width:500px;height:400px;">
+    <div class="worker-editor-header-window" id="workerEditorHeader">
+      <div class="title">📝 <span id="workerWindowTitle">Editor de Worker</span></div>
+      <div class="window-controls">
+        <button onclick="toggleWorkerWindowSize()" title="Minimizar">━</button>
+        <button class="close" onclick="closeWorkerWindow()" title="Fechar">✕</button>
+      </div>
+    </div>
+    <div class="worker-editor-body-window">
+      <textarea id="workerCodeWindow" rows="10" placeholder="// Código do Worker .sc"></textarea>
+      <div class="worker-buttons">
+        <button onclick="saveWorkerCodeWindow()">💾 Salvar</button>
+        <button id="workerPublishBtnWindow" class="update-worker" onclick="publishWorkerWindow()" style="background:#ff9800;">🚀 Publicar Worker</button>
+        <button onclick="testWorkerWindow()" style="background:#22c55e;">▶️ Testar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Context Menu -->
   <div class="context-menu" id="contextMenu">
-    <div class="menu-item" onclick="contextAction('save')">💾 Salvar</div>
-    <div class="menu-item" onclick="contextAction('preview')">👁️ Preview</div>
+    <div class="menu-item" onclick="contextAction('newFile')">📄 Novo Arquivo <span class="menu-shortcut">Ctrl+N</span></div>
+    <div class="menu-item" onclick="contextAction('newWorker')">⚡ Novo Worker <span class="menu-shortcut">Ctrl+W</span></div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" onclick="contextAction('saveFile')">💾 Salvar Arquivo <span class="menu-shortcut">Ctrl+S</span></div>
+    <div class="menu-item" onclick="contextAction('preview')">👁️ Preview <span class="menu-shortcut">Ctrl+P</span></div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" onclick="contextAction('openWorkerEditor')">📝 Abrir Editor de Worker</div>
+    <div class="menu-item" onclick="contextAction('openActivities')">📊 Abrir Atividades</div>
     <div class="menu-divider"></div>
     <div class="menu-item" onclick="contextAction('zoomIn')">🔍 Zoom +</div>
     <div class="menu-item" onclick="contextAction('zoomOut')">🔍 Zoom -</div>
     <div class="menu-item" onclick="contextAction('zoomReset')">↺ Reset Zoom</div>
     <div class="menu-divider"></div>
-    <div class="menu-item" onclick="contextAction('newFile')">📄 Novo Arquivo</div>
     <div class="menu-item" onclick="contextAction('clearChat')">🗑️ Limpar Chat</div>
   </div>
 
+  <!-- Publish Modal -->
   <div id="publishModal" class="publish-modal">
     <div class="publish-modal-content">
       <h3 id="modalTitle">🚀 Publicar?</h3>
-      <p id="modalMessage"></p>
+      <p id="modalMessage">Deseja publicar no Puter agora?</p>
       <div class="publish-modal-buttons">
-        <button class="btn-publish-yes" id="publishYesBtn" style="background:#4caf50;">✅ Sim</button>
-        <button class="btn-publish-no" id="publishNoBtn" style="background:#f44336;">❌ Não</button>
+        <button class="btn-publish-yes" id="publishYesBtn">✅ Sim</button>
+        <button class="btn-publish-no" id="publishNoBtn">❌ Não</button>
       </div>
     </div>
   </div>
@@ -306,17 +494,26 @@
     let currentUser = null;
     let currentFile = null;
     let files = {};
+    let userStorage = { used: 0, limit: 5 * 1024 * 1024 };
     let currentHostingUrl = null;
     let currentHostingSubdomain = null;
     let currentHostingDirectory = null;
     let siteCreated = false;
+    let allProjects = [];
+    let currentMode = 'edit';
     let useSimpleEditor = true;
+    let projectWorkers = [];
+    let currentWorkerData = null;
     let currentZoom = 1;
-    let projectType = 'code'; // 'code' ou 'pdf'
+    let projectType = 'code';
     let cloudPath = null;
 
-    const urlParams = new URLSearchParams(window.location.search);
-    currentProjectId = urlParams.get('projectId');
+    const ACTIVITIES_DB_URL = "https://html-785e3-default-rtdb.firebaseio.com/activities";
+    const ACTIVITY_SCRIPT_URL = "https://code.codehub.ct.ws/atividade.js";
+    let sidebarWidth = 420;
+
+    const simpleEditor = document.getElementById('simple-editor');
+    simpleEditor.addEventListener('input', () => { if (currentFile && useSimpleEditor) { files[currentFile].content = simpleEditor.value; } });
 
     // ============== ZOOM ==============
     function changeZoom(delta) {
@@ -325,125 +522,27 @@
       document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
       localStorage.setItem('codehub_zoom', currentZoom);
     }
-    function resetZoom() { currentZoom = 1; document.body.style.zoom = 1; document.getElementById('zoomLevel').textContent = '100%'; }
+    function resetZoom() { currentZoom = 1; document.body.style.zoom = 1; document.getElementById('zoomLevel').textContent = '100%'; localStorage.setItem('codehub_zoom', 1); }
 
-    // ============== CONTEXT MENU ==============
-    function initContextMenu() {
-      const menu = document.getElementById('contextMenu');
-      document.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        menu.style.display = 'block';
-        menu.style.left = Math.min(e.clientX, window.innerWidth - 220) + 'px';
-        menu.style.top = Math.min(e.clientY, window.innerHeight - 250) + 'px';
-      });
-      document.addEventListener('click', (e) => { if (!menu.contains(e.target)) menu.style.display = 'none'; });
-      document.addEventListener('keydown', (e) => {
-        if (e.ctrlKey && e.key === 's') { e.preventDefault(); saveCurrentFile(); }
-      });
-    }
-
-    window.contextAction = function(action) {
-      document.getElementById('contextMenu').style.display = 'none';
-      switch(action) {
-        case 'save': saveCurrentFile(); break;
-        case 'preview': previewProject(); break;
-        case 'zoomIn': changeZoom(0.1); break;
-        case 'zoomOut': changeZoom(-0.1); break;
-        case 'zoomReset': resetZoom(); break;
-        case 'newFile': 
-          const name = prompt('Nome do arquivo:', 'novo.txt');
-          if (name) { const key = btoa(name).replace(/=/g, ''); files[key] = { name, content: '', size: 0, createdAt: new Date().toISOString() }; saveProject(); openFile(key); updateTabs(); }
-          break;
-        case 'clearChat':
-          if (confirm('Limpar chat?')) { db.ref(`chats/${currentUser.uid}/${currentProjectId}`).remove(); document.getElementById('chatMessages').innerHTML = ''; addChatMessage('🤖 Chat limpo!', 'system'); }
-          break;
-      }
-    }
-
-    // ============== INICIALIZAÇÃO ==============
-    auth.onAuthStateChanged(async user => {
-      if (!user) { window.location.href = 'auth.html'; return; }
-      currentUser = user;
-      document.getElementById('user-name').textContent = user.displayName || user.email?.split('@')[0] || 'Usuário';
-      
-      const savedZoom = localStorage.getItem('codehub_zoom');
-      if (savedZoom) { currentZoom = parseFloat(savedZoom); document.body.style.zoom = currentZoom; }
-      document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
-      
-      if (currentProjectId) {
-        await loadProjectData();
-        await loadChatHistory();
-      }
-      
-      document.getElementById('loading-screen').style.opacity = '0';
-      setTimeout(() => {
-        document.getElementById('loading-screen').style.display = 'none';
-        document.getElementById('app-content').style.display = 'flex';
-      }, 300);
-      
-      setupEventListeners();
-      initContextMenu();
-      initResizing();
-    });
-
-    async function loadProjectData() {
-      const snapshot = await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).once('value');
-      const data = snapshot.val();
-      if (!data) return;
-      
-      projectType = data.type || 'code';
-      cloudPath = data.cloudPath || null;
-      
-      // Atualizar indicador de tipo
-      const typeIcon = document.getElementById('projectTypeIcon');
-      const typeLabel = document.getElementById('projectTypeLabel');
-      if (projectType === 'pdf') {
-        typeIcon.textContent = '📄';
-        typeLabel.textContent = 'PDF';
-        typeLabel.className = 'type-pdf';
-        document.getElementById('pdfExportBtn').style.display = 'inline-block';
-        document.getElementById('sitePublishBtn').style.display = 'none';
-        showPdfEditor();
-      } else {
-        typeIcon.textContent = '💻';
-        typeLabel.textContent = 'Código';
-        typeLabel.className = 'type-code';
-        document.getElementById('pdfExportBtn').style.display = 'none';
-        document.getElementById('sitePublishBtn').style.display = 'inline-block';
-        showCodeEditor();
-      }
-      
-      document.getElementById('project-name').value = data.name || '';
-      files = data.files || {};
-      
-      if (data.hosting?.url) {
-        currentHostingUrl = data.hosting.url;
-        currentHostingSubdomain = data.hosting.subdomain;
-        siteCreated = true;
-        document.getElementById('fileUrlTop').value = currentHostingUrl;
-        document.getElementById('urlPanelTop').style.display = 'flex';
-      }
-      
-      if (projectType === 'pdf' && cloudPath) {
-        await loadPdfFromCloud();
-      }
-      
-      const keys = Object.keys(files);
-      if (keys.length > 0) await openFile(keys[0]);
-      updateTabs();
-    }
-
-    function showCodeEditor() {
-      document.getElementById('pdf-editor-container').style.display = 'none';
-      document.getElementById('simple-editor').style.display = 'block';
-    }
-
+    // ============== PDF FUNCTIONS ==============
     function showPdfEditor() {
       document.getElementById('simple-editor').style.display = 'none';
       document.getElementById('pdf-editor-container').style.display = 'flex';
+      document.getElementById('sitePublishBtn').style.display = 'none';
+      document.getElementById('pdfExportBtn').style.display = 'inline-block';
+      document.getElementById('saveFileBtn').style.display = 'none';
+    }
+
+    function showCodeEditor() {
+      document.getElementById('simple-editor').style.display = 'block';
+      document.getElementById('pdf-editor-container').style.display = 'none';
+      document.getElementById('sitePublishBtn').style.display = 'inline-block';
+      document.getElementById('pdfExportBtn').style.display = 'none';
+      document.getElementById('saveFileBtn').style.display = 'inline-block';
     }
 
     async function loadPdfFromCloud() {
+      if (!cloudPath) return;
       try {
         const blob = await puter.fs.read(`${cloudPath}/document.json`);
         const text = await blob.text();
@@ -452,54 +551,494 @@
         document.getElementById('pdf-content-editor').value = data.content || '';
       } catch(e) {
         console.log('PDF ainda não salvo no Cloud');
+        document.getElementById('pdf-title-input').value = document.getElementById('project-name').value || '';
       }
     }
 
     async function savePdfDocument() {
-      if (projectType !== 'pdf' || !cloudPath) return;
+      if (projectType !== 'pdf' || !cloudPath) {
+        showNotification('Salvando no Firebase...', 'info');
+        return;
+      }
       try {
         const pdfData = {
           title: document.getElementById('pdf-title-input').value,
           content: document.getElementById('pdf-content-editor').value,
           updatedAt: new Date().toISOString()
         };
+        await puter.fs.mkdir(cloudPath).catch(() => {});
         await puter.fs.write(`${cloudPath}/document.json`, JSON.stringify(pdfData, null, 2));
+        await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ updatedAt: new Date().toISOString() });
         showNotification('PDF salvo no Cloud! 💾', 'success');
       } catch(e) {
-        showNotification('Erro ao salvar: ' + e.message, 'error');
+        showNotification('Erro ao salvar PDF: ' + e.message, 'error');
       }
     }
 
-    // Funções do editor PDF
     window.addPdfPage = function() {
       const editor = document.getElementById('pdf-content-editor');
       editor.value += '\n\n--- Nova Página ---\n\n';
       showNotification('Nova página adicionada!', 'info');
-    }
-    window.formatPdfBold = function() { showNotification('Selecione o texto e use Ctrl+B', 'info'); }
-    window.formatPdfItalic = function() { showNotification('Selecione o texto e use Ctrl+I', 'info'); }
+    };
+    window.formatPdfBold = function() { showNotification('Use Ctrl+B para negrito', 'info'); };
+    window.formatPdfItalic = function() { showNotification('Use Ctrl+I para itálico', 'info'); };
+    window.savePdfDocument = savePdfDocument;
 
-    // ============== FUNÇÕES DO EDITOR ==============
-    async function saveProject() {
-      await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ files, updatedAt: new Date().toISOString() });
+    // ============== WORKER WINDOW ==============
+    function initWorkerWindow() {
+      const win = document.getElementById('workerEditorWindow');
+      const header = document.getElementById('workerEditorHeader');
+      let isDragging = false, startX, startY, startLeft, startTop;
+      header.addEventListener('mousedown', (e) => {
+        if (e.target.tagName === 'BUTTON') return;
+        isDragging = true; startX = e.clientX; startY = e.clientY;
+        startLeft = win.offsetLeft; startTop = win.offsetTop;
+        win.style.transition = 'none'; document.body.style.userSelect = 'none';
+      });
+      document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        win.style.left = Math.max(0, startLeft + e.clientX - startX) + 'px';
+        win.style.top = Math.max(0, startTop + e.clientY - startY) + 'px';
+      });
+      document.addEventListener('mouseup', () => {
+        if (isDragging) { isDragging = false; win.style.transition = ''; document.body.style.userSelect = ''; saveWindowPositions(); }
+      });
     }
+
+    function saveWindowPositions() {
+      const win = document.getElementById('workerEditorWindow');
+      localStorage.setItem('workerWindowPos', JSON.stringify({
+        left: win.style.left || '100px', top: win.style.top || '100px',
+        width: win.style.width || '500px', height: win.style.height || '400px'
+      }));
+    }
+
+    function loadWindowPositions() {
+      try {
+        const wp = JSON.parse(localStorage.getItem('workerWindowPos'));
+        if (wp) {
+          const win = document.getElementById('workerEditorWindow');
+          win.style.left = wp.left; win.style.top = wp.top;
+          if (wp.width) win.style.width = wp.width;
+          if (wp.height) win.style.height = wp.height;
+        }
+      } catch(e) {}
+    }
+
+    function openWorkerWindow() {
+      const win = document.getElementById('workerEditorWindow');
+      win.style.display = 'flex';
+      if (currentWorkerData) {
+        document.getElementById('workerCodeWindow').value = currentWorkerData.code || '';
+        document.getElementById('workerWindowTitle').textContent = 'Worker: ' + currentWorkerData.name;
+      }
+      updateWorkerPublishButtonWindow();
+    }
+
+    function closeWorkerWindow() { document.getElementById('workerEditorWindow').style.display = 'none'; }
+    function toggleWorkerWindowSize() { document.getElementById('workerEditorWindow').classList.toggle('minimized'); }
+
+    function updateWorkerPublishButtonWindow() {
+      const btn = document.getElementById('workerPublishBtnWindow');
+      if (currentWorkerData && currentWorkerData.fullUrl) {
+        btn.textContent = '🔄 Atualizar Worker'; btn.style.background = '#ff9800';
+      } else {
+        btn.textContent = '🚀 Publicar Worker'; btn.style.background = '#22c55e';
+      }
+    }
+
+    async function saveWorkerCodeWindow() {
+      if (!currentWorkerData) { showNotification('Selecione um worker', 'warning'); return; }
+      const newCode = document.getElementById('workerCodeWindow').value;
+      const newRoute = extractRouteFromCode(newCode);
+      await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({
+        code: newCode, route: newRoute, updatedAt: new Date().toISOString()
+      });
+      currentWorkerData.code = newCode; currentWorkerData.route = newRoute;
+      await loadProjectWorkers();
+      showNotification('Worker salvo!', 'success');
+    }
+
+    async function publishWorkerWindow() {
+      if (!currentWorkerData) return;
+      await saveWorkerCodeWindow();
+      await publishWorker();
+    }
+
+    async function testWorkerWindow() {
+      if (!currentWorkerData || !currentWorkerData.fullUrl) { showNotification('Worker não publicado', 'warning'); return; }
+      await testWorker(currentWorkerData.id);
+    }
+
+    // ============== CONTEXT MENU ==============
+    function initContextMenu() {
+      const menu = document.getElementById('contextMenu');
+      document.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        menu.style.display = 'block';
+        menu.style.left = Math.min(e.clientX, window.innerWidth - 220) + 'px';
+        menu.style.top = Math.min(e.clientY, window.innerHeight - 350) + 'px';
+      });
+      document.addEventListener('click', (e) => { if (!menu.contains(e.target)) menu.style.display = 'none'; });
+      document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey || e.metaKey) {
+          switch(e.key.toLowerCase()) {
+            case 's': e.preventDefault(); contextAction('saveFile'); break;
+            case 'n': e.preventDefault(); contextAction('newFile'); break;
+            case 'w': e.preventDefault(); contextAction('newWorker'); break;
+            case 'p': e.preventDefault(); contextAction('preview'); break;
+            case '=': case '+': e.preventDefault(); changeZoom(0.1); break;
+            case '-': e.preventDefault(); changeZoom(-0.1); break;
+            case '0': e.preventDefault(); resetZoom(); break;
+          }
+        }
+      });
+    }
+
+    function contextAction(action) {
+      document.getElementById('contextMenu').style.display = 'none';
+      switch(action) {
+        case 'newFile':
+          const newName = prompt('Nome do arquivo:', 'novo.js');
+          if (newName) {
+            const key = btoa(newName).replace(/=/g, '');
+            files[key] = { name: newName, content: '', size: 0, createdAt: new Date().toISOString() };
+            saveProject(); openFile(key); updateTabs();
+          }
+          break;
+        case 'newWorker': createNewWorker(); break;
+        case 'saveFile':
+          if (projectType === 'pdf') savePdfDocument();
+          else if (currentWorkerData) saveWorkerCodeWindow();
+          else saveCurrentFile();
+          break;
+        case 'preview': previewProject(); break;
+        case 'openWorkerEditor': openWorkerWindow(); break;
+        case 'openActivities': break;
+        case 'zoomIn': changeZoom(0.1); break;
+        case 'zoomOut': changeZoom(-0.1); break;
+        case 'zoomReset': resetZoom(); break;
+        case 'clearChat':
+          if (confirm('Limpar chat?')) {
+            db.ref(`chats/${currentUser.uid}/${currentProjectId}`).remove();
+            document.getElementById('chatMessages').innerHTML = '';
+            addChatMessage('🤖 Chat limpo!', 'system');
+          }
+          break;
+      }
+    }
+    window.contextAction = contextAction;
+
+    // ============== UTILITY FUNCTIONS ==============
+    function showNotification(msg, type = 'info') {
+      const n = document.createElement('div');
+      n.className = `notification ${type}`;
+      n.textContent = msg; document.body.appendChild(n);
+      setTimeout(() => n.remove(), 4000);
+    }
+
+    function updatePuterStatus(connected) {
+      const dot = document.getElementById('puterStatusDot');
+      const text = document.getElementById('puterStatusText');
+      if (connected) { dot.classList.add('connected'); text.textContent = 'Online'; }
+      else { dot.classList.remove('connected'); text.textContent = 'Offline'; }
+    }
+
+    function addChatMessage(text, type) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `message ${type}`;
+      msgDiv.innerHTML = text.replace(/\n/g, '<br>');
+      document.getElementById('chatMessages').appendChild(msgDiv);
+      document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+      if (currentProjectId && currentUser) {
+        db.ref(`chats/${currentUser.uid}/${currentProjectId}`).push({ text, type, timestamp: Date.now() });
+      }
+    }
+
+    function extractRouteFromCode(code) { 
+      const match = code.match(/router\.(get|post|put|delete)\(['"`](.*?)['"`]/); 
+      return match ? match[2] : "/api/hello.sc"; 
+    }
+
+    function generateCleanWorkerName(baseName) {
+      return baseName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 20) + '_' + Date.now().toString(36).substring(0, 4);
+    }
+
+    async function ensurePuterAuth() {
+      try { await puter.auth.getUser(); updatePuterStatus(true); return true; } catch(e) {}
+      try { await puter.auth.signIn(); updatePuterStatus(true); return true; } catch(e) { return false; }
+    }
+
+    function updateSitePublishButton() {
+      const btn = document.getElementById('sitePublishBtn');
+      if (siteCreated && currentHostingSubdomain) {
+        btn.textContent = '🔄 Atualizar Site'; btn.style.background = '#ff9800';
+      } else {
+        btn.textContent = '🚀 Publicar Site'; btn.style.background = '#22c55e';
+      }
+    }
+
+    function workerLog(msg) { addChatMessage(`⚡ Worker: ${msg}`, 'system'); }
+
+    // ============== WORKER FUNCTIONS ==============
+    async function loadProjectWorkers() {
+      if (!currentProjectId) return;
+      try {
+        const snapshot = await db.ref(`workers/${currentUser.uid}/${currentProjectId}`).once('value');
+        projectWorkers = [];
+        snapshot.forEach(child => { projectWorkers.push({ id: child.key, ...child.val() }); });
+        renderWorkersList();
+        if (projectWorkers.length > 0 && !currentWorkerData) selectWorker(projectWorkers[0].id);
+      } catch(e) {}
+    }
+
+    function renderWorkersList() {
+      const list = document.getElementById('workers-list');
+      if (!projectWorkers.length) { list.innerHTML = '<div class="no-workers">📭 Nenhum worker .sc criado</div>'; return; }
+      list.innerHTML = projectWorkers.map(w => `
+        <div class="worker-item" onclick="selectWorker('${w.id}')">
+          <div class="worker-name">📦 ${w.name || 'Sem nome'}</div>
+          <div class="worker-route">🎯 ${w.route || '/api/unknown.sc'}</div>
+          <div class="worker-status ${w.fullUrl ? 'published' : 'not-published'}">${w.fullUrl ? '✅ Publicado' : '📝 Rascunho'}</div>
+          <div class="worker-url">🔗 ${w.fullUrl || 'Não publicado'}</div>
+          <div class="worker-actions">
+            ${w.fullUrl ? `<button class="test" onclick="event.stopPropagation();testWorker('${w.id}')">▶️ Testar</button>` : ''}
+            <button onclick="event.stopPropagation();editWorker('${w.id}')">✏️ Editar</button>
+            <button class="delete" onclick="event.stopPropagation();deleteWorker('${w.id}')">🗑️ Deletar</button>
+            ${w.fullUrl ? `<button class="update-worker" onclick="event.stopPropagation();updateWorker('${w.id}')">🔄 Atualizar</button>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function selectWorker(workerId) {
+      const worker = projectWorkers.find(w => w.id === workerId);
+      if (!worker) return;
+      currentWorkerData = worker;
+      document.getElementById('workerCode').value = worker.code || '';
+      document.getElementById('workerCodeWindow').value = worker.code || '';
+      document.getElementById('workerWindowTitle').textContent = 'Worker: ' + worker.name;
+      updateWorkerPublishButtonWindow();
+    }
+
+    async function createNewWorker() {
+      const name = prompt('Nome do worker:', 'meu-worker');
+      if (!name) return;
+      const cleanName = name.replace(/[^a-zA-Z0-9]/g, '');
+      const route = `/api/${cleanName}.sc`;
+      const code = `router.get('${route}', async () => {\n    return { message: 'Olá do ${name}!', timestamp: new Date().toISOString() };\n});`;
+      const ref = db.ref(`workers/${currentUser.uid}/${currentProjectId}`).push();
+      await ref.set({ id: ref.key, name, route, code, createdAt: new Date().toISOString() });
+      await loadProjectWorkers();
+      await selectWorker(ref.key);
+      openWorkerWindow();
+      showNotification(`Worker "${name}" criado!`, 'success');
+    }
+
+    async function saveWorkerCode() {
+      if (!currentWorkerData) { showNotification('Selecione um worker', 'warning'); return; }
+      const newCode = document.getElementById('workerCode').value;
+      const newRoute = extractRouteFromCode(newCode);
+      await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({
+        code: newCode, route: newRoute, updatedAt: new Date().toISOString()
+      });
+      currentWorkerData.code = newCode; currentWorkerData.route = newRoute;
+      await loadProjectWorkers();
+      showNotification('Worker salvo!', 'success');
+    }
+
+    async function publishWorker() {
+      if (!currentWorkerData) { showNotification('Selecione um worker', 'warning'); return; }
+      document.getElementById('modalTitle').textContent = currentWorkerData.fullUrl ? '🔄 Atualizar Worker?' : '🚀 Publicar Worker?';
+      document.getElementById('modalMessage').textContent = currentWorkerData.fullUrl ? `Atualizar "${currentWorkerData.name}"?` : `Publicar "${currentWorkerData.name}"?`;
+      document.getElementById('publishModal').style.display = 'flex';
+      
+      const yes = document.getElementById('publishYesBtn');
+      const no = document.getElementById('publishNoBtn');
+      const handler = async () => {
+        document.getElementById('publishModal').style.display = 'none';
+        yes.removeEventListener('click', handler);
+        no.removeEventListener('click', cancelHandler);
+        workerLog(`🚀 Publicando "${currentWorkerData.name}"...`);
+        try {
+          if (!await ensurePuterAuth()) throw new Error('Faça login no Puter');
+          const cleanName = currentWorkerData.name.replace(/[^a-zA-Z0-9]/g, '').substring(0, 15);
+          const fileName = `${cleanName}_${Date.now().toString(36)}.sc`;
+          await puter.fs.write(fileName, currentWorkerData.code);
+          const deployName = generateCleanWorkerName(cleanName);
+          if (currentWorkerData.deployedName) { try { await puter.workers.delete(currentWorkerData.deployedName); } catch(e) {} }
+          const w = await puter.workers.create(deployName, fileName);
+          const fullUrl = `https://${deployName}.${w.username || 'puter'}.work${currentWorkerData.route}`;
+          await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({
+            url: fullUrl, fullUrl, deployedName: deployName, fileName, deployedAt: new Date().toISOString()
+          });
+          currentWorkerData.url = fullUrl; currentWorkerData.fullUrl = fullUrl; currentWorkerData.deployedName = deployName;
+          await loadProjectWorkers();
+          updateWorkerPublishButtonWindow();
+          workerLog(`✅ Publicado! URL: ${fullUrl}`);
+          showNotification('Worker publicado!', 'success');
+        } catch(e) { workerLog(`❌ Erro: ${e.message}`); showNotification('Erro: ' + e.message, 'error'); }
+      };
+      const cancelHandler = () => {
+        document.getElementById('publishModal').style.display = 'none';
+        yes.removeEventListener('click', handler);
+        no.removeEventListener('click', cancelHandler);
+      };
+      yes.addEventListener('click', handler);
+      no.addEventListener('click', cancelHandler);
+    }
+
+    async function updateWorker(workerId) { await selectWorker(workerId); await publishWorker(); }
+
+    async function testWorker(workerId) {
+      const worker = projectWorkers.find(w => w.id === workerId);
+      if (!worker?.fullUrl) { showNotification('Worker não publicado', 'warning'); return; }
+      workerLog(`🧪 Testando: ${worker.fullUrl}`);
+      try {
+        const res = await fetch(worker.fullUrl, { signal: AbortSignal.timeout(15000) });
+        const text = await res.text();
+        let data; try { data = JSON.parse(text); } catch(e) { data = text; }
+        workerLog(`✅ Resposta (${res.status}): ${typeof data === 'object' ? JSON.stringify(data, null, 2) : data}`);
+      } catch(e) { workerLog(`❌ Erro: ${e.message}`); }
+    }
+
+    async function editWorker(workerId) { await selectWorker(workerId); openWorkerWindow(); }
+
+    async function deleteWorker(workerId) {
+      if (!confirm('Deletar worker?')) return;
+      const worker = projectWorkers.find(w => w.id === workerId);
+      if (worker) {
+        try { if (worker.deployedName) await puter.workers.delete(worker.deployedName); } catch(e) {}
+        await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${workerId}`).remove();
+        await loadProjectWorkers();
+        if (currentWorkerData?.id === workerId) { currentWorkerData = null; document.getElementById('workerCode').value = ''; }
+      }
+    }
+
+    // ============== PUBLISH SITE ==============
+    async function publishSite() {
+      if (projectType === 'pdf') { showNotification('Use Salvar PDF', 'info'); return; }
+      if (!await ensurePuterAuth()) { addChatMessage('❌ Faça login no Puter!', 'system'); return; }
+      if (!Object.values(files).some(f => f.name === 'index.html')) { addChatMessage('❌ Falta index.html', 'system'); return; }
+      
+      document.getElementById('modalTitle').textContent = siteCreated ? '🔄 Atualizar Site?' : '🚀 Publicar Site?';
+      document.getElementById('modalMessage').textContent = siteCreated ? `Atualizar: ${currentHostingUrl}` : 'Publicar no Puter?';
+      document.getElementById('publishModal').style.display = 'flex';
+      
+      const yes = document.getElementById('publishYesBtn');
+      const no = document.getElementById('publishNoBtn');
+      const handler = async () => {
+        document.getElementById('publishModal').style.display = 'none';
+        yes.removeEventListener('click', handler); no.removeEventListener('click', cancelHandler);
+        addChatMessage(siteCreated ? '🔄 Atualizando...' : '🚀 Publicando...', 'system');
+        try {
+          if (!siteCreated) { currentHostingDirectory = puter.randName(); await puter.fs.mkdir(currentHostingDirectory); }
+          for (const [key, file] of Object.entries(files)) {
+            let content = file.content || '';
+            if (file.name.endsWith('.html')) content = injectActivityScript(content);
+            await puter.fs.write(`${currentHostingDirectory}/${file.name}`, content);
+          }
+          if (!siteCreated) { const site = await puter.hosting.create(currentHostingDirectory); currentHostingSubdomain = site.subdomain; currentHostingUrl = `https://${site.subdomain}.puter.site`; siteCreated = true; }
+          else { await puter.hosting.update(currentHostingSubdomain, currentHostingDirectory); }
+          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({ url: currentHostingUrl, subdomain: currentHostingSubdomain, directory: currentHostingDirectory, publishedAt: new Date().toISOString() });
+          document.getElementById('fileUrlTop').value = currentHostingUrl;
+          document.getElementById('urlPanelTop').style.display = 'flex';
+          updateSitePublishButton();
+          addChatMessage(`✅ Publicado! 🔗 ${currentHostingUrl}`, 'ai');
+          showNotification('Sucesso!', 'success');
+        } catch(e) { addChatMessage(`❌ Erro: ${e.message}`, 'system'); if (!siteCreated) currentHostingDirectory = null; }
+      };
+      const cancelHandler = () => { document.getElementById('publishModal').style.display = 'none'; yes.removeEventListener('click', handler); no.removeEventListener('click', cancelHandler); };
+      yes.addEventListener('click', handler); no.addEventListener('click', cancelHandler);
+    }
+
+    function injectActivityScript(html) {
+      const script = `<script src="${ACTIVITY_SCRIPT_URL}?projectid=${currentProjectId}"><\/script>`;
+      if (html.includes('</body>')) return html.replace('</body>', script + '\n</body>');
+      if (html.includes('</html>')) return html.replace('</html>', script + '\n</html>');
+      return html + script;
+    }
+
+    // ============== QUICK ACTIONS ==============
+    async function quickAction(action) {
+      const input = document.getElementById('chatInput');
+      switch(action) {
+        case 'criar-worker': input.value = 'Crie um worker chamado api com rota GET /api/dados.sc'; break;
+        case 'editar-worker': input.value = currentWorkerData ? `Edite o worker ${currentWorkerData.name} para retornar a hora` : 'Edite o worker [nome]'; break;
+        case 'explicar-worker': if (currentWorkerData) addChatMessage(`📦 ${currentWorkerData.name}: ${currentWorkerData.code?.substring(0, 300)}`, 'ai'); break;
+        case 'criar-api': input.value = 'Crie um worker api-rest com GET, POST, PUT, DELETE em /api/items.sc'; break;
+        case 'adicionar-rota': input.value = currentWorkerData ? `Adicione rota POST no worker ${currentWorkerData.name} em /api/salvar.sc` : 'Adicione rota'; break;
+        case 'corrigir-worker': if (currentWorkerData) { const c = currentWorkerData.code.replace(/\(\)\s*=>/g, 'async () =>'); if (c !== currentWorkerData.code) { currentWorkerData.code = c; document.getElementById('workerCodeWindow').value = c; addChatMessage('✅ Corrigido!', 'ai'); } } break;
+        case 'listar-workers': projectWorkers.forEach(w => addChatMessage(`📦 ${w.name} | ${w.route} | ${w.fullUrl || 'Não publicado'}`, 'ai')); break;
+      }
+      input.focus();
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+      document.getElementById('chatModeBtn').classList.toggle('active', mode === 'chat');
+      document.getElementById('editModeBtn').classList.toggle('active', mode === 'edit');
+      localStorage.setItem('codehub_mode', mode);
+    }
+
+    // ============== AI CHAT ==============
+    async function sendToAI() {
+      const msg = document.getElementById('chatInput').value.trim();
+      if (!msg) return;
+      addChatMessage(msg, 'user');
+      document.getElementById('chatInput').value = '';
+      const streamingDiv = document.createElement('div');
+      streamingDiv.className = 'message ai streaming';
+      const contentSpan = document.createElement('span');
+      streamingDiv.appendChild(contentSpan);
+      document.getElementById('chatMessages').appendChild(streamingDiv);
+      let fullResponse = '';
+      try {
+        await ensurePuterAuth();
+        const workersInfo = projectWorkers.map(w => `Worker: ${w.name}, Rota: ${w.route}, Código: ${w.code?.substring(0, 300)}`).join('\n');
+        const prompt = `Você edita workers. WORKERS:\n${workersInfo}\n\nCOMANDO: "${msg}"\n\nResponda JSON:\nCriar: {"action":"criar-worker","name":"nome","code":"router.get('/api/nome.sc', async () => { return { ok: true }; });"}\nEditar: {"action":"editar-worker","targetWorker":"nome","newCode":"código"}`;
+        const res = await puter.ai.chat(prompt, { stream: true });
+        for await (const chunk of res) { fullResponse += chunk; contentSpan.innerHTML = fullResponse.replace(/\n/g, '<br>'); document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight; }
+        streamingDiv.classList.remove('streaming');
+        try {
+          const json = fullResponse.match(/\{[\s\S]*\}/);
+          if (json) {
+            const r = JSON.parse(json[0]);
+            if (r.action === 'criar-worker' && r.name && r.code) {
+              const ref = db.ref(`workers/${currentUser.uid}/${currentProjectId}`).push();
+              await ref.set({ id: ref.key, name: r.name, route: extractRouteFromCode(r.code), code: r.code, createdAt: new Date().toISOString() });
+              await loadProjectWorkers();
+              await selectWorker(ref.key);
+              openWorkerWindow();
+              addChatMessage(`✅ Worker "${r.name}" criado!`, 'ai');
+            } else if (r.action === 'editar-worker' && r.targetWorker && r.newCode) {
+              let worker = projectWorkers.find(w => w.name === r.targetWorker || w.id === r.targetWorker);
+              if (worker) {
+                await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${worker.id}`).update({ code: r.newCode, updatedAt: new Date().toISOString() });
+                await loadProjectWorkers();
+                if (currentWorkerData?.id === worker.id) { currentWorkerData.code = r.newCode; document.getElementById('workerCodeWindow').value = r.newCode; }
+                addChatMessage(`✅ Worker editado!`, 'ai');
+              }
+            }
+          }
+        } catch(e) {}
+      } catch(e) { streamingDiv.classList.remove('streaming'); contentSpan.innerHTML = `❌ Erro: ${e.message}`; }
+    }
+
+    // ============== FILE MANAGEMENT ==============
+    async function saveProject() { await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ files, updatedAt: new Date().toISOString() }); }
 
     async function openFile(fileKey) {
       if (!files[fileKey]) return;
       currentFile = fileKey;
-      const content = files[fileKey].content || '';
-      document.getElementById('simple-editor').value = content;
+      document.getElementById('simple-editor').value = files[fileKey].content || '';
       updateTabs();
     }
 
     async function saveCurrentFile() {
-      if (projectType === 'pdf') {
-        await savePdfDocument();
-        return;
-      }
+      if (projectType === 'pdf') { await savePdfDocument(); return; }
       if (!currentFile) return;
-      const content = document.getElementById('simple-editor').value;
-      files[currentFile] = { ...files[currentFile], content, size: new Blob([content]).size, updatedAt: new Date().toISOString() };
+      files[currentFile] = { ...files[currentFile], content: document.getElementById('simple-editor').value, size: new Blob([document.getElementById('simple-editor').value]).size, updatedAt: new Date().toISOString() };
       await saveProject();
       showNotification('Salvo! 💾', 'success');
     }
@@ -525,37 +1064,45 @@
     }
 
     function previewProject() {
-      if (projectType === 'pdf') {
-        showNotification('Preview de PDF em desenvolvimento', 'info');
-        return;
-      }
+      if (projectType === 'pdf') { showNotification('Preview do PDF no editor acima', 'info'); return; }
       const index = Object.values(files).find(f => f.name === 'index.html');
-      if (index?.content) {
-        const blob = new Blob([index.content], { type: 'text/html' });
-        window.open(URL.createObjectURL(blob), '_blank');
-      } else {
-        showNotification('Crie um index.html primeiro', 'warning');
-      }
+      if (index?.content) { const blob = new Blob([index.content], { type: 'text/html' }); window.open(URL.createObjectURL(blob), '_blank'); }
+      else showNotification('Crie um index.html', 'warning');
     }
 
-    async function publishSite() {
+    // ============== PROJECT LOADING ==============
+    async function loadProjectData() {
+      const snapshot = await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).once('value');
+      const data = snapshot.val();
+      if (!data) return;
+      
+      projectType = data.type || 'code';
+      cloudPath = data.cloudPath || null;
+      
       if (projectType === 'pdf') {
-        showNotification('Use "Exportar PDF" para salvar', 'info');
-        return;
+        showPdfEditor();
+        document.getElementById('projectTypeIcon').textContent = '📄';
+        document.getElementById('projectTypeLabel').textContent = 'PDF';
+        document.getElementById('projectTypeLabel').style.color = '#f72585';
+        if (cloudPath) await loadPdfFromCloud();
+      } else {
+        showCodeEditor();
+        document.getElementById('projectTypeIcon').textContent = '💻';
+        document.getElementById('projectTypeLabel').textContent = 'Código';
+        document.getElementById('projectTypeLabel').style.color = '#4cc9f0';
       }
-      // (Mantida a função original de publish site)
-      showNotification('Publicação iniciada...', 'info');
-    }
-
-    function addChatMessage(text, type) {
-      const msgDiv = document.createElement('div');
-      msgDiv.className = `message ${type}`;
-      msgDiv.innerHTML = text.replace(/\n/g, '<br>');
-      document.getElementById('chatMessages').appendChild(msgDiv);
-      document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
-      if (currentProjectId && currentUser) {
-        db.ref(`chats/${currentUser.uid}/${currentProjectId}`).push({ text, type, timestamp: Date.now() });
+      
+      document.getElementById('project-name').value = data.name || '';
+      files = data.files || {};
+      if (data.hosting?.url) {
+        currentHostingUrl = data.hosting.url;
+        currentHostingSubdomain = data.hosting.subdomain;
+        siteCreated = true;
+        document.getElementById('fileUrlTop').value = currentHostingUrl;
+        document.getElementById('urlPanelTop').style.display = 'flex';
       }
+      updateSitePublishButton();
+      if (projectType !== 'pdf') { const keys = Object.keys(files); if (keys.length > 0) await openFile(keys[0]); updateTabs(); }
     }
 
     async function loadChatHistory() {
@@ -568,68 +1115,104 @@
         msgDiv.innerHTML = msg.text.replace(/\n/g, '<br>');
         document.getElementById('chatMessages').appendChild(msgDiv);
       });
-      if (!snapshot.exists()) {
-        addChatMessage('🤖 Olá! Sou seu assistente. Use Ctrl+S para salvar.', 'system');
-      }
+      if (!snapshot.exists()) addChatMessage('🤖 Olá! Use os botões ou digite comandos!', 'system');
     }
 
-    function showNotification(msg, type) {
-      const n = document.createElement('div');
-      n.className = `notification ${type}`;
-      n.textContent = msg;
-      document.body.appendChild(n);
-      setTimeout(() => n.remove(), 4000);
-    }
-
-    function initResizing() {
+    // ============== INITIALIZATION ==============
+    function setupEventListeners() {
+      document.getElementById('saveFileBtn').addEventListener('click', saveCurrentFile);
+      document.getElementById('previewBtn').addEventListener('click', previewProject);
+      document.getElementById('sitePublishBtn').addEventListener('click', publishSite);
+      document.getElementById('pdfExportBtn').addEventListener('click', savePdfDocument);
+      document.getElementById('puterDashboardBtn').addEventListener('click', () => window.open('https://puter.com', '_blank'));
+      document.getElementById('openUrlTopBtn')?.addEventListener('click', () => { if (currentHostingUrl) window.open(currentHostingUrl, '_blank'); });
+      document.getElementById('sendChatBtn').addEventListener('click', sendToAI);
+      document.getElementById('workerPublishBtn').addEventListener('click', publishWorker);
+      document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendToAI(); } });
+      document.getElementById('logoutBtn').addEventListener('click', () => auth.signOut().then(() => window.location.href = 'auth.html'));
+      document.getElementById('project-name').addEventListener('blur', async () => {
+        const name = document.getElementById('project-name').value.trim();
+        if (name && currentProjectId) { await db.ref(`projects/${currentUser.uid}/${currentProjectId}/name`).set(name); }
+      });
+      
       const handle = document.getElementById('resizeHandle');
       let isResizing = false;
       handle.addEventListener('mousedown', (e) => { isResizing = true; e.preventDefault(); });
       document.addEventListener('mousemove', (e) => {
         if (!isResizing) return;
         const w = window.innerWidth - e.clientX;
-        if (w >= 250 && w <= 600) {
-          document.getElementById('ai-sidebar').style.width = w + 'px';
-          localStorage.setItem('codehub_sidebar_width', w);
-        }
+        if (w >= 250 && w <= 600) { document.getElementById('ai-sidebar').style.width = w + 'px'; localStorage.setItem('codehub_sidebar_width', w); }
       });
       document.addEventListener('mouseup', () => { isResizing = false; });
     }
 
-    function setupEventListeners() {
-      document.getElementById('saveFileBtn').addEventListener('click', saveCurrentFile);
-      document.getElementById('previewBtn').addEventListener('click', previewProject);
-      document.getElementById('sitePublishBtn').addEventListener('click', publishSite);
-      document.getElementById('pdfExportBtn').addEventListener('click', savePdfDocument);
-      document.getElementById('logoutBtn').addEventListener('click', () => auth.signOut().then(() => window.location.href = 'auth.html'));
-      document.getElementById('openUrlTopBtn')?.addEventListener('click', () => { if (currentHostingUrl) window.open(currentHostingUrl, '_blank'); });
-      document.getElementById('project-name').addEventListener('blur', async () => {
-        const name = document.getElementById('project-name').value.trim();
-        if (name) await db.ref(`projects/${currentUser.uid}/${currentProjectId}/name`).set(name);
+    function initializeApp() {
+      auth.onAuthStateChanged(async user => {
+        if (!user) { window.location.href = 'auth.html'; return; }
+        currentUser = user;
+        document.getElementById('user-name').textContent = user.displayName || user.email?.split('@')[0] || 'Usuário';
+        
+        const params = new URLSearchParams(window.location.search);
+        currentProjectId = params.get('projectId');
+        
+        const savedZoom = localStorage.getItem('codehub_zoom');
+        if (savedZoom) { currentZoom = parseFloat(savedZoom); document.body.style.zoom = currentZoom; }
+        document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
+        
+        const savedWidth = localStorage.getItem('codehub_sidebar_width');
+        if (savedWidth) document.getElementById('ai-sidebar').style.width = savedWidth + 'px';
+        const savedMode = localStorage.getItem('codehub_mode');
+        setMode(savedMode === 'chat' ? 'chat' : 'edit');
+        
+        if (currentProjectId) {
+          await loadProjectData();
+          await loadChatHistory();
+          await loadProjectWorkers();
+        }
+        
+        document.getElementById('loading-screen').style.opacity = '0';
+        setTimeout(() => {
+          document.getElementById('loading-screen').style.display = 'none';
+          document.getElementById('app-content').style.display = 'flex';
+        }, 300);
+        
+        setupEventListeners();
+        initWorkerWindow();
+        initContextMenu();
+        loadWindowPositions();
+        initPuter();
       });
-      document.getElementById('chatInput').addEventListener('keydown', e => {
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendToAI(); }
-      });
-      document.getElementById('sendChatBtn').addEventListener('click', sendToAI);
     }
 
-    async function sendToAI() {
-      const msg = document.getElementById('chatInput').value.trim();
-      if (!msg) return;
-      addChatMessage(msg, 'user');
-      document.getElementById('chatInput').value = '';
-      addChatMessage('🤖 Processando... (IA em desenvolvimento)', 'ai');
-    }
+    async function initPuter() { try { await puter.auth.getUser(); updatePuterStatus(true); } catch(e) { updatePuterStatus(false); } }
 
-    // Expor funções globalmente
+    initializeApp();
+
+    // Expor globalmente
+    window.selectWorker = selectWorker;
+    window.createNewWorker = createNewWorker;
+    window.saveWorkerCode = saveWorkerCode;
+    window.publishWorker = publishWorker;
+    window.updateWorker = updateWorker;
+    window.testWorker = testWorker;
+    window.editWorker = editWorker;
+    window.deleteWorker = deleteWorker;
     window.closeFile = closeFile;
+    window.setMode = setMode;
+    window.quickAction = quickAction;
     window.changeZoom = changeZoom;
     window.resetZoom = resetZoom;
-    window.saveCurrentFile = saveCurrentFile;
+    window.openWorkerWindow = openWorkerWindow;
+    window.closeWorkerWindow = closeWorkerWindow;
+    window.toggleWorkerWindowSize = toggleWorkerWindowSize;
+    window.saveWorkerCodeWindow = saveWorkerCodeWindow;
+    window.publishWorkerWindow = publishWorkerWindow;
+    window.testWorkerWindow = testWorkerWindow;
     window.savePdfDocument = savePdfDocument;
     window.addPdfPage = addPdfPage;
     window.formatPdfBold = formatPdfBold;
     window.formatPdfItalic = formatPdfItalic;
+    window.saveCurrentFile = saveCurrentFile;
     window.previewProject = previewProject;
     window.publishSite = publishSite;
   </script>
