@@ -59,7 +59,9 @@
     }
     button:hover { filter: brightness(1.2); }
     #savePdfBtn { background: var(--pink); }
-    #copyUrlBtn { background: var(--green); }
+    #publishPdfBtn { background: var(--green); }
+    #copyUrlBtn { background: var(--cyan); display: none; }
+    #openUrlBtn { background: #4895ef; display: none; }
     .logout-btn { background: var(--red); }
     
     .zoom-controls {
@@ -68,6 +70,16 @@
     }
     .zoom-controls button { padding: 2px 8px; font-size: 14px; background: var(--bg2); border-radius: 4px; min-width: 28px; }
     .zoom-controls span { font-size: 11px; min-width: 40px; text-align: center; color: var(--cyan); }
+    
+    .url-panel {
+      display: flex; align-items: center; gap: 6px; background: var(--bg3);
+      padding: 4px 10px; border-radius: 6px; font-size: 11px;
+    }
+    .url-panel input {
+      background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); padding: 4px 8px; border-radius: 4px;
+      font-family: monospace; font-size: 10px; width: 220px;
+    }
     
     #user-info { margin-left: auto; display: flex; align-items: center; gap: 10px; }
     
@@ -93,38 +105,62 @@
     }
     
     .pdf-toolbar {
-      display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
+      display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap;
     }
     .pdf-toolbar button {
-      background: var(--pink); padding: 8px 14px; font-size: 12px; border-radius: 6px;
+      padding: 7px 12px; font-size: 11px; border-radius: 6px;
     }
-    .pdf-toolbar button.tool-btn { background: var(--bg3); }
-    .pdf-toolbar button.tool-btn:hover { background: var(--blue); }
+    .pdf-toolbar .tool-btn { background: var(--bg3); }
+    .pdf-toolbar .tool-btn:hover { background: var(--pink); }
     
     #ai-sidebar { 
-      width: 380px; background: var(--bg2); border-left: 1px solid var(--border); 
-      display: flex; flex-direction: column; min-width: 250px; max-width: 500px;
+      width: 400px; background: var(--bg2); border-left: 1px solid var(--border); 
+      display: flex; flex-direction: column; min-width: 280px; max-width: 550px;
       resize: horizontal; overflow: hidden;
     }
-    .sidebar-header { padding: 12px; background: var(--bg3); font-weight: bold; border-bottom: 1px solid var(--border); }
-    .chat-messages { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
-    .message { padding: 10px 14px; border-radius: 12px; max-width: 95%; word-wrap: break-word; font-size: 13px; animation: fadeIn 0.3s; }
+    .sidebar-header { 
+      padding: 12px; background: var(--bg3); font-weight: bold; 
+      border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
+    }
+    .chat-messages { 
+      flex: 1; overflow-y: auto; padding: 12px; 
+      display: flex; flex-direction: column; gap: 12px; 
+    }
+    .message { 
+      padding: 10px 14px; border-radius: 12px; max-width: 95%; 
+      word-wrap: break-word; font-size: 13px; animation: fadeIn 0.3s; 
+    }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .message.user { background: var(--pink); align-self: flex-end; }
-    .message.ai { background: #3d3d3d; align-self: flex-start; white-space: pre-wrap; }
+    .message.user { background: var(--pink); align-self: flex-end; border-bottom-right-radius: 4px; }
+    .message.ai { 
+      background: #3d3d3d; align-self: flex-start; white-space: pre-wrap; 
+      border-bottom-left-radius: 4px; 
+    }
+    .message.ai.streaming { border-left: 3px solid var(--purple); }
     .message.system { background: var(--orange); align-self: center; font-size: 12px; border-radius: 20px; }
-    .chat-controls { padding: 12px; border-top: 1px solid var(--border); }
+    
+    .quick-actions {
+      display: flex; gap: 5px; flex-wrap: wrap; padding: 8px 12px;
+      background: var(--bg); border-top: 1px solid var(--border);
+    }
+    .quick-actions button {
+      background: #333; padding: 4px 8px; font-size: 10px; border-radius: 12px;
+    }
+    .quick-actions button:hover { background: var(--pink); }
+    
+    .chat-controls { padding: 12px; border-top: 1px solid var(--border); background: var(--bg2); }
     .chat-input-wrapper { display: flex; gap: 10px; }
     .chat-input-wrapper textarea { 
       flex: 1; background: var(--bg); border: 1px solid var(--border); 
-      color: var(--text); padding: 10px; border-radius: 8px; resize: none; font-family: inherit; font-size: 13px; 
+      color: var(--text); padding: 10px; border-radius: 8px; resize: none; 
+      font-family: inherit; font-size: 13px; 
     }
     .chat-input-wrapper button { background: var(--purple); padding: 10px 20px; border-radius: 8px; }
     
     /* Menu de contexto do PDF */
     .context-menu {
       position: fixed; background: var(--bg3); border: 1px solid var(--border);
-      border-radius: 10px; padding: 8px 0; z-index: 10000; min-width: 220px;
+      border-radius: 10px; padding: 8px 0; z-index: 10000; min-width: 240px;
       box-shadow: 0 8px 30px rgba(0,0,0,0.5); display: none;
     }
     .context-menu .menu-item {
@@ -135,7 +171,21 @@
     .context-menu .menu-divider { height: 1px; background: var(--border); margin: 6px 0; }
     .context-menu .menu-shortcut { margin-left: auto; color: var(--text2); font-size: 11px; }
     
-    .notification { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; color: white; z-index: 1000; animation: slideIn 0.3s; font-size: 13px; }
+    .publish-modal { 
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+      background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); 
+      display: none; justify-content: center; align-items: center; z-index: 10001; 
+    }
+    .publish-modal-content { 
+      background: var(--bg3); border-radius: 16px; padding: 30px; 
+      max-width: 400px; width: 90%; text-align: center; 
+    }
+    .publish-modal-buttons { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
+    
+    .notification { 
+      position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; 
+      border-radius: 8px; color: white; z-index: 1000; animation: slideIn 0.3s; font-size: 13px; 
+    }
     .notification.success { background: #4caf50; }
     .notification.error { background: var(--red); }
     .notification.info { background: #2196f3; }
@@ -152,9 +202,15 @@
     <div id="top-bar">
       <button onclick="window.location.href='index.html'">🏠 Início</button>
       <span style="background:var(--pink);padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;">📄 Editor PDF</span>
-      <input type="text" id="project-name-input" placeholder="Nome do Documento" style="background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:6px 10px;width:220px;">
-      <button id="savePdfBtn">💾 Salvar PDF</button>
-      <button id="copyUrlBtn" style="display:none;">📋 Copiar URL</button>
+      <input type="text" id="project-name-input" placeholder="Nome do Documento" style="background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:6px 10px;width:200px;">
+      <button id="savePdfBtn" onclick="saveDocument()">💾 Salvar</button>
+      <button id="publishPdfBtn" onclick="showPublishModal()">🚀 Publicar</button>
+      <span class="url-panel" id="urlPanel" style="display:none;">
+        <span>🔗</span>
+        <input type="text" id="hostedUrlInput" readonly onclick="this.select()">
+        <button id="copyUrlBtn" onclick="copyHostedUrl()">📋 Copiar</button>
+        <button id="openUrlBtn" onclick="openHostedUrl()">🔗 Abrir</button>
+      </span>
       <div class="zoom-controls">
         <button onclick="changeZoom(-0.1)">➖</button>
         <span id="zoomLevel">100%</span>
@@ -171,26 +227,46 @@
       <div id="pdf-editor-area">
         <div id="pdf-canvas">
           <div class="pdf-toolbar">
-            <button onclick="addPdfPage()">➕ Nova Página</button>
+            <button class="tool-btn" onclick="addPdfPage()">➕ Nova Página</button>
             <button class="tool-btn" onclick="insertBold()">🔤 <b>N</b></button>
             <button class="tool-btn" onclick="insertItalic()">📝 <i>I</i></button>
             <button class="tool-btn" onclick="insertUnderline()">🔲 <u>U</u></button>
+            <button class="tool-btn" onclick="insertHeading()">📌 Título</button>
             <button class="tool-btn" onclick="insertList()">📋 Lista</button>
             <button class="tool-btn" onclick="insertTable()">📊 Tabela</button>
-            <button class="tool-btn" onclick="exportToPdf()">📥 Exportar</button>
+            <button class="tool-btn" onclick="insertCode()">💻 Código</button>
+            <button class="tool-btn" onclick="insertHorizontalRule()">➖ Linha</button>
+            <button class="tool-btn" onclick="exportToHtml()">📥 Exportar HTML</button>
           </div>
           <input type="text" id="pdf-title-input" placeholder="Título do Documento...">
-          <textarea id="pdf-content-editor" placeholder="Comece a escrever seu documento aqui...&#10;&#10;Dica: Clique com o botão direito para mais opções!"></textarea>
-          <div style="text-align:center;padding:10px;color:#888;font-size:11px;">📄 Página 1 de <span id="pageCount">1</span></div>
+          <textarea id="pdf-content-editor" placeholder="Comece a escrever seu documento aqui...&#10;&#10;✨ Dica: Use o assistente IA para te ajudar!&#10;🖱️ Clique com botão direito para mais opções&#10;💡 Digite comandos como: 'melhore este texto', 'adicione uma conclusão'"></textarea>
+          <div style="text-align:center;padding:10px;color:#888;font-size:11px;">
+            📄 Página <span id="pageCount">1</span> | 
+            📝 <span id="wordCount">0</span> palavras | 
+            🔤 <span id="charCount">0</span> caracteres
+          </div>
         </div>
       </div>
 
       <div id="ai-sidebar">
-        <div class="sidebar-header">🤖 Assistente PDF</div>
+        <div class="sidebar-header">
+          <span>🤖 Assistente IA</span>
+          <span style="font-size:10px;color:var(--pink);">Treinado para editar</span>
+        </div>
+        <div class="quick-actions">
+          <button onclick="quickAI('melhore')">✨ Melhorar texto</button>
+          <button onclick="quickAI('corrija')">🔧 Corrigir gramática</button>
+          <button onclick="quickAI('resuma')">📝 Resumir</button>
+          <button onclick="quickAI('conclusao')">🏁 Adicionar conclusão</button>
+          <button onclick="quickAI('titulo')">📌 Sugerir título</button>
+          <button onclick="quickAI('expandir')">📄 Expandir</button>
+          <button onclick="quickAI('formatar')">🎨 Formatar</button>
+          <button onclick="quickAI('traduzir')">🌐 Traduzir EN</button>
+        </div>
         <div class="chat-messages" id="chatMessages"></div>
         <div class="chat-controls">
           <div class="chat-input-wrapper">
-            <textarea id="chatInput" placeholder="Pergunte sobre o documento... Ex: Melhore este texto" rows="2"></textarea>
+            <textarea id="chatInput" placeholder="Ex: Melhore este parágrafo para ficar mais profissional" rows="2"></textarea>
             <button onclick="sendToAI()">Enviar</button>
           </div>
         </div>
@@ -200,27 +276,44 @@
 
   <!-- Menu de Contexto do PDF -->
   <div class="context-menu" id="contextMenu">
-    <div class="menu-item" onclick="contextAction('save')">💾 Salvar Documento <span class="menu-shortcut">Ctrl+S</span></div>
+    <div class="menu-item" onclick="contextAction('save')">💾 Salvar <span class="menu-shortcut">Ctrl+S</span></div>
+    <div class="menu-item" onclick="contextAction('publish')">🚀 Publicar no Puter</div>
+    <div class="menu-divider"></div>
     <div class="menu-item" onclick="contextAction('newPage')">➕ Nova Página <span class="menu-shortcut">Ctrl+N</span></div>
     <div class="menu-divider"></div>
     <div class="menu-item" onclick="contextAction('bold')">🔤 Negrito <span class="menu-shortcut">Ctrl+B</span></div>
     <div class="menu-item" onclick="contextAction('italic')">📝 Itálico <span class="menu-shortcut">Ctrl+I</span></div>
     <div class="menu-item" onclick="contextAction('underline')">🔲 Sublinhado <span class="menu-shortcut">Ctrl+U</span></div>
     <div class="menu-divider"></div>
+    <div class="menu-item" onclick="contextAction('heading')">📌 Inserir Título</div>
     <div class="menu-item" onclick="contextAction('list')">📋 Inserir Lista</div>
     <div class="menu-item" onclick="contextAction('table')">📊 Inserir Tabela</div>
-    <div class="menu-item" onclick="contextAction('horizontalRule')">➖ Linha Horizontal</div>
+    <div class="menu-item" onclick="contextAction('code')">💻 Inserir Código</div>
+    <div class="menu-item" onclick="contextAction('rule')">➖ Linha Horizontal</div>
     <div class="menu-divider"></div>
-    <div class="menu-item" onclick="contextAction('copyAll')">📋 Copiar Tudo <span class="menu-shortcut">Ctrl+A</span></div>
+    <div class="menu-item" onclick="contextAction('selectAll')">📋 Selecionar Tudo <span class="menu-shortcut">Ctrl+A</span></div>
+    <div class="menu-item" onclick="contextAction('copyAll')">📋 Copiar Tudo</div>
     <div class="menu-item" onclick="contextAction('clearAll')">🗑️ Limpar Documento</div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" onclick="contextAction('stats')">📊 Estatísticas</div>
+    <div class="menu-item" onclick="contextAction('uppercase')">🔠 MAIÚSCULAS</div>
+    <div class="menu-item" onclick="contextAction('lowercase')">🔡 minúsculas</div>
     <div class="menu-divider"></div>
     <div class="menu-item" onclick="contextAction('zoomIn')">🔍 Zoom +</div>
     <div class="menu-item" onclick="contextAction('zoomOut')">🔍 Zoom -</div>
     <div class="menu-item" onclick="contextAction('zoomReset')">↺ Reset Zoom</div>
-    <div class="menu-divider"></div>
-    <div class="menu-item" onclick="contextAction('wordCount')">📊 Contar Palavras</div>
-    <div class="menu-item" onclick="contextAction('uppercase')">🔠 MAIÚSCULAS</div>
-    <div class="menu-item" onclick="contextAction('lowercase')">🔡 minúsculas</div>
+  </div>
+
+  <!-- Modal de Publicação -->
+  <div class="publish-modal" id="publishModal">
+    <div class="publish-modal-content">
+      <h3 style="color:white;">🚀 Publicar no Puter?</h3>
+      <p style="color:#ccc;margin:15px 0;">Seu documento será hospedado como uma página web pública.</p>
+      <div class="publish-modal-buttons">
+        <button onclick="publishDocument()" style="background:#4caf50;padding:10px 30px;border-radius:8px;font-weight:bold;">✅ Sim, Publicar!</button>
+        <button onclick="closePublishModal()" style="background:#f44336;padding:10px 30px;border-radius:8px;font-weight:bold;">❌ Cancelar</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -242,9 +335,11 @@
     let currentUser = null;
     let cloudPath = null;
     let currentZoom = 1;
-    let hostingUrl = null;
+    let hostedUrl = null;
     let hostingSubdomain = null;
+    let hostingDirectory = null;
     let siteCreated = false;
+    let isProcessingAI = false;
 
     const urlParams = new URLSearchParams(window.location.search);
     currentProjectId = urlParams.get('projectId');
@@ -256,7 +351,11 @@
       document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
       localStorage.setItem('pdf_zoom', currentZoom);
     }
-    function resetZoom() { currentZoom = 1; document.body.style.zoom = 1; document.getElementById('zoomLevel').textContent = '100%'; localStorage.setItem('pdf_zoom', 1); }
+    function resetZoom() { 
+      currentZoom = 1; document.body.style.zoom = 1; 
+      document.getElementById('zoomLevel').textContent = '100%'; 
+      localStorage.setItem('pdf_zoom', 1); 
+    }
 
     // ============== CONTEXT MENU ==============
     function initContextMenu() {
@@ -264,10 +363,12 @@
       document.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         menu.style.display = 'block';
-        menu.style.left = Math.min(e.clientX, window.innerWidth - 240) + 'px';
-        menu.style.top = Math.min(e.clientY, window.innerHeight - 400) + 'px';
+        menu.style.left = Math.min(e.clientX, window.innerWidth - 260) + 'px';
+        menu.style.top = Math.min(e.clientY, window.innerHeight - 500) + 'px';
       });
-      document.addEventListener('click', (e) => { if (!menu.contains(e.target)) menu.style.display = 'none'; });
+      document.addEventListener('click', (e) => { 
+        if (!menu.contains(e.target)) menu.style.display = 'none'; 
+      });
       
       document.addEventListener('keydown', (e) => {
         if (e.ctrlKey || e.metaKey) {
@@ -291,42 +392,54 @@
       const editor = document.getElementById('pdf-content-editor');
       const start = editor.selectionStart;
       const end = editor.selectionEnd;
-      const text = editor.value.substring(start, end);
+      const selectedText = editor.value.substring(start, end);
       
       switch(action) {
         case 'save': saveDocument(); break;
+        case 'publish': showPublishModal(); break;
         case 'newPage': addPdfPage(); break;
         case 'bold': insertBold(); break;
         case 'italic': insertItalic(); break;
         case 'underline': insertUnderline(); break;
+        case 'heading': insertHeading(); break;
         case 'list': insertList(); break;
         case 'table': insertTable(); break;
-        case 'horizontalRule': editor.value = editor.value.substring(0, start) + '\n\n---\n\n' + editor.value.substring(end); break;
-        case 'copyAll': editor.select(); document.execCommand('copy'); showNotification('Tudo copiado!', 'success'); break;
-        case 'clearAll': if (confirm('Limpar todo o documento?')) { document.getElementById('pdf-title-input').value = ''; editor.value = ''; } break;
+        case 'code': insertCode(); break;
+        case 'rule': insertHorizontalRule(); break;
+        case 'selectAll': editor.select(); break;
+        case 'copyAll': editor.select(); document.execCommand('copy'); showNotification('📋 Copiado!', 'success'); break;
+        case 'clearAll': 
+          if (confirm('Limpar todo o documento?')) { 
+            document.getElementById('pdf-title-input').value = ''; 
+            editor.value = ''; 
+            updateStats();
+          } 
+          break;
+        case 'stats': updateStats(); showNotification(getStatsText(), 'info'); break;
+        case 'uppercase': 
+          if (selectedText) {
+            editor.value = editor.value.substring(0, start) + selectedText.toUpperCase() + editor.value.substring(end);
+            showNotification('🔠 Convertido para MAIÚSCULAS', 'info');
+          }
+          break;
+        case 'lowercase':
+          if (selectedText) {
+            editor.value = editor.value.substring(0, start) + selectedText.toLowerCase() + editor.value.substring(end);
+            showNotification('🔡 Convertido para minúsculas', 'info');
+          }
+          break;
         case 'zoomIn': changeZoom(0.1); break;
         case 'zoomOut': changeZoom(-0.1); break;
         case 'zoomReset': resetZoom(); break;
-        case 'wordCount': 
-          const words = editor.value.trim() ? editor.value.trim().split(/\s+/).length : 0;
-          const chars = editor.value.length;
-          showNotification(`📊 ${words} palavras, ${chars} caracteres`, 'info');
-          break;
-        case 'uppercase': 
-          if (text) editor.value = editor.value.substring(0, start) + text.toUpperCase() + editor.value.substring(end);
-          break;
-        case 'lowercase':
-          if (text) editor.value = editor.value.substring(0, start) + text.toLowerCase() + editor.value.substring(end);
-          break;
       }
     }
 
-    // ============== PDF FUNCTIONS ==============
+    // ============== FUNÇÕES DO EDITOR PDF ==============
     function addPdfPage() {
       const editor = document.getElementById('pdf-content-editor');
-      editor.value += '\n\n═══════════════════════════\n       NOVA PÁGINA\n═══════════════════════════\n\n';
-      updatePageCount();
-      showNotification('Nova página adicionada!', 'info');
+      editor.value += '\n\n═══════════════════════════════════\n           NOVA PÁGINA\n═══════════════════════════════════\n\n';
+      updateStats();
+      showNotification('➕ Nova página adicionada!', 'info');
     }
 
     function insertBold() {
@@ -335,7 +448,9 @@
       const end = editor.selectionEnd;
       const text = editor.value.substring(start, end) || 'texto em negrito';
       editor.value = editor.value.substring(0, start) + '**' + text + '**' + editor.value.substring(end);
-      showNotification('Negrito inserido!', 'info');
+      editor.focus();
+      editor.setSelectionRange(start + 2, start + 2 + text.length);
+      showNotification('🔤 Negrito aplicado!', 'info');
     }
 
     function insertItalic() {
@@ -344,7 +459,9 @@
       const end = editor.selectionEnd;
       const text = editor.value.substring(start, end) || 'texto em itálico';
       editor.value = editor.value.substring(0, start) + '*' + text + '*' + editor.value.substring(end);
-      showNotification('Itálico inserido!', 'info');
+      editor.focus();
+      editor.setSelectionRange(start + 1, start + 1 + text.length);
+      showNotification('📝 Itálico aplicado!', 'info');
     }
 
     function insertUnderline() {
@@ -352,50 +469,104 @@
       const start = editor.selectionStart;
       const end = editor.selectionEnd;
       const text = editor.value.substring(start, end) || 'texto sublinhado';
-      editor.value = editor.value.substring(0, start) + '__' + text + '__' + editor.value.substring(end);
+      editor.value = editor.value.substring(0, start) + '<u>' + text + '</u>' + editor.value.substring(end);
+      showNotification('🔲 Sublinhado aplicado!', 'info');
+    }
+
+    function insertHeading() {
+      const editor = document.getElementById('pdf-content-editor');
+      const text = editor.value.substring(editor.selectionStart, editor.selectionEnd) || 'Novo Título';
+      editor.value += '\n\n## ' + text + '\n\n';
+      showNotification('📌 Título inserido!', 'info');
     }
 
     function insertList() {
       const editor = document.getElementById('pdf-content-editor');
-      editor.value += '\n• Item 1\n• Item 2\n• Item 3\n';
+      editor.value += '\n- Item 1\n- Item 2\n- Item 3\n- Item 4\n';
+      updateStats();
+      showNotification('📋 Lista inserida!', 'info');
     }
 
     function insertTable() {
       const editor = document.getElementById('pdf-content-editor');
-      editor.value += '\n┌────────┬────────┬────────┐\n│ Célula │ Célula │ Célula │\n├────────┼────────┼────────┤\n│        │        │        │\n├────────┼────────┼────────┤\n│        │        │        │\n└────────┴────────┴────────┘\n';
+      editor.value += '\n| Coluna A | Coluna B | Coluna C |\n|----------|----------|----------|\n| Dado 1   | Dado 2   | Dado 3   |\n| Dado 4   | Dado 5   | Dado 6   |\n';
+      updateStats();
+      showNotification('📊 Tabela inserida!', 'info');
     }
 
-    function updatePageCount() {
-      const pages = document.getElementById('pdf-content-editor').value.split('NOVA PÁGINA').length;
-      document.getElementById('pageCount').textContent = pages;
+    function insertCode() {
+      const editor = document.getElementById('pdf-content-editor');
+      editor.value += '\n```\n// Seu código aqui\nconst exemplo = "Hello World";\nconsole.log(exemplo);\n```\n';
+      updateStats();
+      showNotification('💻 Bloco de código inserido!', 'info');
     }
 
-    function exportToPdf() {
+    function insertHorizontalRule() {
+      const editor = document.getElementById('pdf-content-editor');
+      editor.value += '\n\n---\n\n';
+      showNotification('➖ Linha horizontal inserida!', 'info');
+    }
+
+    function exportToHtml() {
       const title = document.getElementById('pdf-title-input').value || 'documento';
       const content = document.getElementById('pdf-content-editor').value;
-      const htmlContent = `
-        <html><head><meta charset="UTF-8"><title>${title}</title>
-        <style>body{font-family:Arial;padding:40px;max-width:800px;margin:0 auto;line-height:1.8;}
-        h1{color:#f72585;border-bottom:3px solid #f72585;padding-bottom:10px;}
-        </style></head><body><h1>${title}</h1>
-        ${content.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\*(.*?)\*/g,'<i>$1</i>')}
-        </body></html>`;
+      const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title}</title>
+<style>body{font-family:Arial,sans-serif;padding:40px;max-width:800px;margin:0 auto;line-height:1.8;background:#f5f5f5;}
+.container{background:white;padding:50px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.1);}
+h1{color:#f72585;border-bottom:3px solid #f72585;padding-bottom:15px;}
+h2{color:#4361ee;margin-top:30px;}
+code{background:#f0f0f0;padding:2px 6px;border-radius:4px;}
+pre{background:#1e1e1e;color:#d4d4d4;padding:15px;border-radius:8px;overflow-x:auto;}
+table{border-collapse:collapse;width:100%;margin:15px 0;}
+td,th{border:1px solid #ddd;padding:8px 12px;text-align:left;}
+th{background:#f72585;color:white;}
+</style></head><body><div class="container">
+<h1>${title}</h1>
+${convertToHtml(content)}
+</div></body></html>`;
+      
       const blob = new Blob([htmlContent], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
-      showNotification('Exportado!', 'success');
+      showNotification('📥 Exportado como HTML!', 'success');
+    }
+
+    function convertToHtml(text) {
+      return text
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/\n/g, '<br>')
+        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+        .replace(/\*(.*?)\*/g, '<i>$1</i>')
+        .replace(/<u>(.*?)<\/u>/g, '<u>$1</u>')
+        .replace(/## (.*)/g, '<h2>$1</h2>')
+        .replace(/^- (.*)/gm, '<li>$1</li>')
+        .replace(/```([\s\S]*?)```/g, '<pre>$1</pre>')
+        .replace(/---/g, '<hr>');
+    }
+
+    function getStatsText() {
+      const text = document.getElementById('pdf-content-editor').value;
+      const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+      const chars = text.length;
+      const lines = text.split('\n').length;
+      const pages = text.split('NOVA PÁGINA').length;
+      return `📊 ${words} palavras | ${chars} caracteres | ${lines} linhas | ${pages} páginas`;
+    }
+
+    function updateStats() {
+      const text = document.getElementById('pdf-content-editor').value;
+      document.getElementById('wordCount').textContent = text.trim() ? text.trim().split(/\s+/).length : 0;
+      document.getElementById('charCount').textContent = text.length;
+      document.getElementById('pageCount').textContent = text.split('NOVA PÁGINA').length;
     }
 
     // ============== SAVE / LOAD ==============
     async function saveDocument() {
       try {
-        // Salvar no Firebase
-        const updateData = {
+        await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({
           updatedAt: new Date().toISOString()
-        };
-        await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update(updateData);
+        });
         
-        // Salvar no Puter Cloud
         if (cloudPath) {
           const data = {
             title: document.getElementById('pdf-title-input').value,
@@ -404,12 +575,13 @@
           };
           await puter.fs.mkdir(cloudPath).catch(() => {});
           await puter.fs.write(`${cloudPath}/document.json`, JSON.stringify(data, null, 2));
-          showNotification('✅ Salvo no Cloud!', 'success');
+          showNotification('✅ Salvo no Cloud! 💾', 'success');
         } else {
-          showNotification('✅ Salvo no Firebase!', 'success');
+          showNotification('✅ Salvo! 💾', 'success');
         }
+        updateStats();
       } catch(e) {
-        showNotification('Erro: ' + e.message, 'error');
+        showNotification('❌ Erro ao salvar: ' + e.message, 'error');
       }
     }
 
@@ -421,80 +593,284 @@
         const data = JSON.parse(text);
         document.getElementById('pdf-title-input').value = data.title || '';
         document.getElementById('pdf-content-editor').value = data.content || '';
-        updatePageCount();
+        updateStats();
       } catch(e) {
         console.log('Documento novo');
-        document.getElementById('pdf-title-input').value = document.getElementById('project-name-input').value || '';
+        document.getElementById('pdf-title-input').value = 
+          document.getElementById('project-name-input').value || '';
       }
     }
 
-    // ============== HOSTING ==============
-    async function publishPdf() {
+    // ============== PUBLISH / HOSTING ==============
+    function showPublishModal() {
+      document.getElementById('publishModal').style.display = 'flex';
+    }
+
+    function closePublishModal() {
+      document.getElementById('publishModal').style.display = 'none';
+    }
+
+    async function publishDocument() {
+      closePublishModal();
+      addChatMessage('🚀 Iniciando publicação no Puter...', 'system');
+      
       try {
         await puter.auth.getUser();
-        const title = document.getElementById('pdf-title-input').value || 'documento';
-        const content = document.getElementById('pdf-content-editor').value;
         
         if (!cloudPath) {
           cloudPath = `codehub_pdf_${currentProjectId}`;
           await puter.fs.mkdir(cloudPath);
         }
         
-        const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title}</title>
-        <style>body{font-family:Arial;padding:40px;max-width:800px;margin:0 auto;line-height:1.8;background:#f5f5f5;}
-        .container{background:white;padding:50px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.1);}
-        h1{color:#f72585;border-bottom:3px solid #f72585;padding-bottom:15px;}
-        </style></head><body><div class="container"><h1>${title}</h1>
-        ${content.replace(/\n/g,'<br>')}</div></body></html>`;
+        // Salvar primeiro
+        await saveDocument();
+        
+        const title = document.getElementById('pdf-title-input').value || 'Documento';
+        const content = document.getElementById('pdf-content-editor').value;
+        
+        // Criar HTML bonito para hospedar
+        const htmlContent = `<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; min-height: 100vh; padding: 20px; }
+    .container { max-width: 850px; margin: 0 auto; background: white; padding: 60px; border-radius: 16px; box-shadow: 0 4px 30px rgba(0,0,0,0.1); }
+    h1 { color: #f72585; font-size: 2.5em; border-bottom: 4px solid #f72585; padding-bottom: 20px; margin-bottom: 30px; }
+    h2 { color: #4361ee; font-size: 1.6em; margin-top: 35px; margin-bottom: 15px; }
+    p { line-height: 1.9; margin-bottom: 15px; color: #333; }
+    b, strong { color: #f72585; }
+    i, em { color: #4361ee; }
+    u { text-decoration-color: #f72585; }
+    code { background: #f0f0f0; padding: 2px 8px; border-radius: 4px; font-family: 'Consolas', monospace; font-size: 0.9em; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 10px; overflow-x: auto; margin: 20px 0; font-size: 0.9em; }
+    table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+    td, th { border: 1px solid #ddd; padding: 12px 16px; text-align: left; }
+    th { background: #f72585; color: white; font-weight: bold; }
+    tr:nth-child(even) { background: #f8f9fa; }
+    hr { border: none; border-top: 2px solid #e0e0e0; margin: 30px 0; }
+    ul, ol { margin: 15px 0; padding-left: 25px; }
+    li { line-height: 1.8; }
+    .footer { text-align: center; margin-top: 50px; padding-top: 20px; border-top: 1px solid #e0e0e0; color: #888; font-size: 0.85em; }
+    .footer a { color: #f72585; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>${title}</h1>
+    ${convertToHtml(content)}
+    <div class="footer">
+      <p>📄 Documento criado com <a href="https://codehub.ct.ws" target="_blank">CodeHUB</a></p>
+    </div>
+  </div>
+</body>
+</html>`;
         
         await puter.fs.write(`${cloudPath}/index.html`, htmlContent);
         
         if (!siteCreated) {
+          addChatMessage('🌐 Criando novo site...', 'system');
           const site = await puter.hosting.create(cloudPath);
           hostingSubdomain = site.subdomain;
-          hostingUrl = `https://${site.subdomain}.puter.site`;
+          hostedUrl = `https://${site.subdomain}.puter.site`;
+          hostingDirectory = cloudPath;
           siteCreated = true;
         } else {
-          await puter.hosting.update(hostingSubdomain, cloudPath);
+          addChatMessage('🔄 Atualizando site existente...', 'system');
+          await puter.hosting.update(hostingSubdomain, hostingDirectory || cloudPath);
         }
         
-        document.getElementById('copyUrlBtn').style.display = 'inline-block';
-        document.getElementById('copyUrlBtn').setAttribute('data-url', hostingUrl);
-        
+        // Salvar URL no Firebase
         await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({
-          url: hostingUrl, subdomain: hostingSubdomain, directory: cloudPath, publishedAt: new Date().toISOString()
+          url: hostedUrl,
+          subdomain: hostingSubdomain,
+          directory: hostingDirectory || cloudPath,
+          publishedAt: new Date().toISOString()
         });
         
-        showNotification(`✅ Publicado! URL: ${hostingUrl}`, 'success');
+        // Mostrar URL
+        document.getElementById('hostedUrlInput').value = hostedUrl;
+        document.getElementById('urlPanel').style.display = 'flex';
+        
+        addChatMessage(`✅ Publicado com sucesso!<br>🔗 <a href="${hostedUrl}" target="_blank" style="color:#4cc9f0;">${hostedUrl}</a>`, 'ai');
+        showNotification('✅ Site publicado! URL copiada!', 'success');
+        
+        // Copiar automaticamente
+        navigator.clipboard.writeText(hostedUrl).catch(() => {});
+        
       } catch(e) {
-        showNotification('Erro: ' + e.message, 'error');
+        addChatMessage(`❌ Erro ao publicar: ${e.message}`, 'system');
+        showNotification('❌ Erro: ' + e.message, 'error');
       }
     }
 
-    function copyUrl() {
-      const url = document.getElementById('copyUrlBtn').getAttribute('data-url');
-      if (url) {
-        navigator.clipboard.writeText(url);
+    function copyHostedUrl() {
+      if (hostedUrl) {
+        navigator.clipboard.writeText(hostedUrl);
         showNotification('📋 URL copiada!', 'success');
       }
     }
 
-    // ============== AI CHAT ==============
+    function openHostedUrl() {
+      if (hostedUrl) window.open(hostedUrl, '_blank');
+    }
+
+    // ============== ASSISTENTE IA (TREINADO) ==============
     async function sendToAI() {
       const msg = document.getElementById('chatInput').value.trim();
-      if (!msg) return;
+      if (!msg || isProcessingAI) return;
+      
       addChatMessage(msg, 'user');
       document.getElementById('chatInput').value = '';
+      isProcessingAI = true;
+      
+      const title = document.getElementById('pdf-title-input').value;
+      const fullContent = document.getElementById('pdf-content-editor').value;
+      const selectedText = fullContent.substring(
+        document.getElementById('pdf-content-editor').selectionStart,
+        document.getElementById('pdf-content-editor').selectionEnd
+      );
+      
+      const streamingDiv = document.createElement('div');
+      streamingDiv.className = 'message ai streaming';
+      const contentSpan = document.createElement('span');
+      streamingDiv.appendChild(contentSpan);
+      document.getElementById('chatMessages').appendChild(streamingDiv);
+      document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+      
+      let fullResponse = '';
       
       try {
-        const title = document.getElementById('pdf-title-input').value;
-        const content = document.getElementById('pdf-content-editor').value.substring(0, 1000);
-        const prompt = `Documento: "${title}"\nConteúdo: ${content}\n\nUsuário: ${msg}\n\nResponda como assistente de documentos.`;
-        const res = await puter.ai.chat(prompt, { stream: false });
-        addChatMessage(res, 'ai');
+        await puter.auth.getUser();
+        
+        const prompt = `Você é um assistente ESPECIALIZADO em editar documentos PDF no CodeHUB.
+
+DOCUMENTO ATUAL:
+Título: "${title}"
+Conteúdo completo: ${fullContent.substring(0, 3000)}
+${selectedText ? 'Texto selecionado pelo usuário: "' + selectedText + '"' : ''}
+
+COMANDO DO USUÁRIO: "${msg}"
+
+INSTRUÇÕES:
+1. Se o usuário pedir para MELHORAR ou EDITAR o texto, responda SOMENTE com um JSON:
+   {"action":"editar","novoTexto":"texto melhorado aqui","onde":"substituir_selecao_ou_completo"}
+   
+2. Se pedir para ADICIONAR algo (conclusão, introdução, etc):
+   {"action":"adicionar","texto":"texto para adicionar","posicao":"fim"}
+   
+3. Se pedir para CORRIGIR gramática:
+   {"action":"corrigir","textoOriginal":"${selectedText || fullContent.substring(0, 500)}","textoCorrigido":"versão corrigida"}
+   
+4. Se pedir SUGESTÃO de título:
+   {"action":"titulo","sugestao":"Título Sugerido Aqui"}
+   
+5. Se pedir para RESUMIR:
+   {"action":"resumo","resumo":"resumo do documento..."}
+   
+6. Se for pergunta geral, responda normalmente.
+
+Responda APENAS com o JSON quando for editar/adicionar/corrigir.`;
+
+        const res = await puter.ai.chat(prompt, { stream: true });
+        for await (const chunk of res) {
+          fullResponse += chunk;
+          contentSpan.innerHTML = fullResponse.replace(/\n/g, '<br>');
+          document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+        }
+        
+        streamingDiv.classList.remove('streaming');
+        
+        // Processar resposta JSON
+        try {
+          const jsonMatch = fullResponse.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const result = JSON.parse(jsonMatch[0]);
+            const editor = document.getElementById('pdf-content-editor');
+            
+            if (result.action === 'editar' && result.novoTexto) {
+              if (selectedText && result.onde === 'substituir_selecao_ou_completo') {
+                const start = editor.selectionStart;
+                const end = editor.selectionEnd;
+                editor.value = editor.value.substring(0, start) + result.novoTexto + editor.value.substring(end);
+              } else {
+                editor.value = result.novoTexto;
+              }
+              updateStats();
+              addChatMessage('✅ Texto editado com sucesso!', 'system');
+              showNotification('✅ Documento atualizado!', 'success');
+            } else if (result.action === 'adicionar' && result.texto) {
+              if (result.posicao === 'fim') {
+                editor.value += '\n\n' + result.texto;
+              } else {
+                editor.value = result.texto + '\n\n' + editor.value;
+              }
+              updateStats();
+              addChatMessage('✅ Texto adicionado!', 'system');
+              showNotification('✅ Texto adicionado!', 'success');
+            } else if (result.action === 'corrigir' && result.textoCorrigido) {
+              editor.value = editor.value.replace(result.textoOriginal, result.textoCorrigido);
+              updateStats();
+              addChatMessage('✅ Texto corrigido!', 'system');
+              showNotification('✅ Correção aplicada!', 'success');
+            } else if (result.action === 'titulo' && result.sugestao) {
+              document.getElementById('pdf-title-input').value = result.sugestao;
+              addChatMessage(`✅ Título alterado para: "${result.sugestao}"`, 'system');
+            } else if (result.action === 'resumo' && result.resumo) {
+              addChatMessage(`📝 Resumo: ${result.resumo}`, 'ai');
+            }
+          }
+        } catch(e) {
+          // Resposta normal, não JSON
+        }
+        
+        await saveDocument();
+        
       } catch(e) {
-        addChatMessage('Erro ao conectar com IA: ' + e.message, 'system');
+        streamingDiv.classList.remove('streaming');
+        contentSpan.innerHTML = `❌ Erro: ${e.message}`;
       }
+      
+      isProcessingAI = false;
+    }
+
+    async function quickAI(action) {
+      const editor = document.getElementById('pdf-content-editor');
+      const selectedText = editor.value.substring(editor.selectionStart, editor.selectionEnd);
+      const input = document.getElementById('chatInput');
+      
+      switch(action) {
+        case 'melhore':
+          input.value = selectedText ? 'Melhore este texto selecionado' : 'Melhore este documento inteiro';
+          break;
+        case 'corrija':
+          input.value = selectedText ? 'Corrija a gramática deste texto selecionado' : 'Corrija a gramática do documento';
+          break;
+        case 'resuma':
+          input.value = 'Faça um resumo deste documento';
+          break;
+        case 'conclusao':
+          input.value = 'Adicione uma conclusão profissional ao final do documento';
+          break;
+        case 'titulo':
+          input.value = 'Sugira um título melhor para este documento';
+          break;
+        case 'expandir':
+          input.value = selectedText ? 'Expanda este texto com mais detalhes' : 'Expanda o conteúdo do documento';
+          break;
+        case 'formatar':
+          input.value = 'Formate este documento com títulos, listas e melhor organização';
+          break;
+        case 'traduzir':
+          input.value = selectedText ? 'Traduza este texto para inglês' : 'Traduza o documento para inglês';
+          break;
+      }
+      
+      input.focus();
+      addChatMessage(`💡 Comando pronto! Clique em Enviar ou pressione Enter`, 'system');
     }
 
     function addChatMessage(text, type) {
@@ -521,7 +897,8 @@
     auth.onAuthStateChanged(async user => {
       if (!user) { window.location.href = 'auth.html'; return; }
       currentUser = user;
-      document.getElementById('user-name').textContent = user.displayName || user.email?.split('@')[0] || 'Usuário';
+      document.getElementById('user-name').textContent = 
+        user.displayName || user.email?.split('@')[0] || 'Usuário';
       
       const savedZoom = localStorage.getItem('pdf_zoom');
       if (savedZoom) { currentZoom = parseFloat(savedZoom); document.body.style.zoom = currentZoom; }
@@ -535,11 +912,12 @@
           cloudPath = data.cloudPath || null;
           
           if (data.hosting?.url) {
-            hostingUrl = data.hosting.url;
+            hostedUrl = data.hosting.url;
             hostingSubdomain = data.hosting.subdomain;
+            hostingDirectory = data.hosting.directory;
             siteCreated = true;
-            document.getElementById('copyUrlBtn').style.display = 'inline-block';
-            document.getElementById('copyUrlBtn').setAttribute('data-url', hostingUrl);
+            document.getElementById('hostedUrlInput').value = hostedUrl;
+            document.getElementById('urlPanel').style.display = 'flex';
           }
           
           await loadDocument();
@@ -551,25 +929,35 @@
         document.getElementById('loading-screen').style.display = 'none';
         document.getElementById('app-content').style.display = 'flex';
         initContextMenu();
-        addChatMessage('🤖 Olá! Sou seu assistente de PDF. Use o botão direito para opções!', 'system');
+        updateStats();
+        addChatMessage('🤖 <b>Olá! Sou seu assistente de PDF!</b><br><br>✨ Posso te ajudar a:<br>• Melhorar e editar textos<br>• Corrigir gramática<br>• Adicionar conclusões<br>• Formatar documentos<br>• Sugerir títulos<br>• Exportar para HTML<br><br>🖱️ Use o <b>botão direito</b> para opções rápidas!<br>💡 Use os botões abaixo para comandos prontos!', 'system');
       }, 300);
     });
 
     // Event listeners
-    document.getElementById('savePdfBtn').addEventListener('click', saveDocument);
-    document.getElementById('copyUrlBtn').addEventListener('click', copyUrl);
     document.getElementById('project-name-input').addEventListener('blur', async function() {
       const name = this.value.trim();
       if (name && currentProjectId) {
         await db.ref(`projects/${currentUser.uid}/${currentProjectId}/name`).set(name);
       }
     });
-    document.getElementById('pdf-content-editor').addEventListener('input', updatePageCount);
+    
+    document.getElementById('pdf-content-editor').addEventListener('input', updateStats);
+    document.getElementById('pdf-content-editor').addEventListener('mouseup', updateStats);
+    
     document.getElementById('chatInput').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendToAI(); }
+      if (e.key === 'Enter' && !e.shiftKey) { 
+        e.preventDefault(); 
+        sendToAI(); 
+      }
     });
 
-    // Expor globalmente
+    // Click fora do modal fecha
+    document.getElementById('publishModal').addEventListener('click', function(e) {
+      if (e.target === this) closePublishModal();
+    });
+
+    // Expor funções globalmente
     window.changeZoom = changeZoom;
     window.resetZoom = resetZoom;
     window.saveDocument = saveDocument;
@@ -577,14 +965,21 @@
     window.insertBold = insertBold;
     window.insertItalic = insertItalic;
     window.insertUnderline = insertUnderline;
+    window.insertHeading = insertHeading;
     window.insertList = insertList;
     window.insertTable = insertTable;
-    window.exportToPdf = exportToPdf;
+    window.insertCode = insertCode;
+    window.insertHorizontalRule = insertHorizontalRule;
+    window.exportToHtml = exportToHtml;
     window.contextAction = contextAction;
     window.sendToAI = sendToAI;
+    window.quickAI = quickAI;
     window.logout = logout;
-    window.copyUrl = copyUrl;
-    window.publishPdf = publishPdf;
+    window.showPublishModal = showPublishModal;
+    window.closePublishModal = closePublishModal;
+    window.publishDocument = publishDocument;
+    window.copyHostedUrl = copyHostedUrl;
+    window.openHostedUrl = openHostedUrl;
   </script>
 </body>
 </html>
