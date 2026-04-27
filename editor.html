@@ -10,309 +10,1053 @@
   <script src="https://js.puter.com/v2/"></script>
   <style>
     :root {
-      --zoom-level: 1;
-      --bg-primary: #1e1e1e;
-      --bg-secondary: #252526;
-      --bg-tertiary: #2d2d2d;
-      --border-color: #333;
-      --text-primary: #fff;
-      --text-secondary: #888;
-      --accent-blue: #4361ee;
-      --accent-cyan: #4cc9f0;
-      --accent-green: #22c55e;
-      --accent-orange: #ff9800;
-      --accent-red: #f44336;
-      --accent-purple: #9c27b0;
+      --bg-primary: #030712;
+      --bg-secondary: #0f1119;
+      --bg-tertiary: #1a1d2e;
+      --border-color: #2a2d3e;
+      --text-primary: #f0f0ff;
+      --text-secondary: #8888bb;
+      --accent-blue: #4f6ef6;
+      --accent-cyan: #22d3ee;
+      --accent-green: #10b981;
+      --accent-orange: #f59e0b;
+      --accent-red: #ef4444;
+      --accent-purple: #8b5cf6;
+      --accent-pink: #ec4899;
+      --gradient-1: linear-gradient(135deg, #4f6ef6 0%, #8b5cf6 100%);
+      --gradient-2: linear-gradient(135deg, #10b981 0%, #22d3ee 100%);
+      --gradient-3: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+      --gradient-4: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+      --shadow-glow-blue: 0 0 20px rgba(79, 110, 246, 0.3);
+      --shadow-glow-green: 0 0 20px rgba(16, 185, 129, 0.3);
+      --shadow-glow-purple: 0 0 20px rgba(139, 92, 246, 0.3);
+      --glass-bg: rgba(15, 17, 25, 0.8);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --blur: blur(20px);
     }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    
-    body { 
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-      background: var(--bg-primary); 
-      color: var(--text-primary); 
-      height: 100vh; 
-      display: flex; 
-      flex-direction: column; 
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
       overflow: hidden;
-      zoom: var(--zoom-level);
+      letter-spacing: -0.01em;
     }
-    
-    #loading-screen { 
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-      background: radial-gradient(circle at center, #1e293b, #0f172a); 
-      display: flex; justify-content: center; align-items: center; flex-direction: column; 
-      z-index: 9999; transition: opacity 0.5s ease; 
+
+    /* Scrollbar Premium */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
     }
-    .loader { width: 80px; animation: spin 1s linear infinite; border-radius: 50%; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    
-    #top-bar { 
-      display: flex; padding: 8px 12px; background: var(--bg-primary); 
-      align-items: center; border-bottom: 1px solid var(--border-color); 
-      flex-wrap: wrap; gap: 8px; z-index: 100;
+    ::-webkit-scrollbar-track {
+      background: transparent;
     }
-    #project-name { 
-      background: var(--bg-secondary); color: var(--text-primary); 
-      border: 1px solid var(--border-color); border-radius: 4px; padding: 6px 10px; width: 200px; 
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, var(--accent-purple), var(--accent-blue));
+      border-radius: 10px;
     }
-    button { 
-      background: var(--accent-blue); border: none; color: white; padding: 6px 12px; 
-      cursor: pointer; border-radius: 4px; font-size: 13px; transition: all 0.2s; 
+    ::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, var(--accent-pink), var(--accent-purple));
     }
-    button:hover { filter: brightness(1.2); }
-    button:disabled { background: #555; cursor: not-allowed; }
-    
-    #saveFileBtn { background: var(--accent-cyan); }
-    #previewBtn { background: #4895ef; }
-    #sitePublishBtn { background: var(--accent-green); }
-    #siteDeleteBtn { background: var(--accent-red); display: none; }
-    #siteHistoryBtn { background: #764ba2; }
-    .logout-btn { background: var(--accent-red); }
-    
-    #storage-info { background: #333; padding: 4px 10px; border-radius: 5px; font-size: 11px; margin-left: 10px; }
-    #user-info { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-    
-    .url-panel-top { 
-      display: flex; align-items: center; gap: 8px; background: var(--bg-tertiary); 
-      padding: 4px 10px; border-radius: 6px; margin-left: 10px; font-size: 11px; 
+
+    /* Loading Screen */
+    #loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(ellipse at center, #0f1119 0%, #030712 70%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      z-index: 99999;
+      transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .url-panel-top input { 
-      background: var(--bg-primary); border: 1px solid var(--border-color); 
-      color: var(--text-primary); padding: 4px 8px; border-radius: 4px; 
-      font-family: monospace; font-size: 10px; width: 250px; 
+    #loading-screen::before {
+      content: '';
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(79, 110, 246, 0.15) 0%, transparent 70%);
+      border-radius: 50%;
+      animation: pulse-loader 2s ease-in-out infinite;
     }
-    .url-panel-top button { padding: 4px 8px; font-size: 11px; }
-    
+    @keyframes pulse-loader {
+      0%, 100% { transform: scale(1); opacity: 0.5; }
+      50% { transform: scale(1.5); opacity: 1; }
+    }
+    .loader-icon {
+      width: 70px;
+      height: 70px;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top-color: var(--accent-blue);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      z-index: 1;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .loader-text {
+      margin-top: 20px;
+      font-size: 16px;
+      font-weight: 600;
+      background: var(--gradient-1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      z-index: 1;
+      letter-spacing: 0.05em;
+    }
+
+    /* Top Bar Premium */
+    #top-bar {
+      display: flex;
+      padding: 8px 16px;
+      background: var(--glass-bg);
+      backdrop-filter: var(--blur);
+      -webkit-backdrop-filter: var(--blur);
+      align-items: center;
+      border-bottom: 1px solid var(--glass-border);
+      flex-wrap: wrap;
+      gap: 8px;
+      z-index: 1000;
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+    }
+    #project-name {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1.5px solid var(--border-color);
+      border-radius: 10px;
+      padding: 8px 14px;
+      width: 200px;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      outline: none;
+    }
+    #project-name:focus {
+      border-color: var(--accent-blue);
+      box-shadow: var(--shadow-glow-blue);
+    }
+
+    /* Botões Premium */
+    .btn {
+      position: relative;
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      cursor: pointer;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+      letter-spacing: 0.02em;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+      transition: left 0.5s ease;
+    }
+    .btn:hover::before {
+      left: 100%;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    }
+    .btn:active {
+      transform: translateY(0) scale(0.97);
+    }
+    .btn-primary {
+      background: var(--gradient-1);
+      box-shadow: var(--shadow-glow-blue);
+    }
+    .btn-success {
+      background: var(--gradient-2);
+      box-shadow: var(--shadow-glow-green);
+    }
+    .btn-warning {
+      background: var(--gradient-3);
+    }
+    .btn-danger {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    }
+    .btn-purple {
+      background: var(--gradient-4);
+      box-shadow: var(--shadow-glow-purple);
+    }
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid var(--border-color);
+      color: var(--text-secondary);
+    }
+    .btn-outline:hover {
+      border-color: var(--accent-blue);
+      color: var(--text-primary);
+      background: rgba(79, 110, 246, 0.1);
+    }
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 11px;
+      border-radius: 8px;
+    }
+    .btn-xs {
+      padding: 3px 8px;
+      font-size: 10px;
+      border-radius: 6px;
+    }
+
+    /* URL Panel */
+    .url-panel-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-tertiary);
+      padding: 6px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      animation: slideIn 0.4s ease;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .url-panel-top input {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      color: var(--accent-cyan);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 11px;
+      width: 260px;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+    .url-panel-top input:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 15px rgba(34, 211, 238, 0.2);
+    }
+
+    /* Zoom Controls */
     .zoom-controls {
-      display: flex; align-items: center; gap: 5px; margin-left: 10px;
-      background: var(--bg-tertiary); padding: 4px 8px; border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--bg-tertiary);
+      padding: 4px 8px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
     }
-    .zoom-controls button { padding: 2px 8px; font-size: 14px; background: var(--bg-secondary); border-radius: 4px; min-width: 28px; }
-    .zoom-controls span { font-size: 11px; min-width: 40px; text-align: center; color: var(--accent-cyan); }
-    
-    .project-type-indicator {
-      background: var(--bg-tertiary); padding: 4px 10px; border-radius: 20px;
-      font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 5px;
+    .zoom-controls button {
+      padding: 4px 10px;
+      font-size: 14px;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-secondary);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 700;
     }
-    
-    .main-container { display: flex; flex: 1; overflow: hidden; }
-    #editor-container { flex: 2; display: flex; flex-direction: column; overflow: hidden; }
-    #tabs { 
-      display: flex; background: var(--bg-secondary); align-items: center; 
-      gap: 1px; overflow-x: auto; min-height: 36px; 
+    .zoom-controls button:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-primary);
+      border-color: var(--border-color);
     }
-    .tab-btn { 
-      background: var(--bg-tertiary); padding: 6px 12px; position: relative; 
-      padding-right: 25px; border-radius: 0; font-size: 12px; white-space: nowrap;
+    .zoom-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      min-width: 42px;
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
     }
-    .tab-btn.active { background: var(--bg-primary); color: var(--text-primary); }
-    .close-tab-btn { 
-      position: absolute; right: 5px; top: 50%; transform: translateY(-50%); 
-      background: transparent; border: none; color: #999; cursor: pointer; font-size: 14px; 
+
+    /* Main Container */
+    .main-container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
     }
-    #container { flex: 1; overflow: hidden; position: relative; }
-    #simple-editor { 
-      width: 100%; height: 100%; background: var(--bg-primary); color: #d4d4d4; 
-      font-family: 'Consolas', monospace; font-size: 13px; padding: 10px; 
-      border: none; resize: none; outline: none; 
+    #editor-container {
+      flex: 2;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-right: 1px solid var(--border-color);
     }
-    
-    #ai-sidebar { 
-      width: 420px; background: var(--bg-secondary); border-left: 1px solid var(--border-color); 
-      display: flex; flex-direction: column; position: relative; min-width: 250px; max-width: 600px; 
+
+    /* Tabs Premium */
+    #tabs {
+      display: flex;
+      background: var(--bg-secondary);
+      align-items: center;
+      gap: 2px;
+      overflow-x: auto;
+      min-height: 40px;
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border-color);
     }
-    .resize-handle { 
-      position: absolute; left: -3px; top: 0; width: 6px; height: 100%; 
-      cursor: ew-resize; background: transparent; z-index: 100; 
+    .tab-btn {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      border: 1px solid transparent;
+      padding: 7px 28px 7px 14px;
+      position: relative;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
-    .resize-handle:hover { background: var(--accent-cyan); }
-    
-    .sidebar-header { padding: 12px; background: var(--bg-tertiary); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
-    .chat-messages { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
-    .message { padding: 10px 14px; border-radius: 12px; max-width: 95%; word-wrap: break-word; font-size: 13px; animation: fadeIn 0.3s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .message.user { background: var(--accent-blue); align-self: flex-end; border-bottom-right-radius: 4px; }
-    .message.ai { background: #3d3d3d; align-self: flex-start; border-bottom-left-radius: 4px; white-space: pre-wrap; }
-    .message.ai.streaming { border-left: 3px solid var(--accent-purple); }
-    .message.system { background: var(--accent-orange); align-self: center; font-size: 12px; border-radius: 20px; }
-    
-    .chat-controls { padding: 12px; border-top: 1px solid var(--border-color); background: var(--bg-secondary); }
-    .mode-toggle { display: flex; gap: 10px; margin-bottom: 10px; justify-content: center; }
-    .mode-toggle-btn { flex: 1; background: #333; padding: 8px; font-size: 13px; border-radius: 8px; }
-    .mode-toggle-btn.active { background: var(--accent-purple); }
-    .mode-toggle-btn.edit-mode.active { background: #4caf50; }
-    .chat-input-wrapper { display: flex; gap: 10px; }
-    .chat-input-wrapper textarea { 
-      flex: 1; background: var(--bg-primary); border: 1px solid var(--border-color); 
-      color: var(--text-primary); padding: 10px; border-radius: 8px; resize: none; 
-      font-family: inherit; font-size: 13px; 
+    .tab-btn.active {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      border-color: var(--accent-blue);
+      box-shadow: var(--shadow-glow-blue);
     }
-    .chat-input-wrapper button { background: var(--accent-purple); padding: 10px 20px; border-radius: 8px; }
-    
-    .quick-actions { 
-      display: flex; gap: 5px; flex-wrap: wrap; padding: 8px 12px; 
-      background: var(--bg-primary); border-top: 1px solid var(--border-color); 
+    .tab-btn:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-primary);
     }
-    .quick-actions button { background: #333; padding: 4px 8px; font-size: 10px; border-radius: 12px; }
-    .quick-actions button:hover { background: var(--accent-blue); }
-    
-    /* Worker Editor Window */
+    .tab-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-green);
+    }
+    .close-tab-btn {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 14px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+    .close-tab-btn:hover {
+      background: var(--accent-red);
+      color: white;
+    }
+
+    /* Editor */
+    #container {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+    #simple-editor {
+      width: 100%;
+      height: 100%;
+      background: var(--bg-primary);
+      color: #d4d4ff;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 13px;
+      padding: 20px;
+      border: none;
+      resize: none;
+      outline: none;
+      line-height: 1.7;
+      caret-color: var(--accent-cyan);
+    }
+    #simple-editor::selection {
+      background: rgba(79, 110, 246, 0.3);
+    }
+    .editor-line-numbers {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 50px;
+      height: 100%;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+      padding: 20px 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-align: right;
+      line-height: 1.7;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* AI Sidebar Premium */
+    #ai-sidebar {
+      width: 420px;
+      background: var(--bg-secondary);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      min-width: 280px;
+      max-width: 600px;
+      border-left: 1px solid var(--border-color);
+    }
+    .resize-handle {
+      position: absolute;
+      left: -4px;
+      top: 0;
+      width: 8px;
+      height: 100%;
+      cursor: ew-resize;
+      background: transparent;
+      z-index: 100;
+      transition: background 0.3s ease;
+      border-radius: 4px;
+    }
+    .resize-handle:hover,
+    .resize-handle.active {
+      background: var(--accent-cyan);
+      box-shadow: 0 0 20px rgba(34, 211, 238, 0.5);
+    }
+    .sidebar-header {
+      padding: 14px 18px;
+      background: var(--glass-bg);
+      backdrop-filter: var(--blur);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--glass-border);
+    }
+    .sidebar-header h3 {
+      font-size: 15px;
+      font-weight: 700;
+      background: var(--gradient-1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 0.03em;
+    }
+
+    /* Chat Messages */
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 0;
+    }
+    .message {
+      padding: 12px 16px;
+      border-radius: 16px;
+      max-width: 90%;
+      word-wrap: break-word;
+      font-size: 13px;
+      line-height: 1.6;
+      animation: fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    .message.user {
+      background: var(--gradient-1);
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+      box-shadow: var(--shadow-glow-blue);
+    }
+    .message.ai {
+      background: var(--bg-tertiary);
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+      border: 1px solid var(--border-color);
+    }
+    .message.system {
+      background: linear-gradient(135deg, #f59e0b20, #ef444420);
+      align-self: center;
+      font-size: 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: var(--accent-orange);
+      text-align: center;
+    }
+    .message.error {
+      background: linear-gradient(135deg, #ef444420, #dc262620);
+      align-self: center;
+      font-size: 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: var(--accent-red);
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      padding: 10px 16px;
+      background: var(--bg-primary);
+      border-top: 1px solid var(--border-color);
+    }
+    .quick-actions .btn {
+      font-size: 10px;
+      padding: 5px 10px;
+      border-radius: 20px;
+    }
+
+    /* Chat Controls */
+    .chat-controls {
+      padding: 14px;
+      border-top: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+    }
+    .mode-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .mode-toggle-btn {
+      flex: 1;
+      background: var(--bg-tertiary);
+      border: 1.5px solid transparent;
+      color: var(--text-secondary);
+      padding: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .mode-toggle-btn.active {
+      border-color: var(--accent-purple);
+      color: var(--text-primary);
+      background: rgba(139, 92, 246, 0.15);
+      box-shadow: var(--shadow-glow-purple);
+    }
+    .chat-input-wrapper {
+      display: flex;
+      gap: 8px;
+    }
+    .chat-input-wrapper textarea {
+      flex: 1;
+      background: var(--bg-primary);
+      border: 1.5px solid var(--border-color);
+      color: var(--text-primary);
+      padding: 10px 14px;
+      border-radius: 12px;
+      resize: none;
+      font-family: inherit;
+      font-size: 13px;
+      outline: none;
+      transition: all 0.3s ease;
+      line-height: 1.5;
+    }
+    .chat-input-wrapper textarea:focus {
+      border-color: var(--accent-purple);
+      box-shadow: var(--shadow-glow-purple);
+    }
+
+    /* Worker Editor */
+    .worker-editor-section {
+      background: var(--bg-primary);
+      border-top: 1px solid var(--border-color);
+      padding: 12px;
+    }
+    .worker-editor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .worker-editor-header span {
+      font-weight: 700;
+      font-size: 12px;
+      color: var(--accent-cyan);
+      letter-spacing: 0.05em;
+    }
+    .worker-editor-section textarea {
+      width: 100%;
+      background: var(--bg-tertiary);
+      border: 1.5px solid var(--border-color);
+      color: #d4d4ff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      padding: 10px;
+      border-radius: 8px;
+      resize: vertical;
+      min-height: 80px;
+      outline: none;
+      transition: all 0.3s ease;
+      line-height: 1.6;
+    }
+    .worker-editor-section textarea:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 15px rgba(34, 211, 238, 0.15);
+    }
+
+    /* Worker Floating Window */
     .worker-editor-window {
-      position: fixed; background: var(--bg-secondary); border: 2px solid var(--accent-cyan);
-      border-radius: 12px; z-index: 500; min-width: 350px; min-height: 250px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.6); display: none; flex-direction: column;
-      resize: both; overflow: hidden;
+      position: fixed;
+      background: var(--bg-secondary);
+      border: 2px solid var(--accent-cyan);
+      border-radius: 16px;
+      z-index: 5000;
+      min-width: 380px;
+      min-height: 300px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(34, 211, 238, 0.2);
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      animation: windowOpen 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes windowOpen {
+      from { opacity: 0; transform: scale(0.9) translateY(20px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
     }
     .worker-editor-header-window {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 10px 14px; background: var(--bg-tertiary); cursor: move;
-      user-select: none; border-radius: 10px 10px 0 0; border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: var(--bg-tertiary);
+      cursor: move;
+      user-select: none;
+      border-bottom: 1px solid var(--border-color);
     }
-    .worker-editor-header-window .title { font-weight: bold; color: var(--accent-cyan); font-size: 13px; }
-    .worker-editor-header-window .window-controls { display: flex; gap: 6px; }
-    .worker-editor-header-window .window-controls button {
-      width: 28px; height: 28px; border-radius: 50%; font-size: 14px; padding: 0;
-      display: flex; align-items: center; justify-content: center; background: transparent;
-      border: 1px solid var(--border-color); color: var(--text-primary); cursor: pointer;
+    .worker-editor-header-window .title {
+      font-weight: 700;
+      color: var(--accent-cyan);
+      font-size: 13px;
+      letter-spacing: 0.03em;
     }
-    .worker-editor-header-window .window-controls button.close:hover { background: var(--accent-red); border-color: var(--accent-red); }
+    .window-controls {
+      display: flex;
+      gap: 6px;
+    }
+    .window-controls button {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      font-size: 14px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .window-controls .close-btn:hover {
+      background: var(--accent-red);
+      border-color: var(--accent-red);
+      color: white;
+    }
     .worker-editor-body-window {
-      flex: 1; padding: 10px; display: flex; flex-direction: column; gap: 8px; overflow: auto;
+      flex: 1;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow: auto;
     }
     .worker-editor-body-window textarea {
-      flex: 1; background: var(--bg-primary); border: 1px solid var(--border-color);
-      color: #d4d4d4; font-family: 'Consolas', monospace; font-size: 12px;
-      padding: 10px; border-radius: 6px; resize: none; min-height: 120px;
+      flex: 1;
+      background: var(--bg-primary);
+      border: 1.5px solid var(--border-color);
+      color: #d4d4ff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      resize: none;
+      min-height: 150px;
+      outline: none;
+      transition: all 0.3s ease;
     }
-    .worker-editor-body-window .worker-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
-    .worker-editor-body-window .worker-buttons button { padding: 6px 12px; font-size: 11px; }
-    .worker-editor-window.minimized { min-height: auto !important; height: auto !important; resize: none; }
-    .worker-editor-window.minimized .worker-editor-body-window { display: none; }
-    
+    .worker-editor-body-window textarea:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 15px rgba(34, 211, 238, 0.2);
+    }
+
+    /* Context Menu Premium */
     .context-menu {
-      position: fixed; background: var(--bg-tertiary); border: 1px solid var(--border-color);
-      border-radius: 10px; padding: 8px 0; z-index: 10000; min-width: 200px;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.5); display: none;
+      position: fixed;
+      background: var(--glass-bg);
+      backdrop-filter: var(--blur);
+      -webkit-backdrop-filter: var(--blur);
+      border: 1px solid var(--glass-border);
+      border-radius: 14px;
+      padding: 6px 0;
+      z-index: 10000;
+      min-width: 220px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      display: none;
+      animation: menuAppear 0.2s ease;
+    }
+    @keyframes menuAppear {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
     }
     .context-menu .menu-item {
-      padding: 10px 16px; cursor: pointer; font-size: 13px;
-      display: flex; align-items: center; gap: 10px; transition: background 0.15s; color: var(--text-primary);
+      padding: 10px 18px;
+      cursor: pointer;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.2s ease;
+      color: var(--text-primary);
+      font-weight: 500;
     }
-    .context-menu .menu-item:hover { background: var(--accent-blue); }
-    .context-menu .menu-divider { height: 1px; background: var(--border-color); margin: 6px 0; }
-    .context-menu .menu-shortcut { margin-left: auto; color: var(--text-secondary); font-size: 11px; }
-    
-    .notification { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; color: white; z-index: 1000; animation: slideIn 0.3s; font-size: 13px; }
-    .notification.success { background: #4caf50; }
-    .notification.error { background: var(--accent-red); }
-    .notification.info { background: #2196f3; }
-    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-    
-    .publish-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 10001; }
-    .publish-modal-content { background: var(--bg-tertiary); border-radius: 16px; padding: 30px; max-width: 500px; width: 90%; text-align: center; }
-    .publish-modal-buttons { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
-    
-    .activities-panel { background: var(--bg-primary); border-top: 1px solid var(--border-color); padding: 8px; max-height: 120px; overflow-y: auto; }
-    .activities-header { font-size: 11px; color: var(--accent-cyan); margin-bottom: 5px; }
+    .context-menu .menu-item:hover {
+      background: rgba(79, 110, 246, 0.2);
+    }
+    .context-menu .menu-divider {
+      height: 1px;
+      background: var(--glass-border);
+      margin: 6px 0;
+    }
+    .context-menu .menu-shortcut {
+      margin-left: auto;
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--bg-tertiary);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    /* Notifications Premium */
+    .notification {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 14px 22px;
+      border-radius: 12px;
+      color: white;
+      z-index: 10000;
+      animation: notifIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+      letter-spacing: 0.02em;
+    }
+    @keyframes notifIn {
+      from { opacity: 0; transform: translateX(80px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .notification.success {
+      background: linear-gradient(135deg, #10b981dd, #059669dd);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+    .notification.error {
+      background: linear-gradient(135deg, #ef4444dd, #dc2626dd);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+    .notification.info {
+      background: linear-gradient(135deg, #4f6ef6dd, #6366f1dd);
+      border: 1px solid rgba(79, 110, 246, 0.4);
+    }
+    .notification.warning {
+      background: linear-gradient(135deg, #f59e0bdd, #d97706dd);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+
+    /* Modals Premium */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 10001;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .modal-content {
+      background: var(--bg-secondary);
+      border-radius: 20px;
+      padding: 30px;
+      max-width: 500px;
+      width: 90%;
+      text-align: center;
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.7);
+      animation: modalIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.9) translateY(30px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .modal-content h3 {
+      color: var(--text-primary);
+      font-size: 20px;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+    .modal-content p {
+      color: var(--text-secondary);
+      margin: 15px 0;
+      line-height: 1.6;
+    }
+    .modal-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    /* Activities Panel */
+    .activities-panel {
+      background: var(--bg-primary);
+      border-top: 1px solid var(--border-color);
+      padding: 10px;
+      max-height: 130px;
+      overflow-y: auto;
+    }
+    .activities-header {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      margin-bottom: 6px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .activity-item {
+      font-size: 11px;
+      color: var(--text-secondary);
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    /* Project Type Badge */
+    .project-type-badge {
+      background: var(--bg-tertiary);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--border-color);
+      letter-spacing: 0.03em;
+    }
+    .project-type-badge .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { box-shadow: 0 0 5px var(--accent-cyan); }
+      50% { box-shadow: 0 0 15px var(--accent-cyan), 0 0 25px var(--accent-cyan); }
+    }
+
+    /* Responsivo */
+    @media (max-width: 768px) {
+      #ai-sidebar {
+        width: 100%;
+        max-width: 100%;
+        position: absolute;
+        right: 0;
+        top: 0;
+        height: 100%;
+        z-index: 500;
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+      }
+      #ai-sidebar.open {
+        transform: translateX(0);
+      }
+      #top-bar {
+        padding: 6px 8px;
+        gap: 4px;
+      }
+      .btn {
+        padding: 6px 10px;
+        font-size: 10px;
+      }
+      #project-name {
+        width: 120px;
+        padding: 6px 10px;
+      }
+      .url-panel-top input {
+        width: 150px;
+      }
+    }
   </style>
 </head>
 <body>
+  <!-- Loading Screen -->
   <div id="loading-screen">
-    <img src="https://alexandre7888.github.io/CodeHUB/CodeFOX/foto1.jpg" class="loader" alt="Loading">
-    <h2>Carregando CodeHUB...</h2>
+    <div class="loader-icon"></div>
+    <div class="loader-text">CodeHUB Pro</div>
   </div>
 
+  <!-- App Content -->
   <div id="app-content" style="height: 100vh; display: flex; flex-direction: column;">
+    <!-- Top Bar -->
     <div id="top-bar">
-      <button onclick="window.location.href='index.html'">🏠 Início</button>
-      <div class="project-type-indicator">
-        <span>💻</span>
-        <span style="color:#4cc9f0;">Código</span>
+      <button class="btn btn-outline btn-sm" onclick="window.location.href='index.html'">🏠</button>
+      <div class="project-type-badge">
+        <span class="dot"></span>
+        <span style="color:#22d3ee;">Código</span>
       </div>
       <input type="text" id="project-name" placeholder="Nome do Projeto">
-      <button id="saveFileBtn" disabled>💾 Salvar</button>
-      <button id="previewBtn">👁️ Preview</button>
-      <button id="sitePublishBtn">🚀 Publicar Site</button>
-      <button id="siteDeleteBtn">🗑️ Deletar Site</button>
-      <button id="siteHistoryBtn">📋 Histórico</button>
+      <button class="btn btn-primary btn-sm" id="saveFileBtn">💾 Salvar</button>
+      <button class="btn btn-outline btn-sm" id="previewBtn">👁️ Preview</button>
+      <button class="btn btn-success btn-sm" id="sitePublishBtn">🚀 Publicar</button>
+      <button class="btn btn-danger btn-sm" id="siteDeleteBtn" style="display:none;">🗑️</button>
+      <button class="btn btn-purple btn-sm" id="siteHistoryBtn">📋</button>
       <div class="url-panel-top" id="urlPanelTop" style="display: none;">
         <span>🔗</span>
         <input type="text" id="fileUrlTop" readonly onclick="this.select()">
-        <button id="openUrlTopBtn">Abrir</button>
-        <button id="copyUrlTopBtn">📋 Copiar</button>
+        <button class="btn btn-outline btn-xs" id="openUrlTopBtn">Abrir</button>
+        <button class="btn btn-outline btn-xs" id="copyUrlTopBtn">📋</button>
       </div>
       <div class="zoom-controls">
         <button onclick="changeZoom(-0.1)">➖</button>
-        <span id="zoomLevel">100%</span>
+        <span class="zoom-label" id="zoomLevel">100%</span>
         <button onclick="changeZoom(0.1)">➕</button>
         <button onclick="resetZoom()">↺</button>
       </div>
-      <div id="user-info">
-        <span id="user-name"></span>
-        <button id="logoutBtn" class="logout-btn">Sair</button>
+      <div id="user-info" style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
+        <span id="user-name" style="font-weight:600;font-size:13px;"></span>
+        <button class="btn btn-danger btn-sm" id="logoutBtn">Sair</button>
       </div>
     </div>
 
+    <!-- Main Container -->
     <div class="main-container">
       <div id="editor-container">
         <div id="tabs"></div>
-        <div id="container"><textarea id="simple-editor" placeholder="Editor - você já pode digitar!" style="width:100%; height:100%; background:#1e1e1e; color:#d4d4d4; font-family:monospace; padding:10px; border:none; resize:none;"></textarea></div>
+        <div id="container">
+          <textarea id="simple-editor" placeholder="// Comece a digitar seu código aqui..."></textarea>
+        </div>
       </div>
 
+      <!-- AI Sidebar -->
       <div id="ai-sidebar">
         <div class="resize-handle" id="resizeHandle"></div>
-        <div class="sidebar-header"><h3>🤖 Assistente IA</h3></div>
+        <div class="sidebar-header">
+          <h3>🤖 CodeHUB AI</h3>
+          <button class="btn btn-outline btn-xs" onclick="toggleSidebar()">✕</button>
+        </div>
         <div class="chat-messages" id="chatMessages"></div>
         <div class="quick-actions" id="quickActions">
-          <button onclick="quickAction('criar-worker')">➕ Criar Worker</button>
-          <button onclick="quickAction('editar-worker')">✏️ Editar Worker</button>
-          <button onclick="quickAction('explicar-worker')">📖 Explicar</button>
-          <button onclick="quickAction('listar-workers')">📋 Listar</button>
+          <button class="btn btn-purple btn-xs" onclick="quickAction('criar-worker')">➕ Worker</button>
+          <button class="btn btn-outline btn-xs" onclick="quickAction('editar-worker')">✏️ Editar</button>
+          <button class="btn btn-outline btn-xs" onclick="quickAction('explicar-worker')">📖 Explicar</button>
+          <button class="btn btn-outline btn-xs" onclick="quickAction('listar-workers')">📋 Listar</button>
+          <button class="btn btn-outline btn-xs" onclick="quickAction('formatar')">✨ Formatar</button>
+          <button class="btn btn-outline btn-xs" onclick="quickAction('debug')">🐛 Debug</button>
         </div>
         <div class="chat-controls">
           <div class="mode-toggle">
             <button class="mode-toggle-btn" id="chatModeBtn" onclick="setMode('chat')">💬 Conversar</button>
-            <button class="mode-toggle-btn edit-mode active" id="editModeBtn" onclick="setMode('edit')">✏️ Editar</button>
+            <button class="mode-toggle-btn active" id="editModeBtn" onclick="setMode('edit')">✏️ Editar</button>
           </div>
           <div class="chat-input-wrapper">
-            <textarea id="chatInput" placeholder="Digite seu comando..." rows="2"></textarea>
-            <button id="sendChatBtn">Enviar</button>
+            <textarea id="chatInput" placeholder="Digite seu comando ou pergunta..." rows="2"></textarea>
+            <button class="btn btn-purple" id="sendChatBtn">➤</button>
           </div>
         </div>
-        <div class="worker-editor" style="background:var(--bg-primary);border-top:1px solid var(--border-color);padding:8px;">
-          <div class="worker-editor-header"><span>📝 Código do Worker (.sc)</span><div class="worker-editor-buttons"><button onclick="saveWorkerCode()">💾 Salvar</button><button id="workerPublishBtn" class="update-worker" onclick="publishWorker()">🚀 Publicar Worker</button></div></div>
-          <textarea id="workerCode" rows="4" placeholder="// Código do Worker .sc"></textarea>
+        <div class="worker-editor-section">
+          <div class="worker-editor-header">
+            <span>📝 Worker (.sc)</span>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-outline btn-xs" onclick="saveWorkerCode()">💾</button>
+              <button class="btn btn-warning btn-xs" onclick="publishWorker()">🚀 Publicar</button>
+            </div>
+          </div>
+          <textarea id="workerCode" rows="3" placeholder="// Código do Worker .sc"></textarea>
         </div>
         <div class="activities-panel">
-          <div class="activities-header">📊 Atividades</div>
-          <div id="activitiesList"><span style="color:#888;font-size:11px;">🔍 Carregando...</span></div>
+          <div class="activities-header">📊 Atividades Recentes</div>
+          <div id="activitiesList"><span style="color:#8888bb;font-size:11px;">Pronto para codar...</span></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Worker Editor Flutuante -->
-  <div class="worker-editor-window" id="workerEditorWindow" style="top:100px;left:150px;width:500px;height:400px;">
+  <!-- Worker Editor Window -->
+  <div class="worker-editor-window" id="workerEditorWindow" style="top:80px;left:120px;width:520px;height:420px;">
     <div class="worker-editor-header-window" id="workerEditorHeader">
       <div class="title">📝 <span id="workerWindowTitle">Editor de Worker</span></div>
       <div class="window-controls">
-        <button onclick="toggleWorkerWindowSize()" title="Minimizar">━</button>
-        <button class="close" onclick="closeWorkerWindow()" title="Fechar">✕</button>
+        <button onclick="minimizeWorkerWindow()" title="Minimizar">━</button>
+        <button onclick="maximizeWorkerWindow()" title="Maximizar">☐</button>
+        <button class="close-btn" onclick="closeWorkerWindow()" title="Fechar">✕</button>
       </div>
     </div>
     <div class="worker-editor-body-window">
       <textarea id="workerCodeWindow" rows="10" placeholder="// Código do Worker .sc"></textarea>
-      <div class="worker-buttons">
-        <button onclick="saveWorkerCodeWindow()">💾 Salvar</button>
-        <button onclick="publishWorkerWindow()" style="background:#ff9800;">🚀 Publicar Worker</button>
-        <button onclick="testWorkerWindow()" style="background:#22c55e;">▶️ Testar</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" onclick="saveWorkerCodeWindow()">💾 Salvar</button>
+        <button class="btn btn-warning btn-sm" onclick="publishWorkerWindow()">🚀 Publicar</button>
+        <button class="btn btn-success btn-sm" onclick="testWorkerWindow()">▶️ Testar</button>
+        <button class="btn btn-outline btn-sm" onclick="formatWorkerCode()">✨ Formatar</button>
       </div>
     </div>
   </div>
 
   <!-- Context Menu -->
   <div class="context-menu" id="contextMenu">
+    <div class="menu-item" onclick="contextAction('copy')">📋 Copiar <span class="menu-shortcut">Ctrl+C</span></div>
+    <div class="menu-item" onclick="contextAction('cut')">✂️ Recortar <span class="menu-shortcut">Ctrl+X</span></div>
+    <div class="menu-item" onclick="contextAction('paste')">📄 Colar <span class="menu-shortcut">Ctrl+V</span></div>
+    <div class="menu-item" onclick="contextAction('selectAll')">🔍 Selecionar Tudo <span class="menu-shortcut">Ctrl+A</span></div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" onclick="contextAction('undo')">↩️ Desfazer <span class="menu-shortcut">Ctrl+Z</span></div>
+    <div class="menu-item" onclick="contextAction('redo')">↪️ Refazer <span class="menu-shortcut">Ctrl+Y</span></div>
+    <div class="menu-divider"></div>
     <div class="menu-item" onclick="contextAction('save')">💾 Salvar <span class="menu-shortcut">Ctrl+S</span></div>
     <div class="menu-item" onclick="contextAction('publish')">🚀 Publicar Site</div>
     <div class="menu-item" onclick="contextAction('update')">🔄 Atualizar Site</div>
@@ -327,28 +1071,28 @@
   </div>
 
   <!-- Publish Modal -->
-  <div id="publishModal" class="publish-modal">
-    <div class="publish-modal-content">
-      <h3 id="modalTitle" style="color:white;">🚀 Publicar?</h3>
-      <p id="modalMessage" style="color:#ccc;margin:15px 0;"></p>
-      <div class="publish-modal-buttons">
-        <button id="publishYesBtn" style="background:#4caf50;padding:10px 30px;border-radius:8px;">✅ Sim</button>
-        <button id="publishNoBtn" style="background:#f44336;padding:10px 30px;border-radius:8px;">❌ Não</button>
+  <div id="publishModal" class="modal-overlay">
+    <div class="modal-content">
+      <h3>🚀 Publicar Site?</h3>
+      <p id="modalMessage">Seu site será hospedado no Puter com URL pública.</p>
+      <div class="modal-buttons">
+        <button class="btn btn-success" id="publishYesBtn">✅ Sim, Publicar</button>
+        <button class="btn btn-danger" id="publishNoBtn">❌ Cancelar</button>
       </div>
     </div>
   </div>
 
   <!-- History Modal -->
-  <div id="historyModal" class="publish-modal">
-    <div class="publish-modal-content" style="max-width:600px;max-height:70vh;overflow-y:auto;">
-      <h3 style="color:white;">📋 Histórico de Sites</h3>
+  <div id="historyModal" class="modal-overlay">
+    <div class="modal-content" style="max-width:600px;max-height:70vh;overflow-y:auto;">
+      <h3>📋 Histórico de Sites</h3>
       <div id="historyList" style="color:#ccc;text-align:left;margin:15px 0;"></div>
-      <button onclick="closeHistoryModal()" style="background:#f44336;padding:10px 30px;border-radius:8px;">Fechar</button>
+      <button class="btn btn-danger" onclick="closeHistoryModal()">Fechar</button>
     </div>
   </div>
 
   <script>
-    // ============== CONFIGURAÇÃO ==============
+    // ============== FIREBASE CONFIG ==============
     const firebaseConfig = {
       apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
       authDomain: "html-15e80.firebaseapp.com",
@@ -358,38 +1102,104 @@
       messagingSenderId: "1068148640439",
       appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32"
     };
-
     const app = firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.database();
-    
-    // ============== VARIÁVEIS GLOBAIS ==============
-    let editor = null;
+
+    // ============== VARIÁVEIS ==============
     let currentProjectId = null;
     let currentUser = null;
     let currentFile = null;
     let files = {};
     let currentZoom = 1;
-    let useSimpleEditor = true;
     let currentMode = 'edit';
-    
-    // Dados do site
+    let undoStack = [];
+    let redoStack = [];
+
     let sitesSalvos = JSON.parse(localStorage.getItem('codehub_sites') || '[]');
     let hostingSubdomain = null;
     let hostingDirectory = null;
     let hostingUrl = null;
     let siteCreated = false;
-    
-    // Worker
     let currentWorkerData = null;
 
     const ACTIVITY_SCRIPT_URL = "https://code.codehub.ct.ws/atividade.js";
     const urlParams = new URLSearchParams(window.location.search);
     currentProjectId = urlParams.get('projectId');
 
+    // ============== UTILITÁRIOS ==============
+    function showNotification(msg, type = 'info') {
+      const existing = document.querySelector('.notification');
+      if (existing) existing.remove();
+      const n = document.createElement('div');
+      n.className = `notification ${type}`;
+      n.textContent = msg;
+      document.body.appendChild(n);
+      setTimeout(() => { n.style.opacity = '0'; n.style.transform = 'translateX(80px)'; setTimeout(() => n.remove(), 300); }, 3500);
+    }
+
+    function addChatMessage(text, type = 'ai') {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `message ${type}`;
+      msgDiv.innerHTML = text.replace(/\n/g, '<br>');
+      const chatEl = document.getElementById('chatMessages');
+      chatEl.appendChild(msgDiv);
+      chatEl.scrollTop = chatEl.scrollHeight;
+
+      const activitiesEl = document.getElementById('activitiesList');
+      const shortText = text.length > 80 ? text.substring(0, 80).replace(/<[^>]*>/g,'') + '...' : text.replace(/<[^>]*>/g,'');
+      const actItem = document.createElement('div');
+      actItem.className = 'activity-item';
+      actItem.textContent = `[${new Date().toLocaleTimeString()}] ${shortText}`;
+      activitiesEl.prepend(actItem);
+      if (activitiesEl.children.length > 20) activitiesEl.lastChild.remove();
+    }
+
+    async function garantirLoginPuter() {
+      try { await puter.auth.getUser(); return true; } catch(e) {}
+      try { await puter.auth.signIn(); return true; } catch(e) { return false; }
+    }
+
+    function salvarSiteNoHistorico(subdomain, dir) {
+      const site = { subdomain, dir, data: new Date().toLocaleString(), url: `https://${subdomain}.puter.site` };
+      sitesSalvos = sitesSalvos.filter(s => s.subdomain !== subdomain);
+      sitesSalvos.unshift(site);
+      localStorage.setItem('codehub_sites', JSON.stringify(sitesSalvos));
+    }
+
+    function updateSiteButtons() {
+      const pub = document.getElementById('sitePublishBtn');
+      const del = document.getElementById('siteDeleteBtn');
+      if (siteCreated) {
+        pub.textContent = '🔄 Atualizar';
+        pub.className = 'btn btn-warning btn-sm';
+        del.style.display = 'inline-flex';
+      } else {
+        pub.textContent = '🚀 Publicar';
+        pub.className = 'btn btn-success btn-sm';
+        del.style.display = 'none';
+      }
+    }
+
+    function getIndexFile() {
+      for (let key of Object.keys(files)) {
+        const f = files[key];
+        const name = (f.name || f.originalName || key).toLowerCase();
+        if (name === 'index.html' || name.endsWith('/index.html')) return { key, file: f };
+      }
+      return null;
+    }
+
+    function injectActivityScript(html) {
+      const script = `<script src="${ACTIVITY_SCRIPT_URL}?projectid=${currentProjectId}"><\/script>`;
+      if (html.includes('</body>')) return html.replace('</body>', script + '\n</body>');
+      if (html.includes('</html>')) return html.replace('</html>', script + '\n</html>');
+      return html + '\n' + script;
+    }
+
     // ============== ZOOM ==============
     function changeZoom(delta) {
-      currentZoom = Math.max(0.5, Math.min(2, currentZoom + delta));
+      currentZoom = Math.max(0.4, Math.min(2.5, currentZoom + delta));
       document.body.style.zoom = currentZoom;
       document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
       localStorage.setItem('codehub_zoom', currentZoom);
@@ -400,25 +1210,41 @@
     function initContextMenu() {
       const menu = document.getElementById('contextMenu');
       document.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        menu.style.display = 'block';
-        menu.style.left = Math.min(e.clientX, window.innerWidth - 220) + 'px';
-        menu.style.top = Math.min(e.clientY, window.innerHeight - 300) + 'px';
-      });
-      document.addEventListener('click', (e) => { if (!menu.contains(e.target)) menu.style.display = 'none'; });
-      document.addEventListener('keydown', (e) => {
-        if (e.ctrlKey) {
-          if (e.key === 's') { e.preventDefault(); saveCurrentFile(); }
-          if (e.key === '=' || e.key === '+') { e.preventDefault(); changeZoom(0.1); }
-          if (e.key === '-') { e.preventDefault(); changeZoom(-0.1); }
-          if (e.key === '0') { e.preventDefault(); resetZoom(); }
+        const sel = window.getSelection().toString();
+        if (sel) {
+          e.preventDefault();
+          menu.style.display = 'block';
+          menu.style.left = Math.min(e.clientX, window.innerWidth - 240) + 'px';
+          menu.style.top = Math.min(e.clientY, window.innerHeight - 400) + 'px';
         }
       });
+      document.addEventListener('click', () => menu.style.display = 'none');
+      document.addEventListener('keydown', handleKeyboardShortcuts);
+    }
+
+    function handleKeyboardShortcuts(e) {
+      const ctrl = e.ctrlKey || e.metaKey;
+      if (ctrl && e.key === 's') { e.preventDefault(); saveCurrentFile(); }
+      else if (ctrl && e.key === 'z') { e.preventDefault(); undo(); }
+      else if (ctrl && e.key === 'y') { e.preventDefault(); redo(); }
+      else if (ctrl && e.key === '=') { e.preventDefault(); changeZoom(0.1); }
+      else if (ctrl && e.key === '-') { e.preventDefault(); changeZoom(-0.1); }
+      else if (ctrl && e.key === '0') { e.preventDefault(); resetZoom(); }
+      else if (ctrl && e.key === 'p') { e.preventDefault(); previewProject(); }
+      else if (e.key === 'F5' && !ctrl) { e.preventDefault(); previewProject(); }
+      else if (ctrl && e.key === 'b') { e.preventDefault(); publishSite(); }
     }
 
     function contextAction(action) {
       document.getElementById('contextMenu').style.display = 'none';
+      const ed = document.getElementById('simple-editor');
       switch(action) {
+        case 'copy': navigator.clipboard.writeText(ed.value.substring(ed.selectionStart, ed.selectionEnd)).then(() => showNotification('Copiado!', 'success')); break;
+        case 'cut': navigator.clipboard.writeText(ed.value.substring(ed.selectionStart, ed.selectionEnd)).then(() => { document.execCommand('cut'); showNotification('Recortado!', 'success'); }); break;
+        case 'paste': navigator.clipboard.readText().then(t => { const s = ed.selectionStart; ed.value = ed.value.substring(0, s) + t + ed.value.substring(ed.selectionEnd); showNotification('Colado!', 'success'); }); break;
+        case 'selectAll': ed.select(); break;
+        case 'undo': undo(); break;
+        case 'redo': redo(); break;
         case 'save': saveCurrentFile(); break;
         case 'publish': publishSite(); break;
         case 'update': updateSite(); break;
@@ -431,330 +1257,29 @@
       }
     }
 
-    // ============== UTILITÁRIOS ==============
-    function showNotification(msg, type) {
-      const n = document.createElement('div');
-      n.className = `notification ${type}`;
-      n.textContent = msg; document.body.appendChild(n);
-      setTimeout(() => n.remove(), 4000);
+    // ============== UNDO/REDO ==============
+    function pushUndo() {
+      const ed = document.getElementById('simple-editor');
+      undoStack.push(ed.value);
+      if (undoStack.length > 100) undoStack.shift();
+      redoStack = [];
+    }
+    function undo() {
+      if (undoStack.length === 0) return;
+      const ed = document.getElementById('simple-editor');
+      redoStack.push(ed.value);
+      ed.value = undoStack.pop();
+      showNotification('Desfeito ↩️', 'info');
+    }
+    function redo() {
+      if (redoStack.length === 0) return;
+      const ed = document.getElementById('simple-editor');
+      undoStack.push(ed.value);
+      ed.value = redoStack.pop();
+      showNotification('Refeito ↪️', 'info');
     }
 
-    function addChatMessage(text, type) {
-      const msgDiv = document.createElement('div');
-      msgDiv.className = `message ${type}`;
-      msgDiv.innerHTML = text.replace(/\n/g, '<br>');
-      document.getElementById('chatMessages').appendChild(msgDiv);
-      document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
-    }
-
-    async function garantirLoginPuter() {
-      try { 
-        await puter.auth.getUser(); 
-        return true; 
-      } catch(e) {}
-      
-      try { 
-        await puter.auth.signIn(); 
-        return true; 
-      } catch(e) { 
-        return false; 
-      }
-    }
-
-    function salvarSiteNoHistorico(subdomain, dir) {
-      const site = {
-        subdomain: subdomain,
-        dir: dir,
-        data: new Date().toLocaleString(),
-        url: `https://${subdomain}.puter.site`
-      };
-      sitesSalvos = sitesSalvos.filter(s => s.subdomain !== subdomain);
-      sitesSalvos.unshift(site);
-      localStorage.setItem('codehub_sites', JSON.stringify(sitesSalvos));
-    }
-
-    function updateSiteButtons() {
-      const publishBtn = document.getElementById('sitePublishBtn');
-      const deleteBtn = document.getElementById('siteDeleteBtn');
-      
-      if (siteCreated) {
-        publishBtn.textContent = '🔄 Atualizar Site';
-        publishBtn.style.background = '#ff9800';
-        deleteBtn.style.display = 'inline-block';
-      } else {
-        publishBtn.textContent = '🚀 Publicar Site';
-        publishBtn.style.background = '#22c55e';
-        deleteBtn.style.display = 'none';
-      }
-    }
-
-    // ============== OBTER INDEX.HTML CORRETAMENTE ==============
-    function getIndexFile() {
-      // Procura pelo arquivo index.html nos arquivos do projeto
-      const fileKeys = Object.keys(files);
-      for (let key of fileKeys) {
-        const file = files[key];
-        const fileName = (file.name || file.originalName || key).toLowerCase();
-        if (fileName === 'index.html' || fileName.endsWith('/index.html')) {
-          return { key, file };
-        }
-      }
-      return null;
-    }
-
-    // ============== PUBLICAR SITE (CORRIGIDO) ==============
-    async function publishSite() {
-      if (!await garantirLoginPuter()) {
-        addChatMessage('❌ Faça login no Puter primeiro!', 'system');
-        showNotification('Faça login no Puter!', 'error');
-        return;
-      }
-      
-      // CORREÇÃO: Verificar index.html corretamente
-      const indexData = getIndexFile();
-      if (!indexData) { 
-        addChatMessage('❌ Crie um index.html primeiro!', 'system'); 
-        showNotification('Crie um index.html!', 'error');
-        return; 
-      }
-      
-      if (siteCreated) {
-        // Já tem site = ATUALIZAR
-        await updateSite();
-        return;
-      }
-      
-      document.getElementById('modalTitle').textContent = '🚀 Publicar Site?';
-      document.getElementById('modalMessage').textContent = 'Seu site será hospedado no Puter com URL pública.';
-      document.getElementById('publishModal').style.display = 'flex';
-      
-      const yes = document.getElementById('publishYesBtn');
-      const no = document.getElementById('publishNoBtn');
-      
-      const handler = async () => {
-        document.getElementById('publishModal').style.display = 'none';
-        yes.removeEventListener('click', handler);
-        no.removeEventListener('click', cancelHandler);
-        
-        addChatMessage('🚀 Publicando site...', 'system');
-        
-        try {
-          // PASSO 1: Criar diretório
-          const dirName = `codehub_${currentProjectId.substring(0, 8)}_${Date.now().toString(36)}`;
-          addChatMessage(`📁 Criando diretório: ${dirName}`, 'system');
-          try { await puter.fs.mkdir(dirName); } catch(e) { console.log('Diretório já existe ou erro:', e); }
-          
-          // PASSO 2: Salvar TODOS os arquivos
-          addChatMessage(`💾 Enviando ${Object.keys(files).length} arquivos...`, 'system');
-          
-          for (const [key, file] of Object.entries(files)) {
-            const fileName = file.originalName || file.name || key;
-            let content = file.content || '';
-            
-            // Injeta script de atividade em HTML
-            if (fileName.toLowerCase().endsWith('.html') || fileName.toLowerCase().endsWith('.htm')) {
-              content = injectActivityScript(content);
-            }
-            
-            const filePath = `${dirName}/${fileName}`;
-            await puter.fs.write(filePath, content);
-            addChatMessage(`  ✅ ${fileName}`, 'system');
-          }
-          
-          // PASSO 3: Criar subdomain (CORRIGIDO - sem usar randName)
-          const subdomain = 'site' + Math.floor(Math.random() * 100000);
-          addChatMessage(`🌐 Criando: ${subdomain}.puter.site`, 'system');
-          const site = await puter.hosting.create(subdomain, dirName);
-          
-          // Salvar dados
-          hostingSubdomain = site.subdomain;
-          hostingDirectory = dirName;
-          hostingUrl = `https://${site.subdomain}.puter.site`;
-          siteCreated = true;
-          
-          // Salvar no histórico
-          salvarSiteNoHistorico(site.subdomain, dirName);
-          
-          // Mostrar URL
-          document.getElementById('fileUrlTop').value = hostingUrl;
-          document.getElementById('urlPanelTop').style.display = 'flex';
-          updateSiteButtons();
-          
-          // Salvar no Firebase
-          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({
-            url: hostingUrl, 
-            subdomain: hostingSubdomain,
-            directory: hostingDirectory, 
-            publishedAt: new Date().toISOString()
-          });
-          
-          addChatMessage(`✅ Publicado com sucesso!<br>🔗 <a href="${hostingUrl}" target="_blank">${hostingUrl}</a>`, 'ai');
-          showNotification('✅ Site publicado!', 'success');
-          
-          // Copiar URL automaticamente
-          try { await navigator.clipboard.writeText(hostingUrl); } catch(e) {}
-          
-        } catch(e) {
-          console.error('Erro ao publicar:', e);
-          addChatMessage(`❌ Erro ao publicar: ${e.message}`, 'system');
-          showNotification('Erro: ' + e.message, 'error');
-        }
-      };
-      
-      const cancelHandler = () => {
-        document.getElementById('publishModal').style.display = 'none';
-        yes.removeEventListener('click', handler);
-        no.removeEventListener('click', cancelHandler);
-      };
-      
-      yes.addEventListener('click', handler);
-      no.addEventListener('click', cancelHandler);
-    }
-
-    // ============== ATUALIZAR SITE (CORRIGIDO) ==============
-    async function updateSite() {
-      if (!siteCreated) { 
-        showNotification('Publique primeiro!', 'warning'); 
-        return; 
-      }
-      
-      if (!await garantirLoginPuter()) {
-        showNotification('Faça login no Puter!', 'error');
-        return;
-      }
-      
-      addChatMessage('🔄 Atualizando site...', 'system');
-      
-      try {
-        // Salvar todos os arquivos novamente
-        const fileEntries = Object.entries(files);
-        addChatMessage(`💾 Atualizando ${fileEntries.length} arquivos...`, 'system');
-        
-        for (const [key, file] of fileEntries) {
-          const fileName = file.originalName || file.name || key;
-          let content = file.content || '';
-          
-          if (fileName.toLowerCase().endsWith('.html') || fileName.toLowerCase().endsWith('.htm')) {
-            content = injectActivityScript(content);
-          }
-          
-          const filePath = `${hostingDirectory}/${fileName}`;
-          await puter.fs.write(filePath, content);
-          addChatMessage(`  ✅ ${fileName} atualizado`, 'system');
-        }
-        
-        // ATUALIZAR site (CORRIGIDO - usando o método correto)
-        await puter.hosting.update(hostingSubdomain, hostingDirectory);
-        
-        addChatMessage(`✅ Site atualizado com sucesso!<br>🔗 <a href="${hostingUrl}" target="_blank">${hostingUrl}</a>`, 'ai');
-        showNotification('✅ Site atualizado!', 'success');
-        
-      } catch(e) {
-        console.error('Erro ao atualizar:', e);
-        addChatMessage(`❌ Erro ao atualizar: ${e.message}`, 'system');
-        showNotification('Erro: ' + e.message, 'error');
-      }
-    }
-
-    // ============== DELETAR SITE ==============
-    async function deleteSite() {
-      if (!siteCreated) { 
-        showNotification('Nenhum site para deletar', 'warning'); 
-        return; 
-      }
-      
-      if (!confirm(`⚠️ Deletar permanentemente:\n${hostingUrl}?`)) return;
-      if (!await garantirLoginPuter()) {
-        showNotification('Faça login no Puter!', 'error');
-        return;
-      }
-      
-      addChatMessage('🗑️ Deletando site...', 'system');
-      
-      try {
-        await puter.hosting.delete(hostingSubdomain);
-        
-        // Remover do histórico
-        sitesSalvos = sitesSalvos.filter(s => s.subdomain !== hostingSubdomain);
-        localStorage.setItem('codehub_sites', JSON.stringify(sitesSalvos));
-        
-        addChatMessage(`✅ Site deletado com sucesso!`, 'system');
-        showNotification('✅ Site deletado!', 'success');
-        
-        // Limpar
-        hostingSubdomain = null;
-        hostingDirectory = null;
-        hostingUrl = null;
-        siteCreated = false;
-        
-        document.getElementById('urlPanelTop').style.display = 'none';
-        updateSiteButtons();
-        
-        // Remover do Firebase
-        try {
-          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).remove();
-        } catch(e) {}
-        
-      } catch(e) {
-        console.error('Erro ao deletar:', e);
-        addChatMessage(`❌ Erro: ${e.message}`, 'system');
-        showNotification('Erro: ' + e.message, 'error');
-      }
-    }
-
-    // ============== HISTÓRICO ==============
-    async function showHistory() {
-      const modal = document.getElementById('historyModal');
-      const list = document.getElementById('historyList');
-      
-      modal.style.display = 'flex';
-      
-      let html = '<div style="max-height:50vh;overflow-y:auto;">';
-      
-      // Site atual
-      if (siteCreated && hostingUrl) {
-        html += `<div style="background:#2d2d2d;padding:12px;border-radius:8px;margin-bottom:10px;border-left:3px solid #4cc9f0;">
-          <strong style="color:#4cc9f0;">📌 Site Atual</strong><br>
-          🔗 <a href="${hostingUrl}" target="_blank" style="color:#4895ef;">${hostingUrl}</a><br>
-          📁 Pasta: ${hostingDirectory}<br>
-          <div style="margin-top:8px;">
-            <button onclick="updateSite();closeHistoryModal();" style="background:#ff9800;padding:4px 10px;font-size:11px;">🔄 Atualizar</button>
-            <button onclick="deleteSite();closeHistoryModal();" style="background:#f44336;padding:4px 10px;font-size:11px;">🗑️ Deletar</button>
-          </div>
-        </div>`;
-      }
-      
-      // Histórico local
-      if (sitesSalvos.length > 0) {
-        html += '<strong style="color:#ff9800;">📋 Histórico Local:</strong>';
-        sitesSalvos.forEach((site, i) => {
-          html += `<div style="background:#2d2d2d;padding:10px;border-radius:6px;margin:5px 0;font-size:12px;">
-            🔗 <a href="${site.url}" target="_blank" style="color:#4895ef;">${site.url}</a><br>
-            📁 ${site.dir} | 📅 ${site.data}
-          </div>`;
-        });
-      }
-      
-      if (!siteCreated && sitesSalvos.length === 0) {
-        html += '<p style="color:#888;">📭 Nenhum site no histórico</p>';
-      }
-      
-      html += '</div>';
-      list.innerHTML = html;
-    }
-
-    function closeHistoryModal() {
-      document.getElementById('historyModal').style.display = 'none';
-    }
-
-    function injectActivityScript(html) {
-      const script = `<script src="${ACTIVITY_SCRIPT_URL}?projectid=${currentProjectId}"><\/script>`;
-      if (html.includes('</body>')) return html.replace('</body>', script + '\n</body>');
-      if (html.includes('</html>')) return html.replace('</html>', script + '\n</html>');
-      return html + '\n' + script;
-    }
-
-    // ============== WORKER WINDOW (mantido igual) ==============
+    // ============== WORKER WINDOW ==============
     function initWorkerWindow() {
       const win = document.getElementById('workerEditorWindow');
       const header = document.getElementById('workerEditorHeader');
@@ -763,18 +1288,15 @@
         if (e.target.tagName === 'BUTTON') return;
         isDragging = true; startX = e.clientX; startY = e.clientY;
         startLeft = win.offsetLeft; startTop = win.offsetTop;
-        win.style.transition = 'none'; document.body.style.userSelect = 'none';
+        win.style.transition = 'none';
       });
       document.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
-        win.style.left = Math.max(0, startLeft + e.clientX - startX) + 'px';
-        win.style.top = Math.max(0, startTop + e.clientY - startY) + 'px';
+        win.style.left = Math.max(0, Math.min(window.innerWidth - 200, startLeft + e.clientX - startX)) + 'px';
+        win.style.top = Math.max(0, Math.min(window.innerHeight - 100, startTop + e.clientY - startY)) + 'px';
       });
-      document.addEventListener('mouseup', () => {
-        if (isDragging) { isDragging = false; win.style.transition = ''; document.body.style.userSelect = ''; }
-      });
+      document.addEventListener('mouseup', () => { if (isDragging) { isDragging = false; win.style.transition = ''; } });
     }
-
     function openWorkerWindow() {
       const win = document.getElementById('workerEditorWindow');
       win.style.display = 'flex';
@@ -784,99 +1306,215 @@
       }
     }
     function closeWorkerWindow() { document.getElementById('workerEditorWindow').style.display = 'none'; }
-    function toggleWorkerWindowSize() { document.getElementById('workerEditorWindow').classList.toggle('minimized'); }
+    function minimizeWorkerWindow() { document.getElementById('workerEditorWindow').style.display = 'none'; }
+    function maximizeWorkerWindow() {
+      const win = document.getElementById('workerEditorWindow');
+      win.style.top = '60px'; win.style.left = '10px';
+      win.style.width = (window.innerWidth - 20) + 'px';
+      win.style.height = (window.innerHeight - 120) + 'px';
+    }
+    function formatWorkerCode() {
+      const ta = document.getElementById('workerCodeWindow');
+      try { ta.value = ta.value.replace(/\s+/g, ' ').replace(/[{;]/g, '$&\n').replace(/}/g, '\n}'); showNotification('Formatado!', 'success'); } catch(e) {}
+    }
 
     async function saveWorkerCodeWindow() {
-      if (!currentWorkerData) return;
+      if (!currentWorkerData || !currentUser) return;
       const code = document.getElementById('workerCodeWindow').value;
       const match = code.match(/router\.(get|post|put|delete)\(['"`](.*?)['"`]/);
       const route = match ? match[2] : '/api/hello.sc';
       await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({ code, route, updatedAt: new Date().toISOString() });
       currentWorkerData.code = code;
-      showNotification('Worker salvo!', 'success');
+      showNotification('Worker salvo! 💾', 'success');
     }
-
-    async function publishWorkerWindow() {
-      await saveWorkerCodeWindow();
-      await publishWorker();
-    }
-
+    async function publishWorkerWindow() { await saveWorkerCodeWindow(); await publishWorker(); }
     async function testWorkerWindow() {
       if (!currentWorkerData?.fullUrl) { showNotification('Worker não publicado', 'warning'); return; }
       try {
         const res = await fetch(currentWorkerData.fullUrl);
         const data = await res.json();
-        addChatMessage(`✅ Resposta: ${JSON.stringify(data)}`, 'ai');
-      } catch(e) { addChatMessage(`❌ Erro: ${e.message}`, 'system'); }
+        addChatMessage(`✅ Resposta do Worker:\n<pre>${JSON.stringify(data, null, 2)}</pre>`, 'ai');
+        showNotification('Teste concluído!', 'success');
+      } catch(e) { addChatMessage(`❌ Erro no teste: ${e.message}`, 'error'); }
     }
 
     // ============== WORKER ==============
     async function saveWorkerCode() {
-      if (!currentWorkerData) { showNotification('Selecione um worker', 'warning'); return; }
+      if (!currentWorkerData || !currentUser) { showNotification('Selecione um worker', 'warning'); return; }
       const code = document.getElementById('workerCode').value;
       const match = code.match(/router\.(get|post|put|delete)\(['"`](.*?)['"`]/);
       const route = match ? match[2] : '/api/hello.sc';
       await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({ code, route, updatedAt: new Date().toISOString() });
       currentWorkerData.code = code;
-      if (document.getElementById('workerEditorWindow').style.display === 'flex') {
-        document.getElementById('workerCodeWindow').value = code;
-      }
       showNotification('Worker salvo!', 'success');
     }
-
     async function publishWorker() {
-      if (!currentWorkerData) return;
+      if (!currentWorkerData || !currentUser) return;
       await saveWorkerCode();
       if (!await garantirLoginPuter()) return;
-      
       addChatMessage('🚀 Publicando worker...', 'system');
       try {
         const cleanName = currentWorkerData.name.replace(/[^a-zA-Z0-9]/g, '').substring(0, 15);
         const fileName = `${cleanName}_${Date.now().toString(36)}.sc`;
         await puter.fs.write(fileName, currentWorkerData.code);
-        
         const deployName = `${cleanName}_${Date.now().toString(36)}`;
-        if (currentWorkerData.deployedName) {
-          try { await puter.workers.delete(currentWorkerData.deployedName); } catch(e) {}
-        }
-        
+        if (currentWorkerData.deployedName) { try { await puter.workers.delete(currentWorkerData.deployedName); } catch(e) {} }
         const w = await puter.workers.create(deployName, fileName);
         const fullUrl = `https://${deployName}.${w.username || 'puter'}.work${currentWorkerData.route}`;
-        
-        await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({
-          url: fullUrl, fullUrl, deployedName: deployName, deployedAt: new Date().toISOString()
-        });
-        currentWorkerData.url = fullUrl;
-        currentWorkerData.fullUrl = fullUrl;
-        addChatMessage(`✅ Worker publicado!<br>🔗 ${fullUrl}`, 'ai');
+        await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({ url: fullUrl, fullUrl, deployedName: deployName, deployedAt: new Date().toISOString() });
+        currentWorkerData.url = fullUrl; currentWorkerData.fullUrl = fullUrl;
+        addChatMessage(`✅ Worker publicado!<br>🔗 <a href="${fullUrl}" target="_blank">${fullUrl}</a>`, 'ai');
         showNotification('Worker publicado!', 'success');
+      } catch(e) { addChatMessage(`❌ Erro: ${e.message}`, 'error'); }
+    }
+
+    // ============== PUBLISH SITE ==============
+    async function publishSite() {
+      if (!await garantirLoginPuter()) { showNotification('Faça login no Puter!', 'error'); return; }
+      const indexData = getIndexFile();
+      if (!indexData) { showNotification('Crie um index.html primeiro!', 'warning'); return; }
+      if (siteCreated) { await updateSite(); return; }
+
+      document.getElementById('modalMessage').textContent = 'Seu site será hospedado no Puter com URL pública.';
+      document.getElementById('publishModal').style.display = 'flex';
+
+      const yes = document.getElementById('publishYesBtn');
+      const no = document.getElementById('publishNoBtn');
+      const handler = async () => {
+        document.getElementById('publishModal').style.display = 'none';
+        yes.removeEventListener('click', handler);
+        no.removeEventListener('click', cancelHandler);
+        addChatMessage('🚀 Publicando site...', 'system');
+        try {
+          const dirName = `codehub_${currentProjectId.substring(0,8)}_${Date.now().toString(36)}`;
+          try { await puter.fs.mkdir(dirName); } catch(e) {}
+          for (const [key, file] of Object.entries(files)) {
+            const fileName = file.originalName || file.name || key;
+            let content = file.content || '';
+            if (fileName.toLowerCase().endsWith('.html')) content = injectActivityScript(content);
+            await puter.fs.write(`${dirName}/${fileName}`, content);
+          }
+          const subdomain = 'site' + Math.floor(Math.random() * 100000);
+          const site = await puter.hosting.create(subdomain, dirName);
+          hostingSubdomain = site.subdomain;
+          hostingDirectory = dirName;
+          hostingUrl = `https://${site.subdomain}.puter.site`;
+          siteCreated = true;
+          salvarSiteNoHistorico(site.subdomain, dirName);
+          document.getElementById('fileUrlTop').value = hostingUrl;
+          document.getElementById('urlPanelTop').style.display = 'flex';
+          updateSiteButtons();
+          if (currentUser && currentProjectId) {
+            await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({ url: hostingUrl, subdomain: hostingSubdomain, directory: hostingDirectory, publishedAt: new Date().toISOString() });
+          }
+          addChatMessage(`✅ Publicado!<br>🔗 <a href="${hostingUrl}" target="_blank">${hostingUrl}</a>`, 'ai');
+          showNotification('✅ Site publicado!', 'success');
+          try { await navigator.clipboard.writeText(hostingUrl); } catch(e) {}
+        } catch(e) {
+          console.error('Erro publish:', e);
+          const msg = e?.message || e?.toString() || 'Erro desconhecido';
+          addChatMessage(`❌ Falha ao publicar: ${msg}`, 'error');
+          showNotification('Erro: ' + msg, 'error');
+        }
+      };
+      const cancelHandler = () => {
+        document.getElementById('publishModal').style.display = 'none';
+        yes.removeEventListener('click', handler);
+        no.removeEventListener('click', cancelHandler);
+      };
+      yes.addEventListener('click', handler);
+      no.addEventListener('click', cancelHandler);
+    }
+
+    // ============== UPDATE SITE ==============
+    async function updateSite() {
+      if (!siteCreated) { showNotification('Publique primeiro!', 'warning'); return; }
+      if (!await garantirLoginPuter()) { showNotification('Faça login no Puter!', 'error'); return; }
+      addChatMessage('🔄 Atualizando...', 'system');
+      try {
+        for (const [key, file] of Object.entries(files)) {
+          const fileName = file.originalName || file.name || key;
+          let content = file.content || '';
+          if (fileName.toLowerCase().endsWith('.html')) content = injectActivityScript(content);
+          await puter.fs.write(`${hostingDirectory}/${fileName}`, content);
+        }
+        await puter.hosting.update(hostingSubdomain, hostingDirectory);
+        addChatMessage(`✅ Atualizado!<br>🔗 <a href="${hostingUrl}" target="_blank">${hostingUrl}</a>`, 'ai');
+        showNotification('✅ Site atualizado!', 'success');
       } catch(e) {
-        addChatMessage(`❌ Erro: ${e.message}`, 'system');
+        console.error('Erro update:', e);
+        const msg = e?.message || e?.toString() || 'Erro desconhecido';
+        addChatMessage(`❌ Falha ao atualizar: ${msg}`, 'error');
+        showNotification('Erro: ' + msg, 'error');
       }
     }
 
-    // ============== ARQUIVOS ==============
-    async function saveCurrentFile() {
-      if (!currentFile || !files[currentFile]) return;
-      
-      files[currentFile].content = document.getElementById('simple-editor').value;
-      files[currentFile].size = new Blob([files[currentFile].content]).size;
-      files[currentFile].updatedAt = new Date().toISOString();
-      
-      await db.ref(`projects/${currentUser.uid}/${currentProjectId}/files/${currentFile}`).update({
-        content: files[currentFile].content,
-        size: files[currentFile].size,
-        updatedAt: files[currentFile].updatedAt
-      });
-      
-      await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ 
-        updatedAt: new Date().toISOString() 
-      });
-      
-      document.getElementById('saveFileBtn').disabled = true;
-      showNotification('Arquivo salvo! 💾', 'success');
+    // ============== DELETE SITE ==============
+    async function deleteSite() {
+      if (!siteCreated) { showNotification('Nenhum site para deletar', 'warning'); return; }
+      if (!confirm(`⚠️ Deletar permanentemente:\n${hostingUrl}?`)) return;
+      if (!await garantirLoginPuter()) { showNotification('Faça login no Puter!', 'error'); return; }
+      addChatMessage('🗑️ Deletando...', 'system');
+      try {
+        await puter.hosting.delete(hostingSubdomain);
+        sitesSalvos = sitesSalvos.filter(s => s.subdomain !== hostingSubdomain);
+        localStorage.setItem('codehub_sites', JSON.stringify(sitesSalvos));
+        addChatMessage('✅ Site deletado!', 'system');
+        showNotification('✅ Deletado!', 'success');
+        hostingSubdomain = null; hostingDirectory = null; hostingUrl = null; siteCreated = false;
+        document.getElementById('urlPanelTop').style.display = 'none';
+        updateSiteButtons();
+        if (currentUser && currentProjectId) {
+          try { await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).remove(); } catch(e) {}
+        }
+      } catch(e) {
+        const msg = e?.message || e?.toString() || 'Erro desconhecido';
+        addChatMessage(`❌ Erro: ${msg}`, 'error');
+        showNotification('Erro: ' + msg, 'error');
+      }
     }
 
+    // ============== HISTORY ==============
+    async function showHistory() {
+      const modal = document.getElementById('historyModal');
+      const list = document.getElementById('historyList');
+      modal.style.display = 'flex';
+      let html = '<div style="max-height:50vh;overflow-y:auto;">';
+      if (siteCreated && hostingUrl) {
+        html += `<div style="background:var(--bg-tertiary);padding:14px;border-radius:12px;margin-bottom:10px;border-left:3px solid var(--accent-cyan);">
+          <strong style="color:var(--accent-cyan);">📌 Site Atual</strong><br>
+          🔗 <a href="${hostingUrl}" target="_blank" style="color:#6366f1;">${hostingUrl}</a><br>
+          📁 ${hostingDirectory}<br>
+          <button class="btn btn-warning btn-xs" onclick="updateSite();closeHistoryModal();">🔄 Atualizar</button>
+          <button class="btn btn-danger btn-xs" onclick="deleteSite();closeHistoryModal();">🗑️ Deletar</button>
+        </div>`;
+      }
+      if (sitesSalvos.length > 0) {
+        html += '<strong style="color:var(--accent-orange);">📋 Histórico Local:</strong>';
+        sitesSalvos.forEach(s => {
+          html += `<div style="background:var(--bg-tertiary);padding:10px;border-radius:8px;margin:5px 0;font-size:12px;">
+            🔗 <a href="${s.url}" target="_blank" style="color:#6366f1;">${s.url}</a><br>📁 ${s.dir} | 📅 ${s.data}</div>`;
+        });
+      }
+      if (!siteCreated && sitesSalvos.length === 0) html += '<p style="color:var(--text-secondary);">📭 Nenhum site</p>';
+      html += '</div>';
+      list.innerHTML = html;
+    }
+    function closeHistoryModal() { document.getElementById('historyModal').style.display = 'none'; }
+
+    // ============== FILES ==============
+    async function saveCurrentFile() {
+      if (!currentFile || !files[currentFile] || !currentUser) return;
+      const ed = document.getElementById('simple-editor');
+      files[currentFile].content = ed.value;
+      files[currentFile].size = new Blob([ed.value]).size;
+      files[currentFile].updatedAt = new Date().toISOString();
+      await db.ref(`projects/${currentUser.uid}/${currentProjectId}/files/${currentFile}`).update({ content: ed.value, size: files[currentFile].size, updatedAt: files[currentFile].updatedAt });
+      await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ updatedAt: new Date().toISOString() });
+      document.getElementById('saveFileBtn').disabled = true;
+      pushUndo();
+      showNotification('Salvo! 💾', 'success');
+    }
     async function openFile(fileKey) {
       if (!files[fileKey]) return;
       currentFile = fileKey;
@@ -884,163 +1522,133 @@
       document.getElementById('saveFileBtn').disabled = true;
       updateTabs();
     }
-
     function updateTabs() {
       const tabs = document.getElementById('tabs');
       tabs.innerHTML = '';
-      
       Object.keys(files).forEach(key => {
         const file = files[key];
         const fileName = file.name || file.originalName || key;
         const tab = document.createElement('button');
         tab.className = `tab-btn ${key === currentFile ? 'active' : ''}`;
         tab.onclick = () => openFile(key);
-        tab.innerHTML = `${fileName} <button class="close-tab-btn" onclick="event.stopPropagation();closeFile('${key}')">&times;</button>`;
+        tab.innerHTML = `<span class="tab-dot"></span>${fileName} <button class="close-tab-btn" onclick="event.stopPropagation();closeFile('${key}')">&times;</button>`;
         tabs.appendChild(tab);
       });
     }
-
     async function closeFile(fileKey) {
       if (Object.keys(files).length <= 1) return;
-      
       delete files[fileKey];
-      await db.ref(`projects/${currentUser.uid}/${currentProjectId}/files/${fileKey}`).remove();
-      
-      if (fileKey === currentFile) {
-        const firstKey = Object.keys(files)[0];
-        if (firstKey) await openFile(firstKey);
-      }
+      if (currentUser && currentProjectId) await db.ref(`projects/${currentUser.uid}/${currentProjectId}/files/${fileKey}`).remove();
+      if (fileKey === currentFile) { const fk = Object.keys(files)[0]; if (fk) await openFile(fk); }
       updateTabs();
     }
-
     function previewProject() {
-      const indexData = getIndexFile();
-      if (indexData?.file?.content) {
-        const blob = new Blob([indexData.file.content], { type: 'text/html' });
+      const idx = getIndexFile();
+      if (idx?.file?.content) {
+        const blob = new Blob([idx.file.content], { type: 'text/html' });
         window.open(URL.createObjectURL(blob), '_blank');
-      } else {
-        showNotification('Crie um index.html primeiro', 'warning');
-      }
+        showNotification('Preview aberto! 👁️', 'info');
+      } else { showNotification('Crie um index.html', 'warning'); }
     }
 
     // ============== QUICK ACTIONS ==============
     function quickAction(action) {
       const input = document.getElementById('chatInput');
       switch(action) {
-        case 'criar-worker': input.value = 'Crie um worker chamado api com rota GET /api/dados.sc'; break;
-        case 'editar-worker': input.value = currentWorkerData ? `Edite o worker ${currentWorkerData.name}` : 'Edite o worker'; break;
-        case 'explicar-worker': 
-          if (currentWorkerData) {
-            addChatMessage(`📦 Worker: ${currentWorkerData.name}<br>Rota: ${currentWorkerData.route || 'N/A'}<br>Código: ${currentWorkerData.code?.substring(0, 300) || 'N/A'}`, 'ai');
+        case 'criar-worker': input.value = 'Crie um worker com rota GET /api/dados.sc que retorna JSON'; break;
+        case 'editar-worker': input.value = currentWorkerData ? `Edite o worker ${currentWorkerData.name}` : 'Edite o worker atual'; break;
+        case 'explicar-worker':
+          if (currentWorkerData) addChatMessage(`📦 <b>${currentWorkerData.name}</b><br>Rota: ${currentWorkerData.route || 'N/A'}<br><pre>${(currentWorkerData.code||'').substring(0,400)}</pre>`, 'ai');
+          else showNotification('Nenhum worker selecionado', 'warning');
+          break;
+        case 'listar-workers':
+          if (currentUser && currentProjectId) {
+            db.ref(`workers/${currentUser.uid}/${currentProjectId}`).once('value').then(s => {
+              const w = s.val();
+              if (w) Object.entries(w).forEach(([id, d]) => addChatMessage(`📦 ${d.name} | ${d.route||'N/A'} | ${d.url||'Não publicado'}`, 'ai'));
+              else addChatMessage('📭 Nenhum worker', 'system');
+            });
           }
           break;
-        case 'listar-workers': 
-          db.ref(`workers/${currentUser.uid}/${currentProjectId}`).once('value').then(s => {
-            const workers = s.val();
-            if (workers) {
-              Object.entries(workers).forEach(([id, w]) => {
-                addChatMessage(`📦 ${w.name} | ${w.route || 'N/A'} | ${w.url || 'Não publicado'}`, 'ai');
-              });
-            } else {
-              addChatMessage('📭 Nenhum worker criado ainda', 'system');
-            }
-          });
+        case 'formatar':
+          const ed = document.getElementById('simple-editor');
+          try { ed.value = ed.value.replace(/\s+/g,' ').replace(/[{;]/g,'$&\n').replace(/}/g,'\n}'); showNotification('Formatado!', 'success'); } catch(e) {}
           break;
+        case 'debug': input.value = 'Analise este código e encontre possíveis bugs ou melhorias'; break;
       }
       input.focus();
     }
-
     function setMode(mode) {
       currentMode = mode;
       document.getElementById('chatModeBtn').classList.toggle('active', mode === 'chat');
       document.getElementById('editModeBtn').classList.toggle('active', mode === 'edit');
       localStorage.setItem('codehub_mode', mode);
     }
-
     async function sendToAI() {
       const msg = document.getElementById('chatInput').value.trim();
       if (!msg) return;
-      
       addChatMessage(msg, 'user');
       document.getElementById('chatInput').value = '';
-      
       try {
         await garantirLoginPuter();
-        const res = await puter.ai.chat(msg, { stream: false });
+        let prompt = msg;
+        if (currentMode === 'edit' && currentFile && files[currentFile]) {
+          prompt = `Contexto: Arquivo ${files[currentFile].name||currentFile}\nCódigo:\n${files[currentFile].content||''}\n\nTarefa: ${msg}`;
+        }
+        const res = await puter.ai.chat(prompt, { stream: false });
         addChatMessage(res, 'ai');
-      } catch(e) {
-        addChatMessage('Erro: ' + e.message, 'system');
-      }
+      } catch(e) { addChatMessage(`❌ Erro IA: ${e.message}`, 'error'); }
+    }
+    function toggleSidebar() {
+      document.getElementById('ai-sidebar').classList.toggle('open');
     }
 
     // ============== INIT ==============
     auth.onAuthStateChanged(async user => {
-      if (!user) { 
-        window.location.href = 'auth.html'; 
-        return; 
-      }
-      
+      if (!user) { window.location.href = 'auth.html'; return; }
       currentUser = user;
       document.getElementById('user-name').textContent = user.displayName || user.email?.split('@')[0] || 'Usuário';
-      
+
       const savedZoom = localStorage.getItem('codehub_zoom');
-      if (savedZoom) { 
-        currentZoom = parseFloat(savedZoom); 
-        document.body.style.zoom = currentZoom; 
-      }
+      if (savedZoom) { currentZoom = parseFloat(savedZoom); document.body.style.zoom = currentZoom; }
       document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
-      
       const savedMode = localStorage.getItem('codehub_mode');
       setMode(savedMode === 'chat' ? 'chat' : 'edit');
-      
+
       if (currentProjectId) {
-        const snapshot = await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).once('value');
-        const data = snapshot.val();
-        
+        const snap = await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).once('value');
+        const data = snap.val();
         if (data) {
           document.getElementById('project-name').value = data.name || '';
           files = data.files || {};
-          
-          // Carregar dados de hosting
           if (data.hosting?.url) {
-            hostingUrl = data.hosting.url;
-            hostingSubdomain = data.hosting.subdomain;
-            hostingDirectory = data.hosting.directory;
-            siteCreated = true;
+            hostingUrl = data.hosting.url; hostingSubdomain = data.hosting.subdomain;
+            hostingDirectory = data.hosting.directory; siteCreated = true;
             document.getElementById('fileUrlTop').value = hostingUrl;
             document.getElementById('urlPanelTop').style.display = 'flex';
           }
           updateSiteButtons();
-          
-          // Carregar workers
-          const workerSnap = await db.ref(`workers/${currentUser.uid}/${currentProjectId}`).once('value');
-          const workers = workerSnap.val();
+          const wSnap = await db.ref(`workers/${currentUser.uid}/${currentProjectId}`).once('value');
+          const workers = wSnap.val();
           if (workers) {
             const first = Object.entries(workers)[0];
-            if (first) { 
-              currentWorkerData = { id: first[0], ...first[1] }; 
-              document.getElementById('workerCode').value = currentWorkerData.code || ''; 
-            }
+            if (first) { currentWorkerData = { id: first[0], ...first[1] }; document.getElementById('workerCode').value = currentWorkerData.code || ''; }
           }
-          
-          // Abrir primeiro arquivo
           const keys = Object.keys(files);
           if (keys.length > 0) await openFile(keys[0]);
           updateTabs();
-          
-          // Ativar botão salvar
           document.getElementById('saveFileBtn').disabled = false;
         }
       }
-      
+
       document.getElementById('loading-screen').style.opacity = '0';
       setTimeout(() => {
         document.getElementById('loading-screen').style.display = 'none';
         document.getElementById('app-content').style.display = 'flex';
         initContextMenu();
         initWorkerWindow();
-        addChatMessage('🤖 Olá! Pronto para codar! 🚀', 'system');
-      }, 300);
+        addChatMessage('🤖 Bem-vindo ao CodeHUB Pro! Pronto para codar. 🚀', 'system');
+      }, 400);
     });
 
     // ============== EVENT LISTENERS ==============
@@ -1050,60 +1658,39 @@
     document.getElementById('siteDeleteBtn').addEventListener('click', deleteSite);
     document.getElementById('siteHistoryBtn').addEventListener('click', showHistory);
     document.getElementById('logoutBtn').addEventListener('click', () => auth.signOut().then(() => window.location.href = 'auth.html'));
-    
-    document.getElementById('openUrlTopBtn')?.addEventListener('click', () => { 
-      if (hostingUrl) window.open(hostingUrl, '_blank'); 
+    document.getElementById('openUrlTopBtn')?.addEventListener('click', () => { if (hostingUrl) window.open(hostingUrl, '_blank'); });
+    document.getElementById('copyUrlTopBtn')?.addEventListener('click', () => {
+      if (hostingUrl) { navigator.clipboard.writeText(hostingUrl); showNotification('📋 Copiado!', 'success'); }
     });
-    
-    document.getElementById('copyUrlTopBtn')?.addEventListener('click', () => { 
-      if (hostingUrl) { 
-        navigator.clipboard.writeText(hostingUrl); 
-        showNotification('📋 URL copiada!', 'success'); 
-      }
-    });
-    
     document.getElementById('project-name').addEventListener('blur', async function() {
-      const name = this.value.trim();
-      if (name && currentProjectId && currentUser) {
-        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/name`).set(name);
-      }
+      if (this.value.trim() && currentProjectId && currentUser) await db.ref(`projects/${currentUser.uid}/${currentProjectId}/name`).set(this.value.trim());
     });
-    
     document.getElementById('sendChatBtn').addEventListener('click', sendToAI);
-    document.getElementById('chatInput').addEventListener('keydown', e => { 
-      if (e.key === 'Enter' && !e.shiftKey) { 
-        e.preventDefault(); 
-        sendToAI(); 
-      } 
-    });
-    
-    // Detectar mudanças no editor
+    document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendToAI(); } });
     document.getElementById('simple-editor').addEventListener('input', function() {
       document.getElementById('saveFileBtn').disabled = false;
     });
-    
-    // Resize handle
+    document.getElementById('simple-editor').addEventListener('keydown', function(e) {
+      if (e.key === ' ' && e.ctrlKey) pushUndo();
+    });
+
+    // Resize
     const handle = document.getElementById('resizeHandle');
     let isResizing = false;
-    handle.addEventListener('mousedown', (e) => { isResizing = true; e.preventDefault(); });
+    handle.addEventListener('mousedown', (e) => { isResizing = true; handle.classList.add('active'); e.preventDefault(); });
     document.addEventListener('mousemove', (e) => {
       if (!isResizing) return;
       const sidebar = document.getElementById('ai-sidebar');
       const w = window.innerWidth - e.clientX;
-      if (w >= 250 && w <= 600) sidebar.style.width = w + 'px';
+      if (w >= 280 && w <= 600) sidebar.style.width = w + 'px';
     });
-    document.addEventListener('mouseup', () => { isResizing = false; });
-    
-    // Fechar modais ao clicar fora
-    document.getElementById('publishModal').addEventListener('click', function(e) { 
-      if (e.target === this) this.style.display = 'none'; 
-    });
-    document.getElementById('historyModal').addEventListener('click', function(e) { 
-      if (e.target === this) this.style.display = 'none'; 
-    });
+    document.addEventListener('mouseup', () => { isResizing = false; handle.classList.remove('active'); });
 
-    // Expor funções globalmente
-    window.contextAction = contextAction;
+    // Modais
+    document.getElementById('publishModal').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
+    document.getElementById('historyModal').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
+
+    // Globais
     window.changeZoom = changeZoom;
     window.resetZoom = resetZoom;
     window.closeFile = closeFile;
@@ -1117,13 +1704,19 @@
     window.publishWorker = publishWorker;
     window.openWorkerWindow = openWorkerWindow;
     window.closeWorkerWindow = closeWorkerWindow;
-    window.toggleWorkerWindowSize = toggleWorkerWindowSize;
+    window.minimizeWorkerWindow = minimizeWorkerWindow;
+    window.maximizeWorkerWindow = maximizeWorkerWindow;
+    window.formatWorkerCode = formatWorkerCode;
     window.saveWorkerCodeWindow = saveWorkerCodeWindow;
     window.publishWorkerWindow = publishWorkerWindow;
     window.testWorkerWindow = testWorkerWindow;
     window.previewProject = previewProject;
     window.setMode = setMode;
     window.quickAction = quickAction;
+    window.contextAction = contextAction;
+    window.undo = undo;
+    window.redo = redo;
+    window.toggleSidebar = toggleSidebar;
   </script>
 </body>
 </html>
