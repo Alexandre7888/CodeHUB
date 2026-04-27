@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CodeHUB - Editor com IA</title>
+  <title>CodeHUB - Editor de Código</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -24,7 +24,6 @@
       --accent-orange: #ff9800;
       --accent-red: #f44336;
       --accent-purple: #9c27b0;
-      --accent-pink: #f72585;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -64,10 +63,12 @@
     }
     button:hover { filter: brightness(1.2); }
     button:disabled { background: #555; cursor: not-allowed; }
+    
     #saveFileBtn { background: var(--accent-cyan); }
     #previewBtn { background: #4895ef; }
     #sitePublishBtn { background: var(--accent-green); }
-    #pdfExportBtn { background: var(--accent-pink); display: none; }
+    #siteDeleteBtn { background: var(--accent-red); display: none; }
+    #siteHistoryBtn { background: #764ba2; }
     .logout-btn { background: var(--accent-red); }
     
     #storage-info { background: #333; padding: 4px 10px; border-radius: 5px; font-size: 11px; margin-left: 10px; }
@@ -96,46 +97,6 @@
       font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 5px;
     }
     
-    #left-sidebar { 
-      width: 280px; background: var(--bg-secondary); border-right: 1px solid var(--border-color); 
-      display: flex; flex-direction: column; overflow-y: auto; 
-    }
-    .section-header { 
-      padding: 12px; background: var(--bg-tertiary); font-weight: bold; 
-      border-bottom: 1px solid var(--border-color); display: flex; 
-      justify-content: space-between; align-items: center; font-size: 13px; 
-    }
-    .projects-list { flex: 1; overflow-y: auto; padding: 8px; max-height: 40%; }
-    .project-item { 
-      padding: 10px; margin-bottom: 8px; background: var(--bg-primary); 
-      border-radius: 6px; cursor: pointer; transition: all 0.2s; border: 1px solid var(--border-color); 
-    }
-    .project-item:hover { background: var(--bg-tertiary); border-color: var(--accent-cyan); }
-    .project-item.active { background: var(--accent-blue); border-color: var(--accent-cyan); }
-    .project-name { font-weight: bold; margin-bottom: 4px; font-size: 13px; }
-    .project-date { font-size: 10px; color: var(--text-secondary); }
-    
-    .workers-list { flex: 1; overflow-y: auto; padding: 8px; border-top: 1px solid var(--border-color); }
-    .worker-item { 
-      background: var(--bg-primary); border-radius: 6px; padding: 10px; 
-      margin-bottom: 8px; border: 1px solid var(--border-color); cursor: pointer; 
-    }
-    .worker-item:hover { border-color: var(--accent-cyan); }
-    .worker-name { font-weight: bold; color: var(--accent-cyan); font-size: 12px; margin-bottom: 4px; }
-    .worker-route { font-size: 11px; color: var(--accent-green); font-family: monospace; margin-bottom: 4px; }
-    .worker-url { font-size: 10px; color: var(--text-secondary); word-break: break-all; margin-bottom: 8px; }
-    .worker-status { 
-      font-size: 10px; display: inline-block; padding: 2px 6px; border-radius: 4px; margin-bottom: 6px; 
-    }
-    .worker-status.published { background: var(--accent-green); color: var(--bg-primary); }
-    .worker-status.not-published { background: var(--accent-red); }
-    .worker-actions { display: flex; gap: 5px; flex-wrap: wrap; }
-    .worker-actions button { background: var(--accent-blue); padding: 3px 8px; font-size: 10px; }
-    .worker-actions button.delete { background: var(--accent-red); }
-    .worker-actions button.test { background: var(--accent-green); }
-    .worker-actions button.update-worker { background: var(--accent-orange); }
-    .no-workers { text-align: center; color: var(--text-secondary); padding: 20px; font-size: 12px; }
-    
     .main-container { display: flex; flex: 1; overflow: hidden; }
     #editor-container { flex: 2; display: flex; flex-direction: column; overflow: hidden; }
     #tabs { 
@@ -158,37 +119,6 @@
       border: none; resize: none; outline: none; 
     }
     
-    /* PDF Editor */
-    #pdf-editor-container {
-      width: 100%; height: 100%; background: #f5f5f5; 
-      display: none; flex-direction: column; align-items: center; 
-      padding: 30px; overflow-y: auto;
-    }
-    #pdf-canvas-area {
-      background: white; width: 100%; max-width: 800px; 
-      min-height: 600px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-      padding: 40px;
-    }
-    #pdf-title-input {
-      width: 100%; font-size: 28px; font-weight: bold; border: none;
-      border-bottom: 2px solid #e0e0e0; padding: 10px; margin-bottom: 20px;
-      background: transparent; outline: none; font-family: inherit; color: #333;
-    }
-    #pdf-content-editor {
-      width: 100%; min-height: 400px; border: 1px solid #e0e0e0;
-      border-radius: 8px; padding: 15px; font-size: 14px; line-height: 1.8;
-      font-family: inherit; resize: vertical; background: #fafafa; color: #333;
-    }
-    .pdf-toolbar {
-      display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;
-    }
-    .pdf-toolbar button {
-      background: var(--accent-pink); padding: 8px 16px; font-size: 12px;
-    }
-    .pdf-page-indicator {
-      text-align: center; padding: 10px; color: #666; font-size: 12px;
-    }
-    
     #ai-sidebar { 
       width: 420px; background: var(--bg-secondary); border-left: 1px solid var(--border-color); 
       display: flex; flex-direction: column; position: relative; min-width: 250px; max-width: 600px; 
@@ -199,24 +129,14 @@
     }
     .resize-handle:hover { background: var(--accent-cyan); }
     
-    .sidebar-header { 
-      padding: 12px; background: var(--bg-tertiary); display: flex; 
-      justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); 
-    }
-    .chat-messages { 
-      flex: 1; overflow-y: auto; padding: 12px; display: flex; 
-      flex-direction: column; gap: 12px; min-height: 0; 
-    }
-    .message { 
-      padding: 10px 14px; border-radius: 12px; max-width: 95%; 
-      word-wrap: break-word; font-size: 13px; animation: fadeIn 0.3s ease; 
-    }
+    .sidebar-header { padding: 12px; background: var(--bg-tertiary); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+    .chat-messages { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+    .message { padding: 10px 14px; border-radius: 12px; max-width: 95%; word-wrap: break-word; font-size: 13px; animation: fadeIn 0.3s ease; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .message.user { background: var(--accent-blue); align-self: flex-end; border-bottom-right-radius: 4px; }
     .message.ai { background: #3d3d3d; align-self: flex-start; border-bottom-left-radius: 4px; white-space: pre-wrap; }
     .message.ai.streaming { border-left: 3px solid var(--accent-purple); }
     .message.system { background: var(--accent-orange); align-self: center; font-size: 12px; border-radius: 20px; }
-    .message pre { background: var(--bg-primary); padding: 10px; border-radius: 8px; overflow-x: auto; margin-top: 10px; font-size: 12px; }
     
     .chat-controls { padding: 12px; border-top: 1px solid var(--border-color); background: var(--bg-secondary); }
     .mode-toggle { display: flex; gap: 10px; margin-bottom: 10px; justify-content: center; }
@@ -235,9 +155,7 @@
       display: flex; gap: 5px; flex-wrap: wrap; padding: 8px 12px; 
       background: var(--bg-primary); border-top: 1px solid var(--border-color); 
     }
-    .quick-actions button { 
-      background: #333; padding: 4px 8px; font-size: 10px; border-radius: 12px; 
-    }
+    .quick-actions button { background: #333; padding: 4px 8px; font-size: 10px; border-radius: 12px; }
     .quick-actions button:hover { background: var(--accent-blue); }
     
     /* Worker Editor Window */
@@ -270,11 +188,9 @@
     }
     .worker-editor-body-window .worker-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
     .worker-editor-body-window .worker-buttons button { padding: 6px 12px; font-size: 11px; }
-    
     .worker-editor-window.minimized { min-height: auto !important; height: auto !important; resize: none; }
     .worker-editor-window.minimized .worker-editor-body-window { display: none; }
     
-    /* Context Menu */
     .context-menu {
       position: fixed; background: var(--bg-tertiary); border: 1px solid var(--border-color);
       border-radius: 10px; padding: 8px 0; z-index: 10000; min-width: 200px;
@@ -288,40 +204,18 @@
     .context-menu .menu-divider { height: 1px; background: var(--border-color); margin: 6px 0; }
     .context-menu .menu-shortcut { margin-left: auto; color: var(--text-secondary); font-size: 11px; }
     
-    .publish-modal { 
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-      background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); 
-      display: none; justify-content: center; align-items: center; z-index: 10001; 
-    }
-    .publish-modal-content { 
-      background: var(--bg-tertiary); border-radius: 16px; padding: 30px; 
-      max-width: 400px; width: 90%; text-align: center; 
-    }
-    .publish-modal-buttons { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
-    .btn-publish-yes { background: #4caf50; }
-    .btn-publish-no { background: var(--accent-red); }
-    
-    .notification { 
-      position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; 
-      border-radius: 8px; color: white; z-index: 1000; animation: slideIn 0.3s ease; font-size: 13px; 
-    }
+    .notification { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; color: white; z-index: 1000; animation: slideIn 0.3s; font-size: 13px; }
     .notification.success { background: #4caf50; }
     .notification.error { background: var(--accent-red); }
     .notification.info { background: #2196f3; }
     @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     
-    .puter-status { 
-      display: flex; align-items: center; gap: 5px; background: #333; 
-      padding: 2px 8px; border-radius: 20px; font-size: 11px; 
-    }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-red); }
-    .status-dot.connected { background: #4caf50; }
-    .new-project-btn { background: #4caf50; font-size: 11px; padding: 4px 8px; }
-    .new-worker-btn { background: var(--accent-green); font-size: 11px; padding: 4px 8px; }
+    .publish-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 10001; }
+    .publish-modal-content { background: var(--bg-tertiary); border-radius: 16px; padding: 30px; max-width: 500px; width: 90%; text-align: center; }
+    .publish-modal-buttons { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
     
-    .activities-panel { background: var(--bg-primary); border-top: 1px solid var(--border-color); display: flex; flex-direction: column; min-height: 120px; max-height: 160px; }
-    .activities-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: var(--bg-tertiary); font-size: 11px; color: var(--accent-cyan); border-bottom: 1px solid var(--border-color); }
-    .activities-content { flex: 1; overflow-y: auto; padding: 8px; font-size: 11px; }
+    .activities-panel { background: var(--bg-primary); border-top: 1px solid var(--border-color); padding: 8px; max-height: 120px; overflow-y: auto; }
+    .activities-header { font-size: 11px; color: var(--accent-cyan); margin-bottom: 5px; }
   </style>
 </head>
 <body>
@@ -333,61 +227,38 @@
   <div id="app-content" style="display: none; height: 100vh; display: flex; flex-direction: column;">
     <div id="top-bar">
       <button onclick="window.location.href='index.html'">🏠 Início</button>
-      <button id="puterDashboardBtn">🚀 Puter Dashboard</button>
       <div class="project-type-indicator">
-        <span id="projectTypeIcon">💻</span>
-        <span id="projectTypeLabel" style="color:#4cc9f0;">Código</span>
+        <span>💻</span>
+        <span style="color:#4cc9f0;">Código</span>
       </div>
       <input type="text" id="project-name" placeholder="Nome do Projeto">
       <button id="saveFileBtn" disabled>💾 Salvar</button>
       <button id="previewBtn">👁️ Preview</button>
       <button id="sitePublishBtn">🚀 Publicar Site</button>
-      <button id="pdfExportBtn">📄 Salvar PDF</button>
-      <div id="storage-info">📦 <span id="storage-used">0</span> / <span id="storage-limit">5</span> MB</div>
+      <button id="siteDeleteBtn">🗑️ Deletar Site</button>
+      <button id="siteHistoryBtn">📋 Histórico</button>
       <div class="url-panel-top" id="urlPanelTop" style="display: none;">
         <span>🔗</span>
         <input type="text" id="fileUrlTop" readonly onclick="this.select()">
         <button id="openUrlTopBtn">Abrir</button>
+        <button id="copyUrlTopBtn">📋 Copiar</button>
       </div>
       <div class="zoom-controls">
-        <button onclick="changeZoom(-0.1)" title="Diminuir zoom">➖</button>
+        <button onclick="changeZoom(-0.1)">➖</button>
         <span id="zoomLevel">100%</span>
-        <button onclick="changeZoom(0.1)" title="Aumentar zoom">➕</button>
-        <button onclick="resetZoom()" title="Resetar zoom">↺</button>
+        <button onclick="changeZoom(0.1)">➕</button>
+        <button onclick="resetZoom()">↺</button>
       </div>
       <div id="user-info">
         <span id="user-name"></span>
-        <div class="puter-status"><div class="status-dot" id="puterStatusDot"></div><span id="puterStatusText">Puter</span></div>
         <button id="logoutBtn" class="logout-btn">Sair</button>
       </div>
     </div>
 
     <div class="main-container">
-      <div id="left-sidebar">
-        <div class="section-header"><span>📁 Meus Projetos</span><button class="new-project-btn" onclick="createNewProject()">+ Novo</button></div>
-        <div class="projects-list" id="projects-list"><div style="text-align:center; padding:20px; color:#888;">Carregando...</div></div>
-        <div class="section-header"><span>⚡ Workers .sc</span><button class="new-worker-btn" onclick="createNewWorker()">+ Worker</button></div>
-        <div class="workers-list" id="workers-list"><div class="no-workers">📭 Nenhum worker criado</div></div>
-      </div>
-
       <div id="editor-container">
         <div id="tabs"></div>
-        <div id="container">
-          <textarea id="simple-editor" placeholder="Editor - você já pode digitar!" style="width:100%; height:100%; background:#1e1e1e; color:#d4d4d4; font-family:monospace; padding:10px; border:none; resize:none;"></textarea>
-          <div id="pdf-editor-container">
-            <div id="pdf-canvas-area">
-              <div class="pdf-toolbar">
-                <button onclick="addPdfPage()">➕ Nova Página</button>
-                <button onclick="formatPdfBold()">🔤 Negrito</button>
-                <button onclick="formatPdfItalic()">📝 Itálico</button>
-                <button onclick="savePdfDocument()">💾 Salvar PDF</button>
-              </div>
-              <input type="text" id="pdf-title-input" placeholder="Título do Documento...">
-              <textarea id="pdf-content-editor" placeholder="Comece a escrever seu documento aqui..."></textarea>
-              <div class="pdf-page-indicator">📄 Página 1 de 1</div>
-            </div>
-          </div>
-        </div>
+        <div id="container"><textarea id="simple-editor" placeholder="Editor - você já pode digitar!" style="width:100%; height:100%; background:#1e1e1e; color:#d4d4d4; font-family:monospace; padding:10px; border:none; resize:none;"></textarea></div>
       </div>
 
       <div id="ai-sidebar">
@@ -397,11 +268,8 @@
         <div class="quick-actions" id="quickActions">
           <button onclick="quickAction('criar-worker')">➕ Criar Worker</button>
           <button onclick="quickAction('editar-worker')">✏️ Editar Worker</button>
-          <button onclick="quickAction('explicar-worker')">📖 Explicar Worker</button>
-          <button onclick="quickAction('criar-api')">🔧 Criar API</button>
-          <button onclick="quickAction('adicionar-rota')">🛣️ Adicionar Rota</button>
-          <button onclick="quickAction('corrigir-worker')">🔧 Corrigir Worker</button>
-          <button onclick="quickAction('listar-workers')">📋 Listar Workers</button>
+          <button onclick="quickAction('explicar-worker')">📖 Explicar</button>
+          <button onclick="quickAction('listar-workers')">📋 Listar</button>
         </div>
         <div class="chat-controls">
           <div class="mode-toggle">
@@ -409,17 +277,17 @@
             <button class="mode-toggle-btn edit-mode active" id="editModeBtn" onclick="setMode('edit')">✏️ Editar</button>
           </div>
           <div class="chat-input-wrapper">
-            <textarea id="chatInput" placeholder="Digite seu comando... Ex: crie um worker chamado api" rows="2"></textarea>
+            <textarea id="chatInput" placeholder="Digite seu comando..." rows="2"></textarea>
             <button id="sendChatBtn">Enviar</button>
           </div>
         </div>
-        <div class="worker-editor">
-          <div class="worker-editor-header"><span>📝 Código do Worker (.sc)</span><div class="worker-editor-buttons"><button onclick="saveWorkerCode()">💾 Salvar</button><button id="workerPublishBtn" class="update-worker">🚀 Publicar Worker</button></div></div>
-          <textarea id="workerCode" rows="6" placeholder="// Código do Worker .sc\n// Exemplo:\nrouter.get('/api/hello.sc', async () => {\n    return { message: 'Olá do Worker!' };\n});"></textarea>
+        <div class="worker-editor" style="background:var(--bg-primary);border-top:1px solid var(--border-color);padding:8px;">
+          <div class="worker-editor-header"><span>📝 Código do Worker (.sc)</span><div class="worker-editor-buttons"><button onclick="saveWorkerCode()">💾 Salvar</button><button id="workerPublishBtn" class="update-worker" onclick="publishWorker()">🚀 Publicar Worker</button></div></div>
+          <textarea id="workerCode" rows="4" placeholder="// Código do Worker .sc"></textarea>
         </div>
         <div class="activities-panel">
-          <div class="activities-header"><span>📊 Atividades do Usuário</span></div>
-          <div class="activities-content" id="activitiesContent"><div id="activitiesList"><div class="no-activities">🔍 Carregando atividades...</div></div></div>
+          <div class="activities-header">📊 Atividades</div>
+          <div id="activitiesList"><span style="color:#888;font-size:11px;">🔍 Carregando...</span></div>
         </div>
       </div>
     </div>
@@ -438,7 +306,7 @@
       <textarea id="workerCodeWindow" rows="10" placeholder="// Código do Worker .sc"></textarea>
       <div class="worker-buttons">
         <button onclick="saveWorkerCodeWindow()">💾 Salvar</button>
-        <button id="workerPublishBtnWindow" class="update-worker" onclick="publishWorkerWindow()" style="background:#ff9800;">🚀 Publicar Worker</button>
+        <button onclick="publishWorkerWindow()" style="background:#ff9800;">🚀 Publicar Worker</button>
         <button onclick="testWorkerWindow()" style="background:#22c55e;">▶️ Testar</button>
       </div>
     </div>
@@ -446,35 +314,42 @@
 
   <!-- Context Menu -->
   <div class="context-menu" id="contextMenu">
-    <div class="menu-item" onclick="contextAction('newFile')">📄 Novo Arquivo <span class="menu-shortcut">Ctrl+N</span></div>
-    <div class="menu-item" onclick="contextAction('newWorker')">⚡ Novo Worker <span class="menu-shortcut">Ctrl+W</span></div>
+    <div class="menu-item" onclick="contextAction('save')">💾 Salvar <span class="menu-shortcut">Ctrl+S</span></div>
+    <div class="menu-item" onclick="contextAction('publish')">🚀 Publicar Site</div>
+    <div class="menu-item" onclick="contextAction('update')">🔄 Atualizar Site</div>
+    <div class="menu-item" onclick="contextAction('delete')">🗑️ Deletar Site</div>
     <div class="menu-divider"></div>
-    <div class="menu-item" onclick="contextAction('saveFile')">💾 Salvar Arquivo <span class="menu-shortcut">Ctrl+S</span></div>
-    <div class="menu-item" onclick="contextAction('preview')">👁️ Preview <span class="menu-shortcut">Ctrl+P</span></div>
-    <div class="menu-divider"></div>
-    <div class="menu-item" onclick="contextAction('openWorkerEditor')">📝 Abrir Editor de Worker</div>
-    <div class="menu-item" onclick="contextAction('openActivities')">📊 Abrir Atividades</div>
+    <div class="menu-item" onclick="contextAction('history')">📋 Histórico</div>
+    <div class="menu-item" onclick="contextAction('openWorker')">📝 Abrir Worker</div>
     <div class="menu-divider"></div>
     <div class="menu-item" onclick="contextAction('zoomIn')">🔍 Zoom +</div>
     <div class="menu-item" onclick="contextAction('zoomOut')">🔍 Zoom -</div>
     <div class="menu-item" onclick="contextAction('zoomReset')">↺ Reset Zoom</div>
-    <div class="menu-divider"></div>
-    <div class="menu-item" onclick="contextAction('clearChat')">🗑️ Limpar Chat</div>
   </div>
 
   <!-- Publish Modal -->
   <div id="publishModal" class="publish-modal">
     <div class="publish-modal-content">
-      <h3 id="modalTitle">🚀 Publicar?</h3>
-      <p id="modalMessage">Deseja publicar no Puter agora?</p>
+      <h3 id="modalTitle" style="color:white;">🚀 Publicar?</h3>
+      <p id="modalMessage" style="color:#ccc;margin:15px 0;"></p>
       <div class="publish-modal-buttons">
-        <button class="btn-publish-yes" id="publishYesBtn">✅ Sim</button>
-        <button class="btn-publish-no" id="publishNoBtn">❌ Não</button>
+        <button id="publishYesBtn" style="background:#4caf50;padding:10px 30px;border-radius:8px;">✅ Sim</button>
+        <button id="publishNoBtn" style="background:#f44336;padding:10px 30px;border-radius:8px;">❌ Não</button>
       </div>
     </div>
   </div>
 
+  <!-- History Modal -->
+  <div id="historyModal" class="publish-modal">
+    <div class="publish-modal-content" style="max-width:600px;max-height:70vh;overflow-y:auto;">
+      <h3 style="color:white;">📋 Histórico de Sites</h3>
+      <div id="historyList" style="color:#ccc;text-align:left;margin:15px 0;"></div>
+      <button onclick="closeHistoryModal()" style="background:#f44336;padding:10px 30px;border-radius:8px;">Fechar</button>
+    </div>
+  </div>
+
   <script>
+    // ============== CONFIGURAÇÃO ==============
     const firebaseConfig = {
       apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
       authDomain: "html-15e80.firebaseapp.com",
@@ -489,31 +364,29 @@
     const auth = firebase.auth();
     const db = firebase.database();
     
+    // ============== VARIÁVEIS GLOBAIS ==============
     let editor = null;
     let currentProjectId = null;
     let currentUser = null;
     let currentFile = null;
     let files = {};
-    let userStorage = { used: 0, limit: 5 * 1024 * 1024 };
-    let currentHostingUrl = null;
-    let currentHostingSubdomain = null;
-    let currentHostingDirectory = null;
-    let siteCreated = false;
-    let allProjects = [];
-    let currentMode = 'edit';
-    let useSimpleEditor = true;
-    let projectWorkers = [];
-    let currentWorkerData = null;
     let currentZoom = 1;
-    let projectType = 'code';
-    let cloudPath = null;
+    let useSimpleEditor = true;
+    let currentMode = 'edit';
+    
+    // Dados do site (iguais ao exemplo)
+    let sitesSalvos = JSON.parse(localStorage.getItem('codehub_sites') || '[]');
+    let hostingSubdomain = null;
+    let hostingDirectory = null;
+    let hostingUrl = null;
+    let siteCreated = false;
+    
+    // Worker
+    let currentWorkerData = null;
 
-    const ACTIVITIES_DB_URL = "https://html-785e3-default-rtdb.firebaseio.com/activities";
     const ACTIVITY_SCRIPT_URL = "https://code.codehub.ct.ws/atividade.js";
-    let sidebarWidth = 420;
-
-    const simpleEditor = document.getElementById('simple-editor');
-    simpleEditor.addEventListener('input', () => { if (currentFile && useSimpleEditor) { files[currentFile].content = simpleEditor.value; } });
+    const urlParams = new URLSearchParams(window.location.search);
+    currentProjectId = urlParams.get('projectId');
 
     // ============== ZOOM ==============
     function changeZoom(delta) {
@@ -524,65 +397,320 @@
     }
     function resetZoom() { currentZoom = 1; document.body.style.zoom = 1; document.getElementById('zoomLevel').textContent = '100%'; localStorage.setItem('codehub_zoom', 1); }
 
-    // ============== PDF FUNCTIONS ==============
-    function showPdfEditor() {
-      document.getElementById('simple-editor').style.display = 'none';
-      document.getElementById('pdf-editor-container').style.display = 'flex';
-      document.getElementById('sitePublishBtn').style.display = 'none';
-      document.getElementById('pdfExportBtn').style.display = 'inline-block';
-      document.getElementById('saveFileBtn').style.display = 'none';
+    // ============== CONTEXT MENU ==============
+    function initContextMenu() {
+      const menu = document.getElementById('contextMenu');
+      document.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        menu.style.display = 'block';
+        menu.style.left = Math.min(e.clientX, window.innerWidth - 220) + 'px';
+        menu.style.top = Math.min(e.clientY, window.innerHeight - 300) + 'px';
+      });
+      document.addEventListener('click', (e) => { if (!menu.contains(e.target)) menu.style.display = 'none'; });
+      document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey) {
+          if (e.key === 's') { e.preventDefault(); saveCurrentFile(); }
+          if (e.key === '=' || e.key === '+') { e.preventDefault(); changeZoom(0.1); }
+          if (e.key === '-') { e.preventDefault(); changeZoom(-0.1); }
+          if (e.key === '0') { e.preventDefault(); resetZoom(); }
+        }
+      });
     }
 
-    function showCodeEditor() {
-      document.getElementById('simple-editor').style.display = 'block';
-      document.getElementById('pdf-editor-container').style.display = 'none';
-      document.getElementById('sitePublishBtn').style.display = 'inline-block';
-      document.getElementById('pdfExportBtn').style.display = 'none';
-      document.getElementById('saveFileBtn').style.display = 'inline-block';
-    }
-
-    async function loadPdfFromCloud() {
-      if (!cloudPath) return;
-      try {
-        const blob = await puter.fs.read(`${cloudPath}/document.json`);
-        const text = await blob.text();
-        const data = JSON.parse(text);
-        document.getElementById('pdf-title-input').value = data.title || '';
-        document.getElementById('pdf-content-editor').value = data.content || '';
-      } catch(e) {
-        console.log('PDF ainda não salvo no Cloud');
-        document.getElementById('pdf-title-input').value = document.getElementById('project-name').value || '';
+    function contextAction(action) {
+      document.getElementById('contextMenu').style.display = 'none';
+      switch(action) {
+        case 'save': saveCurrentFile(); break;
+        case 'publish': publishSite(); break;
+        case 'update': updateSite(); break;
+        case 'delete': deleteSite(); break;
+        case 'history': showHistory(); break;
+        case 'openWorker': openWorkerWindow(); break;
+        case 'zoomIn': changeZoom(0.1); break;
+        case 'zoomOut': changeZoom(-0.1); break;
+        case 'zoomReset': resetZoom(); break;
       }
     }
 
-    async function savePdfDocument() {
-      if (projectType !== 'pdf' || !cloudPath) {
-        showNotification('Salvando no Firebase...', 'info');
+    // ============== UTILITÁRIOS ==============
+    function showNotification(msg, type) {
+      const n = document.createElement('div');
+      n.className = `notification ${type}`;
+      n.textContent = msg; document.body.appendChild(n);
+      setTimeout(() => n.remove(), 4000);
+    }
+
+    function addChatMessage(text, type) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `message ${type}`;
+      msgDiv.innerHTML = text.replace(/\n/g, '<br>');
+      document.getElementById('chatMessages').appendChild(msgDiv);
+      document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+    }
+
+    async function garantirLoginPuter() {
+      try { await puter.auth.getUser(); return true; } catch(e) {}
+      try { await puter.auth.signIn(); return true; } catch(e) { return false; }
+    }
+
+    // Salvar site no localStorage (igual ao exemplo)
+    function salvarSiteNoHistorico(subdomain, dir) {
+      const site = {
+        subdomain: subdomain,
+        dir: dir,
+        data: new Date().toLocaleString(),
+        url: `https://${subdomain}.puter.site`
+      };
+      sitesSalvos = sitesSalvos.filter(s => s.subdomain !== subdomain);
+      sitesSalvos.unshift(site);
+      localStorage.setItem('codehub_sites', JSON.stringify(sitesSalvos));
+    }
+
+    function updateSiteButtons() {
+      const publishBtn = document.getElementById('sitePublishBtn');
+      const deleteBtn = document.getElementById('siteDeleteBtn');
+      
+      if (siteCreated) {
+        publishBtn.textContent = '🔄 Atualizar Site';
+        publishBtn.style.background = '#ff9800';
+        deleteBtn.style.display = 'inline-block';
+      } else {
+        publishBtn.textContent = '🚀 Publicar Site';
+        publishBtn.style.background = '#22c55e';
+        deleteBtn.style.display = 'none';
+      }
+    }
+
+    // ============== PUBLISH SITE (igual ao exemplo) ==============
+    async function publishSite() {
+      if (!await garantirLoginPuter()) {
+        addChatMessage('❌ Faça login no Puter primeiro!', 'system');
+        showNotification('Faça login no Puter!', 'error');
         return;
       }
+      
+      const indexFile = Object.values(files).find(f => (f.name || f.originalName) === 'index.html');
+      if (!indexFile) { 
+        addChatMessage('❌ Crie um index.html primeiro!', 'system'); 
+        showNotification('Crie um index.html!', 'warning');
+        return; 
+      }
+      
+      if (siteCreated) {
+        // Já tem site = ATUALIZAR
+        await updateSite();
+        return;
+      }
+      
+      document.getElementById('modalTitle').textContent = '🚀 Publicar Site?';
+      document.getElementById('modalMessage').textContent = 'Seu site será hospedado no Puter com URL pública.';
+      document.getElementById('publishModal').style.display = 'flex';
+      
+      const yes = document.getElementById('publishYesBtn');
+      const no = document.getElementById('publishNoBtn');
+      
+      const handler = async () => {
+        document.getElementById('publishModal').style.display = 'none';
+        yes.removeEventListener('click', handler);
+        no.removeEventListener('click', cancelHandler);
+        
+        addChatMessage('🚀 Publicando site...', 'system');
+        
+        try {
+          // PASSO 1: Criar diretório (como no exemplo)
+          const dirName = `codehub_${currentProjectId.substring(0, 10)}_${Date.now().toString(36)}`;
+          addChatMessage(`📁 Diretório: ${dirName}`, 'system');
+          try { await puter.fs.mkdir(dirName); } catch {}
+          
+          // PASSO 2: Salvar TODOS os arquivos
+          addChatMessage(`💾 Enviando arquivos...`, 'system');
+          for (const [key, file] of Object.entries(files)) {
+            const fileName = file.originalName || file.name;
+            let content = file.content || '';
+            if (fileName.endsWith('.html')) content = injectActivityScript(content);
+            await puter.fs.write(`${dirName}/${fileName}`, content);
+          }
+          
+          // PASSO 3: Criar site (subdomain + dir)
+          const subdomain = puter.randName();
+          addChatMessage(`🌐 Criando: ${subdomain}.puter.site`, 'system');
+          const site = await puter.hosting.create(subdomain, dirName);
+          
+          // Salvar dados
+          hostingSubdomain = site.subdomain;
+          hostingDirectory = dirName;
+          hostingUrl = `https://${site.subdomain}.puter.site`;
+          siteCreated = true;
+          
+          // Salvar no histórico local (como no exemplo)
+          salvarSiteNoHistorico(site.subdomain, dirName);
+          
+          // Mostrar URL
+          document.getElementById('fileUrlTop').value = hostingUrl;
+          document.getElementById('urlPanelTop').style.display = 'flex';
+          updateSiteButtons();
+          
+          // Salvar no Firebase
+          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({
+            url: hostingUrl, subdomain: hostingSubdomain,
+            directory: hostingDirectory, publishedAt: new Date().toISOString()
+          });
+          
+          addChatMessage(`✅ Publicado!<br>🔗 ${hostingUrl}`, 'ai');
+          showNotification('✅ Site publicado!', 'success');
+          navigator.clipboard.writeText(hostingUrl).catch(() => {});
+          
+        } catch(e) {
+          addChatMessage(`❌ Erro: ${e.message}`, 'system');
+          showNotification('Erro: ' + e.message, 'error');
+        }
+      };
+      
+      const cancelHandler = () => {
+        document.getElementById('publishModal').style.display = 'none';
+        yes.removeEventListener('click', handler);
+        no.removeEventListener('click', cancelHandler);
+      };
+      
+      yes.addEventListener('click', handler);
+      no.addEventListener('click', cancelHandler);
+    }
+
+    // ============== UPDATE SITE (igual ao exemplo) ==============
+    async function updateSite() {
+      if (!siteCreated) { 
+        showNotification('Publique primeiro!', 'warning'); 
+        return; 
+      }
+      if (!await garantirLoginPuter()) return;
+      
+      addChatMessage('🔄 Atualizando site...', 'system');
+      
       try {
-        const pdfData = {
-          title: document.getElementById('pdf-title-input').value,
-          content: document.getElementById('pdf-content-editor').value,
-          updatedAt: new Date().toISOString()
-        };
-        await puter.fs.mkdir(cloudPath).catch(() => {});
-        await puter.fs.write(`${cloudPath}/document.json`, JSON.stringify(pdfData, null, 2));
-        await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ updatedAt: new Date().toISOString() });
-        showNotification('PDF salvo no Cloud! 💾', 'success');
+        // Salvar todos os arquivos novamente
+        for (const [key, file] of Object.entries(files)) {
+          const fileName = file.originalName || file.name;
+          let content = file.content || '';
+          if (fileName.endsWith('.html')) content = injectActivityScript(content);
+          await puter.fs.write(`${hostingDirectory}/${fileName}`, content);
+        }
+        
+        // Atualizar (como no exemplo: update(subdomain, dir))
+        await puter.hosting.update(hostingSubdomain, hostingDirectory);
+        
+        addChatMessage(`✅ Site atualizado!<br>🔗 ${hostingUrl}`, 'ai');
+        showNotification('✅ Site atualizado!', 'success');
+        
       } catch(e) {
-        showNotification('Erro ao salvar PDF: ' + e.message, 'error');
+        addChatMessage(`❌ Erro: ${e.message}`, 'system');
+        showNotification('Erro: ' + e.message, 'error');
       }
     }
 
-    window.addPdfPage = function() {
-      const editor = document.getElementById('pdf-content-editor');
-      editor.value += '\n\n--- Nova Página ---\n\n';
-      showNotification('Nova página adicionada!', 'info');
-    };
-    window.formatPdfBold = function() { showNotification('Use Ctrl+B para negrito', 'info'); };
-    window.formatPdfItalic = function() { showNotification('Use Ctrl+I para itálico', 'info'); };
-    window.savePdfDocument = savePdfDocument;
+    // ============== DELETE SITE (igual ao exemplo) ==============
+    async function deleteSite() {
+      if (!siteCreated) { showNotification('Nenhum site para deletar', 'warning'); return; }
+      
+      if (!confirm(`⚠️ Deletar permanentemente:\n${hostingUrl}?`)) return;
+      if (!await garantirLoginPuter()) return;
+      
+      addChatMessage('🗑️ Deletando site...', 'system');
+      
+      try {
+        // Deletar (como no exemplo: hosting.delete(subdomain))
+        await puter.hosting.delete(hostingSubdomain);
+        
+        // Remover do histórico local
+        sitesSalvos = sitesSalvos.filter(s => s.subdomain !== hostingSubdomain);
+        localStorage.setItem('codehub_sites', JSON.stringify(sitesSalvos));
+        
+        addChatMessage(`✅ Site deletado!`, 'system');
+        showNotification('✅ Site deletado!', 'success');
+        
+        // Limpar
+        hostingSubdomain = null;
+        hostingDirectory = null;
+        hostingUrl = null;
+        siteCreated = false;
+        
+        document.getElementById('urlPanelTop').style.display = 'none';
+        updateSiteButtons();
+        
+        // Remover do Firebase
+        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).remove();
+        
+      } catch(e) {
+        addChatMessage(`❌ Erro: ${e.message}`, 'system');
+        showNotification('Erro: ' + e.message, 'error');
+      }
+    }
+
+    // ============== HISTÓRICO (igual ao exemplo) ==============
+    async function showHistory() {
+      const modal = document.getElementById('historyModal');
+      const list = document.getElementById('historyList');
+      
+      modal.style.display = 'flex';
+      
+      // Buscar do Firebase + localStorage
+      const snapshot = await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).once('value');
+      const hostingData = snapshot.val();
+      
+      let html = '<div style="max-height:50vh;overflow-y:auto;">';
+      
+      // Site atual
+      if (hostingData) {
+        html += `<div style="background:#2d2d2d;padding:12px;border-radius:8px;margin-bottom:10px;border-left:3px solid #4cc9f0;">
+          <strong style="color:#4cc9f0;">📌 Site Atual</strong><br>
+          🔗 <a href="${hostingData.url}" target="_blank" style="color:#4895ef;">${hostingData.url}</a><br>
+          📁 Pasta: ${hostingData.directory}<br>
+          📅 ${new Date(hostingData.publishedAt).toLocaleString()}<br>
+          <div style="margin-top:8px;">
+            <button onclick="updateSiteFromHistory()" style="background:#ff9800;padding:4px 10px;font-size:11px;">🔄 Atualizar</button>
+            <button onclick="deleteSiteFromHistory()" style="background:#f44336;padding:4px 10px;font-size:11px;">🗑️ Deletar</button>
+          </div>
+        </div>`;
+      }
+      
+      // Histórico local
+      if (sitesSalvos.length > 0) {
+        html += '<strong style="color:#ff9800;">📋 Histórico Local:</strong>';
+        sitesSalvos.forEach((site, i) => {
+          html += `<div style="background:#2d2d2d;padding:10px;border-radius:6px;margin:5px 0;font-size:12px;">
+            🔗 <a href="${site.url}" target="_blank" style="color:#4895ef;">${site.url}</a><br>
+            📁 ${site.dir} | 📅 ${site.data}
+          </div>`;
+        });
+      }
+      
+      if (!hostingData && sitesSalvos.length === 0) {
+        html += '<p style="color:#888;">📭 Nenhum site no histórico</p>';
+      }
+      
+      html += '</div>';
+      list.innerHTML = html;
+    }
+
+    function closeHistoryModal() {
+      document.getElementById('historyModal').style.display = 'none';
+    }
+
+    async function updateSiteFromHistory() {
+      closeHistoryModal();
+      await updateSite();
+    }
+
+    async function deleteSiteFromHistory() {
+      closeHistoryModal();
+      await deleteSite();
+    }
+
+    function injectActivityScript(html) {
+      const script = `<script src="${ACTIVITY_SCRIPT_URL}?projectid=${currentProjectId}"><\/script>`;
+      if (html.includes('</body>')) return html.replace('</body>', script + '\n</body>');
+      if (html.includes('</html>')) return html.replace('</html>', script + '\n</html>');
+      return html + script;
+    }
 
     // ============== WORKER WINDOW ==============
     function initWorkerWindow() {
@@ -601,28 +729,8 @@
         win.style.top = Math.max(0, startTop + e.clientY - startY) + 'px';
       });
       document.addEventListener('mouseup', () => {
-        if (isDragging) { isDragging = false; win.style.transition = ''; document.body.style.userSelect = ''; saveWindowPositions(); }
+        if (isDragging) { isDragging = false; win.style.transition = ''; document.body.style.userSelect = ''; }
       });
-    }
-
-    function saveWindowPositions() {
-      const win = document.getElementById('workerEditorWindow');
-      localStorage.setItem('workerWindowPos', JSON.stringify({
-        left: win.style.left || '100px', top: win.style.top || '100px',
-        width: win.style.width || '500px', height: win.style.height || '400px'
-      }));
-    }
-
-    function loadWindowPositions() {
-      try {
-        const wp = JSON.parse(localStorage.getItem('workerWindowPos'));
-        if (wp) {
-          const win = document.getElementById('workerEditorWindow');
-          win.style.left = wp.left; win.style.top = wp.top;
-          if (wp.width) win.style.width = wp.width;
-          if (wp.height) win.style.height = wp.height;
-        }
-      } catch(e) {}
     }
 
     function openWorkerWindow() {
@@ -632,344 +740,140 @@
         document.getElementById('workerCodeWindow').value = currentWorkerData.code || '';
         document.getElementById('workerWindowTitle').textContent = 'Worker: ' + currentWorkerData.name;
       }
-      updateWorkerPublishButtonWindow();
     }
-
     function closeWorkerWindow() { document.getElementById('workerEditorWindow').style.display = 'none'; }
     function toggleWorkerWindowSize() { document.getElementById('workerEditorWindow').classList.toggle('minimized'); }
 
-    function updateWorkerPublishButtonWindow() {
-      const btn = document.getElementById('workerPublishBtnWindow');
-      if (currentWorkerData && currentWorkerData.fullUrl) {
-        btn.textContent = '🔄 Atualizar Worker'; btn.style.background = '#ff9800';
-      } else {
-        btn.textContent = '🚀 Publicar Worker'; btn.style.background = '#22c55e';
-      }
-    }
-
     async function saveWorkerCodeWindow() {
-      if (!currentWorkerData) { showNotification('Selecione um worker', 'warning'); return; }
-      const newCode = document.getElementById('workerCodeWindow').value;
-      const newRoute = extractRouteFromCode(newCode);
-      await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({
-        code: newCode, route: newRoute, updatedAt: new Date().toISOString()
-      });
-      currentWorkerData.code = newCode; currentWorkerData.route = newRoute;
-      await loadProjectWorkers();
+      if (!currentWorkerData) return;
+      const code = document.getElementById('workerCodeWindow').value;
+      const match = code.match(/router\.(get|post|put|delete)\(['"`](.*?)['"`]/);
+      const route = match ? match[2] : '/api/hello.sc';
+      await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({ code, route, updatedAt: new Date().toISOString() });
+      currentWorkerData.code = code;
       showNotification('Worker salvo!', 'success');
     }
 
     async function publishWorkerWindow() {
-      if (!currentWorkerData) return;
       await saveWorkerCodeWindow();
       await publishWorker();
     }
 
     async function testWorkerWindow() {
-      if (!currentWorkerData || !currentWorkerData.fullUrl) { showNotification('Worker não publicado', 'warning'); return; }
-      await testWorker(currentWorkerData.id);
-    }
-
-    // ============== CONTEXT MENU ==============
-    function initContextMenu() {
-      const menu = document.getElementById('contextMenu');
-      document.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        menu.style.display = 'block';
-        menu.style.left = Math.min(e.clientX, window.innerWidth - 220) + 'px';
-        menu.style.top = Math.min(e.clientY, window.innerHeight - 350) + 'px';
-      });
-      document.addEventListener('click', (e) => { if (!menu.contains(e.target)) menu.style.display = 'none'; });
-      document.addEventListener('keydown', (e) => {
-        if (e.ctrlKey || e.metaKey) {
-          switch(e.key.toLowerCase()) {
-            case 's': e.preventDefault(); contextAction('saveFile'); break;
-            case 'n': e.preventDefault(); contextAction('newFile'); break;
-            case 'w': e.preventDefault(); contextAction('newWorker'); break;
-            case 'p': e.preventDefault(); contextAction('preview'); break;
-            case '=': case '+': e.preventDefault(); changeZoom(0.1); break;
-            case '-': e.preventDefault(); changeZoom(-0.1); break;
-            case '0': e.preventDefault(); resetZoom(); break;
-          }
-        }
-      });
-    }
-
-    function contextAction(action) {
-      document.getElementById('contextMenu').style.display = 'none';
-      switch(action) {
-        case 'newFile':
-          const newName = prompt('Nome do arquivo:', 'novo.js');
-          if (newName) {
-            const key = btoa(newName).replace(/=/g, '');
-            files[key] = { name: newName, content: '', size: 0, createdAt: new Date().toISOString() };
-            saveProject(); openFile(key); updateTabs();
-          }
-          break;
-        case 'newWorker': createNewWorker(); break;
-        case 'saveFile':
-          if (projectType === 'pdf') savePdfDocument();
-          else if (currentWorkerData) saveWorkerCodeWindow();
-          else saveCurrentFile();
-          break;
-        case 'preview': previewProject(); break;
-        case 'openWorkerEditor': openWorkerWindow(); break;
-        case 'openActivities': break;
-        case 'zoomIn': changeZoom(0.1); break;
-        case 'zoomOut': changeZoom(-0.1); break;
-        case 'zoomReset': resetZoom(); break;
-        case 'clearChat':
-          if (confirm('Limpar chat?')) {
-            db.ref(`chats/${currentUser.uid}/${currentProjectId}`).remove();
-            document.getElementById('chatMessages').innerHTML = '';
-            addChatMessage('🤖 Chat limpo!', 'system');
-          }
-          break;
-      }
-    }
-    window.contextAction = contextAction;
-
-    // ============== UTILITY FUNCTIONS ==============
-    function showNotification(msg, type = 'info') {
-      const n = document.createElement('div');
-      n.className = `notification ${type}`;
-      n.textContent = msg; document.body.appendChild(n);
-      setTimeout(() => n.remove(), 4000);
-    }
-
-    function updatePuterStatus(connected) {
-      const dot = document.getElementById('puterStatusDot');
-      const text = document.getElementById('puterStatusText');
-      if (connected) { dot.classList.add('connected'); text.textContent = 'Online'; }
-      else { dot.classList.remove('connected'); text.textContent = 'Offline'; }
-    }
-
-    function addChatMessage(text, type) {
-      const msgDiv = document.createElement('div');
-      msgDiv.className = `message ${type}`;
-      msgDiv.innerHTML = text.replace(/\n/g, '<br>');
-      document.getElementById('chatMessages').appendChild(msgDiv);
-      document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
-      if (currentProjectId && currentUser) {
-        db.ref(`chats/${currentUser.uid}/${currentProjectId}`).push({ text, type, timestamp: Date.now() });
-      }
-    }
-
-    function extractRouteFromCode(code) { 
-      const match = code.match(/router\.(get|post|put|delete)\(['"`](.*?)['"`]/); 
-      return match ? match[2] : "/api/hello.sc"; 
-    }
-
-    function generateCleanWorkerName(baseName) {
-      return baseName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 20) + '_' + Date.now().toString(36).substring(0, 4);
-    }
-
-    async function ensurePuterAuth() {
-      try { await puter.auth.getUser(); updatePuterStatus(true); return true; } catch(e) {}
-      try { await puter.auth.signIn(); updatePuterStatus(true); return true; } catch(e) { return false; }
-    }
-
-    function updateSitePublishButton() {
-      const btn = document.getElementById('sitePublishBtn');
-      if (siteCreated && currentHostingSubdomain) {
-        btn.textContent = '🔄 Atualizar Site'; btn.style.background = '#ff9800';
-      } else {
-        btn.textContent = '🚀 Publicar Site'; btn.style.background = '#22c55e';
-      }
-    }
-
-    function workerLog(msg) { addChatMessage(`⚡ Worker: ${msg}`, 'system'); }
-
-    // ============== WORKER FUNCTIONS ==============
-    async function loadProjectWorkers() {
-      if (!currentProjectId) return;
+      if (!currentWorkerData?.fullUrl) { showNotification('Worker não publicado', 'warning'); return; }
       try {
-        const snapshot = await db.ref(`workers/${currentUser.uid}/${currentProjectId}`).once('value');
-        projectWorkers = [];
-        snapshot.forEach(child => { projectWorkers.push({ id: child.key, ...child.val() }); });
-        renderWorkersList();
-        if (projectWorkers.length > 0 && !currentWorkerData) selectWorker(projectWorkers[0].id);
-      } catch(e) {}
+        const res = await fetch(currentWorkerData.fullUrl);
+        const data = await res.json();
+        addChatMessage(`✅ Resposta: ${JSON.stringify(data)}`, 'ai');
+      } catch(e) { addChatMessage(`❌ Erro: ${e.message}`, 'system'); }
     }
 
-    function renderWorkersList() {
-      const list = document.getElementById('workers-list');
-      if (!projectWorkers.length) { list.innerHTML = '<div class="no-workers">📭 Nenhum worker .sc criado</div>'; return; }
-      list.innerHTML = projectWorkers.map(w => `
-        <div class="worker-item" onclick="selectWorker('${w.id}')">
-          <div class="worker-name">📦 ${w.name || 'Sem nome'}</div>
-          <div class="worker-route">🎯 ${w.route || '/api/unknown.sc'}</div>
-          <div class="worker-status ${w.fullUrl ? 'published' : 'not-published'}">${w.fullUrl ? '✅ Publicado' : '📝 Rascunho'}</div>
-          <div class="worker-url">🔗 ${w.fullUrl || 'Não publicado'}</div>
-          <div class="worker-actions">
-            ${w.fullUrl ? `<button class="test" onclick="event.stopPropagation();testWorker('${w.id}')">▶️ Testar</button>` : ''}
-            <button onclick="event.stopPropagation();editWorker('${w.id}')">✏️ Editar</button>
-            <button class="delete" onclick="event.stopPropagation();deleteWorker('${w.id}')">🗑️ Deletar</button>
-            ${w.fullUrl ? `<button class="update-worker" onclick="event.stopPropagation();updateWorker('${w.id}')">🔄 Atualizar</button>` : ''}
-          </div>
-        </div>
-      `).join('');
-    }
-
-    async function selectWorker(workerId) {
-      const worker = projectWorkers.find(w => w.id === workerId);
-      if (!worker) return;
-      currentWorkerData = worker;
-      document.getElementById('workerCode').value = worker.code || '';
-      document.getElementById('workerCodeWindow').value = worker.code || '';
-      document.getElementById('workerWindowTitle').textContent = 'Worker: ' + worker.name;
-      updateWorkerPublishButtonWindow();
-    }
-
-    async function createNewWorker() {
-      const name = prompt('Nome do worker:', 'meu-worker');
-      if (!name) return;
-      const cleanName = name.replace(/[^a-zA-Z0-9]/g, '');
-      const route = `/api/${cleanName}.sc`;
-      const code = `router.get('${route}', async () => {\n    return { message: 'Olá do ${name}!', timestamp: new Date().toISOString() };\n});`;
-      const ref = db.ref(`workers/${currentUser.uid}/${currentProjectId}`).push();
-      await ref.set({ id: ref.key, name, route, code, createdAt: new Date().toISOString() });
-      await loadProjectWorkers();
-      await selectWorker(ref.key);
-      openWorkerWindow();
-      showNotification(`Worker "${name}" criado!`, 'success');
-    }
-
+    // ============== WORKER ==============
     async function saveWorkerCode() {
       if (!currentWorkerData) { showNotification('Selecione um worker', 'warning'); return; }
-      const newCode = document.getElementById('workerCode').value;
-      const newRoute = extractRouteFromCode(newCode);
-      await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({
-        code: newCode, route: newRoute, updatedAt: new Date().toISOString()
-      });
-      currentWorkerData.code = newCode; currentWorkerData.route = newRoute;
-      await loadProjectWorkers();
+      const code = document.getElementById('workerCode').value;
+      const match = code.match(/router\.(get|post|put|delete)\(['"`](.*?)['"`]/);
+      const route = match ? match[2] : '/api/hello.sc';
+      await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({ code, route, updatedAt: new Date().toISOString() });
+      currentWorkerData.code = code;
+      if (document.getElementById('workerEditorWindow').style.display === 'flex') {
+        document.getElementById('workerCodeWindow').value = code;
+      }
       showNotification('Worker salvo!', 'success');
     }
 
     async function publishWorker() {
-      if (!currentWorkerData) { showNotification('Selecione um worker', 'warning'); return; }
-      document.getElementById('modalTitle').textContent = currentWorkerData.fullUrl ? '🔄 Atualizar Worker?' : '🚀 Publicar Worker?';
-      document.getElementById('modalMessage').textContent = currentWorkerData.fullUrl ? `Atualizar "${currentWorkerData.name}"?` : `Publicar "${currentWorkerData.name}"?`;
-      document.getElementById('publishModal').style.display = 'flex';
+      if (!currentWorkerData) return;
+      await saveWorkerCode();
+      if (!await garantirLoginPuter()) return;
       
-      const yes = document.getElementById('publishYesBtn');
-      const no = document.getElementById('publishNoBtn');
-      const handler = async () => {
-        document.getElementById('publishModal').style.display = 'none';
-        yes.removeEventListener('click', handler);
-        no.removeEventListener('click', cancelHandler);
-        workerLog(`🚀 Publicando "${currentWorkerData.name}"...`);
-        try {
-          if (!await ensurePuterAuth()) throw new Error('Faça login no Puter');
-          const cleanName = currentWorkerData.name.replace(/[^a-zA-Z0-9]/g, '').substring(0, 15);
-          const fileName = `${cleanName}_${Date.now().toString(36)}.sc`;
-          await puter.fs.write(fileName, currentWorkerData.code);
-          const deployName = generateCleanWorkerName(cleanName);
-          if (currentWorkerData.deployedName) { try { await puter.workers.delete(currentWorkerData.deployedName); } catch(e) {} }
-          const w = await puter.workers.create(deployName, fileName);
-          const fullUrl = `https://${deployName}.${w.username || 'puter'}.work${currentWorkerData.route}`;
-          await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({
-            url: fullUrl, fullUrl, deployedName: deployName, fileName, deployedAt: new Date().toISOString()
-          });
-          currentWorkerData.url = fullUrl; currentWorkerData.fullUrl = fullUrl; currentWorkerData.deployedName = deployName;
-          await loadProjectWorkers();
-          updateWorkerPublishButtonWindow();
-          workerLog(`✅ Publicado! URL: ${fullUrl}`);
-          showNotification('Worker publicado!', 'success');
-        } catch(e) { workerLog(`❌ Erro: ${e.message}`); showNotification('Erro: ' + e.message, 'error'); }
-      };
-      const cancelHandler = () => {
-        document.getElementById('publishModal').style.display = 'none';
-        yes.removeEventListener('click', handler);
-        no.removeEventListener('click', cancelHandler);
-      };
-      yes.addEventListener('click', handler);
-      no.addEventListener('click', cancelHandler);
-    }
-
-    async function updateWorker(workerId) { await selectWorker(workerId); await publishWorker(); }
-
-    async function testWorker(workerId) {
-      const worker = projectWorkers.find(w => w.id === workerId);
-      if (!worker?.fullUrl) { showNotification('Worker não publicado', 'warning'); return; }
-      workerLog(`🧪 Testando: ${worker.fullUrl}`);
+      addChatMessage('🚀 Publicando worker...', 'system');
       try {
-        const res = await fetch(worker.fullUrl, { signal: AbortSignal.timeout(15000) });
-        const text = await res.text();
-        let data; try { data = JSON.parse(text); } catch(e) { data = text; }
-        workerLog(`✅ Resposta (${res.status}): ${typeof data === 'object' ? JSON.stringify(data, null, 2) : data}`);
-      } catch(e) { workerLog(`❌ Erro: ${e.message}`); }
-    }
-
-    async function editWorker(workerId) { await selectWorker(workerId); openWorkerWindow(); }
-
-    async function deleteWorker(workerId) {
-      if (!confirm('Deletar worker?')) return;
-      const worker = projectWorkers.find(w => w.id === workerId);
-      if (worker) {
-        try { if (worker.deployedName) await puter.workers.delete(worker.deployedName); } catch(e) {}
-        await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${workerId}`).remove();
-        await loadProjectWorkers();
-        if (currentWorkerData?.id === workerId) { currentWorkerData = null; document.getElementById('workerCode').value = ''; }
+        const cleanName = currentWorkerData.name.replace(/[^a-zA-Z0-9]/g, '').substring(0, 15);
+        const fileName = `${cleanName}_${Date.now().toString(36)}.sc`;
+        await puter.fs.write(fileName, currentWorkerData.code);
+        
+        const deployName = `${cleanName}_${Date.now().toString(36)}`;
+        if (currentWorkerData.deployedName) {
+          try { await puter.workers.delete(currentWorkerData.deployedName); } catch(e) {}
+        }
+        
+        const w = await puter.workers.create(deployName, fileName);
+        const fullUrl = `https://${deployName}.${w.username || 'puter'}.work${currentWorkerData.route}`;
+        
+        await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({
+          url: fullUrl, fullUrl, deployedName: deployName, deployedAt: new Date().toISOString()
+        });
+        currentWorkerData.url = fullUrl;
+        currentWorkerData.fullUrl = fullUrl;
+        addChatMessage(`✅ Worker publicado!<br>🔗 ${fullUrl}`, 'ai');
+        showNotification('Worker publicado!', 'success');
+      } catch(e) {
+        addChatMessage(`❌ Erro: ${e.message}`, 'system');
       }
     }
 
-    // ============== PUBLISH SITE ==============
-    async function publishSite() {
-      if (projectType === 'pdf') { showNotification('Use Salvar PDF', 'info'); return; }
-      if (!await ensurePuterAuth()) { addChatMessage('❌ Faça login no Puter!', 'system'); return; }
-      if (!Object.values(files).some(f => f.name === 'index.html')) { addChatMessage('❌ Falta index.html', 'system'); return; }
-      
-      document.getElementById('modalTitle').textContent = siteCreated ? '🔄 Atualizar Site?' : '🚀 Publicar Site?';
-      document.getElementById('modalMessage').textContent = siteCreated ? `Atualizar: ${currentHostingUrl}` : 'Publicar no Puter?';
-      document.getElementById('publishModal').style.display = 'flex';
-      
-      const yes = document.getElementById('publishYesBtn');
-      const no = document.getElementById('publishNoBtn');
-      const handler = async () => {
-        document.getElementById('publishModal').style.display = 'none';
-        yes.removeEventListener('click', handler); no.removeEventListener('click', cancelHandler);
-        addChatMessage(siteCreated ? '🔄 Atualizando...' : '🚀 Publicando...', 'system');
-        try {
-          if (!siteCreated) { currentHostingDirectory = puter.randName(); await puter.fs.mkdir(currentHostingDirectory); }
-          for (const [key, file] of Object.entries(files)) {
-            let content = file.content || '';
-            if (file.name.endsWith('.html')) content = injectActivityScript(content);
-            await puter.fs.write(`${currentHostingDirectory}/${file.name}`, content);
-          }
-          if (!siteCreated) { const site = await puter.hosting.create(currentHostingDirectory); currentHostingSubdomain = site.subdomain; currentHostingUrl = `https://${site.subdomain}.puter.site`; siteCreated = true; }
-          else { await puter.hosting.update(currentHostingSubdomain, currentHostingDirectory); }
-          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({ url: currentHostingUrl, subdomain: currentHostingSubdomain, directory: currentHostingDirectory, publishedAt: new Date().toISOString() });
-          document.getElementById('fileUrlTop').value = currentHostingUrl;
-          document.getElementById('urlPanelTop').style.display = 'flex';
-          updateSitePublishButton();
-          addChatMessage(`✅ Publicado! 🔗 ${currentHostingUrl}`, 'ai');
-          showNotification('Sucesso!', 'success');
-        } catch(e) { addChatMessage(`❌ Erro: ${e.message}`, 'system'); if (!siteCreated) currentHostingDirectory = null; }
-      };
-      const cancelHandler = () => { document.getElementById('publishModal').style.display = 'none'; yes.removeEventListener('click', handler); no.removeEventListener('click', cancelHandler); };
-      yes.addEventListener('click', handler); no.addEventListener('click', cancelHandler);
+    // ============== ARQUIVOS ==============
+    async function saveCurrentFile() {
+      if (!currentFile) return;
+      files[currentFile].content = document.getElementById('simple-editor').value;
+      files[currentFile].size = new Blob([files[currentFile].content]).size;
+      files[currentFile].updatedAt = new Date().toISOString();
+      await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ files, updatedAt: new Date().toISOString() });
+      showNotification('Salvo! 💾', 'success');
     }
 
-    function injectActivityScript(html) {
-      const script = `<script src="${ACTIVITY_SCRIPT_URL}?projectid=${currentProjectId}"><\/script>`;
-      if (html.includes('</body>')) return html.replace('</body>', script + '\n</body>');
-      if (html.includes('</html>')) return html.replace('</html>', script + '\n</html>');
-      return html + script;
+    async function openFile(fileKey) {
+      if (!files[fileKey]) return;
+      currentFile = fileKey;
+      document.getElementById('simple-editor').value = files[fileKey].content || '';
+      updateTabs();
+    }
+
+    function updateTabs() {
+      const tabs = document.getElementById('tabs');
+      tabs.innerHTML = '';
+      Object.keys(files).forEach(key => {
+        const tab = document.createElement('button');
+        tab.className = `tab-btn ${key === currentFile ? 'active' : ''}`;
+        tab.onclick = () => openFile(key);
+        tab.innerHTML = `${files[key].name || files[key].originalName || 'arquivo'} <button class="close-tab-btn" onclick="event.stopPropagation();closeFile('${key}')">&times;</button>`;
+        tabs.appendChild(tab);
+      });
+    }
+
+    async function closeFile(fileKey) {
+      if (Object.keys(files).length <= 1) return;
+      delete files[fileKey];
+      await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ files, updatedAt: new Date().toISOString() });
+      if (fileKey === currentFile) await openFile(Object.keys(files)[0]);
+      updateTabs();
+    }
+
+    function previewProject() {
+      const index = Object.values(files).find(f => (f.name || f.originalName) === 'index.html');
+      if (index?.content) {
+        const blob = new Blob([index.content], { type: 'text/html' });
+        window.open(URL.createObjectURL(blob), '_blank');
+      } else {
+        showNotification('Crie um index.html', 'warning');
+      }
     }
 
     // ============== QUICK ACTIONS ==============
-    async function quickAction(action) {
+    function quickAction(action) {
       const input = document.getElementById('chatInput');
       switch(action) {
         case 'criar-worker': input.value = 'Crie um worker chamado api com rota GET /api/dados.sc'; break;
-        case 'editar-worker': input.value = currentWorkerData ? `Edite o worker ${currentWorkerData.name} para retornar a hora` : 'Edite o worker [nome]'; break;
+        case 'editar-worker': input.value = currentWorkerData ? `Edite o worker ${currentWorkerData.name}` : 'Edite o worker'; break;
         case 'explicar-worker': if (currentWorkerData) addChatMessage(`📦 ${currentWorkerData.name}: ${currentWorkerData.code?.substring(0, 300)}`, 'ai'); break;
-        case 'criar-api': input.value = 'Crie um worker api-rest com GET, POST, PUT, DELETE em /api/items.sc'; break;
-        case 'adicionar-rota': input.value = currentWorkerData ? `Adicione rota POST no worker ${currentWorkerData.name} em /api/salvar.sc` : 'Adicione rota'; break;
-        case 'corrigir-worker': if (currentWorkerData) { const c = currentWorkerData.code.replace(/\(\)\s*=>/g, 'async () =>'); if (c !== currentWorkerData.code) { currentWorkerData.code = c; document.getElementById('workerCodeWindow').value = c; addChatMessage('✅ Corrigido!', 'ai'); } } break;
-        case 'listar-workers': projectWorkers.forEach(w => addChatMessage(`📦 ${w.name} | ${w.route} | ${w.fullUrl || 'Não publicado'}`, 'ai')); break;
+        case 'listar-workers': 
+          const workerSnap = db.ref(`workers/${currentUser.uid}/${currentProjectId}`).once('value').then(s => {
+            const workers = s.val();
+            if (workers) Object.entries(workers).forEach(([id, w]) => addChatMessage(`📦 ${w.name} | ${w.route}`, 'ai'));
+            else addChatMessage('📭 Nenhum worker', 'system');
+          });
+          break;
       }
       input.focus();
     }
@@ -981,240 +885,131 @@
       localStorage.setItem('codehub_mode', mode);
     }
 
-    // ============== AI CHAT ==============
     async function sendToAI() {
       const msg = document.getElementById('chatInput').value.trim();
       if (!msg) return;
       addChatMessage(msg, 'user');
       document.getElementById('chatInput').value = '';
-      const streamingDiv = document.createElement('div');
-      streamingDiv.className = 'message ai streaming';
-      const contentSpan = document.createElement('span');
-      streamingDiv.appendChild(contentSpan);
-      document.getElementById('chatMessages').appendChild(streamingDiv);
-      let fullResponse = '';
+      
       try {
-        await ensurePuterAuth();
-        const workersInfo = projectWorkers.map(w => `Worker: ${w.name}, Rota: ${w.route}, Código: ${w.code?.substring(0, 300)}`).join('\n');
-        const prompt = `Você edita workers. WORKERS:\n${workersInfo}\n\nCOMANDO: "${msg}"\n\nResponda JSON:\nCriar: {"action":"criar-worker","name":"nome","code":"router.get('/api/nome.sc', async () => { return { ok: true }; });"}\nEditar: {"action":"editar-worker","targetWorker":"nome","newCode":"código"}`;
-        const res = await puter.ai.chat(prompt, { stream: true });
-        for await (const chunk of res) { fullResponse += chunk; contentSpan.innerHTML = fullResponse.replace(/\n/g, '<br>'); document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight; }
-        streamingDiv.classList.remove('streaming');
-        try {
-          const json = fullResponse.match(/\{[\s\S]*\}/);
-          if (json) {
-            const r = JSON.parse(json[0]);
-            if (r.action === 'criar-worker' && r.name && r.code) {
-              const ref = db.ref(`workers/${currentUser.uid}/${currentProjectId}`).push();
-              await ref.set({ id: ref.key, name: r.name, route: extractRouteFromCode(r.code), code: r.code, createdAt: new Date().toISOString() });
-              await loadProjectWorkers();
-              await selectWorker(ref.key);
-              openWorkerWindow();
-              addChatMessage(`✅ Worker "${r.name}" criado!`, 'ai');
-            } else if (r.action === 'editar-worker' && r.targetWorker && r.newCode) {
-              let worker = projectWorkers.find(w => w.name === r.targetWorker || w.id === r.targetWorker);
-              if (worker) {
-                await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${worker.id}`).update({ code: r.newCode, updatedAt: new Date().toISOString() });
-                await loadProjectWorkers();
-                if (currentWorkerData?.id === worker.id) { currentWorkerData.code = r.newCode; document.getElementById('workerCodeWindow').value = r.newCode; }
-                addChatMessage(`✅ Worker editado!`, 'ai');
-              }
-            }
+        await garantirLoginPuter();
+        const res = await puter.ai.chat(msg, { stream: false });
+        addChatMessage(res, 'ai');
+      } catch(e) {
+        addChatMessage('Erro: ' + e.message, 'system');
+      }
+    }
+
+    // ============== INIT ==============
+    auth.onAuthStateChanged(async user => {
+      if (!user) { window.location.href = 'auth.html'; return; }
+      currentUser = user;
+      document.getElementById('user-name').textContent = user.displayName || user.email?.split('@')[0] || 'Usuário';
+      
+      const savedZoom = localStorage.getItem('codehub_zoom');
+      if (savedZoom) { currentZoom = parseFloat(savedZoom); document.body.style.zoom = currentZoom; }
+      document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
+      
+      const savedMode = localStorage.getItem('codehub_mode');
+      setMode(savedMode === 'chat' ? 'chat' : 'edit');
+      
+      if (currentProjectId) {
+        const snapshot = await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).once('value');
+        const data = snapshot.val();
+        if (data) {
+          document.getElementById('project-name').value = data.name || '';
+          files = data.files || {};
+          
+          if (data.hosting?.url) {
+            hostingUrl = data.hosting.url;
+            hostingSubdomain = data.hosting.subdomain;
+            hostingDirectory = data.hosting.directory;
+            siteCreated = true;
+            document.getElementById('fileUrlTop').value = hostingUrl;
+            document.getElementById('urlPanelTop').style.display = 'flex';
           }
-        } catch(e) {}
-      } catch(e) { streamingDiv.classList.remove('streaming'); contentSpan.innerHTML = `❌ Erro: ${e.message}`; }
-    }
-
-    // ============== FILE MANAGEMENT ==============
-    async function saveProject() { await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ files, updatedAt: new Date().toISOString() }); }
-
-    async function openFile(fileKey) {
-      if (!files[fileKey]) return;
-      currentFile = fileKey;
-      document.getElementById('simple-editor').value = files[fileKey].content || '';
-      updateTabs();
-    }
-
-    async function saveCurrentFile() {
-      if (projectType === 'pdf') { await savePdfDocument(); return; }
-      if (!currentFile) return;
-      files[currentFile] = { ...files[currentFile], content: document.getElementById('simple-editor').value, size: new Blob([document.getElementById('simple-editor').value]).size, updatedAt: new Date().toISOString() };
-      await saveProject();
-      showNotification('Salvo! 💾', 'success');
-    }
-
-    function updateTabs() {
-      const tabs = document.getElementById('tabs');
-      tabs.innerHTML = '';
-      Object.keys(files).forEach(key => {
-        const tab = document.createElement('button');
-        tab.className = `tab-btn ${key === currentFile ? 'active' : ''}`;
-        tab.onclick = () => openFile(key);
-        tab.innerHTML = `${files[key].name} <button class="close-tab-btn" onclick="event.stopPropagation();closeFile('${key}')">&times;</button>`;
-        tabs.appendChild(tab);
-      });
-    }
-
-    async function closeFile(fileKey) {
-      if (Object.keys(files).length <= 1) return;
-      delete files[fileKey];
-      await saveProject();
-      if (fileKey === currentFile) await openFile(Object.keys(files)[0]);
-      updateTabs();
-    }
-
-    function previewProject() {
-      if (projectType === 'pdf') { showNotification('Preview do PDF no editor acima', 'info'); return; }
-      const index = Object.values(files).find(f => f.name === 'index.html');
-      if (index?.content) { const blob = new Blob([index.content], { type: 'text/html' }); window.open(URL.createObjectURL(blob), '_blank'); }
-      else showNotification('Crie um index.html', 'warning');
-    }
-
-    // ============== PROJECT LOADING ==============
-    async function loadProjectData() {
-      const snapshot = await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).once('value');
-      const data = snapshot.val();
-      if (!data) return;
-      
-      projectType = data.type || 'code';
-      cloudPath = data.cloudPath || null;
-      
-      if (projectType === 'pdf') {
-        showPdfEditor();
-        document.getElementById('projectTypeIcon').textContent = '📄';
-        document.getElementById('projectTypeLabel').textContent = 'PDF';
-        document.getElementById('projectTypeLabel').style.color = '#f72585';
-        if (cloudPath) await loadPdfFromCloud();
-      } else {
-        showCodeEditor();
-        document.getElementById('projectTypeIcon').textContent = '💻';
-        document.getElementById('projectTypeLabel').textContent = 'Código';
-        document.getElementById('projectTypeLabel').style.color = '#4cc9f0';
-      }
-      
-      document.getElementById('project-name').value = data.name || '';
-      files = data.files || {};
-      if (data.hosting?.url) {
-        currentHostingUrl = data.hosting.url;
-        currentHostingSubdomain = data.hosting.subdomain;
-        siteCreated = true;
-        document.getElementById('fileUrlTop').value = currentHostingUrl;
-        document.getElementById('urlPanelTop').style.display = 'flex';
-      }
-      updateSitePublishButton();
-      if (projectType !== 'pdf') { const keys = Object.keys(files); if (keys.length > 0) await openFile(keys[0]); updateTabs(); }
-    }
-
-    async function loadChatHistory() {
-      const snapshot = await db.ref(`chats/${currentUser.uid}/${currentProjectId}`).orderByChild('timestamp').once('value');
-      document.getElementById('chatMessages').innerHTML = '';
-      snapshot.forEach(child => {
-        const msg = child.val();
-        const msgDiv = document.createElement('div');
-        msgDiv.className = `message ${msg.type}`;
-        msgDiv.innerHTML = msg.text.replace(/\n/g, '<br>');
-        document.getElementById('chatMessages').appendChild(msgDiv);
-      });
-      if (!snapshot.exists()) addChatMessage('🤖 Olá! Use os botões ou digite comandos!', 'system');
-    }
-
-    // ============== INITIALIZATION ==============
-    function setupEventListeners() {
-      document.getElementById('saveFileBtn').addEventListener('click', saveCurrentFile);
-      document.getElementById('previewBtn').addEventListener('click', previewProject);
-      document.getElementById('sitePublishBtn').addEventListener('click', publishSite);
-      document.getElementById('pdfExportBtn').addEventListener('click', savePdfDocument);
-      document.getElementById('puterDashboardBtn').addEventListener('click', () => window.open('https://puter.com', '_blank'));
-      document.getElementById('openUrlTopBtn')?.addEventListener('click', () => { if (currentHostingUrl) window.open(currentHostingUrl, '_blank'); });
-      document.getElementById('sendChatBtn').addEventListener('click', sendToAI);
-      document.getElementById('workerPublishBtn').addEventListener('click', publishWorker);
-      document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendToAI(); } });
-      document.getElementById('logoutBtn').addEventListener('click', () => auth.signOut().then(() => window.location.href = 'auth.html'));
-      document.getElementById('project-name').addEventListener('blur', async () => {
-        const name = document.getElementById('project-name').value.trim();
-        if (name && currentProjectId) { await db.ref(`projects/${currentUser.uid}/${currentProjectId}/name`).set(name); }
-      });
-      
-      const handle = document.getElementById('resizeHandle');
-      let isResizing = false;
-      handle.addEventListener('mousedown', (e) => { isResizing = true; e.preventDefault(); });
-      document.addEventListener('mousemove', (e) => {
-        if (!isResizing) return;
-        const w = window.innerWidth - e.clientX;
-        if (w >= 250 && w <= 600) { document.getElementById('ai-sidebar').style.width = w + 'px'; localStorage.setItem('codehub_sidebar_width', w); }
-      });
-      document.addEventListener('mouseup', () => { isResizing = false; });
-    }
-
-    function initializeApp() {
-      auth.onAuthStateChanged(async user => {
-        if (!user) { window.location.href = 'auth.html'; return; }
-        currentUser = user;
-        document.getElementById('user-name').textContent = user.displayName || user.email?.split('@')[0] || 'Usuário';
-        
-        const params = new URLSearchParams(window.location.search);
-        currentProjectId = params.get('projectId');
-        
-        const savedZoom = localStorage.getItem('codehub_zoom');
-        if (savedZoom) { currentZoom = parseFloat(savedZoom); document.body.style.zoom = currentZoom; }
-        document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
-        
-        const savedWidth = localStorage.getItem('codehub_sidebar_width');
-        if (savedWidth) document.getElementById('ai-sidebar').style.width = savedWidth + 'px';
-        const savedMode = localStorage.getItem('codehub_mode');
-        setMode(savedMode === 'chat' ? 'chat' : 'edit');
-        
-        if (currentProjectId) {
-          await loadProjectData();
-          await loadChatHistory();
-          await loadProjectWorkers();
+          updateSiteButtons();
+          
+          const workerSnap = await db.ref(`workers/${currentUser.uid}/${currentProjectId}`).once('value');
+          const workers = workerSnap.val();
+          if (workers) {
+            const first = Object.entries(workers)[0];
+            if (first) { currentWorkerData = { id: first[0], ...first[1] }; document.getElementById('workerCode').value = currentWorkerData.code || ''; }
+          }
+          
+          const keys = Object.keys(files);
+          if (keys.length > 0) await openFile(keys[0]);
+          updateTabs();
         }
-        
-        document.getElementById('loading-screen').style.opacity = '0';
-        setTimeout(() => {
-          document.getElementById('loading-screen').style.display = 'none';
-          document.getElementById('app-content').style.display = 'flex';
-        }, 300);
-        
-        setupEventListeners();
-        initWorkerWindow();
+      }
+      
+      document.getElementById('loading-screen').style.opacity = '0';
+      setTimeout(() => {
+        document.getElementById('loading-screen').style.display = 'none';
+        document.getElementById('app-content').style.display = 'flex';
         initContextMenu();
-        loadWindowPositions();
-        initPuter();
-      });
-    }
+        initWorkerWindow();
+        addChatMessage('🤖 Olá! Pronto para codar! 🚀', 'system');
+      }, 300);
+    });
 
-    async function initPuter() { try { await puter.auth.getUser(); updatePuterStatus(true); } catch(e) { updatePuterStatus(false); } }
+    // Event listeners
+    document.getElementById('saveFileBtn').addEventListener('click', saveCurrentFile);
+    document.getElementById('previewBtn').addEventListener('click', previewProject);
+    document.getElementById('sitePublishBtn').addEventListener('click', publishSite);
+    document.getElementById('siteDeleteBtn').addEventListener('click', deleteSite);
+    document.getElementById('siteHistoryBtn').addEventListener('click', showHistory);
+    document.getElementById('logoutBtn').addEventListener('click', () => auth.signOut().then(() => window.location.href = 'auth.html'));
+    document.getElementById('openUrlTopBtn')?.addEventListener('click', () => { if (hostingUrl) window.open(hostingUrl, '_blank'); });
+    document.getElementById('copyUrlTopBtn')?.addEventListener('click', () => { 
+      if (hostingUrl) { navigator.clipboard.writeText(hostingUrl); showNotification('📋 URL copiada!', 'success'); }
+    });
+    document.getElementById('project-name').addEventListener('blur', async function() {
+      const name = this.value.trim();
+      if (name && currentProjectId) await db.ref(`projects/${currentUser.uid}/${currentProjectId}/name`).set(name);
+    });
+    document.getElementById('sendChatBtn').addEventListener('click', sendToAI);
+    document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendToAI(); } });
+    
+    // Resize
+    const handle = document.getElementById('resizeHandle');
+    let isResizing = false;
+    handle.addEventListener('mousedown', (e) => { isResizing = true; e.preventDefault(); });
+    document.addEventListener('mousemove', (e) => {
+      if (!isResizing) return;
+      const w = window.innerWidth - e.clientX;
+      if (w >= 250 && w <= 600) document.getElementById('ai-sidebar').style.width = w + 'px';
+    });
+    document.addEventListener('mouseup', () => { isResizing = false; });
+    
+    // Fechar modais
+    document.getElementById('publishModal').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
+    document.getElementById('historyModal').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
 
-    initializeApp();
-
-    // Expor globalmente
-    window.selectWorker = selectWorker;
-    window.createNewWorker = createNewWorker;
-    window.saveWorkerCode = saveWorkerCode;
-    window.publishWorker = publishWorker;
-    window.updateWorker = updateWorker;
-    window.testWorker = testWorker;
-    window.editWorker = editWorker;
-    window.deleteWorker = deleteWorker;
-    window.closeFile = closeFile;
-    window.setMode = setMode;
-    window.quickAction = quickAction;
+    // Expor funções
+    window.contextAction = contextAction;
     window.changeZoom = changeZoom;
     window.resetZoom = resetZoom;
+    window.closeFile = closeFile;
+    window.saveCurrentFile = saveCurrentFile;
+    window.publishSite = publishSite;
+    window.updateSite = updateSite;
+    window.deleteSite = deleteSite;
+    window.showHistory = showHistory;
+    window.closeHistoryModal = closeHistoryModal;
+    window.updateSiteFromHistory = updateSiteFromHistory;
+    window.deleteSiteFromHistory = deleteSiteFromHistory;
+    window.saveWorkerCode = saveWorkerCode;
+    window.publishWorker = publishWorker;
     window.openWorkerWindow = openWorkerWindow;
     window.closeWorkerWindow = closeWorkerWindow;
     window.toggleWorkerWindowSize = toggleWorkerWindowSize;
     window.saveWorkerCodeWindow = saveWorkerCodeWindow;
     window.publishWorkerWindow = publishWorkerWindow;
     window.testWorkerWindow = testWorkerWindow;
-    window.savePdfDocument = savePdfDocument;
-    window.addPdfPage = addPdfPage;
-    window.formatPdfBold = formatPdfBold;
-    window.formatPdfItalic = formatPdfItalic;
-    window.saveCurrentFile = saveCurrentFile;
     window.previewProject = previewProject;
-    window.publishSite = publishSite;
+    window.setMode = setMode;
+    window.quickAction = quickAction;
   </script>
 </body>
 </html>
