@@ -7,7 +7,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
   <script src="https://js.puter.com/v2/"></script>
   <style>
     :root {
@@ -224,7 +223,7 @@
     <h2>Carregando CodeHUB...</h2>
   </div>
 
-  <div id="app-content" style="display: none; height: 100vh; display: flex; flex-direction: column;">
+  <div id="app-content" style="height: 100vh; display: flex; flex-direction: column;">
     <div id="top-bar">
       <button onclick="window.location.href='index.html'">🏠 Início</button>
       <div class="project-type-indicator">
@@ -374,7 +373,7 @@
     let useSimpleEditor = true;
     let currentMode = 'edit';
     
-    // Dados do site (iguais ao exemplo)
+    // Dados do site
     let sitesSalvos = JSON.parse(localStorage.getItem('codehub_sites') || '[]');
     let hostingSubdomain = null;
     let hostingDirectory = null;
@@ -449,11 +448,19 @@
     }
 
     async function garantirLoginPuter() {
-      try { await puter.auth.getUser(); return true; } catch(e) {}
-      try { await puter.auth.signIn(); return true; } catch(e) { return false; }
+      try { 
+        await puter.auth.getUser(); 
+        return true; 
+      } catch(e) {}
+      
+      try { 
+        await puter.auth.signIn(); 
+        return true; 
+      } catch(e) { 
+        return false; 
+      }
     }
 
-    // Salvar site no localStorage (igual ao exemplo)
     function salvarSiteNoHistorico(subdomain, dir) {
       const site = {
         subdomain: subdomain,
@@ -481,7 +488,21 @@
       }
     }
 
-    // ============== PUBLISH SITE (igual ao exemplo) ==============
+    // ============== OBTER INDEX.HTML CORRETAMENTE ==============
+    function getIndexFile() {
+      // Procura pelo arquivo index.html nos arquivos do projeto
+      const fileKeys = Object.keys(files);
+      for (let key of fileKeys) {
+        const file = files[key];
+        const fileName = (file.name || file.originalName || key).toLowerCase();
+        if (fileName === 'index.html' || fileName.endsWith('/index.html')) {
+          return { key, file };
+        }
+      }
+      return null;
+    }
+
+    // ============== PUBLICAR SITE (CORRIGIDO) ==============
     async function publishSite() {
       if (!await garantirLoginPuter()) {
         addChatMessage('❌ Faça login no Puter primeiro!', 'system');
@@ -489,10 +510,11 @@
         return;
       }
       
-      const indexFile = Object.values(files).find(f => (f.name || f.originalName) === 'index.html');
-      if (!indexFile) { 
+      // CORREÇÃO: Verificar index.html corretamente
+      const indexData = getIndexFile();
+      if (!indexData) { 
         addChatMessage('❌ Crie um index.html primeiro!', 'system'); 
-        showNotification('Crie um index.html!', 'warning');
+        showNotification('Crie um index.html!', 'error');
         return; 
       }
       
@@ -517,22 +539,30 @@
         addChatMessage('🚀 Publicando site...', 'system');
         
         try {
-          // PASSO 1: Criar diretório (como no exemplo)
-          const dirName = `codehub_${currentProjectId.substring(0, 10)}_${Date.now().toString(36)}`;
-          addChatMessage(`📁 Diretório: ${dirName}`, 'system');
-          try { await puter.fs.mkdir(dirName); } catch {}
+          // PASSO 1: Criar diretório
+          const dirName = `codehub_${currentProjectId.substring(0, 8)}_${Date.now().toString(36)}`;
+          addChatMessage(`📁 Criando diretório: ${dirName}`, 'system');
+          try { await puter.fs.mkdir(dirName); } catch(e) { console.log('Diretório já existe ou erro:', e); }
           
           // PASSO 2: Salvar TODOS os arquivos
-          addChatMessage(`💾 Enviando arquivos...`, 'system');
+          addChatMessage(`💾 Enviando ${Object.keys(files).length} arquivos...`, 'system');
+          
           for (const [key, file] of Object.entries(files)) {
-            const fileName = file.originalName || file.name;
+            const fileName = file.originalName || file.name || key;
             let content = file.content || '';
-            if (fileName.endsWith('.html')) content = injectActivityScript(content);
-            await puter.fs.write(`${dirName}/${fileName}`, content);
+            
+            // Injeta script de atividade em HTML
+            if (fileName.toLowerCase().endsWith('.html') || fileName.toLowerCase().endsWith('.htm')) {
+              content = injectActivityScript(content);
+            }
+            
+            const filePath = `${dirName}/${fileName}`;
+            await puter.fs.write(filePath, content);
+            addChatMessage(`  ✅ ${fileName}`, 'system');
           }
           
-          // PASSO 3: Criar site (subdomain + dir)
-          const subdomain = puter.randName();
+          // PASSO 3: Criar subdomain (CORRIGIDO - sem usar randName)
+          const subdomain = 'site' + Math.floor(Math.random() * 100000);
           addChatMessage(`🌐 Criando: ${subdomain}.puter.site`, 'system');
           const site = await puter.hosting.create(subdomain, dirName);
           
@@ -542,7 +572,7 @@
           hostingUrl = `https://${site.subdomain}.puter.site`;
           siteCreated = true;
           
-          // Salvar no histórico local (como no exemplo)
+          // Salvar no histórico
           salvarSiteNoHistorico(site.subdomain, dirName);
           
           // Mostrar URL
@@ -552,16 +582,21 @@
           
           // Salvar no Firebase
           await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({
-            url: hostingUrl, subdomain: hostingSubdomain,
-            directory: hostingDirectory, publishedAt: new Date().toISOString()
+            url: hostingUrl, 
+            subdomain: hostingSubdomain,
+            directory: hostingDirectory, 
+            publishedAt: new Date().toISOString()
           });
           
-          addChatMessage(`✅ Publicado!<br>🔗 ${hostingUrl}`, 'ai');
+          addChatMessage(`✅ Publicado com sucesso!<br>🔗 <a href="${hostingUrl}" target="_blank">${hostingUrl}</a>`, 'ai');
           showNotification('✅ Site publicado!', 'success');
-          navigator.clipboard.writeText(hostingUrl).catch(() => {});
+          
+          // Copiar URL automaticamente
+          try { await navigator.clipboard.writeText(hostingUrl); } catch(e) {}
           
         } catch(e) {
-          addChatMessage(`❌ Erro: ${e.message}`, 'system');
+          console.error('Erro ao publicar:', e);
+          addChatMessage(`❌ Erro ao publicar: ${e.message}`, 'system');
           showNotification('Erro: ' + e.message, 'error');
         }
       };
@@ -576,55 +611,74 @@
       no.addEventListener('click', cancelHandler);
     }
 
-    // ============== UPDATE SITE (igual ao exemplo) ==============
+    // ============== ATUALIZAR SITE (CORRIGIDO) ==============
     async function updateSite() {
       if (!siteCreated) { 
         showNotification('Publique primeiro!', 'warning'); 
         return; 
       }
-      if (!await garantirLoginPuter()) return;
+      
+      if (!await garantirLoginPuter()) {
+        showNotification('Faça login no Puter!', 'error');
+        return;
+      }
       
       addChatMessage('🔄 Atualizando site...', 'system');
       
       try {
         // Salvar todos os arquivos novamente
-        for (const [key, file] of Object.entries(files)) {
-          const fileName = file.originalName || file.name;
+        const fileEntries = Object.entries(files);
+        addChatMessage(`💾 Atualizando ${fileEntries.length} arquivos...`, 'system');
+        
+        for (const [key, file] of fileEntries) {
+          const fileName = file.originalName || file.name || key;
           let content = file.content || '';
-          if (fileName.endsWith('.html')) content = injectActivityScript(content);
-          await puter.fs.write(`${hostingDirectory}/${fileName}`, content);
+          
+          if (fileName.toLowerCase().endsWith('.html') || fileName.toLowerCase().endsWith('.htm')) {
+            content = injectActivityScript(content);
+          }
+          
+          const filePath = `${hostingDirectory}/${fileName}`;
+          await puter.fs.write(filePath, content);
+          addChatMessage(`  ✅ ${fileName} atualizado`, 'system');
         }
         
-        // Atualizar (como no exemplo: update(subdomain, dir))
+        // ATUALIZAR site (CORRIGIDO - usando o método correto)
         await puter.hosting.update(hostingSubdomain, hostingDirectory);
         
-        addChatMessage(`✅ Site atualizado!<br>🔗 ${hostingUrl}`, 'ai');
+        addChatMessage(`✅ Site atualizado com sucesso!<br>🔗 <a href="${hostingUrl}" target="_blank">${hostingUrl}</a>`, 'ai');
         showNotification('✅ Site atualizado!', 'success');
         
       } catch(e) {
-        addChatMessage(`❌ Erro: ${e.message}`, 'system');
+        console.error('Erro ao atualizar:', e);
+        addChatMessage(`❌ Erro ao atualizar: ${e.message}`, 'system');
         showNotification('Erro: ' + e.message, 'error');
       }
     }
 
-    // ============== DELETE SITE (igual ao exemplo) ==============
+    // ============== DELETAR SITE ==============
     async function deleteSite() {
-      if (!siteCreated) { showNotification('Nenhum site para deletar', 'warning'); return; }
+      if (!siteCreated) { 
+        showNotification('Nenhum site para deletar', 'warning'); 
+        return; 
+      }
       
       if (!confirm(`⚠️ Deletar permanentemente:\n${hostingUrl}?`)) return;
-      if (!await garantirLoginPuter()) return;
+      if (!await garantirLoginPuter()) {
+        showNotification('Faça login no Puter!', 'error');
+        return;
+      }
       
       addChatMessage('🗑️ Deletando site...', 'system');
       
       try {
-        // Deletar (como no exemplo: hosting.delete(subdomain))
         await puter.hosting.delete(hostingSubdomain);
         
-        // Remover do histórico local
+        // Remover do histórico
         sitesSalvos = sitesSalvos.filter(s => s.subdomain !== hostingSubdomain);
         localStorage.setItem('codehub_sites', JSON.stringify(sitesSalvos));
         
-        addChatMessage(`✅ Site deletado!`, 'system');
+        addChatMessage(`✅ Site deletado com sucesso!`, 'system');
         showNotification('✅ Site deletado!', 'success');
         
         // Limpar
@@ -637,37 +691,35 @@
         updateSiteButtons();
         
         // Remover do Firebase
-        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).remove();
+        try {
+          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).remove();
+        } catch(e) {}
         
       } catch(e) {
+        console.error('Erro ao deletar:', e);
         addChatMessage(`❌ Erro: ${e.message}`, 'system');
         showNotification('Erro: ' + e.message, 'error');
       }
     }
 
-    // ============== HISTÓRICO (igual ao exemplo) ==============
+    // ============== HISTÓRICO ==============
     async function showHistory() {
       const modal = document.getElementById('historyModal');
       const list = document.getElementById('historyList');
       
       modal.style.display = 'flex';
       
-      // Buscar do Firebase + localStorage
-      const snapshot = await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).once('value');
-      const hostingData = snapshot.val();
-      
       let html = '<div style="max-height:50vh;overflow-y:auto;">';
       
       // Site atual
-      if (hostingData) {
+      if (siteCreated && hostingUrl) {
         html += `<div style="background:#2d2d2d;padding:12px;border-radius:8px;margin-bottom:10px;border-left:3px solid #4cc9f0;">
           <strong style="color:#4cc9f0;">📌 Site Atual</strong><br>
-          🔗 <a href="${hostingData.url}" target="_blank" style="color:#4895ef;">${hostingData.url}</a><br>
-          📁 Pasta: ${hostingData.directory}<br>
-          📅 ${new Date(hostingData.publishedAt).toLocaleString()}<br>
+          🔗 <a href="${hostingUrl}" target="_blank" style="color:#4895ef;">${hostingUrl}</a><br>
+          📁 Pasta: ${hostingDirectory}<br>
           <div style="margin-top:8px;">
-            <button onclick="updateSiteFromHistory()" style="background:#ff9800;padding:4px 10px;font-size:11px;">🔄 Atualizar</button>
-            <button onclick="deleteSiteFromHistory()" style="background:#f44336;padding:4px 10px;font-size:11px;">🗑️ Deletar</button>
+            <button onclick="updateSite();closeHistoryModal();" style="background:#ff9800;padding:4px 10px;font-size:11px;">🔄 Atualizar</button>
+            <button onclick="deleteSite();closeHistoryModal();" style="background:#f44336;padding:4px 10px;font-size:11px;">🗑️ Deletar</button>
           </div>
         </div>`;
       }
@@ -683,7 +735,7 @@
         });
       }
       
-      if (!hostingData && sitesSalvos.length === 0) {
+      if (!siteCreated && sitesSalvos.length === 0) {
         html += '<p style="color:#888;">📭 Nenhum site no histórico</p>';
       }
       
@@ -695,24 +747,14 @@
       document.getElementById('historyModal').style.display = 'none';
     }
 
-    async function updateSiteFromHistory() {
-      closeHistoryModal();
-      await updateSite();
-    }
-
-    async function deleteSiteFromHistory() {
-      closeHistoryModal();
-      await deleteSite();
-    }
-
     function injectActivityScript(html) {
       const script = `<script src="${ACTIVITY_SCRIPT_URL}?projectid=${currentProjectId}"><\/script>`;
       if (html.includes('</body>')) return html.replace('</body>', script + '\n</body>');
       if (html.includes('</html>')) return html.replace('</html>', script + '\n</html>');
-      return html + script;
+      return html + '\n' + script;
     }
 
-    // ============== WORKER WINDOW ==============
+    // ============== WORKER WINDOW (mantido igual) ==============
     function initWorkerWindow() {
       const win = document.getElementById('workerEditorWindow');
       const header = document.getElementById('workerEditorHeader');
@@ -815,48 +857,69 @@
 
     // ============== ARQUIVOS ==============
     async function saveCurrentFile() {
-      if (!currentFile) return;
+      if (!currentFile || !files[currentFile]) return;
+      
       files[currentFile].content = document.getElementById('simple-editor').value;
       files[currentFile].size = new Blob([files[currentFile].content]).size;
       files[currentFile].updatedAt = new Date().toISOString();
-      await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ files, updatedAt: new Date().toISOString() });
-      showNotification('Salvo! 💾', 'success');
+      
+      await db.ref(`projects/${currentUser.uid}/${currentProjectId}/files/${currentFile}`).update({
+        content: files[currentFile].content,
+        size: files[currentFile].size,
+        updatedAt: files[currentFile].updatedAt
+      });
+      
+      await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ 
+        updatedAt: new Date().toISOString() 
+      });
+      
+      document.getElementById('saveFileBtn').disabled = true;
+      showNotification('Arquivo salvo! 💾', 'success');
     }
 
     async function openFile(fileKey) {
       if (!files[fileKey]) return;
       currentFile = fileKey;
       document.getElementById('simple-editor').value = files[fileKey].content || '';
+      document.getElementById('saveFileBtn').disabled = true;
       updateTabs();
     }
 
     function updateTabs() {
       const tabs = document.getElementById('tabs');
       tabs.innerHTML = '';
+      
       Object.keys(files).forEach(key => {
+        const file = files[key];
+        const fileName = file.name || file.originalName || key;
         const tab = document.createElement('button');
         tab.className = `tab-btn ${key === currentFile ? 'active' : ''}`;
         tab.onclick = () => openFile(key);
-        tab.innerHTML = `${files[key].name || files[key].originalName || 'arquivo'} <button class="close-tab-btn" onclick="event.stopPropagation();closeFile('${key}')">&times;</button>`;
+        tab.innerHTML = `${fileName} <button class="close-tab-btn" onclick="event.stopPropagation();closeFile('${key}')">&times;</button>`;
         tabs.appendChild(tab);
       });
     }
 
     async function closeFile(fileKey) {
       if (Object.keys(files).length <= 1) return;
+      
       delete files[fileKey];
-      await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ files, updatedAt: new Date().toISOString() });
-      if (fileKey === currentFile) await openFile(Object.keys(files)[0]);
+      await db.ref(`projects/${currentUser.uid}/${currentProjectId}/files/${fileKey}`).remove();
+      
+      if (fileKey === currentFile) {
+        const firstKey = Object.keys(files)[0];
+        if (firstKey) await openFile(firstKey);
+      }
       updateTabs();
     }
 
     function previewProject() {
-      const index = Object.values(files).find(f => (f.name || f.originalName) === 'index.html');
-      if (index?.content) {
-        const blob = new Blob([index.content], { type: 'text/html' });
+      const indexData = getIndexFile();
+      if (indexData?.file?.content) {
+        const blob = new Blob([indexData.file.content], { type: 'text/html' });
         window.open(URL.createObjectURL(blob), '_blank');
       } else {
-        showNotification('Crie um index.html', 'warning');
+        showNotification('Crie um index.html primeiro', 'warning');
       }
     }
 
@@ -866,12 +929,21 @@
       switch(action) {
         case 'criar-worker': input.value = 'Crie um worker chamado api com rota GET /api/dados.sc'; break;
         case 'editar-worker': input.value = currentWorkerData ? `Edite o worker ${currentWorkerData.name}` : 'Edite o worker'; break;
-        case 'explicar-worker': if (currentWorkerData) addChatMessage(`📦 ${currentWorkerData.name}: ${currentWorkerData.code?.substring(0, 300)}`, 'ai'); break;
+        case 'explicar-worker': 
+          if (currentWorkerData) {
+            addChatMessage(`📦 Worker: ${currentWorkerData.name}<br>Rota: ${currentWorkerData.route || 'N/A'}<br>Código: ${currentWorkerData.code?.substring(0, 300) || 'N/A'}`, 'ai');
+          }
+          break;
         case 'listar-workers': 
-          const workerSnap = db.ref(`workers/${currentUser.uid}/${currentProjectId}`).once('value').then(s => {
+          db.ref(`workers/${currentUser.uid}/${currentProjectId}`).once('value').then(s => {
             const workers = s.val();
-            if (workers) Object.entries(workers).forEach(([id, w]) => addChatMessage(`📦 ${w.name} | ${w.route}`, 'ai'));
-            else addChatMessage('📭 Nenhum worker', 'system');
+            if (workers) {
+              Object.entries(workers).forEach(([id, w]) => {
+                addChatMessage(`📦 ${w.name} | ${w.route || 'N/A'} | ${w.url || 'Não publicado'}`, 'ai');
+              });
+            } else {
+              addChatMessage('📭 Nenhum worker criado ainda', 'system');
+            }
           });
           break;
       }
@@ -888,6 +960,7 @@
     async function sendToAI() {
       const msg = document.getElementById('chatInput').value.trim();
       if (!msg) return;
+      
       addChatMessage(msg, 'user');
       document.getElementById('chatInput').value = '';
       
@@ -902,12 +975,19 @@
 
     // ============== INIT ==============
     auth.onAuthStateChanged(async user => {
-      if (!user) { window.location.href = 'auth.html'; return; }
+      if (!user) { 
+        window.location.href = 'auth.html'; 
+        return; 
+      }
+      
       currentUser = user;
       document.getElementById('user-name').textContent = user.displayName || user.email?.split('@')[0] || 'Usuário';
       
       const savedZoom = localStorage.getItem('codehub_zoom');
-      if (savedZoom) { currentZoom = parseFloat(savedZoom); document.body.style.zoom = currentZoom; }
+      if (savedZoom) { 
+        currentZoom = parseFloat(savedZoom); 
+        document.body.style.zoom = currentZoom; 
+      }
       document.getElementById('zoomLevel').textContent = Math.round(currentZoom * 100) + '%';
       
       const savedMode = localStorage.getItem('codehub_mode');
@@ -916,10 +996,12 @@
       if (currentProjectId) {
         const snapshot = await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).once('value');
         const data = snapshot.val();
+        
         if (data) {
           document.getElementById('project-name').value = data.name || '';
           files = data.files || {};
           
+          // Carregar dados de hosting
           if (data.hosting?.url) {
             hostingUrl = data.hosting.url;
             hostingSubdomain = data.hosting.subdomain;
@@ -930,16 +1012,24 @@
           }
           updateSiteButtons();
           
+          // Carregar workers
           const workerSnap = await db.ref(`workers/${currentUser.uid}/${currentProjectId}`).once('value');
           const workers = workerSnap.val();
           if (workers) {
             const first = Object.entries(workers)[0];
-            if (first) { currentWorkerData = { id: first[0], ...first[1] }; document.getElementById('workerCode').value = currentWorkerData.code || ''; }
+            if (first) { 
+              currentWorkerData = { id: first[0], ...first[1] }; 
+              document.getElementById('workerCode').value = currentWorkerData.code || ''; 
+            }
           }
           
+          // Abrir primeiro arquivo
           const keys = Object.keys(files);
           if (keys.length > 0) await openFile(keys[0]);
           updateTabs();
+          
+          // Ativar botão salvar
+          document.getElementById('saveFileBtn').disabled = false;
         }
       }
       
@@ -953,40 +1043,66 @@
       }, 300);
     });
 
-    // Event listeners
+    // ============== EVENT LISTENERS ==============
     document.getElementById('saveFileBtn').addEventListener('click', saveCurrentFile);
     document.getElementById('previewBtn').addEventListener('click', previewProject);
     document.getElementById('sitePublishBtn').addEventListener('click', publishSite);
     document.getElementById('siteDeleteBtn').addEventListener('click', deleteSite);
     document.getElementById('siteHistoryBtn').addEventListener('click', showHistory);
     document.getElementById('logoutBtn').addEventListener('click', () => auth.signOut().then(() => window.location.href = 'auth.html'));
-    document.getElementById('openUrlTopBtn')?.addEventListener('click', () => { if (hostingUrl) window.open(hostingUrl, '_blank'); });
-    document.getElementById('copyUrlTopBtn')?.addEventListener('click', () => { 
-      if (hostingUrl) { navigator.clipboard.writeText(hostingUrl); showNotification('📋 URL copiada!', 'success'); }
+    
+    document.getElementById('openUrlTopBtn')?.addEventListener('click', () => { 
+      if (hostingUrl) window.open(hostingUrl, '_blank'); 
     });
+    
+    document.getElementById('copyUrlTopBtn')?.addEventListener('click', () => { 
+      if (hostingUrl) { 
+        navigator.clipboard.writeText(hostingUrl); 
+        showNotification('📋 URL copiada!', 'success'); 
+      }
+    });
+    
     document.getElementById('project-name').addEventListener('blur', async function() {
       const name = this.value.trim();
-      if (name && currentProjectId) await db.ref(`projects/${currentUser.uid}/${currentProjectId}/name`).set(name);
+      if (name && currentProjectId && currentUser) {
+        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/name`).set(name);
+      }
     });
-    document.getElementById('sendChatBtn').addEventListener('click', sendToAI);
-    document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendToAI(); } });
     
-    // Resize
+    document.getElementById('sendChatBtn').addEventListener('click', sendToAI);
+    document.getElementById('chatInput').addEventListener('keydown', e => { 
+      if (e.key === 'Enter' && !e.shiftKey) { 
+        e.preventDefault(); 
+        sendToAI(); 
+      } 
+    });
+    
+    // Detectar mudanças no editor
+    document.getElementById('simple-editor').addEventListener('input', function() {
+      document.getElementById('saveFileBtn').disabled = false;
+    });
+    
+    // Resize handle
     const handle = document.getElementById('resizeHandle');
     let isResizing = false;
     handle.addEventListener('mousedown', (e) => { isResizing = true; e.preventDefault(); });
     document.addEventListener('mousemove', (e) => {
       if (!isResizing) return;
+      const sidebar = document.getElementById('ai-sidebar');
       const w = window.innerWidth - e.clientX;
-      if (w >= 250 && w <= 600) document.getElementById('ai-sidebar').style.width = w + 'px';
+      if (w >= 250 && w <= 600) sidebar.style.width = w + 'px';
     });
     document.addEventListener('mouseup', () => { isResizing = false; });
     
-    // Fechar modais
-    document.getElementById('publishModal').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
-    document.getElementById('historyModal').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
+    // Fechar modais ao clicar fora
+    document.getElementById('publishModal').addEventListener('click', function(e) { 
+      if (e.target === this) this.style.display = 'none'; 
+    });
+    document.getElementById('historyModal').addEventListener('click', function(e) { 
+      if (e.target === this) this.style.display = 'none'; 
+    });
 
-    // Expor funções
+    // Expor funções globalmente
     window.contextAction = contextAction;
     window.changeZoom = changeZoom;
     window.resetZoom = resetZoom;
@@ -997,8 +1113,6 @@
     window.deleteSite = deleteSite;
     window.showHistory = showHistory;
     window.closeHistoryModal = closeHistoryModal;
-    window.updateSiteFromHistory = updateSiteFromHistory;
-    window.deleteSiteFromHistory = deleteSiteFromHistory;
     window.saveWorkerCode = saveWorkerCode;
     window.publishWorker = publishWorker;
     window.openWorkerWindow = openWorkerWindow;
