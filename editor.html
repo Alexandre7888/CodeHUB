@@ -562,91 +562,91 @@
       }
     }
 
-    async function executarAtualizacao() {
-      logInfo('🔄 EXECUTANDO ATUALIZAÇÃO...');
-      try {
-        if (!hostingDirectory || !hostingSubdomain) {
-          logError('Dados do site incompletos');
-          showNotification('Erro: dados do site incompletos', 'error');
-          return;
-        }
-        
-        logInfo(`Diretório: ${hostingDirectory}, Subdomain: ${hostingSubdomain}`);
-        
-        // Salvar arquivos atualizados
-        let count = 0;
-        for (const [key, file] of Object.entries(files)) {
-          const fileName = file.originalName || file.name;
-          const content = file.content || '';
-          logInfo(`Atualizando: ${hostingDirectory}/${fileName} (${content.length} bytes)`);
-          await puter.fs.write(`${hostingDirectory}/${fileName}`, content);
-          count++;
-        }
-        logSuccess(`${count} arquivos atualizados`);
-        
-        // (3) Atualizar site - CORRIGIDO: usando hostingSubdomain e hostingDirectory
-        logInfo(`Chamando puter.hosting.update(${hostingSubdomain}, ${hostingDirectory})`);
-        await atualizarSite(hostingSubdomain, hostingDirectory);
-        
-        // Firebase
-        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).update({
-          updatedAt: new Date().toISOString()
-        });
-        
-        logSuccess(`ATUALIZADO! URL: ${hostingUrl}`);
-        showNotification('✅ Site atualizado!', 'success');
-        
-      } catch(e) {
-        logError('Falha na atualização: ' + e.message);
-        console.error(e);
-        showNotification('Erro ao atualizar: ' + e.message, 'error');
-      }
+async function executarAtualizacao() {
+  logInfo('🔄 EXECUTANDO ATUALIZAÇÃO...');
+  try {
+    if (!hostingDirectory || !hostingSubdomain) {
+      logError('Dados do site incompletos');
+      showNotification('Erro: dados do site incompletos', 'error');
+      return;
     }
+    
+    logInfo(`Diretório: ${hostingDirectory}, Subdomain: ${hostingSubdomain}`);
+    
+    // Salvar arquivos atualizados
+    let count = 0;
+    for (const [key, file] of Object.entries(files)) {
+      const fileName = file.originalName || file.name;
+      const content = file.content || '';
+      logInfo(`Atualizando: ${hostingDirectory}/${fileName} (${content.length} bytes)`);
+      await puter.fs.write(`${hostingDirectory}/${fileName}`, content);
+      count++;
+    }
+    logSuccess(`${count} arquivos atualizados`);
+    
+    // (3) Atualizar site - usando hostingSubdomain e hostingDirectory
+    logInfo(`Chamando puter.hosting.update(${hostingSubdomain}, ${hostingDirectory})`);
+    await puter.hosting.update(hostingSubdomain, hostingDirectory);
+    
+    // Firebase
+    await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).update({
+      updatedAt: new Date().toISOString()
+    });
+    
+    logSuccess(`ATUALIZADO! URL: ${hostingUrl}`);
+    showNotification('✅ Site atualizado!', 'success');
+    
+  } catch(e) {
+    logError('Falha na atualização: ' + e.message);
+    console.error(e);
+    showNotification('Erro ao atualizar: ' + e.message, 'error');
+  }
+}
 
-    // ============ DELETE SITE ============
-    async function deleteSite() {
-      if (!siteCreated) { 
-        showNotification('Nenhum site para deletar', 'info'); 
-        return; 
+// ============ DELETE SITE ============
+async function deleteSite() {
+  if (!siteCreated) { 
+    showNotification('Nenhum site para deletar', 'info'); 
+    return; 
+  }
+  
+  showModal('🗑️ Deletar Site?', `Tem certeza que deseja deletar permanentemente:\n${hostingUrl}?`, async () => {
+    logInfo('🗑️ EXECUTANDO DELEÇÃO...');
+    try {
+      await garantirLogin();
+      
+      // (2) Deletar site - CORRIGIDO: usando hostingSubdomain (não updatedSite)
+      await puter.hosting.delete(hostingSubdomain);
+      
+      // (3) Tentar obter site (deve falhar)
+      logInfo('Verificando se site foi deletado...');
+      try {
+        await puter.hosting.get(hostingSubdomain);
+        logError('Site ainda existe! (inesperado)');
+      } catch(e) {
+        logSuccess('Site confirmado como deletado');
       }
       
-      showModal('🗑️ Deletar Site?', `Tem certeza que deseja deletar permanentemente:\n${hostingUrl}?`, async () => {
-        logInfo('🗑️ EXECUTANDO DELEÇÃO...');
-        try {
-          await garantirLogin();
-          
-          // (2) Deletar site
-          await deletarSite(hostingSubdomain);
-          
-          // (3) Tentar obter site (deve falhar)
-          logInfo('Verificando se site foi deletado...');
-          try {
-            await obterSite(hostingSubdomain);
-            logError('Site ainda existe! (inesperado)');
-          } catch(e) {
-            logSuccess('Site confirmado como deletado');
-          }
-          
-          sitesSalvos = sitesSalvos.filter(s => s.subdomain !== hostingSubdomain);
-          localStorage.setItem('codehub_sites', JSON.stringify(sitesSalvos));
-          
-          hostingSubdomain = null; 
-          hostingDirectory = null; 
-          hostingUrl = null; 
-          siteCreated = false;
-          
-          document.getElementById('urlPanelTop').style.display = 'none';
-          updateSiteButtons();
-          
-          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).remove();
-          showNotification('✅ Site deletado!', 'success');
-          
-        } catch(e) {
-          logError('Falha ao deletar: ' + e.message);
-          showNotification('Erro: ' + e.message, 'error');
-        }
-      });
+      sitesSalvos = sitesSalvos.filter(s => s.subdomain !== hostingSubdomain);
+      localStorage.setItem('codehub_sites', JSON.stringify(sitesSalvos));
+      
+      hostingSubdomain = null; 
+      hostingDirectory = null; 
+      hostingUrl = null; 
+      siteCreated = false;
+      
+      document.getElementById('urlPanelTop').style.display = 'none';
+      updateSiteButtons();
+      
+      await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).remove();
+      showNotification('✅ Site deletado!', 'success');
+      
+    } catch(e) {
+      logError('Falha ao deletar: ' + e.message);
+      showNotification('Erro: ' + e.message, 'error');
     }
+  });
+}
 
     // ============ HISTÓRICO ============
     async function showHistory() {
