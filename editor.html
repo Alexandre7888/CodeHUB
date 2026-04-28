@@ -7,6 +7,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
   <script src="https://js.puter.com/v2/"></script>
   <style>
     :root {
@@ -24,7 +25,9 @@
       --accent-red: #f44336;
       --accent-purple: #9c27b0;
     }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    
     body { 
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
       background: var(--bg-primary); 
@@ -35,6 +38,7 @@
       overflow: hidden;
       zoom: var(--zoom-level);
     }
+    
     #loading-screen { 
       position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
       background: radial-gradient(circle at center, #1e293b, #0f172a); 
@@ -43,6 +47,7 @@
     }
     .loader { width: 80px; animation: spin 1s linear infinite; border-radius: 50%; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
     #top-bar { 
       display: flex; padding: 8px 12px; background: var(--bg-primary); 
       align-items: center; border-bottom: 1px solid var(--border-color); 
@@ -58,14 +63,17 @@
     }
     button:hover { filter: brightness(1.2); }
     button:disabled { background: #555; cursor: not-allowed; }
+    
     #saveFileBtn { background: var(--accent-cyan); }
     #previewBtn { background: #4895ef; }
     #sitePublishBtn { background: var(--accent-green); }
     #siteDeleteBtn { background: var(--accent-red); display: none; }
     #siteHistoryBtn { background: #764ba2; }
     .logout-btn { background: var(--accent-red); }
+    
     #storage-info { background: #333; padding: 4px 10px; border-radius: 5px; font-size: 11px; margin-left: 10px; }
     #user-info { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    
     .url-panel-top { 
       display: flex; align-items: center; gap: 8px; background: var(--bg-tertiary); 
       padding: 4px 10px; border-radius: 6px; margin-left: 10px; font-size: 11px; 
@@ -76,16 +84,19 @@
       font-family: monospace; font-size: 10px; width: 250px; 
     }
     .url-panel-top button { padding: 4px 8px; font-size: 11px; }
+    
     .zoom-controls {
       display: flex; align-items: center; gap: 5px; margin-left: 10px;
       background: var(--bg-tertiary); padding: 4px 8px; border-radius: 6px;
     }
     .zoom-controls button { padding: 2px 8px; font-size: 14px; background: var(--bg-secondary); border-radius: 4px; min-width: 28px; }
     .zoom-controls span { font-size: 11px; min-width: 40px; text-align: center; color: var(--accent-cyan); }
+    
     .project-type-indicator {
       background: var(--bg-tertiary); padding: 4px 10px; border-radius: 20px;
       font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 5px;
     }
+    
     .main-container { display: flex; flex: 1; overflow: hidden; }
     #editor-container { flex: 2; display: flex; flex-direction: column; overflow: hidden; }
     #tabs { 
@@ -107,6 +118,7 @@
       font-family: 'Consolas', monospace; font-size: 13px; padding: 10px; 
       border: none; resize: none; outline: none; 
     }
+    
     #ai-sidebar { 
       width: 420px; background: var(--bg-secondary); border-left: 1px solid var(--border-color); 
       display: flex; flex-direction: column; position: relative; min-width: 250px; max-width: 600px; 
@@ -116,6 +128,7 @@
       cursor: ew-resize; background: transparent; z-index: 100; 
     }
     .resize-handle:hover { background: var(--accent-cyan); }
+    
     .sidebar-header { padding: 12px; background: var(--bg-tertiary); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
     .chat-messages { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
     .message { padding: 10px 14px; border-radius: 12px; max-width: 95%; word-wrap: break-word; font-size: 13px; animation: fadeIn 0.3s ease; }
@@ -124,6 +137,7 @@
     .message.ai { background: #3d3d3d; align-self: flex-start; border-bottom-left-radius: 4px; white-space: pre-wrap; }
     .message.ai.streaming { border-left: 3px solid var(--accent-purple); }
     .message.system { background: var(--accent-orange); align-self: center; font-size: 12px; border-radius: 20px; }
+    
     .chat-controls { padding: 12px; border-top: 1px solid var(--border-color); background: var(--bg-secondary); }
     .mode-toggle { display: flex; gap: 10px; margin-bottom: 10px; justify-content: center; }
     .mode-toggle-btn { flex: 1; background: #333; padding: 8px; font-size: 13px; border-radius: 8px; }
@@ -136,12 +150,15 @@
       font-family: inherit; font-size: 13px; 
     }
     .chat-input-wrapper button { background: var(--accent-purple); padding: 10px 20px; border-radius: 8px; }
+    
     .quick-actions { 
       display: flex; gap: 5px; flex-wrap: wrap; padding: 8px 12px; 
       background: var(--bg-primary); border-top: 1px solid var(--border-color); 
     }
     .quick-actions button { background: #333; padding: 4px 8px; font-size: 10px; border-radius: 12px; }
     .quick-actions button:hover { background: var(--accent-blue); }
+    
+    /* Worker Editor Window */
     .worker-editor-window {
       position: fixed; background: var(--bg-secondary); border: 2px solid var(--accent-cyan);
       border-radius: 12px; z-index: 500; min-width: 350px; min-height: 250px;
@@ -173,6 +190,7 @@
     .worker-editor-body-window .worker-buttons button { padding: 6px 12px; font-size: 11px; }
     .worker-editor-window.minimized { min-height: auto !important; height: auto !important; resize: none; }
     .worker-editor-window.minimized .worker-editor-body-window { display: none; }
+    
     .context-menu {
       position: fixed; background: var(--bg-tertiary); border: 1px solid var(--border-color);
       border-radius: 10px; padding: 8px 0; z-index: 10000; min-width: 200px;
@@ -185,14 +203,17 @@
     .context-menu .menu-item:hover { background: var(--accent-blue); }
     .context-menu .menu-divider { height: 1px; background: var(--border-color); margin: 6px 0; }
     .context-menu .menu-shortcut { margin-left: auto; color: var(--text-secondary); font-size: 11px; }
+    
     .notification { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; color: white; z-index: 1000; animation: slideIn 0.3s; font-size: 13px; }
     .notification.success { background: #4caf50; }
     .notification.error { background: var(--accent-red); }
     .notification.info { background: #2196f3; }
     @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    
     .publish-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 10001; }
     .publish-modal-content { background: var(--bg-tertiary); border-radius: 16px; padding: 30px; max-width: 500px; width: 90%; text-align: center; }
     .publish-modal-buttons { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
+    
     .activities-panel { background: var(--bg-primary); border-top: 1px solid var(--border-color); padding: 8px; max-height: 120px; overflow-y: auto; }
     .activities-header { font-size: 11px; color: var(--accent-cyan); margin-bottom: 5px; }
   </style>
@@ -353,11 +374,14 @@
     let useSimpleEditor = true;
     let currentMode = 'edit';
     
+    // Dados do site (iguais ao exemplo)
     let sitesSalvos = JSON.parse(localStorage.getItem('codehub_sites') || '[]');
     let hostingSubdomain = null;
     let hostingDirectory = null;
     let hostingUrl = null;
     let siteCreated = false;
+    
+    // Worker
     let currentWorkerData = null;
 
     const ACTIVITY_SCRIPT_URL = "https://code.codehub.ct.ws/atividade.js";
@@ -383,6 +407,14 @@
         menu.style.top = Math.min(e.clientY, window.innerHeight - 300) + 'px';
       });
       document.addEventListener('click', (e) => { if (!menu.contains(e.target)) menu.style.display = 'none'; });
+      document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey) {
+          if (e.key === 's') { e.preventDefault(); saveCurrentFile(); }
+          if (e.key === '=' || e.key === '+') { e.preventDefault(); changeZoom(0.1); }
+          if (e.key === '-') { e.preventDefault(); changeZoom(-0.1); }
+          if (e.key === '0') { e.preventDefault(); resetZoom(); }
+        }
+      });
     }
 
     function contextAction(action) {
@@ -418,12 +450,10 @@
 
     async function garantirLoginPuter() {
       try { await puter.auth.getUser(); return true; } catch(e) {}
-      try { await puter.auth.signIn(); return true; } catch(e) { 
-        showNotification('Login no Puter necessário!', 'error');
-        return false; 
-      }
+      try { await puter.auth.signIn(); return true; } catch(e) { return false; }
     }
 
+    // Salvar site no localStorage (igual ao exemplo)
     function salvarSiteNoHistorico(subdomain, dir) {
       const site = {
         subdomain: subdomain,
@@ -451,34 +481,15 @@
       }
     }
 
-    // CORRIGIDO: Buscar index.html corretamente
-    function getIndexFile() {
-      for (let key of Object.keys(files)) {
-        const f = files[key];
-        const name = (f.name || f.originalName || key).toLowerCase();
-        if (name === 'index.html' || name.endsWith('/index.html')) {
-          return f;
-        }
-      }
-      return null;
-    }
-
-    // CORRIGIDO: Inject script sem escape quebrado
-    function injectActivityScript(html) {
-      const scriptTag = '<script src="' + ACTIVITY_SCRIPT_URL + '?projectid=' + currentProjectId + '"></' + 'script>';
-      if (html.includes('</body>')) return html.replace('</body>', scriptTag + '\n</body>');
-      if (html.includes('</html>')) return html.replace('</html>', scriptTag + '\n</html>');
-      return html + '\n' + scriptTag;
-    }
-
-    // ============== PUBLISH SITE (CORRIGIDO: sem randName) ==============
+    // ============== PUBLISH SITE (igual ao exemplo) ==============
     async function publishSite() {
       if (!await garantirLoginPuter()) {
         addChatMessage('❌ Faça login no Puter primeiro!', 'system');
+        showNotification('Faça login no Puter!', 'error');
         return;
       }
       
-      const indexFile = getIndexFile();
+      const indexFile = Object.values(files).find(f => (f.name || f.originalName) === 'index.html');
       if (!indexFile) { 
         addChatMessage('❌ Crie um index.html primeiro!', 'system'); 
         showNotification('Crie um index.html!', 'warning');
@@ -486,6 +497,7 @@
       }
       
       if (siteCreated) {
+        // Já tem site = ATUALIZAR
         await updateSite();
         return;
       }
@@ -505,51 +517,52 @@
         addChatMessage('🚀 Publicando site...', 'system');
         
         try {
-          const dirName = `codehub_${currentProjectId ? currentProjectId.substring(0, 8) : 'proj'}_${Date.now().toString(36)}`;
+          // PASSO 1: Criar diretório (como no exemplo)
+          const dirName = `codehub_${currentProjectId.substring(0, 10)}_${Date.now().toString(36)}`;
           addChatMessage(`📁 Diretório: ${dirName}`, 'system');
-          try { await puter.fs.mkdir(dirName); } catch(e) {}
+          try { await puter.fs.mkdir(dirName); } catch {}
           
+          // PASSO 2: Salvar TODOS os arquivos
           addChatMessage(`💾 Enviando arquivos...`, 'system');
           for (const [key, file] of Object.entries(files)) {
-            const fileName = file.originalName || file.name || key;
+            const fileName = file.originalName || file.name;
             let content = file.content || '';
-            if (fileName.toLowerCase().endsWith('.html')) {
-              content = injectActivityScript(content);
-            }
+            if (fileName.endsWith('.html')) content = injectActivityScript(content);
             await puter.fs.write(`${dirName}/${fileName}`, content);
           }
           
-          // CORRIGIDO: Gera subdomain manualmente (API v2 não tem randName)
-          const subdomain = 'site' + Math.floor(Math.random() * 100000);
+          // PASSO 3: Criar site (subdomain + dir)
+          const subdomain = puter.randName();
           addChatMessage(`🌐 Criando: ${subdomain}.puter.site`, 'system');
           const site = await puter.hosting.create(subdomain, dirName);
           
+          // Salvar dados
           hostingSubdomain = site.subdomain;
           hostingDirectory = dirName;
           hostingUrl = `https://${site.subdomain}.puter.site`;
           siteCreated = true;
           
+          // Salvar no histórico local (como no exemplo)
           salvarSiteNoHistorico(site.subdomain, dirName);
           
+          // Mostrar URL
           document.getElementById('fileUrlTop').value = hostingUrl;
           document.getElementById('urlPanelTop').style.display = 'flex';
           updateSiteButtons();
           
-          if (currentUser) {
-            await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({
-              url: hostingUrl, subdomain: hostingSubdomain,
-              directory: hostingDirectory, publishedAt: new Date().toISOString()
-            });
-          }
+          // Salvar no Firebase
+          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({
+            url: hostingUrl, subdomain: hostingSubdomain,
+            directory: hostingDirectory, publishedAt: new Date().toISOString()
+          });
           
           addChatMessage(`✅ Publicado!<br>🔗 ${hostingUrl}`, 'ai');
           showNotification('✅ Site publicado!', 'success');
           navigator.clipboard.writeText(hostingUrl).catch(() => {});
           
         } catch(e) {
-          console.error('Erro publicar:', e);
-          addChatMessage(`❌ Erro: ${e.message || 'Erro desconhecido'}`, 'system');
-          showNotification('Erro: ' + (e.message || 'Erro desconhecido'), 'error');
+          addChatMessage(`❌ Erro: ${e.message}`, 'system');
+          showNotification('Erro: ' + e.message, 'error');
         }
       };
       
@@ -563,7 +576,7 @@
       no.addEventListener('click', cancelHandler);
     }
 
-    // ============== UPDATE SITE (CORRIGIDO) ==============
+    // ============== UPDATE SITE (igual ao exemplo) ==============
     async function updateSite() {
       if (!siteCreated) { 
         showNotification('Publique primeiro!', 'warning'); 
@@ -574,29 +587,27 @@
       addChatMessage('🔄 Atualizando site...', 'system');
       
       try {
+        // Salvar todos os arquivos novamente
         for (const [key, file] of Object.entries(files)) {
-          const fileName = file.originalName || file.name || key;
+          const fileName = file.originalName || file.name;
           let content = file.content || '';
-          if (fileName.toLowerCase().endsWith('.html')) {
-            content = injectActivityScript(content);
-          }
+          if (fileName.endsWith('.html')) content = injectActivityScript(content);
           await puter.fs.write(`${hostingDirectory}/${fileName}`, content);
         }
         
-        // CORRIGIDO: update com subdomain e diretório
+        // Atualizar (como no exemplo: update(subdomain, dir))
         await puter.hosting.update(hostingSubdomain, hostingDirectory);
         
         addChatMessage(`✅ Site atualizado!<br>🔗 ${hostingUrl}`, 'ai');
         showNotification('✅ Site atualizado!', 'success');
         
       } catch(e) {
-        console.error('Erro atualizar:', e);
-        addChatMessage(`❌ Erro: ${e.message || 'Erro desconhecido'}`, 'system');
-        showNotification('Erro: ' + (e.message || 'Erro desconhecido'), 'error');
+        addChatMessage(`❌ Erro: ${e.message}`, 'system');
+        showNotification('Erro: ' + e.message, 'error');
       }
     }
 
-    // ============== DELETE SITE (CORRIGIDO) ==============
+    // ============== DELETE SITE (igual ao exemplo) ==============
     async function deleteSite() {
       if (!siteCreated) { showNotification('Nenhum site para deletar', 'warning'); return; }
       
@@ -606,14 +617,17 @@
       addChatMessage('🗑️ Deletando site...', 'system');
       
       try {
+        // Deletar (como no exemplo: hosting.delete(subdomain))
         await puter.hosting.delete(hostingSubdomain);
         
+        // Remover do histórico local
         sitesSalvos = sitesSalvos.filter(s => s.subdomain !== hostingSubdomain);
         localStorage.setItem('codehub_sites', JSON.stringify(sitesSalvos));
         
         addChatMessage(`✅ Site deletado!`, 'system');
         showNotification('✅ Site deletado!', 'success');
         
+        // Limpar
         hostingSubdomain = null;
         hostingDirectory = null;
         hostingUrl = null;
@@ -622,45 +636,43 @@
         document.getElementById('urlPanelTop').style.display = 'none';
         updateSiteButtons();
         
-        if (currentUser) {
-          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).remove();
-        }
-        
-        // Verifica se foi deletado (como no exemplo oficial)
-        try {
-          await puter.hosting.get(hostingSubdomain);
-        } catch(e) {
-          addChatMessage('✅ Confirmado: site removido do Puter', 'system');
-        }
+        // Remover do Firebase
+        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).remove();
         
       } catch(e) {
-        console.error('Erro deletar:', e);
-        addChatMessage(`❌ Erro: ${e.message || 'Erro desconhecido'}`, 'system');
-        showNotification('Erro: ' + (e.message || 'Erro desconhecido'), 'error');
+        addChatMessage(`❌ Erro: ${e.message}`, 'system');
+        showNotification('Erro: ' + e.message, 'error');
       }
     }
 
-    // ============== HISTÓRICO (CORRIGIDO: verificação currentUser) ==============
+    // ============== HISTÓRICO (igual ao exemplo) ==============
     async function showHistory() {
       const modal = document.getElementById('historyModal');
       const list = document.getElementById('historyList');
       
       modal.style.display = 'flex';
       
+      // Buscar do Firebase + localStorage
+      const snapshot = await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).once('value');
+      const hostingData = snapshot.val();
+      
       let html = '<div style="max-height:50vh;overflow-y:auto;">';
       
-      if (currentUser && siteCreated && hostingUrl) {
+      // Site atual
+      if (hostingData) {
         html += `<div style="background:#2d2d2d;padding:12px;border-radius:8px;margin-bottom:10px;border-left:3px solid #4cc9f0;">
           <strong style="color:#4cc9f0;">📌 Site Atual</strong><br>
-          🔗 <a href="${hostingUrl}" target="_blank" style="color:#4895ef;">${hostingUrl}</a><br>
-          📁 Pasta: ${hostingDirectory}<br>
+          🔗 <a href="${hostingData.url}" target="_blank" style="color:#4895ef;">${hostingData.url}</a><br>
+          📁 Pasta: ${hostingData.directory}<br>
+          📅 ${new Date(hostingData.publishedAt).toLocaleString()}<br>
           <div style="margin-top:8px;">
-            <button onclick="window.updateSite();window.closeHistoryModal();" style="background:#ff9800;padding:4px 10px;font-size:11px;">🔄 Atualizar</button>
-            <button onclick="window.deleteSite();window.closeHistoryModal();" style="background:#f44336;padding:4px 10px;font-size:11px;">🗑️ Deletar</button>
+            <button onclick="updateSiteFromHistory()" style="background:#ff9800;padding:4px 10px;font-size:11px;">🔄 Atualizar</button>
+            <button onclick="deleteSiteFromHistory()" style="background:#f44336;padding:4px 10px;font-size:11px;">🗑️ Deletar</button>
           </div>
         </div>`;
       }
       
+      // Histórico local
       if (sitesSalvos.length > 0) {
         html += '<strong style="color:#ff9800;">📋 Histórico Local:</strong>';
         sitesSalvos.forEach((site, i) => {
@@ -671,7 +683,7 @@
         });
       }
       
-      if (!siteCreated && sitesSalvos.length === 0) {
+      if (!hostingData && sitesSalvos.length === 0) {
         html += '<p style="color:#888;">📭 Nenhum site no histórico</p>';
       }
       
@@ -681,6 +693,23 @@
 
     function closeHistoryModal() {
       document.getElementById('historyModal').style.display = 'none';
+    }
+
+    async function updateSiteFromHistory() {
+      closeHistoryModal();
+      await updateSite();
+    }
+
+    async function deleteSiteFromHistory() {
+      closeHistoryModal();
+      await deleteSite();
+    }
+
+    function injectActivityScript(html) {
+      const script = `<script src="${ACTIVITY_SCRIPT_URL}?projectid=${currentProjectId}"><\/script>`;
+      if (html.includes('</body>')) return html.replace('</body>', script + '\n</body>');
+      if (html.includes('</html>')) return html.replace('</html>', script + '\n</html>');
+      return html + script;
     }
 
     // ============== WORKER WINDOW ==============
@@ -716,7 +745,7 @@
     function toggleWorkerWindowSize() { document.getElementById('workerEditorWindow').classList.toggle('minimized'); }
 
     async function saveWorkerCodeWindow() {
-      if (!currentWorkerData || !currentUser) return;
+      if (!currentWorkerData) return;
       const code = document.getElementById('workerCodeWindow').value;
       const match = code.match(/router\.(get|post|put|delete)\(['"`](.*?)['"`]/);
       const route = match ? match[2] : '/api/hello.sc';
@@ -741,7 +770,7 @@
 
     // ============== WORKER ==============
     async function saveWorkerCode() {
-      if (!currentWorkerData || !currentUser) { showNotification('Selecione um worker', 'warning'); return; }
+      if (!currentWorkerData) { showNotification('Selecione um worker', 'warning'); return; }
       const code = document.getElementById('workerCode').value;
       const match = code.match(/router\.(get|post|put|delete)\(['"`](.*?)['"`]/);
       const route = match ? match[2] : '/api/hello.sc';
@@ -754,7 +783,7 @@
     }
 
     async function publishWorker() {
-      if (!currentWorkerData || !currentUser) return;
+      if (!currentWorkerData) return;
       await saveWorkerCode();
       if (!await garantirLoginPuter()) return;
       
@@ -780,25 +809,17 @@
         addChatMessage(`✅ Worker publicado!<br>🔗 ${fullUrl}`, 'ai');
         showNotification('Worker publicado!', 'success');
       } catch(e) {
-        addChatMessage(`❌ Erro: ${e.message || 'Erro desconhecido'}`, 'system');
+        addChatMessage(`❌ Erro: ${e.message}`, 'system');
       }
     }
 
-    // ============== ARQUIVOS (CORRIGIDO: salvar apenas arquivo atual) ==============
+    // ============== ARQUIVOS ==============
     async function saveCurrentFile() {
-      if (!currentFile || !currentUser) return;
-      const content = document.getElementById('simple-editor').value;
-      files[currentFile].content = content;
-      files[currentFile].size = new Blob([content]).size;
+      if (!currentFile) return;
+      files[currentFile].content = document.getElementById('simple-editor').value;
+      files[currentFile].size = new Blob([files[currentFile].content]).size;
       files[currentFile].updatedAt = new Date().toISOString();
-      
-      // CORRIGIDO: Salva apenas o arquivo atual, não o objeto inteiro
-      await db.ref(`projects/${currentUser.uid}/${currentProjectId}/files/${currentFile}`).update({
-        content: content,
-        size: files[currentFile].size,
-        updatedAt: files[currentFile].updatedAt
-      });
-      
+      await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ files, updatedAt: new Date().toISOString() });
       showNotification('Salvo! 💾', 'success');
     }
 
@@ -824,15 +845,13 @@
     async function closeFile(fileKey) {
       if (Object.keys(files).length <= 1) return;
       delete files[fileKey];
-      if (currentUser) {
-        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/files/${fileKey}`).remove();
-      }
+      await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ files, updatedAt: new Date().toISOString() });
       if (fileKey === currentFile) await openFile(Object.keys(files)[0]);
       updateTabs();
     }
 
     function previewProject() {
-      const index = getIndexFile();
+      const index = Object.values(files).find(f => (f.name || f.originalName) === 'index.html');
       if (index?.content) {
         const blob = new Blob([index.content], { type: 'text/html' });
         window.open(URL.createObjectURL(blob), '_blank');
@@ -849,13 +868,11 @@
         case 'editar-worker': input.value = currentWorkerData ? `Edite o worker ${currentWorkerData.name}` : 'Edite o worker'; break;
         case 'explicar-worker': if (currentWorkerData) addChatMessage(`📦 ${currentWorkerData.name}: ${currentWorkerData.code?.substring(0, 300)}`, 'ai'); break;
         case 'listar-workers': 
-          if (currentUser) {
-            db.ref(`workers/${currentUser.uid}/${currentProjectId}`).once('value').then(s => {
-              const workers = s.val();
-              if (workers) Object.entries(workers).forEach(([id, w]) => addChatMessage(`📦 ${w.name} | ${w.route}`, 'ai'));
-              else addChatMessage('📭 Nenhum worker', 'system');
-            });
-          }
+          const workerSnap = db.ref(`workers/${currentUser.uid}/${currentProjectId}`).once('value').then(s => {
+            const workers = s.val();
+            if (workers) Object.entries(workers).forEach(([id, w]) => addChatMessage(`📦 ${w.name} | ${w.route}`, 'ai'));
+            else addChatMessage('📭 Nenhum worker', 'system');
+          });
           break;
       }
       input.focus();
@@ -879,7 +896,7 @@
         const res = await puter.ai.chat(msg, { stream: false });
         addChatMessage(res, 'ai');
       } catch(e) {
-        addChatMessage('Erro: ' + (e.message || 'Erro desconhecido'), 'system');
+        addChatMessage('Erro: ' + e.message, 'system');
       }
     }
 
@@ -949,20 +966,10 @@
     });
     document.getElementById('project-name').addEventListener('blur', async function() {
       const name = this.value.trim();
-      if (name && currentProjectId && currentUser) await db.ref(`projects/${currentUser.uid}/${currentProjectId}/name`).set(name);
+      if (name && currentProjectId) await db.ref(`projects/${currentUser.uid}/${currentProjectId}/name`).set(name);
     });
     document.getElementById('sendChatBtn').addEventListener('click', sendToAI);
     document.getElementById('chatInput').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendToAI(); } });
-    
-    // Atalhos de teclado
-    document.addEventListener('keydown', (e) => {
-      if (e.ctrlKey || e.metaKey) {
-        if (e.key === 's') { e.preventDefault(); saveCurrentFile(); }
-        if (e.key === '=' || e.key === '+') { e.preventDefault(); changeZoom(0.1); }
-        if (e.key === '-') { e.preventDefault(); changeZoom(-0.1); }
-        if (e.key === '0') { e.preventDefault(); resetZoom(); }
-      }
-    });
     
     // Resize
     const handle = document.getElementById('resizeHandle');
@@ -979,7 +986,7 @@
     document.getElementById('publishModal').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
     document.getElementById('historyModal').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
 
-    // Expor funções globalmente
+    // Expor funções
     window.contextAction = contextAction;
     window.changeZoom = changeZoom;
     window.resetZoom = resetZoom;
@@ -990,6 +997,8 @@
     window.deleteSite = deleteSite;
     window.showHistory = showHistory;
     window.closeHistoryModal = closeHistoryModal;
+    window.updateSiteFromHistory = updateSiteFromHistory;
+    window.deleteSiteFromHistory = deleteSiteFromHistory;
     window.saveWorkerCode = saveWorkerCode;
     window.publishWorker = publishWorker;
     window.openWorkerWindow = openWorkerWindow;
