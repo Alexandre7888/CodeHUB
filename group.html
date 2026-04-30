@@ -1,11 +1,57 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>Sincronização</title>
+    <title>Teste Sync</title>
+    <script src="https://code.codehub.ct.ws/sinc.js"></script>
 </head>
 <body>
-    <!-- Apenas carrega o arquivo sinc.js -->
-    <script src="sinc.js"></script>
+
+<h1>Teste Sincronização CodeHUB</h1>
+
+<button onclick="salvar()">Salvar teste no LocalStorage</button>
+<button onclick="ver()">Ver LocalStorage</button>
+<button onclick="sync()">Sincronizar Agora</button>
+
+<pre id="output"></pre>
+
+<script>
+    function log(msg) {
+        document.getElementById('output').innerText = msg + '\n' + document.getElementById('output').innerText;
+    }
+
+    function salvar() {
+        const dados = {
+            data: new Date().toISOString(),
+            valor: Math.random().toString(36).substr(2, 20),
+            texto: 'Teste CodeHUB'
+        };
+        localStorage.setItem('teste_sync', JSON.stringify(dados));
+        localStorage.setItem('teste_timestamp', Date.now());
+        log('✅ Salvo no LocalStorage: ' + JSON.stringify(dados));
+        ver();
+    }
+
+    function ver() {
+        let saida = '--- LocalStorage ---\n';
+        for(let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            saida += key + ': ' + localStorage.getItem(key).substring(0, 100) + '\n';
+        }
+        log(saida);
+    }
+
+    function sync() {
+        if(window.CodeHUBSync && window.CodeHUBSync.forceSync) {
+            window.CodeHUBSync.forceSync();
+            log('🔄 Sincronização forçada! Verifique o console do navegador (F12)');
+        } else {
+            log('❌ sinc.js não carregou!');
+        }
+    }
+
+    log('Pronto! Clique nos botões para testar.');
+</script>
+
 </body>
 </html>
