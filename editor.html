@@ -114,6 +114,42 @@
     #user-info { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 
     .main-container { display: flex; flex: 1; overflow: hidden; }
+    
+    /* Workers Panel (Esquerda) */
+    #workers-panel {
+      width: 260px; background: var(--bg-secondary); border-right: 1px solid var(--border-color);
+      display: flex; flex-direction: column; overflow: hidden; min-width: 200px; max-width: 400px;
+      position: relative;
+    }
+    .workers-resize-handle {
+      position: absolute; right: -2px; top: 0; width: 4px; height: 100%;
+      cursor: ew-resize; background: transparent; z-index: 100; transition: background 0.2s;
+    }
+    .workers-resize-handle:hover { background: var(--accent-blue); }
+    .workers-header {
+      padding: 12px; background: var(--bg-tertiary); display: flex;
+      justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color);
+      font-weight: 600; font-size: 13px;
+    }
+    .workers-list {
+      flex: 1; overflow-y: auto; padding: 8px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .worker-item {
+      background: var(--bg-primary); border: 1px solid var(--border-color);
+      border-radius: 8px; padding: 10px; cursor: pointer; transition: all 0.2s;
+      font-size: 12px;
+    }
+    .worker-item:hover { border-color: var(--accent-blue); }
+    .worker-item.active { border-color: var(--accent-cyan); background: #1a2b3c; }
+    .worker-item .worker-name { font-weight: 600; color: var(--accent-cyan); }
+    .worker-item .worker-route { color: var(--text-secondary); font-size: 10px; margin-top: 4px; }
+    .worker-item .worker-url { color: var(--accent-green); font-size: 10px; margin-top: 2px; word-break: break-all; }
+    .worker-actions { display: flex; gap: 4px; margin-top: 6px; }
+    .worker-actions button { font-size: 10px; padding: 3px 8px; }
+    .workers-footer { padding: 10px; border-top: 1px solid var(--border-color); }
+    .workers-footer button { width: 100%; background: var(--accent-green); border-color: var(--accent-green); color: #000; font-weight: 600; }
+
     #editor-container { flex: 2; display: flex; flex-direction: column; overflow: hidden; }
     #tabs { 
       display: flex; background: var(--bg-secondary); align-items: center; 
@@ -125,6 +161,22 @@
       border: 1px solid var(--border-color); border-bottom: none; cursor: pointer;
     }
     .tab-btn.active { background: var(--bg-tertiary); border-bottom: 2px solid var(--accent-cyan); }
+    .tab-btn.ai-editing {
+      border-bottom: 2px solid var(--accent-purple);
+      animation: glowPulse 1.5s infinite;
+    }
+    @keyframes glowPulse {
+      0%, 100% { box-shadow: 0 0 4px rgba(188, 140, 255, 0.3); }
+      50% { box-shadow: 0 0 12px rgba(188, 140, 255, 0.7); }
+    }
+    .tab-btn .ai-edit-icon {
+      display: inline-block; margin-right: 4px; font-size: 10px;
+      animation: pencilBounce 0.6s infinite alternate;
+    }
+    @keyframes pencilBounce {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-3px); }
+    }
     .close-tab-btn { 
       position: absolute; right: 6px; top: 50%; transform: translateY(-50%); 
       background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: 14px; 
@@ -136,6 +188,15 @@
       width: 100%; height: 100%; background: var(--bg-primary); color: #d4d4d4; 
       font-family: 'SF Mono', 'Consolas', 'Monaco', monospace; font-size: 14px; 
       padding: 16px; border: none; resize: none; outline: none; line-height: 1.7;
+      transition: box-shadow 0.5s;
+    }
+    #simple-editor.ai-editing {
+      box-shadow: inset 0 0 30px rgba(188, 140, 255, 0.15);
+      animation: editorGlow 1.5s infinite;
+    }
+    @keyframes editorGlow {
+      0%, 100% { box-shadow: inset 0 0 20px rgba(188, 140, 255, 0.1); }
+      50% { box-shadow: inset 0 0 40px rgba(188, 140, 255, 0.25); }
     }
 
     #ai-sidebar { 
@@ -180,7 +241,7 @@
     .chat-input-wrapper textarea:focus { border-color: var(--accent-blue); outline: none; }
     .chat-input-wrapper button { background: var(--accent-purple); border-color: var(--accent-purple); }
 
-    .worker-section { background: var(--bg-primary); border-top: 1px solid var(--border-color); padding: 10px; }
+    .worker-section { background: var(--bg-primary); border-top: 1px solid var(--border-color); padding: 10px; display: none; }
     .worker-header { font-size: 11px; font-weight: 600; color: var(--accent-cyan); margin-bottom: 6px; display: flex; justify-content: space-between; }
     #workerCode { 
       width: 100%; background: var(--bg-secondary); border: 1px solid var(--border-color); 
@@ -237,34 +298,15 @@
 
     /* Preview iframe modal */
     #previewModal .modal-box {
-      max-width: 95vw;
-      max-height: 90vh;
-      width: 95vw;
-      height: 90vh;
-      padding: 8px;
-      display: flex;
-      flex-direction: column;
+      max-width: 95vw; max-height: 90vh; width: 95vw; height: 90vh;
+      padding: 8px; display: flex; flex-direction: column;
     }
-    #previewIframe {
-      flex: 1;
-      width: 100%;
-      border: none;
-      background: white;
-      border-radius: 8px;
-    }
+    #previewIframe { flex: 1; width: 100%; border: none; background: white; border-radius: 8px; }
     .preview-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 12px;
-      background: var(--bg-primary);
-      border-radius: 8px;
-      margin-bottom: 8px;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 12px; background: var(--bg-primary); border-radius: 8px; margin-bottom: 8px;
     }
-    .preview-header span {
-      font-size: 13px;
-      color: var(--accent-cyan);
-    }
+    .preview-header span { font-size: 13px; color: var(--accent-cyan); }
   </style>
 </head>
 <body>
@@ -306,6 +348,23 @@
     </div>
 
     <div class="main-container">
+      <!-- Workers Panel (Esquerda) -->
+      <div id="workers-panel">
+        <div class="workers-resize-handle" id="workersResizeHandle"></div>
+        <div class="workers-header">
+          <span>⚡ Workers</span>
+          <span style="font-size:10px;color:var(--accent-green);" id="workersCount">0</span>
+        </div>
+        <div class="workers-list" id="workersList">
+          <div style="color:var(--text-secondary);font-size:12px;text-align:center;padding:20px;">
+            📭 Nenhum worker criado
+          </div>
+        </div>
+        <div class="workers-footer">
+          <button onclick="createNewWorker()">➕ Novo Worker</button>
+        </div>
+      </div>
+
       <div id="editor-container">
         <div id="tabs"></div>
         <div id="container"><textarea id="simple-editor" placeholder="// Comece a codar aqui..."></textarea></div>
@@ -314,21 +373,28 @@
       <div id="ai-sidebar">
         <div class="resize-handle" id="resizeHandle"></div>
         <div class="sidebar-header">
-          <span>🤖 Console & Assistente</span>
-          <span style="font-size:10px;color:var(--accent-green);">● Online</span>
+          <span>🤖 IA Assistente</span>
+          <span style="font-size:10px;color:var(--accent-green);" id="aiStatus">● Online</span>
         </div>
         <div class="chat-messages" id="chatMessages">
-          <div class="message system">🟢 Sistema iniciado. Pronto para uso.</div>
+          <div class="message system">🟢 IA pronta. Peça para criar/editar arquivos, workers, ou analisar código.</div>
         </div>
         <div class="chat-controls">
           <div class="chat-input-wrapper">
-            <textarea id="chatInput" placeholder="Comando ou pergunta para IA..." rows="2"></textarea>
+            <textarea id="chatInput" placeholder="Ex: Crie um arquivo style.css com um fundo azul..." rows="2"></textarea>
             <button onclick="sendToAI()">Enviar</button>
           </div>
+          <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+            <button onclick="quickAI('create_html')" style="font-size:10px;padding:4px 8px;">📄 HTML</button>
+            <button onclick="quickAI('create_css')" style="font-size:10px;padding:4px 8px;">🎨 CSS</button>
+            <button onclick="quickAI('create_js')" style="font-size:10px;padding:4px 8px;">⚡ JS</button>
+            <button onclick="quickAI('create_worker')" style="font-size:10px;padding:4px 8px;">🔧 Worker</button>
+            <button onclick="quickAI('analyze')" style="font-size:10px;padding:4px 8px;">🔍 Analisar</button>
+          </div>
         </div>
-        <div class="worker-section">
+        <div class="worker-section" id="workerSection">
           <div class="worker-header">
-            <span>⚡ Worker .sc</span>
+            <span>⚡ Worker Code</span>
             <div style="display:flex;gap:6px;">
               <button onclick="saveWorkerCode()" style="font-size:10px;padding:4px 8px;">💾</button>
               <button onclick="publishWorker()" style="font-size:10px;padding:4px 8px;background:var(--accent-green);border-color:var(--accent-green);color:#000;">🚀</button>
@@ -389,7 +455,7 @@
     </div>
   </div>
 
-  <!-- Preview Modal com iframe incorporado -->
+  <!-- Preview Modal -->
   <div class="modal-overlay" id="previewModal">
     <div class="modal-box">
       <div class="preview-header">
@@ -401,6 +467,23 @@
         </div>
       </div>
       <iframe id="previewIframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"></iframe>
+    </div>
+  </div>
+
+  <!-- New Worker Modal -->
+  <div class="modal-overlay" id="newWorkerModal">
+    <div class="modal-box" style="text-align:left;">
+      <h3>➕ Novo Worker</h3>
+      <div style="display:flex;flex-direction:column;gap:10px;margin:12px 0;">
+        <label style="font-size:12px;color:var(--text-secondary);">Nome:</label>
+        <input type="text" id="newWorkerName" placeholder="meu-worker" style="background:var(--bg-primary);border:1px solid var(--border-color);color:var(--text-primary);padding:8px;border-radius:6px;">
+        <label style="font-size:12px;color:var(--text-secondary);">Rota:</label>
+        <input type="text" id="newWorkerRoute" placeholder="/api/hello" style="background:var(--bg-primary);border:1px solid var(--border-color);color:var(--text-primary);padding:8px;border-radius:6px;">
+      </div>
+      <div class="modal-buttons">
+        <button onclick="confirmNewWorker()" style="background:#238636;border-color:#3fb950;">✅ Criar</button>
+        <button onclick="closeNewWorkerModal()" style="background:#da3633;border-color:#f85149;">Cancelar</button>
+      </div>
     </div>
   </div>
 
@@ -488,9 +571,7 @@
           if (cursor && results.length < max) {
             results.push(cursor.value);
             cursor.continue();
-          } else {
-            resolve(results);
-          }
+          } else { resolve(results); }
         };
         request.onerror = (e) => reject(e.target.error);
       });
@@ -503,6 +584,8 @@
     let files = {};
     let currentZoom = 1;
     let currentWorkerData = null;
+    let workersList = [];
+    let isAIEditing = false;
 
     // Site
     let hostingSubdomain = null;
@@ -511,14 +594,38 @@
     let siteCreated = false;
     let sitesSalvos = JSON.parse(localStorage.getItem('codehub_sites') || '[]');
 
-    // Modal callback
     let modalCallback = null;
-
-    // Auto-save
     let autoSaveTimer = null;
     let lastSavedContent = null;
     let isSaving = false;
     let previewBlobUrl = null;
+
+    // ============ AI SYSTEM PROMPT ============
+    const AI_SYSTEM_PROMPT = `Você é um assistente de desenvolvimento web profissional no CodeHUB. Você pode:
+
+1. **CRIAR ARQUIVOS**: Use [CREATE_FILE: nome.ext] conteúdo [/CREATE_FILE]
+   - Ex: [CREATE_FILE: index.html] <!DOCTYPE html>... [/CREATE_FILE]
+   - Extensões suportadas: .html, .css, .js, .json, .md, .txt
+
+2. **EDITAR ARQUIVOS**: Use [EDIT_FILE: nome.ext] novo conteúdo [/EDIT_FILE]
+   - Substitui TODO o conteúdo do arquivo
+
+3. **DELETAR ARQUIVOS**: Use [DELETE_FILE: nome.ext]
+
+4. **CRIAR WORKER**: Use [CREATE_WORKER: nome] router.get('/rota', async () => { ... }); [/CREATE_WORKER]
+
+5. **DELETAR WORKER**: Use [DELETE_WORKER: nome]
+
+6. **LISTAR WORKERS**: Use [LIST_WORKERS]
+
+7. **VER ARQUIVO**: Use [VIEW_FILE: nome.ext]
+
+8. **ANALISAR CÓDIGO**: Responda com análise quando perguntado
+
+URL do site atual: ${hostingUrl || 'não publicado'}
+
+Responda SEMPRE com essas tags quando for criar/editar/deletar arquivos ou workers.
+Para conversa normal, responda naturalmente.`;
 
     // ============ LOGS ============
     function log(msg, type = 'log') {
@@ -538,9 +645,23 @@
     function setStatus(text, color = 'var(--text-secondary)', time = null) {
       document.getElementById('auto-save-text').textContent = text;
       document.getElementById('auto-save-indicator').style.background = color;
-      if (time) {
-        document.getElementById('auto-save-time').textContent = time;
+      if (time) document.getElementById('auto-save-time').textContent = time;
+    }
+
+    // ============ AI EDITING INDICATOR ============
+    function setAIEditing(active) {
+      isAIEditing = active;
+      const editor = document.getElementById('simple-editor');
+      if (active) {
+        editor.classList.add('ai-editing');
+        document.getElementById('aiStatus').textContent = '✏️ Editando';
+        document.getElementById('aiStatus').style.color = 'var(--accent-purple)';
+      } else {
+        editor.classList.remove('ai-editing');
+        document.getElementById('aiStatus').textContent = '● Online';
+        document.getElementById('aiStatus').style.color = 'var(--accent-green)';
       }
+      updateTabs();
     }
 
     // ============ ZOOM ============
@@ -551,8 +672,7 @@
       localStorage.setItem('zoom', currentZoom); 
     }
     function resetZoom() { 
-      currentZoom = 1; 
-      document.body.style.zoom = 1; 
+      currentZoom = 1; document.body.style.zoom = 1; 
       document.getElementById('zoomLevel').textContent = '100%'; 
       localStorage.setItem('zoom', 1);
     }
@@ -574,428 +694,116 @@
       modalCallback = null; 
     }
 
-    // ============ PREVIEW INCORPORADO ============
-    function updatePreviewIframe() {
-      const iframe = document.getElementById('previewIframe');
-      const idx = Object.values(files).find(f => (f.name || f.originalName) === 'index.html');
+    // ============ WORKERS PANEL ============
+    async function loadWorkers() {
+      if (!currentUser || !currentProjectId) return;
+      try {
+        const snap = await db.ref(`workers/${currentUser.uid}/${currentProjectId}`).once('value');
+        const data = snap.val() || {};
+        workersList = Object.entries(data).map(([id, w]) => ({ id, ...w }));
+        renderWorkersList();
+      } catch(e) {
+        logError('Erro ao carregar workers: ' + e.message);
+      }
+    }
+
+    function renderWorkersList() {
+      const list = document.getElementById('workersList');
+      document.getElementById('workersCount').textContent = workersList.length;
       
-      if (idx?.content) {
-        // Revoga URL anterior se existir
-        if (previewBlobUrl) {
-          URL.revokeObjectURL(previewBlobUrl);
-        }
-        
-        // Cria blob com todo o conteúdo HTML
-        let htmlContent = idx.content;
-        
-        // Adiciona outros arquivos (CSS, JS) se referenciados
-        for (const [key, file] of Object.entries(files)) {
-          const fileName = file.name || file.originalName;
-          if (fileName === 'index.html') continue;
-          
-          // Injeta CSS diretamente
-          if (fileName.endsWith('.css')) {
-            htmlContent = htmlContent.replace('</head>', `<style>${file.content}</style></head>`);
-          }
-          // Injeta JS diretamente
-          if (fileName.endsWith('.js')) {
-            htmlContent = htmlContent.replace('</body>', `<script>${file.content}<\/script></body>`);
-          }
-        }
-        
-        previewBlobUrl = URL.createObjectURL(new Blob([htmlContent], { type: 'text/html' }));
-        iframe.src = previewBlobUrl;
-      }
-    }
-
-    function refreshPreview() {
-      updatePreviewIframe();
-      showNotification('Preview atualizado! 🔄', 'info');
-    }
-
-    function openPreviewExterno() {
-      const idx = Object.values(files).find(f => (f.name || f.originalName) === 'index.html');
-      if (idx?.content) {
-        const blobUrl = URL.createObjectURL(new Blob([idx.content], { type: 'text/html' }));
-        window.open(blobUrl, '_blank');
-      }
-    }
-
-    function closePreviewModal() {
-      document.getElementById('previewModal').style.display = 'none';
-      // Não revoga o blobUrl para manter o cache
-    }
-
-    function previewProject() {
-      const idx = Object.values(files).find(f => (f.name || f.originalName) === 'index.html');
-      if (idx?.content) {
-        // Salva antes de mostrar preview
-        saveCurrentFile().then(() => {
-          updatePreviewIframe();
-          document.getElementById('previewModal').style.display = 'flex';
-        });
-      } else {
-        showNotification('Crie index.html primeiro', 'info');
-      }
-    }
-
-    // ============ PUTER AUTH ============
-    async function garantirLogin() {
-      try { 
-        await puter.auth.getUser(); 
-        logInfo('Puter: já autenticado');
-        return true; 
-      } catch(e) {
-        logInfo('Puter: tentando login...');
-        try { 
-          await puter.auth.signIn(); 
-          logSuccess('Puter: login OK');
-          return true; 
-        } catch(e2) { 
-          logError('Puter: falha no login - ' + e2.message);
-          return false; 
-        }
-      }
-    }
-
-    // ============ CRIA SITE (CREATE) ============
-    async function criarSite(dirName) {
-      logInfo('🚀 CRIANDO SITE...');
-      const subdomain = puter.randName();
-      logInfo(`Criando site: ${subdomain}.puter.site → ${dirName}`);
-      const site = await puter.hosting.create(subdomain, dirName);
-      logSuccess(`Site criado! Subdomain: ${site.subdomain}`);
-      return site;
-    }
-
-    // ============ LISTAR SITES (LIST) ============
-    async function listarSites() {
-      logInfo('📋 LISTANDO SITES...');
-      const sites = await puter.hosting.list();
-      logSuccess(`${sites.length} sites encontrados`);
-      sites.forEach(site => {
-        logInfo(`  📁 ${site.subdomain}.puter.site (UID: ${site.uid})`);
-      });
-      return sites;
-    }
-
-    // ============ OBTER SITE (GET) ============
-    async function obterSite(subdomain) {
-      logInfo(`🔍 OBTENDO SITE: ${subdomain}`);
-      const site = await puter.hosting.get(subdomain);
-      logSuccess(`Site obtido: ${site.subdomain}.puter.site (UID: ${site.uid})`);
-      return site;
-    }
-
-    // ============ DELETAR SITE (DELETE) ============
-    async function deletarSite(subdomain) {
-      logInfo(`🗑️ DELETANDO SITE: ${subdomain}`);
-      await puter.hosting.delete(subdomain);
-      logSuccess(`Site ${subdomain}.puter.site deletado!`);
-    }
-
-    // ============ ATUALIZAR SITE (UPDATE) ============
-    async function atualizarSite(subdomain, dirName) {
-      logInfo(`🔄 ATUALIZANDO SITE: ${subdomain} → ${dirName}`);
-      // Segundo documentação do Puter: hosting.update(subdomain, targetDir)
-      // targetDir é opcional, se não fornecido mantém o mesmo diretório
-      await puter.hosting.update(subdomain, dirName);
-      logSuccess(`Site ${subdomain}.puter.site atualizado para diretório ${dirName}`);
-    }
-
-    // ============ PUBLISH SITE ============
-    async function publishSite() {
-      logInfo('Iniciando processo de publicação...');
-
-      if (!await garantirLogin()) {
-        logError('Falha na autenticação do Puter');
-        showNotification('Faça login no Puter primeiro!', 'error');
+      if (workersList.length === 0) {
+        list.innerHTML = '<div style="color:var(--text-secondary);font-size:12px;text-align:center;padding:20px;">📭 Nenhum worker</div>';
         return;
       }
+      
+      list.innerHTML = workersList.map(w => `
+        <div class="worker-item ${currentWorkerData?.id === w.id ? 'active' : ''}" onclick="selectWorker('${w.id}')">
+          <div class="worker-name">⚡ ${w.name || 'worker'}</div>
+          <div class="worker-route">📌 ${w.route || '/api'}</div>
+          ${w.url ? `<div class="worker-url">🔗 ${w.url}</div>` : ''}
+          <div class="worker-actions">
+            <button onclick="event.stopPropagation();selectWorker('${w.id}')" style="background:var(--accent-blue);border-color:var(--accent-blue);">📝 Editar</button>
+            <button onclick="event.stopPropagation();deleteWorkerById('${w.id}')" style="background:var(--accent-red);border-color:var(--accent-red);">🗑️</button>
+            ${w.url ? `<button onclick="event.stopPropagation();window.open('${w.url}','_blank')" style="background:var(--accent-green);border-color:var(--accent-green);">🔗</button>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
 
-      const indexFile = Object.values(files).find(f => (f.name || f.originalName) === 'index.html');
-      if (!indexFile) {
-        logError('Arquivo index.html não encontrado');
-        showNotification('Crie um index.html primeiro!', 'error');
-        return;
-      }
-
-      // AUTO-SAVE ANTES DE PUBLICAR
-      await saveCurrentFile();
-
-      if (siteCreated) {
-        showModal('🔄 Atualizar Site?', `O site ${hostingUrl} será atualizado com os arquivos atuais.`, async () => {
-          await executarAtualizacao();
-        });
-      } else {
-        showModal('🚀 Publicar Site?', 'Seu site será hospedado no Puter com URL pública.', async () => {
-          await executarPublicacao();
-        });
+    function selectWorker(id) {
+      const w = workersList.find(x => x.id === id);
+      if (w) {
+        currentWorkerData = w;
+        document.getElementById('workerCode').value = w.code || '';
+        document.getElementById('workerSection').style.display = 'block';
+        renderWorkersList();
+        logInfo('Worker selecionado: ' + w.name);
       }
     }
 
-    async function executarPublicacao() {
-      logInfo('🚀 EXECUTANDO PUBLICAÇÃO...');
-      try {
-        await saveCurrentFile();
-
-        const dirName = puter.randName();
-        logInfo(`Criando diretório: ${dirName}`);
-        // Segundo documentação: fs.mkdir(path) cria diretório
-        await puter.fs.mkdir(dirName);
-        logSuccess(`Diretório criado: ${dirName}`);
-
-        let count = 0;
-        for (const [key, file] of Object.entries(files)) {
-          const fileName = file.originalName || file.name;
-          const content = file.content || '';
-          logInfo(`Salvando: ${dirName}/${fileName} (${content.length} bytes)`);
-          // Segundo documentação: fs.write(path, content) escreve arquivo
-          await puter.fs.write(`${dirName}/${fileName}`, content);
-          count++;
-        }
-        logSuccess(`${count} arquivos salvos`);
-
-        const site = await criarSite(dirName);
-
-        hostingSubdomain = site.subdomain;
-        hostingDirectory = dirName;
-        hostingUrl = `https://${site.subdomain}.puter.site`;
-        siteCreated = true;
-
-        sitesSalvos = sitesSalvos.filter(s => s.subdomain !== site.subdomain);
-        sitesSalvos.unshift({ 
-          subdomain: site.subdomain, 
-          dir: dirName, 
-          data: new Date().toLocaleString(), 
-          url: hostingUrl 
-        });
-        localStorage.setItem('codehub_sites', JSON.stringify(sitesSalvos));
-
-        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({
-          url: hostingUrl, 
-          subdomain: hostingSubdomain, 
-          directory: hostingDirectory, 
-          publishedAt: new Date().toISOString()
-        });
-
-        document.getElementById('fileUrlTop').value = hostingUrl;
-        document.getElementById('urlPanelTop').style.display = 'flex';
-        updateSiteButtons();
-
-        logSuccess(`PUBLICADO! URL: ${hostingUrl}`);
-        showNotification('✅ Publicado! URL: ' + hostingUrl, 'success');
-        navigator.clipboard.writeText(hostingUrl);
-        logInfo('URL copiada para clipboard');
-
-      } catch(e) {
-        logError('Falha na publicação: ' + e.message);
-        console.error(e);
-        showNotification('Erro: ' + e.message, 'error');
-      }
-    }
-
-    async function executarAtualizacao() {
-      logInfo('🔄 EXECUTANDO ATUALIZAÇÃO...');
-      try {
-        await saveCurrentFile();
-
-        if (!hostingDirectory || !hostingSubdomain) {
-          logError('Dados do site incompletos');
-          showNotification('Erro: dados do site incompletos', 'error');
-          return;
-        }
-
-        logInfo(`Diretório: ${hostingDirectory}, Subdomain: ${hostingSubdomain}`);
-
-        // Atualiza arquivos no diretório existente
-        let count = 0;
-        for (const [key, file] of Object.entries(files)) {
-          const fileName = file.originalName || file.name;
-          const content = file.content || '';
-          logInfo(`Atualizando: ${hostingDirectory}/${fileName} (${content.length} bytes)`);
-          await puter.fs.write(`${hostingDirectory}/${fileName}`, content);
-          count++;
-        }
-        logSuccess(`${count} arquivos atualizados`);
-
-        // Segundo documentação do Puter: hosting.update(subdomain, targetDir?)
-        // Se targetDir não mudou, podemos chamar sem ou com o mesmo diretório
-        logInfo(`Chamando puter.hosting.update(${hostingSubdomain}, ${hostingDirectory})`);
-        await puter.hosting.update(hostingSubdomain, hostingDirectory);
-        
-        // Alternativa: se update falhar, tenta recriar
-        // await puter.hosting.delete(hostingSubdomain);
-        // const site = await puter.hosting.create(hostingSubdomain, hostingDirectory);
-
-        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).update({
-          updatedAt: new Date().toISOString()
-        });
-
-        logSuccess(`ATUALIZADO! URL: ${hostingUrl}`);
-        showNotification('✅ Site atualizado!', 'success');
-
-      } catch(e) {
-        logError('Falha na atualização: ' + e.message);
-        console.error(e);
-        
-        // Tentativa alternativa: recriar o site
+    async function deleteWorkerById(id) {
+      const w = workersList.find(x => x.id === id);
+      if (!w) return;
+      
+      showModal('🗑️ Deletar Worker?', `Deletar "${w.name}"?`, async () => {
         try {
-          logInfo('Tentando método alternativo: recriar site...');
-          await puter.hosting.delete(hostingSubdomain);
-          const site = await puter.hosting.create(hostingSubdomain, hostingDirectory);
-          hostingUrl = `https://${site.subdomain}.puter.site`;
-          logSuccess('Site recriado com sucesso!');
-          showNotification('✅ Site atualizado (método alternativo)!', 'success');
-        } catch(e2) {
-          logError('Falha no método alternativo: ' + e2.message);
-          showNotification('Erro ao atualizar: ' + e.message, 'error');
-        }
-      }
-    }
-
-    // ============ DELETE SITE ============
-    async function deleteSite() {
-      if (!siteCreated) { 
-        showNotification('Nenhum site para deletar', 'info'); 
-        return; 
-      }
-
-      showModal('🗑️ Deletar Site?', `Tem certeza que deseja deletar permanentemente:\n${hostingUrl}?`, async () => {
-        logInfo('🗑️ EXECUTANDO DELEÇÃO...');
-        try {
-          await garantirLogin();
-          await puter.hosting.delete(hostingSubdomain);
-          logInfo('Verificando se site foi deletado...');
-          try {
-            await puter.hosting.get(hostingSubdomain);
-            logError('Site ainda existe! (inesperado)');
-          } catch(e) {
-            logSuccess('Site confirmado como deletado');
+          // Tenta deletar do Puter se tiver deployedName
+          if (w.deployedName) {
+            try { await puter.workers.delete(w.deployedName); } catch(e) {}
           }
-
-          sitesSalvos = sitesSalvos.filter(s => s.subdomain !== hostingSubdomain);
-          localStorage.setItem('codehub_sites', JSON.stringify(sitesSalvos));
-
-          hostingSubdomain = null; 
-          hostingDirectory = null; 
-          hostingUrl = null; 
-          siteCreated = false;
-
-          document.getElementById('urlPanelTop').style.display = 'none';
-          updateSiteButtons();
-
-          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).remove();
-          showNotification('✅ Site deletado!', 'success');
-
+          await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${id}`).remove();
+          if (currentWorkerData?.id === id) {
+            currentWorkerData = null;
+            document.getElementById('workerCode').value = '';
+            document.getElementById('workerSection').style.display = 'none';
+          }
+          await loadWorkers();
+          showNotification('Worker deletado!', 'success');
         } catch(e) {
-          logError('Falha ao deletar: ' + e.message);
           showNotification('Erro: ' + e.message, 'error');
         }
       });
     }
 
-    // ============ HISTÓRICO ============
-    async function showHistory() {
-      const list = document.getElementById('historyList');
-      document.getElementById('historyModal').style.display = 'flex';
-
-      try {
-        logInfo('Carregando histórico do Puter...');
-        let puterSites = [];
-        try {
-          puterSites = await listarSites();
-        } catch(e) {
-          logInfo('Não foi possível listar sites do Puter: ' + e.message);
-        }
-
-        const snap = await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).once('value');
-        const h = snap.val();
-
-        let html = '';
-
-        if (h) {
-          html += `<div style="background:#1b3d2f;padding:14px;border-radius:8px;margin-bottom:12px;border:1px solid #3fb950;">
-            <strong style="color:#3fb950;">📌 Site Atual</strong><br>
-            🔗 <a href="${h.url}" target="_blank" style="color:#58a6ff;">${h.url}</a><br>
-            📁 ${h.directory}<br>
-            📅 ${new Date(h.publishedAt).toLocaleString()}
-          </div>`;
-        }
-
-        if (puterSites.length > 0) {
-          html += '<strong style="color:#39d2c0;">☁️ Sites no Puter:</strong>';
-          puterSites.forEach(s => {
-            html += `<div style="background:var(--bg-primary);padding:10px;border-radius:6px;margin:6px 0;font-size:12px;border:1px solid var(--border-color);">
-              🔗 <a href="https://${s.subdomain}.puter.site" target="_blank" style="color:#58a6ff;">${s.subdomain}.puter.site</a><br>
-              🆔 UID: ${s.uid}</div>`;
-          });
-        }
-
-        if (sitesSalvos.length > 0) {
-          html += '<strong style="color:#d2991d;">📋 Histórico Local:</strong>';
-          sitesSalvos.forEach(s => {
-            html += `<div style="background:var(--bg-primary);padding:10px;border-radius:6px;margin:6px 0;font-size:12px;border:1px solid var(--border-color);">
-              🔗 <a href="${s.url}" target="_blank" style="color:#58a6ff;">${s.url}</a><br>
-              📅 ${s.data}</div>`;
-          });
-        }
-
-        if (!h && puterSites.length === 0 && sitesSalvos.length === 0) {
-          html = '<p style="color:#8b949e;">📭 Nenhum site no histórico</p>';
-        }
-
-        list.innerHTML = html;
-      } catch(e) { 
-        list.innerHTML = '<p style="color:#f85149;">Erro ao carregar histórico</p>'; 
-        logError('Histórico: ' + e.message);
-      }
+    function createNewWorker() {
+      document.getElementById('newWorkerName').value = '';
+      document.getElementById('newWorkerRoute').value = '/api/hello';
+      document.getElementById('newWorkerModal').style.display = 'flex';
     }
 
-    function closeHistoryModal() { 
-      document.getElementById('historyModal').style.display = 'none'; 
+    function closeNewWorkerModal() {
+      document.getElementById('newWorkerModal').style.display = 'none';
     }
 
-    function updateSiteButtons() {
-      const pub = document.getElementById('sitePublishBtn');
-      const del = document.getElementById('siteDeleteBtn');
-      if (siteCreated) {
-        pub.textContent = '🔄 Atualizar';
-        pub.style.background = '#d2991d';
-        pub.style.borderColor = '#d2991d';
-        del.style.display = 'inline-flex';
-      } else {
-        pub.textContent = '🚀 Publicar';
-        pub.style.background = '#238636';
-        pub.style.borderColor = '#3fb950';
-        del.style.display = 'none';
-      }
+    async function confirmNewWorker() {
+      const name = document.getElementById('newWorkerName').value.trim();
+      const route = document.getElementById('newWorkerRoute').value.trim();
+      
+      if (!name) { showNotification('Nome é obrigatório', 'error'); return; }
+      
+      const id = name.replace(/[^a-zA-Z0-9]/g, '_') + '_' + Date.now().toString(36);
+      const defaultCode = `router.get('${route || '/api/hello'}', async ({ request, params }) => {\n  return { message: "Hello from ${name}!" };\n});`;
+      
+      await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${id}`).set({
+        name, route, code: defaultCode, createdAt: new Date().toISOString()
+      });
+      
+      closeNewWorkerModal();
+      await loadWorkers();
+      showNotification('Worker criado!', 'success');
     }
 
-    function copyUrl() {
-      const url = document.getElementById('fileUrlTop').value;
-      if (url) { 
-        navigator.clipboard.writeText(url); 
-        showNotification('📋 URL copiada!', 'info'); 
-      }
-    }
-
-    // ============ WORKER ============
     async function saveWorkerCode() {
-      if (!currentWorkerData) { 
-        showNotification('Nenhum worker selecionado', 'info'); 
-        return; 
-      }
+      if (!currentWorkerData) { showNotification('Selecione um worker', 'info'); return; }
       const code = document.getElementById('workerCode').value;
       const match = code.match(/router\.(get|post|put|delete)\(['"`](.*?)['"`]/);
-      const route = match ? match[2] : '/api/test.sc';
+      const route = match ? match[2] : currentWorkerData.route;
       await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({ 
-        code, 
-        route, 
-        updatedAt: new Date().toISOString() 
+        code, route, updatedAt: new Date().toISOString() 
       });
       currentWorkerData.code = code;
-      logSuccess('Worker salvo localmente');
+      currentWorkerData.route = route;
+      await loadWorkers();
       showNotification('Worker salvo!', 'success');
     }
 
@@ -1004,9 +812,8 @@
       await saveWorkerCode();
       if (!await garantirLogin()) return;
 
-      logInfo('🚀 Publicando worker...');
       try {
-        const name = currentWorkerData.name.replace(/[^a-zA-Z0-9]/g, '').substring(0,15);
+        const name = (currentWorkerData.name || 'worker').replace(/[^a-zA-Z0-9]/g, '').substring(0,15);
         const file = `${name}_${Date.now().toString(36)}.sc`;
         await puter.fs.write(file, currentWorkerData.code);
 
@@ -1016,98 +823,142 @@
         }
 
         const w = await puter.workers.create(deploy, file);
-        const url = `https://${deploy}.${w.username||'puter'}.work${currentWorkerData.route}`;
+        const url = `https://${deploy}.${w.username||'puter'}.work${currentWorkerData.route || ''}`;
 
         await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${currentWorkerData.id}`).update({
-          url, 
-          fullUrl: url, 
-          deployedName: deploy, 
-          deployedAt: new Date().toISOString()
+          url, fullUrl: url, deployedName: deploy, deployedAt: new Date().toISOString()
         });
         currentWorkerData.url = url;
         currentWorkerData.fullUrl = url;
-        logSuccess(`Worker publicado: ${url}`);
+        await loadWorkers();
         showNotification('Worker publicado!', 'success');
       } catch(e) {
-        logError('Worker: ' + e.message);
         showNotification('Erro: ' + e.message, 'error');
+      }
+    }
+
+    // ============ PUTER AUTH ============
+    async function garantirLogin() {
+      try { await puter.auth.getUser(); return true; } catch(e) {
+        try { await puter.auth.signIn(); return true; } catch(e2) { return false; }
+      }
+    }
+
+    // ============ PUBLISH SITE ============
+    async function publishSite() {
+      if (!await garantirLogin()) { showNotification('Faça login no Puter!', 'error'); return; }
+      const indexFile = Object.values(files).find(f => (f.name || f.originalName) === 'index.html');
+      if (!indexFile) { showNotification('Crie um index.html!', 'error'); return; }
+      await saveCurrentFile();
+
+      if (siteCreated) {
+        showModal('🔄 Atualizar Site?', `O site ${hostingUrl} será atualizado.`, async () => { await executarAtualizacao(); });
+      } else {
+        showModal('🚀 Publicar Site?', 'Seu site será hospedado no Puter.', async () => { await executarPublicacao(); });
+      }
+    }
+
+    async function executarPublicacao() {
+      try {
+        await saveCurrentFile();
+        const dirName = puter.randName();
+        await puter.fs.mkdir(dirName);
+        for (const [key, file] of Object.entries(files)) {
+          await puter.fs.write(`${dirName}/${file.originalName || file.name}`, file.content || '');
+        }
+        const site = await puter.hosting.create(puter.randName(), dirName);
+        hostingSubdomain = site.subdomain;
+        hostingDirectory = dirName;
+        hostingUrl = `https://${site.subdomain}.puter.site`;
+        siteCreated = true;
+
+        sitesSalvos = sitesSalvos.filter(s => s.subdomain !== site.subdomain);
+        sitesSalvos.unshift({ subdomain: site.subdomain, dir: dirName, data: new Date().toLocaleString(), url: hostingUrl });
+        localStorage.setItem('codehub_sites', JSON.stringify(sitesSalvos));
+
+        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({
+          url: hostingUrl, subdomain: hostingSubdomain, directory: hostingDirectory, publishedAt: new Date().toISOString()
+        });
+        document.getElementById('fileUrlTop').value = hostingUrl;
+        document.getElementById('urlPanelTop').style.display = 'flex';
+        updateSiteButtons();
+        showNotification('✅ Publicado! ' + hostingUrl, 'success');
+        navigator.clipboard.writeText(hostingUrl);
+      } catch(e) { showNotification('Erro: ' + e.message, 'error'); }
+    }
+
+    async function executarAtualizacao() {
+      try {
+        await saveCurrentFile();
+        for (const [key, file] of Object.entries(files)) {
+          await puter.fs.write(`${hostingDirectory}/${file.originalName || file.name}`, file.content || '');
+        }
+        await puter.hosting.update(hostingSubdomain, hostingDirectory);
+        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).update({ updatedAt: new Date().toISOString() });
+        showNotification('✅ Site atualizado!', 'success');
+      } catch(e) {
+        try {
+          await puter.hosting.delete(hostingSubdomain);
+          const site = await puter.hosting.create(hostingSubdomain, hostingDirectory);
+          hostingUrl = `https://${site.subdomain}.puter.site`;
+          showNotification('✅ Atualizado (método alternativo)!', 'success');
+        } catch(e2) { showNotification('Erro: ' + e.message, 'error'); }
+      }
+    }
+
+    async function deleteSite() {
+      if (!siteCreated) return;
+      showModal('🗑️ Deletar Site?', `Deletar ${hostingUrl}?`, async () => {
+        try {
+          await garantirLogin();
+          await puter.hosting.delete(hostingSubdomain);
+          sitesSalvos = sitesSalvos.filter(s => s.subdomain !== hostingSubdomain);
+          localStorage.setItem('codehub_sites', JSON.stringify(sitesSalvos));
+          hostingSubdomain = null; hostingDirectory = null; hostingUrl = null; siteCreated = false;
+          document.getElementById('urlPanelTop').style.display = 'none';
+          updateSiteButtons();
+          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).remove();
+          showNotification('✅ Site deletado!', 'success');
+        } catch(e) { showNotification('Erro: ' + e.message, 'error'); }
+      });
+    }
+
+    function updateSiteButtons() {
+      const pub = document.getElementById('sitePublishBtn');
+      const del = document.getElementById('siteDeleteBtn');
+      if (siteCreated) {
+        pub.textContent = '🔄 Atualizar'; pub.style.background = '#d2991d'; pub.style.borderColor = '#d2991d';
+        del.style.display = 'inline-flex';
+      } else {
+        pub.textContent = '🚀 Publicar'; pub.style.background = '#238636'; pub.style.borderColor = '#3fb950';
+        del.style.display = 'none';
       }
     }
 
     // ============ ARQUIVOS ============
     async function saveCurrentFile() {
-      if (!currentFile || !files[currentFile]) return;
-      
-      if (isSaving) return;
+      if (!currentFile || !files[currentFile] || isSaving) return;
       isSaving = true;
-      
       try {
         const content = document.getElementById('simple-editor').value;
-        
-        if (lastSavedContent === content) {
-          setStatus('Salvo ✔', 'var(--accent-green)', new Date().toLocaleTimeString());
-          isSaving = false;
-          return;
-        }
-
+        if (lastSavedContent === content) { setStatus('Salvo ✔', 'var(--accent-green)', new Date().toLocaleTimeString()); isSaving = false; return; }
         setStatus('Salvando...', 'var(--accent-orange)');
-        
         files[currentFile].content = content;
         files[currentFile].updatedAt = new Date().toISOString();
-        
-        // Cache local via IndexedDB (salva primeiro localmente)
         const cacheId = currentProjectId + '_' + currentFile;
-        await idbPut('files', {
-          id: cacheId,
-          content: content,
-          updatedAt: files[currentFile].updatedAt
-        });
-        
-        // Histórico de versões local
-        const versionData = {
-          fileId: cacheId,
-          content: content,
-          timestamp: new Date().toISOString(),
-          fileName: files[currentFile].name || files[currentFile].originalName
-        };
-        await idbPut('versions', versionData);
-        
-        // Firebase save
-        await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ 
-          files, 
-          updatedAt: new Date().toISOString() 
-        });
-        
-        // Remove cache local após sucesso no Firebase (confirmação que salvou)
+        await idbPut('files', { id: cacheId, content, updatedAt: files[currentFile].updatedAt });
+        await idbPut('versions', { fileId: cacheId, content, timestamp: new Date().toISOString(), fileName: files[currentFile].name || files[currentFile].originalName });
+        await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ files, updatedAt: new Date().toISOString() });
         await idbDelete('files', cacheId);
-        
         lastSavedContent = content;
-        const timeStr = new Date().toLocaleTimeString();
-        setStatus('Salvo ✔', 'var(--accent-green)', timeStr);
-        
-        logInfo('Salvo: ' + (files[currentFile].name || files[currentFile].originalName) + ' às ' + timeStr);
-        
-        // Atualiza preview se estiver aberto
-        if (document.getElementById('previewModal').style.display === 'flex') {
-          updatePreviewIframe();
-        }
-      } catch(e) {
-        logError('Erro ao salvar: ' + e.message);
-        setStatus('Erro ❌', 'var(--accent-red)');
-        showNotification('Erro ao salvar!', 'error');
-      } finally {
-        isSaving = false;
-      }
+        setStatus('Salvo ✔', 'var(--accent-green)', new Date().toLocaleTimeString());
+        if (document.getElementById('previewModal').style.display === 'flex') updatePreviewIframe();
+      } catch(e) { setStatus('Erro ❌', 'var(--accent-red'); } finally { isSaving = false; }
     }
 
     function openFile(key) {
       if (!files[key]) return;
-      
-      // Salva arquivo atual antes de trocar
-      if (currentFile && currentFile !== key) {
-        saveCurrentFile();
-      }
-      
+      if (currentFile && currentFile !== key) saveCurrentFile();
       currentFile = key;
       document.getElementById('simple-editor').value = files[key].content || '';
       lastSavedContent = files[key].content || '';
@@ -1120,9 +971,9 @@
       tabs.innerHTML = '';
       Object.keys(files).forEach(key => {
         const btn = document.createElement('button');
-        btn.className = `tab-btn ${key === currentFile ? 'active' : ''}`;
+        btn.className = `tab-btn ${key === currentFile ? 'active' : ''} ${isAIEditing ? 'ai-editing' : ''}`;
         btn.onclick = () => openFile(key);
-        btn.innerHTML = `${files[key].name || files[key].originalName || 'arquivo'} <span class="close-tab-btn" onclick="event.stopPropagation();closeFile('${key}')">&times;</span>`;
+        btn.innerHTML = `${isAIEditing ? '<span class="ai-edit-icon">✏️</span>' : ''}${files[key].name || files[key].originalName || 'arquivo'} <span class="close-tab-btn" onclick="event.stopPropagation();closeFile('${key}')">&times;</span>`;
         tabs.appendChild(btn);
       });
     }
@@ -1130,135 +981,169 @@
     async function closeFile(key) {
       if (Object.keys(files).length <= 1) return;
       delete files[key];
-      await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ 
-        files, 
-        updatedAt: new Date().toISOString() 
-      });
+      await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ files, updatedAt: new Date().toISOString() });
       if (key === currentFile) openFile(Object.keys(files)[0]);
       updateTabs();
     }
 
-    function showNotification(msg, type) {
-      const n = document.createElement('div');
-      n.className = `notification ${type}`;
-      n.textContent = msg;
-      document.body.appendChild(n);
-      setTimeout(() => n.remove(), 3500);
+    function previewProject() {
+      const idx = Object.values(files).find(f => (f.name || f.originalName) === 'index.html');
+      if (idx?.content) {
+        saveCurrentFile().then(() => { updatePreviewIframe(); document.getElementById('previewModal').style.display = 'flex'; });
+      } else { showNotification('Crie index.html primeiro', 'info'); }
     }
 
-    // ============ VERSION HISTORY ============
-    async function showVersionHistory() {
-      if (!currentFile) {
-        showNotification('Abra um arquivo primeiro', 'info');
-        return;
+    function updatePreviewIframe() {
+      const iframe = document.getElementById('previewIframe');
+      const idx = Object.values(files).find(f => (f.name || f.originalName) === 'index.html');
+      if (idx?.content) {
+        if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl);
+        let htmlContent = idx.content;
+        for (const [key, file] of Object.entries(files)) {
+          const fileName = file.name || file.originalName;
+          if (fileName === 'index.html') continue;
+          if (fileName.endsWith('.css')) htmlContent = htmlContent.replace('</head>', `<style>${file.content}</style></head>`);
+          if (fileName.endsWith('.js')) htmlContent = htmlContent.replace('</body>', `<script>${file.content}<\/script></body>`);
+        }
+        previewBlobUrl = URL.createObjectURL(new Blob([htmlContent], { type: 'text/html' }));
+        iframe.src = previewBlobUrl;
       }
+    }
+
+    function refreshPreview() { updatePreviewIframe(); showNotification('Preview atualizado!', 'info'); }
+    function openPreviewExterno() {
+      const idx = Object.values(files).find(f => (f.name || f.originalName) === 'index.html');
+      if (idx?.content) window.open(URL.createObjectURL(new Blob([idx.content], { type: 'text/html' })), '_blank');
+    }
+    function closePreviewModal() { document.getElementById('previewModal').style.display = 'none'; }
+
+    // ============ AI COMANDOS ============
+    async function processAICommands(response) {
+      const text = response;
       
-      const fileId = currentProjectId + '_' + currentFile;
-      const versions = await idbGetVersions(fileId);
-      
-      document.getElementById('versionFileName').textContent = files[currentFile].name || files[currentFile].originalName;
-      const list = document.getElementById('versionList');
-      
-      if (versions.length === 0) {
-        list.innerHTML = '<p style="color:var(--text-secondary);">Nenhuma versão salva ainda.</p>';
-      } else {
-        let html = '';
-        versions.forEach((v) => {
-          const date = new Date(v.timestamp).toLocaleString();
-          const preview = v.content.substring(0, 100).replace(/</g, '&lt;') + '...';
-          html += `
-            <div style="background:var(--bg-primary);padding:10px;border-radius:6px;margin:6px 0;border:1px solid var(--border-color);">
-              <div style="display:flex;justify-content:space-between;align-items:center;">
-                <strong style="color:var(--accent-cyan);">📅 ${date}</strong>
-                <button onclick="restoreVersion(${v.versionId})" style="font-size:11px;padding:4px 10px;background:var(--accent-blue);border-color:var(--accent-blue);">Restaurar</button>
-              </div>
-              <div style="font-family:monospace;font-size:11px;color:var(--text-secondary);margin-top:6px;">${preview}</div>
-            </div>`;
+      // Processar CREATE_FILE
+      const createRegex = /\[CREATE_FILE:\s*([^\]]+)\]\s*([\s\S]*?)\s*\[\/CREATE_FILE\]/g;
+      let match;
+      while ((match = createRegex.exec(text)) !== null) {
+        const fileName = match[1].trim();
+        const content = match[2];
+        const key = fileName.replace(/[^a-zA-Z0-9]/g, '_');
+        files[key] = { name: fileName, originalName: fileName, content, createdAt: new Date().toISOString() };
+        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/files`).update(files);
+        openFile(key);
+        saveCurrentFile();
+        logSuccess(`Arquivo criado: ${fileName}`);
+        showNotification(`✅ ${fileName} criado!`, 'success');
+      }
+
+      // Processar EDIT_FILE
+      const editRegex = /\[EDIT_FILE:\s*([^\]]+)\]\s*([\s\S]*?)\s*\[\/EDIT_FILE\]/g;
+      while ((match = editRegex.exec(text)) !== null) {
+        const fileName = match[1].trim();
+        const content = match[2];
+        const key = fileName.replace(/[^a-zA-Z0-9]/g, '_');
+        if (files[key]) {
+          setAIEditing(true);
+          files[key].content = content;
+          files[key].updatedAt = new Date().toISOString();
+          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/files`).update(files);
+          if (currentFile === key) {
+            document.getElementById('simple-editor').value = content;
+            lastSavedContent = content;
+          }
+          saveCurrentFile();
+          setTimeout(() => setAIEditing(false), 2000);
+          logSuccess(`Arquivo editado: ${fileName}`);
+          showNotification(`✅ ${fileName} atualizado!`, 'success');
+        }
+      }
+
+      // Processar DELETE_FILE
+      const deleteRegex = /\[DELETE_FILE:\s*([^\]]+)\]/g;
+      while ((match = deleteRegex.exec(text)) !== null) {
+        const fileName = match[1].trim();
+        const key = fileName.replace(/[^a-zA-Z0-9]/g, '_');
+        if (files[key]) {
+          delete files[key];
+          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/files`).update(files);
+          if (currentFile === key) openFile(Object.keys(files)[0] || null);
+          updateTabs();
+          logSuccess(`Arquivo deletado: ${fileName}`);
+          showNotification(`🗑️ ${fileName} deletado!`, 'info');
+        }
+      }
+
+      // Processar CREATE_WORKER
+      const createWorkerRegex = /\[CREATE_WORKER:\s*([^\]]+)\]\s*([\s\S]*?)\s*\[\/CREATE_WORKER\]/g;
+      while ((match = createWorkerRegex.exec(text)) !== null) {
+        const name = match[1].trim();
+        const code = match[2].trim();
+        const routeMatch = code.match(/router\.(get|post|put|delete)\(['"`](.*?)['"`]/);
+        const route = routeMatch ? routeMatch[2] : '/api';
+        const id = name.replace(/[^a-zA-Z0-9]/g, '_') + '_' + Date.now().toString(36);
+        await db.ref(`workers/${currentUser.uid}/${currentProjectId}/${id}`).set({
+          name, route, code, createdAt: new Date().toISOString()
         });
-        list.innerHTML = html;
+        await loadWorkers();
+        logSuccess(`Worker criado: ${name}`);
+        showNotification(`⚡ Worker "${name}" criado!`, 'success');
       }
-      
-      document.getElementById('versionHistoryModal').style.display = 'flex';
-    }
 
-    async function restoreVersion(versionId) {
-      try {
-        const version = await idbGet('versions', versionId);
-        if (!version) {
-          showNotification('Versão não encontrada', 'error');
-          return;
+      // Processar DELETE_WORKER
+      const deleteWorkerRegex = /\[DELETE_WORKER:\s*([^\]]+)\]/g;
+      while ((match = deleteWorkerRegex.exec(text)) !== null) {
+        const name = match[1].trim();
+        const w = workersList.find(x => x.name === name);
+        if (w) {
+          await deleteWorkerById(w.id);
+          logSuccess(`Worker deletado: ${name}`);
         }
-        
-        showModal('🕒 Restaurar Versão?', 
-          `Deseja restaurar a versão de ${new Date(version.timestamp).toLocaleString()}?\nO conteúdo atual será substituído.`, 
-          async () => {
-            document.getElementById('simple-editor').value = version.content;
-            files[currentFile].content = version.content;
-            
-            // Salva imediatamente
-            await saveCurrentFile();
-            
-            closeVersionHistoryModal();
-            showNotification('✅ Versão restaurada!', 'success');
-            logSuccess('Versão restaurada: ' + new Date(version.timestamp).toLocaleString());
-          });
-      } catch(e) {
-        logError('Erro ao restaurar versão: ' + e.message);
-        showNotification('Erro ao restaurar', 'error');
+      }
+
+      // Processar LIST_WORKERS
+      if (/\[LIST_WORKERS\]/.test(text)) {
+        await loadWorkers();
+        logInfo('Workers listados: ' + workersList.length);
       }
     }
 
-    function closeVersionHistoryModal() {
-      document.getElementById('versionHistoryModal').style.display = 'none';
-    }
-
-    // ============ CONTEXT MENU ============
-    function initContextMenu() {
-      const menu = document.getElementById('contextMenu');
-      document.addEventListener('contextmenu', e => {
-        e.preventDefault();
-        menu.style.display = 'block';
-        menu.style.left = Math.min(e.clientX, innerWidth-220) + 'px';
-        menu.style.top = Math.min(e.clientY, innerHeight-280) + 'px';
-      });
-      document.addEventListener('click', e => { 
-        if (!menu.contains(e.target)) menu.style.display = 'none'; 
-      });
-      document.addEventListener('keydown', e => {
-        if (e.ctrlKey && e.key === 's') { 
-          e.preventDefault(); 
-          saveCurrentFile(); 
-        }
-      });
-    }
-
-    function contextAction(a) {
-      document.getElementById('contextMenu').style.display = 'none';
-      if (a === 'save') saveCurrentFile();
-      if (a === 'publish') publishSite();
-      if (a === 'update') { 
-        if (siteCreated) executarAtualizacao(); 
-        else showNotification('Publique primeiro', 'info'); 
-      }
-      if (a === 'delete') deleteSite();
-      if (a === 'history') showHistory();
-      if (a === 'zoomIn') changeZoom(0.1);
-      if (a === 'zoomOut') changeZoom(-0.1);
-    }
-
-    // ============ AI ============
     async function sendToAI() {
       const msg = document.getElementById('chatInput').value.trim();
       if (!msg) return;
-      log(msg, 'user');
+      log('🧑 ' + msg, 'user');
       document.getElementById('chatInput').value = '';
+      
       try {
         await garantirLogin();
-        const res = await puter.ai.chat(msg);
-        log(res, 'ai');
+        
+        // Prepara contexto
+        const filesList = Object.entries(files).map(([k, f]) => `- ${f.name || f.originalName}: ${(f.content || '').length} caracteres`).join('\n');
+        const currentFileInfo = currentFile ? `Arquivo atual: ${files[currentFile]?.name || currentFile}\nConteúdo: ${files[currentFile]?.content?.substring(0, 500) || 'vazio'}` : 'Nenhum arquivo aberto';
+        
+        const fullPrompt = `${AI_SYSTEM_PROMPT}\n\nArquivos do projeto:\n${filesList}\n\n${currentFileInfo}\n\nWorkers: ${workersList.length}\nURL do site: ${hostingUrl || 'não publicado'}\n\nUsuário: ${msg}`;
+        
+        log('🤔 Processando...', 'system');
+        const res = await puter.ai.chat(fullPrompt, { model: 'gpt-5-nano' });
+        const responseText = res.message?.content || res.toString();
+        
+        log(responseText, 'ai');
+        await processAICommands(responseText);
+        updateTabs();
       } catch(e) { 
         logError('IA: ' + e.message); 
       }
+    }
+
+    function quickAI(type) {
+      const prompts = {
+        create_html: 'Crie um arquivo index.html com uma página web responsiva e moderna',
+        create_css: 'Crie um arquivo style.css com um design moderno e escuro',
+        create_js: 'Crie um arquivo script.js com funções úteis',
+        create_worker: 'Crie um worker chamado api com uma rota /api/data que retorna dados JSON',
+        analyze: 'Analise o código atual e sugira melhorias'
+      };
+      document.getElementById('chatInput').value = prompts[type] || '';
+      sendToAI();
     }
 
     // ============ INIT ============
@@ -1266,19 +1151,9 @@
       await openIDB();
       
       auth.onAuthStateChanged(async user => {
-        if (!user) { 
-          window.location.href = 'auth.html'; 
-          return; 
-        }
+        if (!user) { window.location.href = 'auth.html'; return; }
         currentUser = user;
         document.getElementById('user-name').textContent = user.displayName || user.email?.split('@')[0] || 'User';
-
-        const z = localStorage.getItem('zoom');
-        if (z) { 
-          currentZoom = parseFloat(z); 
-          document.body.style.zoom = currentZoom; 
-        }
-        document.getElementById('zoomLevel').textContent = Math.round(currentZoom*100)+'%';
 
         if (currentProjectId) {
           const snap = await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).once('value');
@@ -1286,38 +1161,22 @@
           if (d) {
             document.getElementById('project-name').value = d.name || '';
             files = d.files || {};
-
-            // Carrega cache local se existir (versão mais recente)
             for (const [key, file] of Object.entries(files)) {
               const cacheId = currentProjectId + '_' + key;
               const cached = await idbGet('files', cacheId);
               if (cached && (!file.updatedAt || cached.updatedAt > file.updatedAt)) {
                 file.content = cached.content;
                 file.updatedAt = cached.updatedAt;
-                logInfo('Cache local carregado: ' + (file.name || file.originalName));
               }
             }
-
             if (d.hosting?.url) {
-              hostingUrl = d.hosting.url;
-              hostingSubdomain = d.hosting.subdomain;
-              hostingDirectory = d.hosting.directory;
-              siteCreated = true;
+              hostingUrl = d.hosting.url; hostingSubdomain = d.hosting.subdomain;
+              hostingDirectory = d.hosting.directory; siteCreated = true;
               document.getElementById('fileUrlTop').value = hostingUrl;
               document.getElementById('urlPanelTop').style.display = 'flex';
             }
             updateSiteButtons();
-
-            const ws = await db.ref(`workers/${currentUser.uid}/${currentProjectId}`).once('value');
-            const w = ws.val();
-            if (w) {
-              const first = Object.entries(w)[0];
-              if (first) { 
-                currentWorkerData = { id: first[0], ...first[1] }; 
-                document.getElementById('workerCode').value = currentWorkerData.code || ''; 
-              }
-            }
-
+            await loadWorkers();
             const keys = Object.keys(files);
             if (keys.length > 0) openFile(keys[0]);
             updateTabs();
@@ -1329,31 +1188,42 @@
           document.getElementById('loading-screen').style.display = 'none';
           document.getElementById('app-content').style.display = 'flex';
           initContextMenu();
-          logSuccess('Sistema pronto com auto-save!');
-          logInfo('Preview incorporado ativo');
-          logInfo('Auto-save a cada 300ms após digitação');
+          logSuccess('Sistema pronto! IA ativada.');
         }, 400);
       });
     }
 
-    // Auto-save setup
     function setupAutoSave() {
       const editor = document.getElementById('simple-editor');
-      
       editor.addEventListener('input', () => {
         setStatus('Digitando...', 'var(--accent-orange)');
-        
         clearTimeout(autoSaveTimer);
-        autoSaveTimer = setTimeout(() => {
-          saveCurrentFile();
-        }, 300);
+        autoSaveTimer = setTimeout(() => saveCurrentFile(), 300);
       });
-      
-      // Salva ao perder foco também
-      editor.addEventListener('blur', () => {
-        clearTimeout(autoSaveTimer);
-        saveCurrentFile();
+      editor.addEventListener('blur', () => { clearTimeout(autoSaveTimer); saveCurrentFile(); });
+    }
+
+    function initContextMenu() {
+      const menu = document.getElementById('contextMenu');
+      document.addEventListener('contextmenu', e => {
+        e.preventDefault();
+        menu.style.display = 'block';
+        menu.style.left = Math.min(e.clientX, innerWidth-220) + 'px';
+        menu.style.top = Math.min(e.clientY, innerHeight-280) + 'px';
       });
+      document.addEventListener('click', e => { if (!menu.contains(e.target)) menu.style.display = 'none'; });
+      document.addEventListener('keydown', e => { if (e.ctrlKey && e.key === 's') { e.preventDefault(); saveCurrentFile(); } });
+    }
+
+    function contextAction(a) {
+      document.getElementById('contextMenu').style.display = 'none';
+      if (a === 'save') saveCurrentFile();
+      if (a === 'publish') publishSite();
+      if (a === 'update') { if (siteCreated) executarAtualizacao(); else showNotification('Publique primeiro', 'info'); }
+      if (a === 'delete') deleteSite();
+      if (a === 'history') showHistory();
+      if (a === 'zoomIn') changeZoom(0.1);
+      if (a === 'zoomOut') changeZoom(-0.1);
     }
 
     // Event listeners
@@ -1362,24 +1232,13 @@
     document.getElementById('sitePublishBtn').addEventListener('click', publishSite);
     document.getElementById('siteDeleteBtn').addEventListener('click', deleteSite);
     document.getElementById('siteHistoryBtn').addEventListener('click', showHistory);
-    document.getElementById('project-name').addEventListener('blur', async function() {
-      if (this.value.trim()) {
-        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/name`).set(this.value.trim());
-      }
-    });
     document.getElementById('chatInput').addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !e.shiftKey) { 
-        e.preventDefault(); 
-        sendToAI(); 
-      }
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendToAI(); }
     });
 
-    // Resize
+    // Resize handles
     let isResizing = false;
-    document.getElementById('resizeHandle').addEventListener('mousedown', e => { 
-      isResizing = true; 
-      e.preventDefault(); 
-    });
+    document.getElementById('resizeHandle').addEventListener('mousedown', e => { isResizing = true; e.preventDefault(); });
     document.addEventListener('mousemove', e => {
       if (!isResizing) return;
       const w = innerWidth - e.clientX;
@@ -1387,43 +1246,38 @@
     });
     document.addEventListener('mouseup', () => { isResizing = false; });
 
-    // Fechar modais
-    document.getElementById('confirmModal').addEventListener('click', function(e) { 
-      if (e.target === this) modalCancel(); 
+    let isResizingWorkers = false;
+    document.getElementById('workersResizeHandle').addEventListener('mousedown', e => { isResizingWorkers = true; e.preventDefault(); });
+    document.addEventListener('mousemove', e => {
+      if (!isResizingWorkers) return;
+      const w = e.clientX;
+      if (w >= 200 && w <= 400) document.getElementById('workers-panel').style.width = w + 'px';
     });
-    document.getElementById('historyModal').addEventListener('click', function(e) { 
-      if (e.target === this) closeHistoryModal(); 
-    });
-    document.getElementById('versionHistoryModal').addEventListener('click', function(e) { 
-      if (e.target === this) closeVersionHistoryModal(); 
-    });
-    document.getElementById('previewModal').addEventListener('click', function(e) { 
-      if (e.target === this) closePreviewModal(); 
-    });
+    document.addEventListener('mouseup', () => { isResizingWorkers = false; });
+
+    // Modal close
+    document.getElementById('confirmModal').addEventListener('click', function(e) { if (e.target === this) modalCancel(); });
+    document.getElementById('historyModal').addEventListener('click', function(e) { if (e.target === this) closeHistoryModal(); });
+    document.getElementById('versionHistoryModal').addEventListener('click', function(e) { if (e.target === this) closeVersionHistoryModal(); });
+    document.getElementById('previewModal').addEventListener('click', function(e) { if (e.target === this) closePreviewModal(); });
+    document.getElementById('newWorkerModal').addEventListener('click', function(e) { if (e.target === this) closeNewWorkerModal(); });
 
     // Expor funções globalmente
-    window.changeZoom = changeZoom;
-    window.resetZoom = resetZoom;
-    window.contextAction = contextAction;
-    window.closeFile = closeFile;
-    window.saveCurrentFile = saveCurrentFile;
-    window.publishSite = publishSite;
-    window.deleteSite = deleteSite;
-    window.showHistory = showHistory;
+    window.changeZoom = changeZoom; window.resetZoom = resetZoom;
+    window.contextAction = contextAction; window.closeFile = closeFile;
+    window.saveCurrentFile = saveCurrentFile; window.publishSite = publishSite;
+    window.deleteSite = deleteSite; window.showHistory = showHistory;
     window.closeHistoryModal = closeHistoryModal;
-    window.showVersionHistory = showVersionHistory;
-    window.restoreVersion = restoreVersion;
+    window.previewProject = previewProject; window.refreshPreview = refreshPreview;
+    window.openPreviewExterno = openPreviewExterno; window.closePreviewModal = closePreviewModal;
+    window.saveWorkerCode = saveWorkerCode; window.publishWorker = publishWorker;
+    window.sendToAI = sendToAI; window.quickAI = quickAI; window.copyUrl = copyUrl;
+    window.createNewWorker = createNewWorker; window.closeNewWorkerModal = closeNewWorkerModal;
+    window.confirmNewWorker = confirmNewWorker;
+    window.selectWorker = selectWorker; window.deleteWorkerById = deleteWorkerById;
+    window.showVersionHistory = showVersionHistory; window.restoreVersion = restoreVersion;
     window.closeVersionHistoryModal = closeVersionHistoryModal;
-    window.previewProject = previewProject;
-    window.refreshPreview = refreshPreview;
-    window.openPreviewExterno = openPreviewExterno;
-    window.closePreviewModal = closePreviewModal;
-    window.saveWorkerCode = saveWorkerCode;
-    window.publishWorker = publishWorker;
-    window.sendToAI = sendToAI;
-    window.copyUrl = copyUrl;
 
-    // Inicia tudo
     setupAutoSave();
     initApp();
   </script>
