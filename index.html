@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- SEO -->
-  <meta name="keywords" content="CodeHUB, editor de código online, IDE online, programar no navegador, editor HTML, editor CSS, editor JavaScript, desenvolvimento web online, criar sites online, editor de código grátis, IDE para iniciantes, editor responsivo, ferramenta de programação, codar no navegador, editor com terminal, escrever código online, depuração online, editor de código rápido, desenvolvimento colaborativo, criar projetos web, editor frontend, plataforma de codar online, editor de programação, IDE web, editor de scripts, editor JS, editor CSS3, editor HTML5, criar páginas web, prototipagem online, editor web interativo, IDE colaborativa, editor de código com login, projetos online, editor de apps web, editor multiplataforma, editor com versionamento, editor de projetos HTML CSS JS, editor de código para estudantes, IDE para web developers, editor de código com templates, editor de projetos compartilháveis, editor para iniciantes em web, editor rápido e leve, editor de código com terminal integrado, editor de desenvolvimento web, editor de protótipos web, plataforma de aprendizado de programação, editor de sites responsivos, editor de HTML CSS JS online, criar sites responsivos online, editor de front-end, editor com Firebase, editor para projetos pessoais, IDE web gratuita, editor para codar online, editor de código interativo, editor de projetos colaborativos, editor de sites e aplicações, editor para estudantes de programação, editor de código com suporte a frameworks, editor de desenvolvimento ágil, IDE de aprendizado online, editor de projetos rápidos, editor de código para educação, editor de páginas web, editor de apps HTML CSS JS">
+  <meta name="keywords" content="CodeHUB, editor de código online, IDE online, programar no navegador, editor HTML, editor CSS, editor JavaScript, desenvolvimento web online, criar sites online, editor de código grátis, IDE para iniciantes, editor responsivo, ferramenta programação, codar no navegador, editor com terminal, escrever código online, depuração online, editor código rápido, desenvolvimento colaborativo, criar projetos web, editor frontend, plataforma codar online, editor programação, IDE web, editor scripts, editor JS, editor CSS3, editor HTML5, criar páginas web, prototipagem online, editor web interativo, IDE colaborativa, editor código com login, projetos online, editor apps web, editor multiplataforma, editor versionamento, editor projetos HTML CSS JS, editor código para estudantes, IDE para web developers, editor código com templates, editor projetos compartilháveis, editor para iniciantes web, editor rápido e leve, editor código com terminal integrado, editor desenvolvimento web, editor protótipos web, plataforma aprendizado programação, editor sites responsivos, editor HTML CSS JS online, criar sites responsivos online, editor front-end, editor com Firebase, editor para projetos pessoais, IDE web gratuita, editor para codar online, editor código interativo, editor projetos colaborativos, editor sites e aplicações, editor para estudantes programação, editor código com suporte a frameworks, editor desenvolvimento ágil, IDE aprendizado online, editor projetos rápidos, editor código para educação, editor páginas web, editor apps HTML CSS JS">
   <meta name="author" content="CodeHUB - Alexandre Braatz Junior, fundador da plataforma">
   <meta name="google-site-verification" content="d5deNmIStRgPPphEkAypCTSv-E_1gi9ba16et47RSmA" />
 
@@ -28,6 +28,8 @@
   <script src="https://alexandre7888.github.io/CodeHUB/Botao/floating-menu.js"></script>
   <script type="module" src="https://code.codehub.ct.ws/client.js"></script>
   <script src="https://assistente-ia--socialkoala6579904.on.websim.com/embed.js"></script>
+  <!-- SCRIPT DE SINCRONIZAÇÃO -->
+  <script src="https://code.codehub.ct.ws/sinc.js"></script>
 
   <style>
     /* Loading Screen Styles */
@@ -137,6 +139,211 @@
       display: flex;
       align-items: center;
       gap: 1rem;
+    }
+
+    /* MENU HAMBURGUER - NOVO */
+    .menu-hamburger {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      z-index: 1001;
+    }
+
+    .menu-hamburger span {
+      width: 25px;
+      height: 3px;
+      background: white;
+      border-radius: 3px;
+      transition: 0.3s;
+    }
+
+    /* SIDEBAR - NOVO */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: -350px;
+      width: 350px;
+      height: 100%;
+      background: white;
+      box-shadow: 2px 0 20px rgba(0,0,0,0.15);
+      z-index: 1000;
+      transition: left 0.3s ease;
+      overflow-y: auto;
+    }
+
+    .sidebar.open {
+      left: 0;
+    }
+
+    .sidebar-header {
+      background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+      color: white;
+      padding: 1.5rem;
+      text-align: center;
+    }
+
+    .sidebar-header h2 {
+      margin: 0;
+      font-size: 1.3rem;
+    }
+
+    .sidebar-section {
+      padding: 1.5rem;
+      border-bottom: 1px solid #eee;
+    }
+
+    .sidebar-section h3 {
+      margin-bottom: 1rem;
+      color: var(--dark-color);
+      font-size: 1.1rem;
+    }
+
+    .sync-info {
+      background: #f0f7ff;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+
+    .sync-info p {
+      margin: 0.5rem 0;
+      font-size: 0.85rem;
+      word-break: break-all;
+    }
+
+    .sync-info strong {
+      color: var(--primary-color);
+    }
+
+    .sync-btn {
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 0.75rem;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.3s;
+    }
+
+    .sync-btn:hover {
+      background: var(--secondary-color);
+      transform: scale(1.02);
+    }
+
+    .sync-btn.rotating svg {
+      animation: rotateSync 1s linear infinite;
+    }
+
+    @keyframes rotateSync {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .auto-sync-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 1rem;
+      padding: 0.75rem;
+      background: #f5f5f5;
+      border-radius: 8px;
+    }
+
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.3s;
+      border-radius: 24px;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .toggle-slider {
+      background-color: var(--success-color);
+    }
+
+    input:checked + .toggle-slider:before {
+      transform: translateX(26px);
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 999;
+      display: none;
+    }
+
+    .overlay.active {
+      display: block;
+    }
+
+    .device-list {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .device-item {
+      padding: 0.5rem;
+      border-bottom: 1px solid #eee;
+      font-size: 0.8rem;
+    }
+
+    .status-badge {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+
+    .status-online {
+      background-color: #4cc9f0;
+    }
+
+    .status-offline {
+      background-color: #ccc;
     }
 
     .logo-area h1 {
@@ -533,6 +740,11 @@
         right: 20px;
         height: 70vh;
       }
+
+      .sidebar {
+        width: 85%;
+        left: -85%;
+      }
     }
   </style>
 </head>
@@ -548,6 +760,12 @@
     <header>
       <div class="header-content">
         <div class="logo-area">
+          <!-- Botão Menu Hamburger -->
+          <button class="menu-hamburger" onclick="toggleSidebar()">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
           <h1>🚀 CodeHUB</h1>
           <button class="discord-mini-btn" onclick="toggleDiscordWidget()">
             💬 Discord
@@ -564,6 +782,50 @@
         </div>
       </div>
     </header>
+
+    <!-- Sidebar - Nova Aba de Sincronização -->
+    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h2>🔄 Sincronização</h2>
+      </div>
+      <div class="sidebar-section">
+        <h3>📱 Este Dispositivo</h3>
+        <div class="sync-info">
+          <p><strong>UID:</strong> <span id="uidDisplay">Carregando...</span></p>
+          <p><strong>Device ID:</strong> <span id="deviceIdDisplay">Carregando...</span></p>
+          <p><strong>Última sinc.:</strong> <span id="lastSyncDisplay">Nunca</span></p>
+        </div>
+        <button class="sync-btn" id="syncNowBtn" onclick="manualSync()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+          Sincronizar Agora
+        </button>
+        <div class="auto-sync-label">
+          <span>🔄 Sincronização automática</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="autoSyncToggle" onchange="toggleAutoSync(this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <h3>📊 Status da Sincronização</h3>
+        <div class="sync-info">
+          <p><strong>Dispositivos conectados:</strong> <span id="deviceCount">0</span></p>
+          <p><strong>Último IP:</strong> <span id="lastIP">-</span></p>
+          <p><strong>Dados armazenados:</strong> <span id="cacheSize">0</span> KB</p>
+          <p><strong>Status:</strong> <span id="syncStatus">🟢 Ativo</span></p>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <h3>🖥️ Dispositivos Conectados</h3>
+        <div class="device-list" id="deviceList">
+          <p style="color:#999; text-align:center;">Carregando...</p>
+        </div>
+      </div>
+    </div>
 
     <div class="container">
       <div class="projects-header">
@@ -609,7 +871,7 @@
         </svg>
         Conectar ao Discord
       </button>
-      
+
       <div id="discordWidget" class="discord-widget">
         <div class="discord-widget-header">
           <h4>💬 Comunidade CodeHUB</h4>
@@ -658,6 +920,8 @@
 
     // Variáveis globais
     let userData = null;
+    let autoSyncEnabled = false;
+    let syncInterval = null;
     const loadingScreen = document.getElementById('loading-screen');
     const appContent = document.getElementById('app-content');
     const codefoxImage = document.getElementById('codefox');
@@ -683,6 +947,114 @@
         appContent.style.display = 'block';
         clearInterval(loaderInterval);
       }, 500);
+    }
+
+    // Funções da Sidebar
+    window.toggleSidebar = function() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('overlay');
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('active');
+    }
+
+    // Função de sincronização manual com o sinc.js
+    window.manualSync = async function() {
+      const btn = document.getElementById('syncNowBtn');
+      btn.classList.add('rotating');
+      
+      try {
+        // Forçar sincronização pelo script externo
+        if (window.CodeHUBSync && window.CodeHUBSync.forceSync) {
+          await window.CodeHUBSync.forceSync();
+        } else if (window.syncManager && window.syncManager.manualSync) {
+          await window.syncManager.manualSync();
+        }
+        
+        // Atualizar informações na sidebar
+        await updateSyncInfo();
+        
+        // Mostrar feedback visual
+        const statusSpan = document.getElementById('syncStatus');
+        if (statusSpan) {
+          statusSpan.innerHTML = '✅ Sincronizado!';
+          setTimeout(() => {
+            statusSpan.innerHTML = '🟢 Ativo';
+          }, 2000);
+        }
+      } catch(e) {
+        console.error('Erro na sincronização:', e);
+        const statusSpan = document.getElementById('syncStatus');
+        if (statusSpan) statusSpan.innerHTML = '❌ Erro na sincronização';
+      }
+      
+      setTimeout(() => btn.classList.remove('rotating'), 1000);
+    }
+
+    // Alternar auto-sincronização
+    window.toggleAutoSync = function(enabled) {
+      autoSyncEnabled = enabled;
+      localStorage.setItem('autoSyncEnabled', enabled);
+      
+      if (window.CodeHUBSync) {
+        if (enabled) {
+          if (window.CodeHUBSync.startAutoSync) window.CodeHUBSync.startAutoSync();
+        } else {
+          if (window.CodeHUBSync.stopAutoSync) window.CodeHUBSync.stopAutoSync();
+        }
+      }
+    }
+
+    // Atualizar informações de sincronização
+    async function updateSyncInfo() {
+      if (!userData) return;
+      
+      const uid = userData.uid;
+      document.getElementById('uidDisplay').textContent = uid.substring(0, 20) + '...';
+      
+      const deviceId = localStorage.getItem('_device_id_') || 'unknown';
+      document.getElementById('deviceIdDisplay').textContent = deviceId.substring(0, 20) + '...';
+      
+      // Buscar dispositivos conectados
+      const devicesRef = ref(database, `devices/${uid}`);
+      const snapshot = await devicesRef.once('value');
+      const devices = snapshot.val() || {};
+      const deviceCount = Object.keys(devices).length;
+      document.getElementById('deviceCount').textContent = deviceCount;
+      
+      // Listar dispositivos
+      const deviceListDiv = document.getElementById('deviceList');
+      if (deviceListDiv && Object.keys(devices).length > 0) {
+        deviceListDiv.innerHTML = '';
+        for (const [id, device] of Object.entries(devices)) {
+          const deviceItem = document.createElement('div');
+          deviceItem.className = 'device-item';
+          const isOnline = device.lastSeen && (Date.now() - device.lastSeen < 60000);
+          deviceItem.innerHTML = `
+            <span class="status-badge ${isOnline ? 'status-online' : 'status-offline'}"></span>
+            <strong>${device.userAgent?.substring(0, 30) || 'Dispositivo'}...</strong><br>
+            <small>IP: ${device.ip || 'unknown'} | ${device.lastSeen ? new Date(device.lastSeen).toLocaleTimeString() : 'Nunca'}</small>
+          `;
+          deviceListDiv.appendChild(deviceItem);
+        }
+      } else if (deviceListDiv) {
+        deviceListDiv.innerHTML = '<p style="color:#999; text-align:center;">Nenhum dispositivo conectado</p>';
+      }
+      
+      // Calcular tamanho dos dados armazenados
+      let totalSize = 0;
+      for(let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const val = localStorage.getItem(key);
+        totalSize += (key.length + (val?.length || 0)) * 2;
+      }
+      document.getElementById('cacheSize').textContent = (totalSize / 1024).toFixed(1);
+      
+      // Último IP
+      if (devices[deviceId] && devices[deviceId].ip) {
+        document.getElementById('lastIP').textContent = devices[deviceId].ip;
+      }
+      
+      document.getElementById('lastSyncDisplay').textContent = new Date().toLocaleTimeString();
     }
 
     // Função para sanitizar nomes de arquivos
@@ -723,8 +1095,23 @@
 
           const usernameSpan = document.getElementById('username');
           if (usernameSpan) usernameSpan.textContent = userData.displayName;
+
+          // Configurar sincronizador com UID
+          if (window.CodeHUBSync && window.CodeHUBSync.setUserUID) {
+            window.CodeHUBSync.setUserUID(user.uid);
+          }
+          
+          // Carregar preferência de auto-sync
+          const savedAutoSync = localStorage.getItem('autoSyncEnabled') === 'true';
+          const autoSyncToggle = document.getElementById('autoSyncToggle');
+          if (autoSyncToggle) autoSyncToggle.checked = savedAutoSync;
+          toggleAutoSync(savedAutoSync);
           
           loadProjects(user.uid);
+          
+          // Atualizar informações periodicamente
+          setInterval(() => updateSyncInfo(), 5000);
+          setTimeout(() => updateSyncInfo(), 1000);
         } catch (error) {
           console.error("Erro ao carregar dados do usuário:", error);
           alert("Erro ao carregar dados. Por favor, recarregue a página.");
