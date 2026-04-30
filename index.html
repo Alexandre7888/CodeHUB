@@ -143,7 +143,7 @@
       font-size: 1.5rem;
     }
 
-    /* Menu Hamburguer - NOVO */
+    /* Menu Hamburguer */
     .menu-hamburger {
       background: none;
       border: none;
@@ -163,7 +163,7 @@
       transition: 0.3s;
     }
 
-    /* Sidebar - NOVO */
+    /* Sidebar */
     .sidebar {
       position: fixed;
       top: 0;
@@ -703,6 +703,28 @@
       border: 1px solid white;
     }
 
+    /* Toast de sincronização */
+    .sync-toast {
+      position: fixed;
+      bottom: 80px;
+      right: 20px;
+      background: #4caf50;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 1200;
+      animation: fadeInOut 2s ease;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+
+    @keyframes fadeInOut {
+      0% { opacity: 0; transform: translateY(20px); }
+      15% { opacity: 1; transform: translateY(0); }
+      85% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-20px); }
+    }
+
     /* Responsividade */
     @media (max-width: 768px) {
       .projects-grid {
@@ -754,7 +776,6 @@
     <header>
       <div class="header-content">
         <div class="logo-area">
-          <!-- Botão Menu Hamburguer -->
           <button class="menu-hamburger" onclick="toggleSidebar()">
             <span></span>
             <span></span>
@@ -797,9 +818,9 @@
           Sincronizar Agora
         </button>
         <div class="auto-sync-label">
-          <span>🔄 Sincronização automática</span>
+          <span>🔄 Sincronização automática (2s)</span>
           <label class="toggle-switch">
-            <input type="checkbox" id="autoSyncToggle" onchange="toggleAutoSync(this.checked)">
+            <input type="checkbox" id="autoSyncToggle" onchange="toggleAutoSync(this.checked)" checked>
             <span class="toggle-slider"></span>
           </label>
         </div>
@@ -889,7 +910,7 @@
     </div>
   </div>
 
-  <!-- Firebase e App Script - VERSÃO CORRIGIDA -->
+  <!-- Firebase e App Script - VERSÃO CORRIGIDA COM SINCronização AUTOMÁTICA -->
   <script type="module">
     // ========== IMPORTAÇÕES CORRETAS PARA FIREBASE 9.x ==========
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
@@ -918,9 +939,20 @@
     let autoSyncEnabled = true;
     let syncInterval = null;
     let currentDeviceId = null;
+    let isFirstSync = true; // Para saber se é o primeiro sync após login
     const loadingScreen = document.getElementById('loading-screen');
     const appContent = document.getElementById('app-content');
     const codefoxImage = document.getElementById('codefox');
+
+    // Função para mostrar toast de sincronização
+    function showSyncToast(message, isError = false) {
+      const toast = document.createElement('div');
+      toast.className = 'sync-toast';
+      toast.style.background = isError ? '#f44336' : '#4caf50';
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2000);
+    }
 
     // Configurar animação do loader
     const imagens = [
@@ -1025,6 +1057,73 @@
       }
     }
 
+    // FUNÇÃO: Restaurar todos os dados do Firebase para o localStorage/sessionStorage/cookies
+    async function restoreAllDataFromFirebase() {
+      if (!userData) return false;
+      
+      try {
+        console.log('Restaurando dados do Firebase...');
+        const syncDataRef = ref(database, `syncData/${userData.uid}`);
+        const snapshot = await get(syncDataRef);
+        const data = snapshot.val();
+        
+        if (data && data.data) {
+          const restoredData = fromBase64(data.data);
+          if (restoredData && typeof restoredData === 'object') {
+            let changesApplied = false;
+            
+            // Restaurar localStorage
+            if (restoredData.ls && typeof restoredData.ls === 'object') {
+              for(const key in restoredData.ls) {
+                if (key !== '_device_id_') {
+                  localStorage.setItem(key, restoredData.ls[key]);
+                  changesApplied = true;
+                }
+              }
+              console.log(`✅ Restaurados ${Object.keys(restoredData.ls).length} itens do localStorage`);
+            }
+            
+            // Restaurar sessionStorage
+            if (restoredData.ss && typeof restoredData.ss === 'object') {
+              for(const key in restoredData.ss) {
+                sessionStorage.setItem(key, restoredData.ss[key]);
+                changesApplied = true;
+              }
+              console.log(`✅ Restaurados ${Object.keys(restoredData.ss).length} itens do sessionStorage`);
+            }
+            
+            // Restaurar cookies
+            if (restoredData.ck && typeof restoredData.ck === 'object') {
+              for(const name in restoredData.ck) {
+                document.cookie = name + "=" + restoredData.ck[name] + "; path=/";
+                changesApplied = true;
+              }
+              console.log(`✅ Restaurados ${Object.keys(restoredData.ck).length} cookies`);
+            }
+            
+            if (changesApplied) {
+              showSyncToast('🔄 Dados restaurados do servidor!');
+              // Recarregar a página para aplicar todas as mudanças
+              setTimeout(() => {
+                if (confirm('Dados restaurados com sucesso! Recarregar a página para aplicar todas as mudanças?')) {
+                  window.location.reload();
+                }
+              }, 500);
+              return true;
+            } else {
+              console.log('Nenhum dado novo para restaurar');
+            }
+          }
+        } else {
+          console.log('Nenhum dado encontrado no Firebase para este usuário');
+        }
+        return false;
+      } catch(e) {
+        console.error('Erro ao restaurar dados:', e);
+        return false;
+      }
+    }
+
     async function saveCurrentData() {
       if (!userData) return false;
       
@@ -1037,7 +1136,6 @@
           return false;
         }
         
-        // CORREÇÃO: Usar ref corretamente com Firebase 9.x
         const syncDataRef = ref(database, `syncData/${userData.uid}`);
         await set(syncDataRef, {
           data: encoded,
@@ -1053,6 +1151,11 @@
           userAgent: navigator.userAgent,
           ip: ip
         });
+        
+        // Mostrar toast a cada 10 sincronizações para não poluir
+        if (Math.random() < 0.1) {
+          showSyncToast('💾 Dados salvos na nuvem');
+        }
         
         return true;
       } catch(e) {
@@ -1074,6 +1177,7 @@
           if (restoredData && typeof restoredData === 'object') {
             let changesApplied = false;
             
+            // Verificar e restaurar localStorage
             if (restoredData.ls && typeof restoredData.ls === 'object') {
               for(const key in restoredData.ls) {
                 if (key !== '_device_id_' && localStorage.getItem(key) !== restoredData.ls[key]) {
@@ -1083,6 +1187,7 @@
               }
             }
             
+            // Verificar e restaurar sessionStorage
             if (restoredData.ss && typeof restoredData.ss === 'object') {
               for(const key in restoredData.ss) {
                 if (sessionStorage.getItem(key) !== restoredData.ss[key]) {
@@ -1092,6 +1197,7 @@
               }
             }
             
+            // Verificar e restaurar cookies
             if (restoredData.ck && typeof restoredData.ck === 'object') {
               for(const name in restoredData.ck) {
                 document.cookie = name + "=" + restoredData.ck[name] + "; path=/";
@@ -1100,7 +1206,10 @@
             }
             
             if (changesApplied) {
-              console.log('Sincronização aplicada com sucesso');
+              console.log('Sincronização aplicada de outro dispositivo!');
+              showSyncToast('🔄 Sincronizado com outro dispositivo!');
+              // Recarregar projetos se necessário
+              if (userData) loadProjects(userData.uid);
               return true;
             }
           }
@@ -1112,23 +1221,26 @@
       }
     }
 
-    async function forceSync() {
-      console.log('Iniciando sincronização manual...');
+    async function forceSync(showMessage = true) {
+      console.log('Iniciando sincronização...');
       await saveCurrentData();
       await checkForUpdates();
       await updateSyncInfo();
-      console.log('Sincronização manual concluída');
+      if (showMessage) {
+        showSyncToast('✅ Sincronização concluída!');
+      }
+      console.log('Sincronização concluída');
     }
 
+    // Sincronização a cada 2 SEGUNDOS (ALTERADO DE 5 PARA 2)
     function startAutoSync() {
       if (syncInterval) clearInterval(syncInterval);
       syncInterval = setInterval(async () => {
         if (autoSyncEnabled && userData) {
-          console.log('Sincronização automática em execução...');
           await saveCurrentData();
           await checkForUpdates();
         }
-      }, 5000);
+      }, 2000); // <--- ALTERADO: 2000ms = 2 segundos
     }
 
     function stopAutoSync() {
@@ -1153,18 +1265,17 @@
       btn.classList.add('rotating');
       
       try {
-        await forceSync();
+        await forceSync(true);
         const statusSpan = document.getElementById('syncStatus');
         if (statusSpan) {
           statusSpan.innerHTML = '✅ Sincronizado!';
           setTimeout(() => statusSpan.innerHTML = '🟢 Ativo', 2000);
         }
-        alert('Sincronização concluída com sucesso!');
       } catch(e) {
         console.error('Erro na sincronização manual:', e);
         const statusSpan = document.getElementById('syncStatus');
         if (statusSpan) statusSpan.innerHTML = '❌ Erro';
-        alert('Erro ao sincronizar: ' + e.message);
+        showSyncToast('❌ Erro ao sincronizar: ' + e.message, true);
       }
       
       setTimeout(() => btn.classList.remove('rotating'), 1000);
@@ -1175,10 +1286,12 @@
       localStorage.setItem('autoSyncEnabled', enabled);
       if (enabled) {
         startAutoSync();
-        console.log('Sincronização automática ATIVADA');
+        console.log('Sincronização automática ATIVADA (a cada 2 segundos)');
+        showSyncToast('🔄 Sincronização automática ativada (2s)');
       } else {
         stopAutoSync();
         console.log('Sincronização automática DESATIVADA');
+        showSyncToast('⏸️ Sincronização automática desativada');
       }
     }
 
@@ -1245,8 +1358,8 @@
       }
     });
 
-    // Monitorar estado de autenticação
-    onAuthStateChanged(auth, (user) => {
+    // Monitorar estado de autenticação - COM RESTAURAÇÃO AUTOMÁTICA AO LOGAR
+    onAuthStateChanged(auth, async (user) => {
       if (!user) {
         window.location.href = 'auth.html';
       } else {
@@ -1266,6 +1379,17 @@
           const autoSyncToggle = document.getElementById('autoSyncToggle');
           if (autoSyncToggle) autoSyncToggle.checked = savedAutoSync;
           autoSyncEnabled = savedAutoSync;
+          
+          // NOVO: Restaurar dados do Firebase automaticamente ao fazer login
+          console.log('Verificando dados salvos no Firebase para restauração...');
+          const restored = await restoreAllDataFromFirebase();
+          
+          if (restored) {
+            console.log('Dados restaurados com sucesso do Firebase!');
+          } else {
+            console.log('Primeiro acesso ou nenhum dado salvo ainda. Salvando dados atuais...');
+            await saveCurrentData();
+          }
           
           if (autoSyncEnabled) startAutoSync();
           
