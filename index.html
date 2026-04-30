@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- SEO -->
-  <meta name="keywords" content="CodeHUB, editor de código online, IDE online, programar no navegador, editor HTML, editor CSS, editor JavaScript, desenvolvimento web online, criar sites online, editor de código grátis, IDE para iniciantes, editor responsivo, ferramenta programação, codar no navegador, editor com terminal, escrever código online, depuração online, editor código rápido, desenvolvimento colaborativo, criar projetos web, editor frontend, plataforma codar online, editor programação, IDE web, editor scripts, editor JS, editor CSS3, editor HTML5, criar páginas web, prototipagem online, editor web interativo, IDE colaborativa, editor código com login, projetos online, editor apps web, editor multiplataforma, editor versionamento, editor projetos HTML CSS JS, editor código para estudantes, IDE para web developers, editor código com templates, editor projetos compartilháveis, editor para iniciantes web, editor rápido e leve, editor código com terminal integrado, editor desenvolvimento web, editor protótipos web, plataforma aprendizado programação, editor sites responsivos, editor HTML CSS JS online, criar sites responsivos online, editor front-end, editor com Firebase, editor para projetos pessoais, IDE web gratuita, editor para codar online, editor código interativo, editor projetos colaborativos, editor sites e aplicações, editor para estudantes programação, editor código com suporte a frameworks, editor desenvolvimento ágil, IDE aprendizado online, editor projetos rápidos, editor código para educação, editor páginas web, editor apps HTML CSS JS">
+  <meta name="keywords" content="CodeHUB, editor de código online, IDE online, programar no navegador, editor HTML, editor CSS, editor JavaScript, desenvolvimento web online, criar sites online, editor de código grátis, IDE para iniciantes, editor responsivo, ferramenta de programação, codar no navegador, editor com terminal, escrever código online, depuração online, editor de código rápido, desenvolvimento colaborativo, criar projetos web, editor frontend, plataforma de codar online, editor de programação, IDE web, editor de scripts, editor JS, editor CSS3, editor HTML5, criar páginas web, prototipagem online, editor web interativo, IDE colaborativa, editor de código com login, projetos online, editor de apps web, editor multiplataforma, editor com versionamento, editor de projetos HTML CSS JS, editor de código para estudantes, IDE para web developers, editor de código com templates, editor de projetos compartilháveis, editor para iniciantes em web, editor rápido e leve, editor de código com terminal integrado, editor de desenvolvimento web, editor de protótipos web, plataforma de aprendizado de programação, editor de sites responsivos, editor de HTML CSS JS online, criar sites responsivos online, editor de front-end, editor com Firebase, editor para projetos pessoais, IDE web gratuita, editor para codar online, editor de código interativo, editor de projetos colaborativos, editor de sites e aplicações, editor para estudantes de programação, editor de código com suporte a frameworks, editor de desenvolvimento ágil, IDE de aprendizado online, editor de projetos rápidos, editor de código para educação, editor de páginas web, editor de apps HTML CSS JS">
   <meta name="author" content="CodeHUB - Alexandre Braatz Junior, fundador da plataforma">
   <meta name="google-site-verification" content="d5deNmIStRgPPphEkAypCTSv-E_1gi9ba16et47RSmA" />
 
@@ -28,8 +28,6 @@
   <script src="https://alexandre7888.github.io/CodeHUB/Botao/floating-menu.js"></script>
   <script type="module" src="https://code.codehub.ct.ws/client.js"></script>
   <script src="https://assistente-ia--socialkoala6579904.on.websim.com/embed.js"></script>
-  <!-- SCRIPT DE SINCRONIZAÇÃO -->
-  <script src="https://code.codehub.ct.ws/sinc.js"></script>
 
   <style>
     /* Loading Screen Styles */
@@ -141,7 +139,11 @@
       gap: 1rem;
     }
 
-    /* MENU HAMBURGUER - NOVO */
+    .logo-area h1 {
+      font-size: 1.5rem;
+    }
+
+    /* Menu Hamburguer - NOVO */
     .menu-hamburger {
       background: none;
       border: none;
@@ -161,7 +163,7 @@
       transition: 0.3s;
     }
 
-    /* SIDEBAR - NOVO */
+    /* Sidebar - NOVO */
     .sidebar {
       position: fixed;
       top: 0;
@@ -340,14 +342,6 @@
 
     .status-online {
       background-color: #4cc9f0;
-    }
-
-    .status-offline {
-      background-color: #ccc;
-    }
-
-    .logo-area h1 {
-      font-size: 1.5rem;
     }
 
     .discord-mini-btn {
@@ -760,7 +754,7 @@
     <header>
       <div class="header-content">
         <div class="logo-area">
-          <!-- Botão Menu Hamburger -->
+          <!-- Botão Menu Hamburguer - NOVO -->
           <button class="menu-hamburger" onclick="toggleSidebar()">
             <span></span>
             <span></span>
@@ -783,7 +777,7 @@
       </div>
     </header>
 
-    <!-- Sidebar - Nova Aba de Sincronização -->
+    <!-- Sidebar - NOVA ABA DE SINCRONIZAÇÃO -->
     <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
     <div class="sidebar" id="sidebar">
       <div class="sidebar-header">
@@ -811,7 +805,7 @@
         </div>
       </div>
       <div class="sidebar-section">
-        <h3>📊 Status da Sincronização</h3>
+        <h3>📊 Status</h3>
         <div class="sync-info">
           <p><strong>Dispositivos conectados:</strong> <span id="deviceCount">0</span></p>
           <p><strong>Último IP:</strong> <span id="lastIP">-</span></p>
@@ -920,8 +914,9 @@
 
     // Variáveis globais
     let userData = null;
-    let autoSyncEnabled = false;
+    let autoSyncEnabled = true;
     let syncInterval = null;
+    let currentDeviceId = null;
     const loadingScreen = document.getElementById('loading-screen');
     const appContent = document.getElementById('app-content');
     const codefoxImage = document.getElementById('codefox');
@@ -949,7 +944,152 @@
       }, 500);
     }
 
-    // Funções da Sidebar
+    // ========== FUNÇÕES DE SINCRONIZAÇÃO ==========
+    
+    function getDeviceId() {
+      let did = localStorage.getItem('_device_id_');
+      if (!did) {
+        did = 'dev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('_device_id_', did);
+      }
+      return did;
+    }
+
+    currentDeviceId = getDeviceId();
+
+    async function getPublicIP() {
+      try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        const data = await response.json();
+        return data.ip;
+      } catch(e) {
+        return 'unknown';
+      }
+    }
+
+    function collectAllData() {
+      const data = { ls: {}, ss: {}, ck: {}, ts: Date.now() };
+      
+      for(let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key !== '_device_id_') data.ls[key] = localStorage.getItem(key);
+      }
+      
+      for(let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        data.ss[key] = sessionStorage.getItem(key);
+      }
+      
+      const cookies = document.cookie.split(';');
+      for(let i = 0; i < cookies.length; i++) {
+        if(cookies[i].trim()) {
+          const [name, value] = cookies[i].split('=');
+          data.ck[name.trim()] = value || '';
+        }
+      }
+      
+      return data;
+    }
+
+    function toBase64(obj) {
+      try {
+        return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
+      } catch(e) {
+        return '';
+      }
+    }
+
+    function fromBase64(str) {
+      try {
+        return JSON.parse(decodeURIComponent(escape(atob(str))));
+      } catch(e) {
+        return null;
+      }
+    }
+
+    async function saveCurrentData() {
+      if (!userData) return false;
+      
+      try {
+        const allData = collectAllData();
+        const encoded = toBase64(allData);
+        
+        await database.ref(`syncData/${userData.uid}`).set({
+          data: encoded,
+          lastUpdate: firebase.database.ServerValue.TIMESTAMP,
+          deviceId: currentDeviceId
+        });
+        
+        const ip = await getPublicIP();
+        await database.ref(`devices/${userData.uid}/${currentDeviceId}`).set({
+          id: currentDeviceId,
+          lastSeen: firebase.database.ServerValue.TIMESTAMP,
+          userAgent: navigator.userAgent,
+          ip: ip
+        });
+        
+        return true;
+      } catch(e) {
+        console.error('Erro ao salvar:', e);
+        return false;
+      }
+    }
+
+    async function checkForUpdates() {
+      if (!userData) return false;
+      
+      try {
+        const snapshot = await database.ref(`syncData/${userData.uid}`).once('value');
+        const data = snapshot.val();
+        
+        if (data && data.data && data.deviceId !== currentDeviceId) {
+          const restoredData = fromBase64(data.data);
+          if (restoredData) {
+            for(const key in restoredData.ls) {
+              if (key !== '_device_id_') localStorage.setItem(key, restoredData.ls[key]);
+            }
+            for(const key in restoredData.ss) {
+              sessionStorage.setItem(key, restoredData.ss[key]);
+            }
+            for(const name in restoredData.ck) {
+              document.cookie = name + "=" + restoredData.ck[name] + "; path=/";
+            }
+            return true;
+          }
+        }
+        return false;
+      } catch(e) {
+        console.error('Erro ao verificar:', e);
+        return false;
+      }
+    }
+
+    async function forceSync() {
+      await saveCurrentData();
+      await checkForUpdates();
+      await updateSyncInfo();
+    }
+
+    function startAutoSync() {
+      if (syncInterval) clearInterval(syncInterval);
+      syncInterval = setInterval(() => {
+        if (autoSyncEnabled && userData) {
+          saveCurrentData();
+          checkForUpdates();
+        }
+      }, 5000);
+    }
+
+    function stopAutoSync() {
+      autoSyncEnabled = false;
+      if (syncInterval) {
+        clearInterval(syncInterval);
+        syncInterval = null;
+      }
+    }
+
+    // ========== FUNÇÕES DA SIDEBAR ==========
+    
     window.toggleSidebar = function() {
       const sidebar = document.getElementById('sidebar');
       const overlay = document.getElementById('overlay');
@@ -957,90 +1097,44 @@
       overlay.classList.toggle('active');
     }
 
-    // Função de sincronização manual com o sinc.js
     window.manualSync = async function() {
       const btn = document.getElementById('syncNowBtn');
       btn.classList.add('rotating');
       
       try {
-        // Forçar sincronização pelo script externo
-        if (window.CodeHUBSync && window.CodeHUBSync.forceSync) {
-          await window.CodeHUBSync.forceSync();
-        } else if (window.syncManager && window.syncManager.manualSync) {
-          await window.syncManager.manualSync();
-        }
-        
-        // Atualizar informações na sidebar
-        await updateSyncInfo();
-        
-        // Mostrar feedback visual
+        await forceSync();
         const statusSpan = document.getElementById('syncStatus');
         if (statusSpan) {
           statusSpan.innerHTML = '✅ Sincronizado!';
-          setTimeout(() => {
-            statusSpan.innerHTML = '🟢 Ativo';
-          }, 2000);
+          setTimeout(() => statusSpan.innerHTML = '🟢 Ativo', 2000);
         }
       } catch(e) {
-        console.error('Erro na sincronização:', e);
         const statusSpan = document.getElementById('syncStatus');
-        if (statusSpan) statusSpan.innerHTML = '❌ Erro na sincronização';
+        if (statusSpan) statusSpan.innerHTML = '❌ Erro';
       }
       
       setTimeout(() => btn.classList.remove('rotating'), 1000);
     }
 
-    // Alternar auto-sincronização
     window.toggleAutoSync = function(enabled) {
       autoSyncEnabled = enabled;
       localStorage.setItem('autoSyncEnabled', enabled);
-      
-      if (window.CodeHUBSync) {
-        if (enabled) {
-          if (window.CodeHUBSync.startAutoSync) window.CodeHUBSync.startAutoSync();
-        } else {
-          if (window.CodeHUBSync.stopAutoSync) window.CodeHUBSync.stopAutoSync();
-        }
-      }
+      if (enabled) startAutoSync();
+      else stopAutoSync();
     }
 
-    // Atualizar informações de sincronização
     async function updateSyncInfo() {
       if (!userData) return;
       
-      const uid = userData.uid;
-      document.getElementById('uidDisplay').textContent = uid.substring(0, 20) + '...';
+      document.getElementById('uidDisplay').textContent = userData.uid.substring(0, 20) + '...';
+      document.getElementById('deviceIdDisplay').textContent = currentDeviceId.substring(0, 20) + '...';
       
-      const deviceId = localStorage.getItem('_device_id_') || 'unknown';
-      document.getElementById('deviceIdDisplay').textContent = deviceId.substring(0, 20) + '...';
-      
-      // Buscar dispositivos conectados
-      const devicesRef = ref(database, `devices/${uid}`);
+      const devicesRef = database.ref(`devices/${userData.uid}`);
       const snapshot = await devicesRef.once('value');
       const devices = snapshot.val() || {};
       const deviceCount = Object.keys(devices).length;
       document.getElementById('deviceCount').textContent = deviceCount;
       
-      // Listar dispositivos
-      const deviceListDiv = document.getElementById('deviceList');
-      if (deviceListDiv && Object.keys(devices).length > 0) {
-        deviceListDiv.innerHTML = '';
-        for (const [id, device] of Object.entries(devices)) {
-          const deviceItem = document.createElement('div');
-          deviceItem.className = 'device-item';
-          const isOnline = device.lastSeen && (Date.now() - device.lastSeen < 60000);
-          deviceItem.innerHTML = `
-            <span class="status-badge ${isOnline ? 'status-online' : 'status-offline'}"></span>
-            <strong>${device.userAgent?.substring(0, 30) || 'Dispositivo'}...</strong><br>
-            <small>IP: ${device.ip || 'unknown'} | ${device.lastSeen ? new Date(device.lastSeen).toLocaleTimeString() : 'Nunca'}</small>
-          `;
-          deviceListDiv.appendChild(deviceItem);
-        }
-      } else if (deviceListDiv) {
-        deviceListDiv.innerHTML = '<p style="color:#999; text-align:center;">Nenhum dispositivo conectado</p>';
-      }
-      
-      // Calcular tamanho dos dados armazenados
       let totalSize = 0;
       for(let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
@@ -1048,13 +1142,25 @@
         totalSize += (key.length + (val?.length || 0)) * 2;
       }
       document.getElementById('cacheSize').textContent = (totalSize / 1024).toFixed(1);
+      document.getElementById('lastSyncDisplay').textContent = new Date().toLocaleTimeString();
       
-      // Último IP
-      if (devices[deviceId] && devices[deviceId].ip) {
-        document.getElementById('lastIP').textContent = devices[deviceId].ip;
+      const deviceListDiv = document.getElementById('deviceList');
+      deviceListDiv.innerHTML = '';
+      for (const [id, device] of Object.entries(devices)) {
+        const div = document.createElement('div');
+        div.className = 'device-item';
+        const isOnline = device.lastSeen && (Date.now() - device.lastSeen < 60000);
+        div.innerHTML = `
+          <span class="status-badge ${isOnline ? 'status-online' : 'status-offline'}"></span>
+          <strong>${id.substring(0, 15)}...</strong><br>
+          <small>IP: ${device.ip || 'unknown'} | ${device.lastSeen ? new Date(device.lastSeen).toLocaleTimeString() : 'Nunca'}</small>
+        `;
+        deviceListDiv.appendChild(div);
       }
       
-      document.getElementById('lastSyncDisplay').textContent = new Date().toLocaleTimeString();
+      if (Object.keys(devices).length === 0) {
+        deviceListDiv.innerHTML = '<p style="color:#999; text-align:center;">Nenhum dispositivo conectado</p>';
+      }
     }
 
     // Função para sanitizar nomes de arquivos
@@ -1096,22 +1202,19 @@
           const usernameSpan = document.getElementById('username');
           if (usernameSpan) usernameSpan.textContent = userData.displayName;
 
-          // Configurar sincronizador com UID
-          if (window.CodeHUBSync && window.CodeHUBSync.setUserUID) {
-            window.CodeHUBSync.setUserUID(user.uid);
-          }
-          
           // Carregar preferência de auto-sync
-          const savedAutoSync = localStorage.getItem('autoSyncEnabled') === 'true';
+          const savedAutoSync = localStorage.getItem('autoSyncEnabled') !== 'false';
           const autoSyncToggle = document.getElementById('autoSyncToggle');
           if (autoSyncToggle) autoSyncToggle.checked = savedAutoSync;
-          toggleAutoSync(savedAutoSync);
+          autoSyncEnabled = savedAutoSync;
+          
+          if (autoSyncEnabled) startAutoSync();
           
           loadProjects(user.uid);
           
           // Atualizar informações periodicamente
-          setInterval(() => updateSyncInfo(), 5000);
           setTimeout(() => updateSyncInfo(), 1000);
+          setInterval(() => updateSyncInfo(), 10000);
         } catch (error) {
           console.error("Erro ao carregar dados do usuário:", error);
           alert("Erro ao carregar dados. Por favor, recarregue a página.");
