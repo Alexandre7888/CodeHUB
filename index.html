@@ -944,7 +944,7 @@
       }, 500);
     }
 
-    // ========== FUNÇÕES DE SINCRONIZAÇÃO ==========
+    // ========== FUNÇÕES DE SINCRONIZAÇÃO CORRIGIDAS ==========
     
     function getDeviceId() {
       let did = localStorage.getItem('_device_id_');
@@ -991,18 +991,36 @@
       return data;
     }
 
+    // FUNÇÃO CORRIGIDA - toBase64 agora é mais robusta
     function toBase64(obj) {
       try {
-        return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
+        const jsonString = JSON.stringify(obj);
+        // Usando TextEncoder para melhor compatibilidade com caracteres especiais
+        const utf8Bytes = new TextEncoder().encode(jsonString);
+        let binaryString = '';
+        for (let i = 0; i < utf8Bytes.length; i++) {
+          binaryString += String.fromCharCode(utf8Bytes[i]);
+        }
+        return btoa(binaryString);
       } catch(e) {
+        console.error('Erro ao codificar para base64:', e);
         return '';
       }
     }
 
+    // FUNÇÃO CORRIGIDA - fromBase64 agora funciona corretamente
     function fromBase64(str) {
       try {
-        return JSON.parse(decodeURIComponent(escape(atob(str))));
+        if (!str) return null;
+        const binaryString = atob(str);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        const jsonString = new TextDecoder().decode(bytes);
+        return JSON.parse(jsonString);
       } catch(e) {
+        console.error('Erro ao decodificar base64:', e);
         return null;
       }
     }
@@ -1013,6 +1031,11 @@
       try {
         const allData = collectAllData();
         const encoded = toBase64(allData);
+        
+        if (!encoded) {
+          console.error('Falha ao codificar dados');
+          return false;
+        }
         
         await database.ref(`syncData/${userData.uid}`).set({
           data: encoded,
@@ -1042,40 +1065,68 @@
         const snapshot = await database.ref(`syncData/${userData.uid}`).once('value');
         const data = snapshot.val();
         
-        if (data && data.data && data.deviceId !== currentDeviceId) {
+        // CORREÇÃO: Verificar corretamente se o deviceId é diferente
+        if (data && data.data && data.deviceId && data.deviceId !== currentDeviceId) {
           const restoredData = fromBase64(data.data);
-          if (restoredData) {
-            for(const key in restoredData.ls) {
-              if (key !== '_device_id_') localStorage.setItem(key, restoredData.ls[key]);
+          if (restoredData && typeof restoredData === 'object') {
+            let changesApplied = false;
+            
+            // Restaurar localStorage
+            if (restoredData.ls && typeof restoredData.ls === 'object') {
+              for(const key in restoredData.ls) {
+                if (key !== '_device_id_' && localStorage.getItem(key) !== restoredData.ls[key]) {
+                  localStorage.setItem(key, restoredData.ls[key]);
+                  changesApplied = true;
+                }
+              }
             }
-            for(const key in restoredData.ss) {
-              sessionStorage.setItem(key, restoredData.ss[key]);
+            
+            // Restaurar sessionStorage
+            if (restoredData.ss && typeof restoredData.ss === 'object') {
+              for(const key in restoredData.ss) {
+                if (sessionStorage.getItem(key) !== restoredData.ss[key]) {
+                  sessionStorage.setItem(key, restoredData.ss[key]);
+                  changesApplied = true;
+                }
+              }
             }
-            for(const name in restoredData.ck) {
-              document.cookie = name + "=" + restoredData.ck[name] + "; path=/";
+            
+            // Restaurar cookies
+            if (restoredData.ck && typeof restoredData.ck === 'object') {
+              for(const name in restoredData.ck) {
+                document.cookie = name + "=" + restoredData.ck[name] + "; path=/";
+                changesApplied = true;
+              }
             }
-            return true;
+            
+            if (changesApplied) {
+              console.log('Sincronização aplicada com sucesso');
+              return true;
+            }
           }
         }
         return false;
       } catch(e) {
-        console.error('Erro ao verificar:', e);
+        console.error('Erro ao verificar atualizações:', e);
         return false;
       }
     }
 
     async function forceSync() {
+      console.log('Iniciando sincronização manual...');
       await saveCurrentData();
       await checkForUpdates();
       await updateSyncInfo();
+      console.log('Sincronização manual concluída');
     }
 
     function startAutoSync() {
       if (syncInterval) clearInterval(syncInterval);
-      syncInterval = setInterval(() => {
+      syncInterval = setInterval(async () => {
         if (autoSyncEnabled && userData) {
-          saveCurrentData();
-          checkForUpdates();
+          console.log('Sincronização automática em execução...');
+          await saveCurrentData();
+          await checkForUpdates();
         }
       }, 5000);
     }
@@ -1108,9 +1159,12 @@
           statusSpan.innerHTML = '✅ Sincronizado!';
           setTimeout(() => statusSpan.innerHTML = '🟢 Ativo', 2000);
         }
+        alert('Sincronização concluída com sucesso!');
       } catch(e) {
+        console.error('Erro na sincronização manual:', e);
         const statusSpan = document.getElementById('syncStatus');
         if (statusSpan) statusSpan.innerHTML = '❌ Erro';
+        alert('Erro ao sincronizar: ' + e.message);
       }
       
       setTimeout(() => btn.classList.remove('rotating'), 1000);
@@ -1119,8 +1173,13 @@
     window.toggleAutoSync = function(enabled) {
       autoSyncEnabled = enabled;
       localStorage.setItem('autoSyncEnabled', enabled);
-      if (enabled) startAutoSync();
-      else stopAutoSync();
+      if (enabled) {
+        startAutoSync();
+        console.log('Sincronização automática ATIVADA');
+      } else {
+        stopAutoSync();
+        console.log('Sincronização automática DESATIVADA');
+      }
     }
 
     async function updateSyncInfo() {
@@ -1151,7 +1210,7 @@
         div.className = 'device-item';
         const isOnline = device.lastSeen && (Date.now() - device.lastSeen < 60000);
         div.innerHTML = `
-          <span class="status-badge ${isOnline ? 'status-online' : 'status-offline'}"></span>
+          <span class="status-badge ${isOnline ? 'status-online' : 'status-offline'}" style="${!isOnline ? 'background-color:#999;' : ''}"></span>
           <strong>${id.substring(0, 15)}...</strong><br>
           <small>IP: ${device.ip || 'unknown'} | ${device.lastSeen ? new Date(device.lastSeen).toLocaleTimeString() : 'Nunca'}</small>
         `;
