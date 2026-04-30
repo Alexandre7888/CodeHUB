@@ -79,7 +79,7 @@
     button:disabled { opacity: 0.5; cursor: not-allowed; }
 
     #saveFileBtn { background: var(--accent-cyan); border-color: var(--accent-cyan); color: #000; font-weight: 600; }
-    #saveFileBtn:hover { background: #2cb8a4; }
+    #saveFileBtn:hover:not(:disabled) { background: #2cb8a4; }
 
     #previewBtn { background: #1f6feb; border-color: #1f6feb; }
     #previewBtn:hover { background: #1a5cc7; }
@@ -224,6 +224,47 @@
     .modal-box p { color: var(--text-secondary); margin-bottom: 20px; font-size: 14px; }
     .modal-buttons { display: flex; gap: 12px; justify-content: center; }
     .modal-buttons button { padding: 10px 28px; font-size: 14px; font-weight: 600; }
+
+    #auto-save-status {
+      display: flex; align-items: center; gap: 6px; background: var(--bg-primary);
+      padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border-color);
+      font-size: 11px; color: var(--text-secondary); white-space: nowrap;
+    }
+    #auto-save-indicator { width: 8px; height: 8px; border-radius: 50%; background: var(--text-secondary); display: inline-block; transition: background 0.2s; }
+    #auto-save-time { font-family: 'SF Mono', 'Consolas', monospace; color: var(--accent-cyan); }
+    #version-history-btn { background: #30363d; font-size: 11px; padding: 4px 10px; border-radius: 12px; cursor: pointer; }
+    #version-history-btn:hover { background: #484f58; }
+
+    /* Preview iframe modal */
+    #previewModal .modal-box {
+      max-width: 95vw;
+      max-height: 90vh;
+      width: 95vw;
+      height: 90vh;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+    }
+    #previewIframe {
+      flex: 1;
+      width: 100%;
+      border: none;
+      background: white;
+      border-radius: 8px;
+    }
+    .preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: var(--bg-primary);
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .preview-header span {
+      font-size: 13px;
+      color: var(--accent-cyan);
+    }
   </style>
 </head>
 <body>
@@ -236,11 +277,17 @@
     <div id="top-bar">
       <button onclick="window.location.href='index.html'">🏠</button>
       <input type="text" id="project-name" placeholder="Nome do Projeto">
-      <button id="saveFileBtn" disabled>💾 Salvar</button>
+      <button id="saveFileBtn">💾 Salvar</button>
       <button id="previewBtn">👁️ Preview</button>
       <button id="sitePublishBtn">🚀 Publicar</button>
       <button id="siteDeleteBtn">🗑️ Deletar</button>
       <button id="siteHistoryBtn">📋 Histórico</button>
+      <div id="auto-save-status">
+        <span id="auto-save-indicator"></span>
+        <span id="auto-save-text">Pronto</span>
+        <span id="auto-save-time"></span>
+      </div>
+      <button id="version-history-btn" onclick="showVersionHistory()" title="Histórico de Versões">🕒 Versões</button>
       <div class="url-panel-top" id="urlPanelTop" style="display: none;">
         <input type="text" id="fileUrlTop" readonly onclick="this.select()">
         <button onclick="window.open(document.getElementById('fileUrlTop').value,'_blank')" style="padding:4px 8px;font-size:11px;">🔗</button>
@@ -307,7 +354,7 @@
     <div class="menu-item" onclick="contextAction('zoomOut')">🔍 Zoom -</div>
   </div>
 
-  <!-- Modal -->
+  <!-- Confirm Modal -->
   <div class="modal-overlay" id="confirmModal">
     <div class="modal-box">
       <h3 id="modalTitle">Confirmar</h3>
@@ -330,6 +377,33 @@
     </div>
   </div>
 
+  <!-- Version History Modal -->
+  <div class="modal-overlay" id="versionHistoryModal">
+    <div class="modal-box" style="max-width:650px;max-height:75vh;overflow-y:auto;text-align:left;">
+      <h3>🕒 Histórico de Versões</h3>
+      <p style="font-size:12px;color:var(--text-secondary);">Arquivo: <span id="versionFileName"></span></p>
+      <div id="versionList" style="color:var(--text-secondary);font-size:12px;max-height:50vh;overflow-y:auto;"></div>
+      <div class="modal-buttons" style="margin-top:20px;">
+        <button onclick="closeVersionHistoryModal()" style="background:#da3633;border-color:#f85149;">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Preview Modal com iframe incorporado -->
+  <div class="modal-overlay" id="previewModal">
+    <div class="modal-box">
+      <div class="preview-header">
+        <span>👁️ Preview ao Vivo</span>
+        <div style="display:flex;gap:8px;">
+          <button onclick="refreshPreview()" style="font-size:12px;padding:4px 10px;">🔄 Atualizar</button>
+          <button onclick="openPreviewExterno()" style="font-size:12px;padding:4px 10px;">🔗 Abrir externo</button>
+          <button onclick="closePreviewModal()" style="font-size:12px;padding:4px 10px;background:#da3633;border-color:#f85149;">✕ Fechar</button>
+        </div>
+      </div>
+      <iframe id="previewIframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"></iframe>
+    </div>
+  </div>
+
   <script>
     // ============ CONFIG ============
     const firebaseConfig = {
@@ -344,6 +418,83 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.database();
+
+    // ============ INDEXEDDB ============
+    const DB_NAME = 'codehub_cache';
+    const DB_VERSION = 1;
+    let idb = null;
+
+    function openIDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('files')) {
+            db.createObjectStore('files', { keyPath: 'id' });
+          }
+          if (!db.objectStoreNames.contains('versions')) {
+            const versionStore = db.createObjectStore('versions', { keyPath: 'versionId', autoIncrement: true });
+            versionStore.createIndex('fileId', 'fileId', { unique: false });
+          }
+        };
+        request.onsuccess = (e) => { idb = e.target.result; resolve(idb); };
+        request.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    function idbPut(storeName, data) {
+      return new Promise((resolve, reject) => {
+        if (!idb) { reject('IDB not open'); return; }
+        const tx = idb.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        store.put(data);
+        tx.oncomplete = () => resolve();
+        tx.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    function idbGet(storeName, id) {
+      return new Promise((resolve, reject) => {
+        if (!idb) { reject('IDB not open'); return; }
+        const tx = idb.transaction(storeName, 'readonly');
+        const store = tx.objectStore(storeName);
+        const request = store.get(id);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    function idbDelete(storeName, id) {
+      return new Promise((resolve, reject) => {
+        if (!idb) { reject('IDB not open'); return; }
+        const tx = idb.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        store.delete(id);
+        tx.oncomplete = () => resolve();
+        tx.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    function idbGetVersions(fileId, max = 20) {
+      return new Promise((resolve, reject) => {
+        if (!idb) { reject('IDB not open'); return; }
+        const tx = idb.transaction('versions', 'readonly');
+        const store = tx.objectStore('versions');
+        const index = store.index('fileId');
+        const request = index.openCursor(IDBKeyRange.only(fileId), 'prev');
+        const results = [];
+        request.onsuccess = (e) => {
+          const cursor = e.target.result;
+          if (cursor && results.length < max) {
+            results.push(cursor.value);
+            cursor.continue();
+          } else {
+            resolve(results);
+          }
+        };
+        request.onerror = (e) => reject(e.target.error);
+      });
+    }
 
     // ============ VARIÁVEIS ============
     let currentProjectId = new URLSearchParams(window.location.search).get('projectId');
@@ -363,6 +514,12 @@
     // Modal callback
     let modalCallback = null;
 
+    // Auto-save
+    let autoSaveTimer = null;
+    let lastSavedContent = null;
+    let isSaving = false;
+    let previewBlobUrl = null;
+
     // ============ LOGS ============
     function log(msg, type = 'log') {
       const div = document.createElement('div');
@@ -376,6 +533,15 @@
     function logSuccess(msg) { log('✅ ' + msg, 'success'); }
     function logError(msg) { log('❌ ' + msg, 'error'); }
     function logInfo(msg) { log('ℹ️ ' + msg, 'system'); }
+
+    // ============ STATUS INDICATOR ============
+    function setStatus(text, color = 'var(--text-secondary)', time = null) {
+      document.getElementById('auto-save-text').textContent = text;
+      document.getElementById('auto-save-indicator').style.background = color;
+      if (time) {
+        document.getElementById('auto-save-time').textContent = time;
+      }
+    }
 
     // ============ ZOOM ============
     function changeZoom(d) { 
@@ -406,6 +572,71 @@
     function modalCancel() { 
       document.getElementById('confirmModal').style.display = 'none'; 
       modalCallback = null; 
+    }
+
+    // ============ PREVIEW INCORPORADO ============
+    function updatePreviewIframe() {
+      const iframe = document.getElementById('previewIframe');
+      const idx = Object.values(files).find(f => (f.name || f.originalName) === 'index.html');
+      
+      if (idx?.content) {
+        // Revoga URL anterior se existir
+        if (previewBlobUrl) {
+          URL.revokeObjectURL(previewBlobUrl);
+        }
+        
+        // Cria blob com todo o conteúdo HTML
+        let htmlContent = idx.content;
+        
+        // Adiciona outros arquivos (CSS, JS) se referenciados
+        for (const [key, file] of Object.entries(files)) {
+          const fileName = file.name || file.originalName;
+          if (fileName === 'index.html') continue;
+          
+          // Injeta CSS diretamente
+          if (fileName.endsWith('.css')) {
+            htmlContent = htmlContent.replace('</head>', `<style>${file.content}</style></head>`);
+          }
+          // Injeta JS diretamente
+          if (fileName.endsWith('.js')) {
+            htmlContent = htmlContent.replace('</body>', `<script>${file.content}<\/script></body>`);
+          }
+        }
+        
+        previewBlobUrl = URL.createObjectURL(new Blob([htmlContent], { type: 'text/html' }));
+        iframe.src = previewBlobUrl;
+      }
+    }
+
+    function refreshPreview() {
+      updatePreviewIframe();
+      showNotification('Preview atualizado! 🔄', 'info');
+    }
+
+    function openPreviewExterno() {
+      const idx = Object.values(files).find(f => (f.name || f.originalName) === 'index.html');
+      if (idx?.content) {
+        const blobUrl = URL.createObjectURL(new Blob([idx.content], { type: 'text/html' }));
+        window.open(blobUrl, '_blank');
+      }
+    }
+
+    function closePreviewModal() {
+      document.getElementById('previewModal').style.display = 'none';
+      // Não revoga o blobUrl para manter o cache
+    }
+
+    function previewProject() {
+      const idx = Object.values(files).find(f => (f.name || f.originalName) === 'index.html');
+      if (idx?.content) {
+        // Salva antes de mostrar preview
+        saveCurrentFile().then(() => {
+          updatePreviewIframe();
+          document.getElementById('previewModal').style.display = 'flex';
+        });
+      } else {
+        showNotification('Crie index.html primeiro', 'info');
+      }
     }
 
     // ============ PUTER AUTH ============
@@ -466,6 +697,8 @@
     // ============ ATUALIZAR SITE (UPDATE) ============
     async function atualizarSite(subdomain, dirName) {
       logInfo(`🔄 ATUALIZANDO SITE: ${subdomain} → ${dirName}`);
+      // Segundo documentação do Puter: hosting.update(subdomain, targetDir)
+      // targetDir é opcional, se não fornecido mantém o mesmo diretório
       await puter.hosting.update(subdomain, dirName);
       logSuccess(`Site ${subdomain}.puter.site atualizado para diretório ${dirName}`);
     }
@@ -487,6 +720,9 @@
         return;
       }
 
+      // AUTO-SAVE ANTES DE PUBLICAR
+      await saveCurrentFile();
+
       if (siteCreated) {
         showModal('🔄 Atualizar Site?', `O site ${hostingUrl} será atualizado com os arquivos atuais.`, async () => {
           await executarAtualizacao();
@@ -501,33 +737,32 @@
     async function executarPublicacao() {
       logInfo('🚀 EXECUTANDO PUBLICAÇÃO...');
       try {
-        // (1) Criar diretório aleatório
+        await saveCurrentFile();
+
         const dirName = puter.randName();
         logInfo(`Criando diretório: ${dirName}`);
+        // Segundo documentação: fs.mkdir(path) cria diretório
         await puter.fs.mkdir(dirName);
         logSuccess(`Diretório criado: ${dirName}`);
 
-        // (2) Salvar arquivos no diretório
         let count = 0;
         for (const [key, file] of Object.entries(files)) {
           const fileName = file.originalName || file.name;
           const content = file.content || '';
           logInfo(`Salvando: ${dirName}/${fileName} (${content.length} bytes)`);
+          // Segundo documentação: fs.write(path, content) escreve arquivo
           await puter.fs.write(`${dirName}/${fileName}`, content);
           count++;
         }
         logSuccess(`${count} arquivos salvos`);
 
-        // (3) Criar site com o diretório
         const site = await criarSite(dirName);
 
-        // Guardar dados
         hostingSubdomain = site.subdomain;
         hostingDirectory = dirName;
         hostingUrl = `https://${site.subdomain}.puter.site`;
         siteCreated = true;
 
-        // Histórico local
         sitesSalvos = sitesSalvos.filter(s => s.subdomain !== site.subdomain);
         sitesSalvos.unshift({ 
           subdomain: site.subdomain, 
@@ -537,7 +772,6 @@
         });
         localStorage.setItem('codehub_sites', JSON.stringify(sitesSalvos));
 
-        // Firebase
         await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({
           url: hostingUrl, 
           subdomain: hostingSubdomain, 
@@ -545,7 +779,6 @@
           publishedAt: new Date().toISOString()
         });
 
-        // UI
         document.getElementById('fileUrlTop').value = hostingUrl;
         document.getElementById('urlPanelTop').style.display = 'flex';
         updateSiteButtons();
@@ -562,91 +795,105 @@
       }
     }
 
-async function executarAtualizacao() {
-  logInfo('🔄 EXECUTANDO ATUALIZAÇÃO...');
-  try {
-    if (!hostingDirectory || !hostingSubdomain) {
-      logError('Dados do site incompletos');
-      showNotification('Erro: dados do site incompletos', 'error');
-      return;
-    }
-
-    logInfo(`Diretório: ${hostingDirectory}, Subdomain: ${hostingSubdomain}`);
-
-    // Salvar arquivos atualizados
-    let count = 0;
-    for (const [key, file] of Object.entries(files)) {
-      const fileName = file.originalName || file.name;
-      const content = file.content || '';
-      logInfo(`Atualizando: ${hostingDirectory}/${fileName} (${content.length} bytes)`);
-      await puter.fs.write(`${hostingDirectory}/${fileName}`, content);
-      count++;
-    }
-    logSuccess(`${count} arquivos atualizados`);
-
-    // (3) Atualizar site - usando hostingSubdomain e hostingDirectory
-    logInfo(`Chamando puter.hosting.update(${hostingSubdomain}, ${hostingDirectory})`);
-    await puter.hosting.update(hostingSubdomain, hostingDirectory);
-
-    // Firebase
-    await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).update({
-      updatedAt: new Date().toISOString()
-    });
-
-    logSuccess(`ATUALIZADO! URL: ${hostingUrl}`);
-    showNotification('✅ Site atualizado!', 'success');
-
-  } catch(e) {
-    logError('Falha na atualização: ' + e.message);
-    console.error(e);
-    showNotification('Erro ao atualizar: ' + e.message, 'error');
-  }
-}
-
-// ============ DELETE SITE ============
-async function deleteSite() {
-  if (!siteCreated) { 
-    showNotification('Nenhum site para deletar', 'info'); 
-    return; 
-  }
-
-  showModal('🗑️ Deletar Site?', `Tem certeza que deseja deletar permanentemente:\n${hostingUrl}?`, async () => {
-    logInfo('🗑️ EXECUTANDO DELEÇÃO...');
-    try {
-      await garantirLogin();
-
-      // (2) Deletar site - CORRIGIDO: usando hostingSubdomain (não updatedSite)
-      await puter.hosting.delete(hostingSubdomain);
-
-      // (3) Tentar obter site (deve falhar)
-      logInfo('Verificando se site foi deletado...');
+    async function executarAtualizacao() {
+      logInfo('🔄 EXECUTANDO ATUALIZAÇÃO...');
       try {
-        await puter.hosting.get(hostingSubdomain);
-        logError('Site ainda existe! (inesperado)');
+        await saveCurrentFile();
+
+        if (!hostingDirectory || !hostingSubdomain) {
+          logError('Dados do site incompletos');
+          showNotification('Erro: dados do site incompletos', 'error');
+          return;
+        }
+
+        logInfo(`Diretório: ${hostingDirectory}, Subdomain: ${hostingSubdomain}`);
+
+        // Atualiza arquivos no diretório existente
+        let count = 0;
+        for (const [key, file] of Object.entries(files)) {
+          const fileName = file.originalName || file.name;
+          const content = file.content || '';
+          logInfo(`Atualizando: ${hostingDirectory}/${fileName} (${content.length} bytes)`);
+          await puter.fs.write(`${hostingDirectory}/${fileName}`, content);
+          count++;
+        }
+        logSuccess(`${count} arquivos atualizados`);
+
+        // Segundo documentação do Puter: hosting.update(subdomain, targetDir?)
+        // Se targetDir não mudou, podemos chamar sem ou com o mesmo diretório
+        logInfo(`Chamando puter.hosting.update(${hostingSubdomain}, ${hostingDirectory})`);
+        await puter.hosting.update(hostingSubdomain, hostingDirectory);
+        
+        // Alternativa: se update falhar, tenta recriar
+        // await puter.hosting.delete(hostingSubdomain);
+        // const site = await puter.hosting.create(hostingSubdomain, hostingDirectory);
+
+        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).update({
+          updatedAt: new Date().toISOString()
+        });
+
+        logSuccess(`ATUALIZADO! URL: ${hostingUrl}`);
+        showNotification('✅ Site atualizado!', 'success');
+
       } catch(e) {
-        logSuccess('Site confirmado como deletado');
+        logError('Falha na atualização: ' + e.message);
+        console.error(e);
+        
+        // Tentativa alternativa: recriar o site
+        try {
+          logInfo('Tentando método alternativo: recriar site...');
+          await puter.hosting.delete(hostingSubdomain);
+          const site = await puter.hosting.create(hostingSubdomain, hostingDirectory);
+          hostingUrl = `https://${site.subdomain}.puter.site`;
+          logSuccess('Site recriado com sucesso!');
+          showNotification('✅ Site atualizado (método alternativo)!', 'success');
+        } catch(e2) {
+          logError('Falha no método alternativo: ' + e2.message);
+          showNotification('Erro ao atualizar: ' + e.message, 'error');
+        }
+      }
+    }
+
+    // ============ DELETE SITE ============
+    async function deleteSite() {
+      if (!siteCreated) { 
+        showNotification('Nenhum site para deletar', 'info'); 
+        return; 
       }
 
-      sitesSalvos = sitesSalvos.filter(s => s.subdomain !== hostingSubdomain);
-      localStorage.setItem('codehub_sites', JSON.stringify(sitesSalvos));
+      showModal('🗑️ Deletar Site?', `Tem certeza que deseja deletar permanentemente:\n${hostingUrl}?`, async () => {
+        logInfo('🗑️ EXECUTANDO DELEÇÃO...');
+        try {
+          await garantirLogin();
+          await puter.hosting.delete(hostingSubdomain);
+          logInfo('Verificando se site foi deletado...');
+          try {
+            await puter.hosting.get(hostingSubdomain);
+            logError('Site ainda existe! (inesperado)');
+          } catch(e) {
+            logSuccess('Site confirmado como deletado');
+          }
 
-      hostingSubdomain = null; 
-      hostingDirectory = null; 
-      hostingUrl = null; 
-      siteCreated = false;
+          sitesSalvos = sitesSalvos.filter(s => s.subdomain !== hostingSubdomain);
+          localStorage.setItem('codehub_sites', JSON.stringify(sitesSalvos));
 
-      document.getElementById('urlPanelTop').style.display = 'none';
-      updateSiteButtons();
+          hostingSubdomain = null; 
+          hostingDirectory = null; 
+          hostingUrl = null; 
+          siteCreated = false;
 
-      await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).remove();
-      showNotification('✅ Site deletado!', 'success');
+          document.getElementById('urlPanelTop').style.display = 'none';
+          updateSiteButtons();
 
-    } catch(e) {
-      logError('Falha ao deletar: ' + e.message);
-      showNotification('Erro: ' + e.message, 'error');
+          await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).remove();
+          showNotification('✅ Site deletado!', 'success');
+
+        } catch(e) {
+          logError('Falha ao deletar: ' + e.message);
+          showNotification('Erro: ' + e.message, 'error');
+        }
+      });
     }
-  });
-}
 
     // ============ HISTÓRICO ============
     async function showHistory() {
@@ -654,7 +901,6 @@ async function deleteSite() {
       document.getElementById('historyModal').style.display = 'flex';
 
       try {
-        // (3) Listar todos os sites do Puter
         logInfo('Carregando histórico do Puter...');
         let puterSites = [];
         try {
@@ -668,7 +914,6 @@ async function deleteSite() {
 
         let html = '';
 
-        // Site atual
         if (h) {
           html += `<div style="background:#1b3d2f;padding:14px;border-radius:8px;margin-bottom:12px;border:1px solid #3fb950;">
             <strong style="color:#3fb950;">📌 Site Atual</strong><br>
@@ -678,7 +923,6 @@ async function deleteSite() {
           </div>`;
         }
 
-        // Sites do Puter
         if (puterSites.length > 0) {
           html += '<strong style="color:#39d2c0;">☁️ Sites no Puter:</strong>';
           puterSites.forEach(s => {
@@ -688,7 +932,6 @@ async function deleteSite() {
           });
         }
 
-        // Histórico local
         if (sitesSalvos.length > 0) {
           html += '<strong style="color:#d2991d;">📋 Histórico Local:</strong>';
           sitesSalvos.forEach(s => {
@@ -793,22 +1036,83 @@ async function deleteSite() {
 
     // ============ ARQUIVOS ============
     async function saveCurrentFile() {
-      if (!currentFile) return;
-      files[currentFile].content = document.getElementById('simple-editor').value;
-      files[currentFile].updatedAt = new Date().toISOString();
-      await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ 
-        files, 
-        updatedAt: new Date().toISOString() 
-      });
-      logInfo('Arquivo salvo: ' + (files[currentFile].name || files[currentFile].originalName));
-      showNotification('Salvo! 💾', 'success');
+      if (!currentFile || !files[currentFile]) return;
+      
+      if (isSaving) return;
+      isSaving = true;
+      
+      try {
+        const content = document.getElementById('simple-editor').value;
+        
+        if (lastSavedContent === content) {
+          setStatus('Salvo ✔', 'var(--accent-green)', new Date().toLocaleTimeString());
+          isSaving = false;
+          return;
+        }
+
+        setStatus('Salvando...', 'var(--accent-orange)');
+        
+        files[currentFile].content = content;
+        files[currentFile].updatedAt = new Date().toISOString();
+        
+        // Cache local via IndexedDB (salva primeiro localmente)
+        const cacheId = currentProjectId + '_' + currentFile;
+        await idbPut('files', {
+          id: cacheId,
+          content: content,
+          updatedAt: files[currentFile].updatedAt
+        });
+        
+        // Histórico de versões local
+        const versionData = {
+          fileId: cacheId,
+          content: content,
+          timestamp: new Date().toISOString(),
+          fileName: files[currentFile].name || files[currentFile].originalName
+        };
+        await idbPut('versions', versionData);
+        
+        // Firebase save
+        await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).update({ 
+          files, 
+          updatedAt: new Date().toISOString() 
+        });
+        
+        // Remove cache local após sucesso no Firebase (confirmação que salvou)
+        await idbDelete('files', cacheId);
+        
+        lastSavedContent = content;
+        const timeStr = new Date().toLocaleTimeString();
+        setStatus('Salvo ✔', 'var(--accent-green)', timeStr);
+        
+        logInfo('Salvo: ' + (files[currentFile].name || files[currentFile].originalName) + ' às ' + timeStr);
+        
+        // Atualiza preview se estiver aberto
+        if (document.getElementById('previewModal').style.display === 'flex') {
+          updatePreviewIframe();
+        }
+      } catch(e) {
+        logError('Erro ao salvar: ' + e.message);
+        setStatus('Erro ❌', 'var(--accent-red)');
+        showNotification('Erro ao salvar!', 'error');
+      } finally {
+        isSaving = false;
+      }
     }
 
     function openFile(key) {
       if (!files[key]) return;
+      
+      // Salva arquivo atual antes de trocar
+      if (currentFile && currentFile !== key) {
+        saveCurrentFile();
+      }
+      
       currentFile = key;
       document.getElementById('simple-editor').value = files[key].content || '';
+      lastSavedContent = files[key].content || '';
       updateTabs();
+      setStatus('Pronto', 'var(--text-secondary)');
     }
 
     function updateTabs() {
@@ -834,21 +1138,78 @@ async function deleteSite() {
       updateTabs();
     }
 
-    function previewProject() {
-      const idx = Object.values(files).find(f => (f.name || f.originalName) === 'index.html');
-      if (idx?.content) { 
-        window.open(URL.createObjectURL(new Blob([idx.content],{type:'text/html'})), '_blank'); 
-      } else {
-        showNotification('Crie index.html primeiro', 'info');
-      }
-    }
-
     function showNotification(msg, type) {
       const n = document.createElement('div');
       n.className = `notification ${type}`;
       n.textContent = msg;
       document.body.appendChild(n);
       setTimeout(() => n.remove(), 3500);
+    }
+
+    // ============ VERSION HISTORY ============
+    async function showVersionHistory() {
+      if (!currentFile) {
+        showNotification('Abra um arquivo primeiro', 'info');
+        return;
+      }
+      
+      const fileId = currentProjectId + '_' + currentFile;
+      const versions = await idbGetVersions(fileId);
+      
+      document.getElementById('versionFileName').textContent = files[currentFile].name || files[currentFile].originalName;
+      const list = document.getElementById('versionList');
+      
+      if (versions.length === 0) {
+        list.innerHTML = '<p style="color:var(--text-secondary);">Nenhuma versão salva ainda.</p>';
+      } else {
+        let html = '';
+        versions.forEach((v) => {
+          const date = new Date(v.timestamp).toLocaleString();
+          const preview = v.content.substring(0, 100).replace(/</g, '&lt;') + '...';
+          html += `
+            <div style="background:var(--bg-primary);padding:10px;border-radius:6px;margin:6px 0;border:1px solid var(--border-color);">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <strong style="color:var(--accent-cyan);">📅 ${date}</strong>
+                <button onclick="restoreVersion(${v.versionId})" style="font-size:11px;padding:4px 10px;background:var(--accent-blue);border-color:var(--accent-blue);">Restaurar</button>
+              </div>
+              <div style="font-family:monospace;font-size:11px;color:var(--text-secondary);margin-top:6px;">${preview}</div>
+            </div>`;
+        });
+        list.innerHTML = html;
+      }
+      
+      document.getElementById('versionHistoryModal').style.display = 'flex';
+    }
+
+    async function restoreVersion(versionId) {
+      try {
+        const version = await idbGet('versions', versionId);
+        if (!version) {
+          showNotification('Versão não encontrada', 'error');
+          return;
+        }
+        
+        showModal('🕒 Restaurar Versão?', 
+          `Deseja restaurar a versão de ${new Date(version.timestamp).toLocaleString()}?\nO conteúdo atual será substituído.`, 
+          async () => {
+            document.getElementById('simple-editor').value = version.content;
+            files[currentFile].content = version.content;
+            
+            // Salva imediatamente
+            await saveCurrentFile();
+            
+            closeVersionHistoryModal();
+            showNotification('✅ Versão restaurada!', 'success');
+            logSuccess('Versão restaurada: ' + new Date(version.timestamp).toLocaleString());
+          });
+      } catch(e) {
+        logError('Erro ao restaurar versão: ' + e.message);
+        showNotification('Erro ao restaurar', 'error');
+      }
+    }
+
+    function closeVersionHistoryModal() {
+      document.getElementById('versionHistoryModal').style.display = 'none';
     }
 
     // ============ CONTEXT MENU ============
@@ -901,71 +1262,99 @@ async function deleteSite() {
     }
 
     // ============ INIT ============
-    auth.onAuthStateChanged(async user => {
-      if (!user) { 
-        window.location.href = 'auth.html'; 
-        return; 
-      }
-      currentUser = user;
-      document.getElementById('user-name').textContent = user.displayName || user.email?.split('@')[0] || 'User';
-
-      const z = localStorage.getItem('zoom');
-      if (z) { 
-        currentZoom = parseFloat(z); 
-        document.body.style.zoom = currentZoom; 
-      }
-      document.getElementById('zoomLevel').textContent = Math.round(currentZoom*100)+'%';
-
-      if (currentProjectId) {
-        const snap = await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).once('value');
-        const d = snap.val();
-        if (d) {
-          document.getElementById('project-name').value = d.name || '';
-          files = d.files || {};
-
-          if (d.hosting?.url) {
-            hostingUrl = d.hosting.url;
-            hostingSubdomain = d.hosting.subdomain;
-            hostingDirectory = d.hosting.directory;
-            siteCreated = true;
-            document.getElementById('fileUrlTop').value = hostingUrl;
-            document.getElementById('urlPanelTop').style.display = 'flex';
-          }
-          updateSiteButtons();
-
-          const ws = await db.ref(`workers/${currentUser.uid}/${currentProjectId}`).once('value');
-          const w = ws.val();
-          if (w) {
-            const first = Object.entries(w)[0];
-            if (first) { 
-              currentWorkerData = { id: first[0], ...first[1] }; 
-              document.getElementById('workerCode').value = currentWorkerData.code || ''; 
-            }
-          }
-
-          const keys = Object.keys(files);
-          if (keys.length > 0) openFile(keys[0]);
-          updateTabs();
+    async function initApp() {
+      await openIDB();
+      
+      auth.onAuthStateChanged(async user => {
+        if (!user) { 
+          window.location.href = 'auth.html'; 
+          return; 
         }
-      }
+        currentUser = user;
+        document.getElementById('user-name').textContent = user.displayName || user.email?.split('@')[0] || 'User';
 
-      document.getElementById('loading-screen').style.opacity = '0';
-      setTimeout(() => {
-        document.getElementById('loading-screen').style.display = 'none';
-        document.getElementById('app-content').style.display = 'flex';
-        initContextMenu();
-        logSuccess('Sistema pronto!');
-        logInfo('Todas as funções Puter corrigidas:');
-        logInfo('  ✅ puter.hosting.create()');
-        logInfo('  ✅ puter.hosting.list()');
-        logInfo('  ✅ puter.hosting.get()');
-        logInfo('  ✅ puter.hosting.update()');
-        logInfo('  ✅ puter.hosting.delete()');
-        logInfo('  ✅ puter.fs.mkdir()');
-        logInfo('  ✅ puter.fs.write()');
-        logInfo('Use o botão direito para opções rápidas');
-      }, 400);
-    });
+        const z = localStorage.getItem('zoom');
+        if (z) { 
+          currentZoom = parseFloat(z); 
+          document.body.style.zoom = currentZoom; 
+        }
+        document.getElementById('zoomLevel').textContent = Math.round(currentZoom*100)+'%';
+
+        if (currentProjectId) {
+          const snap = await db.ref(`projects/${currentUser.uid}/${currentProjectId}`).once('value');
+          const d = snap.val();
+          if (d) {
+            document.getElementById('project-name').value = d.name || '';
+            files = d.files || {};
+
+            // Carrega cache local se existir (versão mais recente)
+            for (const [key, file] of Object.entries(files)) {
+              const cacheId = currentProjectId + '_' + key;
+              const cached = await idbGet('files', cacheId);
+              if (cached && (!file.updatedAt || cached.updatedAt > file.updatedAt)) {
+                file.content = cached.content;
+                file.updatedAt = cached.updatedAt;
+                logInfo('Cache local carregado: ' + (file.name || file.originalName));
+              }
+            }
+
+            if (d.hosting?.url) {
+              hostingUrl = d.hosting.url;
+              hostingSubdomain = d.hosting.subdomain;
+              hostingDirectory = d.hosting.directory;
+              siteCreated = true;
+              document.getElementById('fileUrlTop').value = hostingUrl;
+              document.getElementById('urlPanelTop').style.display = 'flex';
+            }
+            updateSiteButtons();
+
+            const ws = await db.ref(`workers/${currentUser.uid}/${currentProjectId}`).once('value');
+            const w = ws.val();
+            if (w) {
+              const first = Object.entries(w)[0];
+              if (first) { 
+                currentWorkerData = { id: first[0], ...first[1] }; 
+                document.getElementById('workerCode').value = currentWorkerData.code || ''; 
+              }
+            }
+
+            const keys = Object.keys(files);
+            if (keys.length > 0) openFile(keys[0]);
+            updateTabs();
+          }
+        }
+
+        document.getElementById('loading-screen').style.opacity = '0';
+        setTimeout(() => {
+          document.getElementById('loading-screen').style.display = 'none';
+          document.getElementById('app-content').style.display = 'flex';
+          initContextMenu();
+          logSuccess('Sistema pronto com auto-save!');
+          logInfo('Preview incorporado ativo');
+          logInfo('Auto-save a cada 300ms após digitação');
+        }, 400);
+      });
+    }
+
+    // Auto-save setup
+    function setupAutoSave() {
+      const editor = document.getElementById('simple-editor');
+      
+      editor.addEventListener('input', () => {
+        setStatus('Digitando...', 'var(--accent-orange)');
+        
+        clearTimeout(autoSaveTimer);
+        autoSaveTimer = setTimeout(() => {
+          saveCurrentFile();
+        }, 300);
+      });
+      
+      // Salva ao perder foco também
+      editor.addEventListener('blur', () => {
+        clearTimeout(autoSaveTimer);
+        saveCurrentFile();
+      });
+    }
 
     // Event listeners
     document.getElementById('saveFileBtn').addEventListener('click', saveCurrentFile);
@@ -1005,6 +1394,12 @@ async function deleteSite() {
     document.getElementById('historyModal').addEventListener('click', function(e) { 
       if (e.target === this) closeHistoryModal(); 
     });
+    document.getElementById('versionHistoryModal').addEventListener('click', function(e) { 
+      if (e.target === this) closeVersionHistoryModal(); 
+    });
+    document.getElementById('previewModal').addEventListener('click', function(e) { 
+      if (e.target === this) closePreviewModal(); 
+    });
 
     // Expor funções globalmente
     window.changeZoom = changeZoom;
@@ -1016,11 +1411,21 @@ async function deleteSite() {
     window.deleteSite = deleteSite;
     window.showHistory = showHistory;
     window.closeHistoryModal = closeHistoryModal;
+    window.showVersionHistory = showVersionHistory;
+    window.restoreVersion = restoreVersion;
+    window.closeVersionHistoryModal = closeVersionHistoryModal;
+    window.previewProject = previewProject;
+    window.refreshPreview = refreshPreview;
+    window.openPreviewExterno = openPreviewExterno;
+    window.closePreviewModal = closePreviewModal;
     window.saveWorkerCode = saveWorkerCode;
     window.publishWorker = publishWorker;
-    window.previewProject = previewProject;
     window.sendToAI = sendToAI;
     window.copyUrl = copyUrl;
+
+    // Inicia tudo
+    setupAutoSave();
+    initApp();
   </script>
 </body>
 </html>
