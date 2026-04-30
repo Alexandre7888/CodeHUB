@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- SEO -->
-  <meta name="keywords" content="CodeHUB, editor de código online, IDE online, programar no navegador, editor HTML, editor CSS, editor JavaScript, desenvolvimento web online, criar sites online, editor de código grátis, IDE para iniciantes, editor responsivo, ferramenta de programação, codar no navegador, editor com terminal, escrever código online, depuração online, editor de código rápido, desenvolvimento colaborativo, criar projetos web, editor frontend, plataforma de codar online, editor de programação, IDE web, editor de scripts, editor JS, editor CSS3, editor HTML5, criar páginas web, prototipagem online, editor web interativo, IDE colaborativa, editor de código com login, projetos online, editor de apps web, editor multiplataforma, editor com versionamento, editor de projetos HTML CSS JS, editor de código para estudantes, IDE para web developers, editor de código com templates, editor de projetos compartilháveis, editor para iniciantes em web, editor rápido e leve, editor de código com terminal integrado, editor de desenvolvimento web, editor de protótipos web, plataforma de aprendizado de programação, editor de sites responsivos, editor de HTML CSS JS online, criar sites responsivos online, editor de front-end, editor com Firebase, editor para projetos pessoais, IDE web gratuita, editor para codar online, editor de código interativo, editor de projetos colaborativos, editor de sites e aplicações, editor para estudantes de programação, editor de código com suporte a frameworks, editor de desenvolvimento ágil, IDE de aprendizado online, editor de projetos rápidos, editor de código para educação, editor de páginas web, editor de apps HTML CSS JS">
+  <meta name="keywords" content="CodeHUB, editor de código online, IDE online, programar no navegador, editor HTML, editor CSS, editor JavaScript, desenvolvimento web online, criar sites online, editor de código grátis, IDE para iniciantes, editor responsivo, ferramenta programação, codar no navegador, editor com terminal, escrever código online, depuração online, editor de código rápido, desenvolvimento colaborativo, criar projetos web, editor frontend, plataforma de codar online, editor de programação, IDE web, editor de scripts, editor JS, editor CSS3, editor HTML5, criar páginas web, prototipagem online, editor web interativo, IDE colaborativa, editor de código com login, projetos online, editor de apps web, editor multiplataforma, editor com versionamento, editor de projetos HTML CSS JS, editor de código para estudantes, IDE para web developers, editor de código com templates, editor de projetos compartilháveis, editor para iniciantes em web, editor rápido e leve, editor de código com terminal integrado, editor de desenvolvimento web, editor de protótipos web, plataforma de aprendizado de programação, editor de sites responsivos, editor de HTML CSS JS online, criar sites responsivos online, editor de front-end, editor com Firebase, editor para projetos pessoais, IDE web gratuita, editor para codar online, editor de código interativo, editor de projetos colaborativos, editor de sites e aplicações, editor para estudantes de programação, editor de código com suporte a frameworks, editor de desenvolvimento ágil, IDE de aprendizado online, editor de projetos rápidos, editor de código para educação, editor de páginas web, editor de apps HTML CSS JS">
   <meta name="author" content="CodeHUB - Alexandre Braatz Junior, fundador da plataforma">
   <meta name="google-site-verification" content="d5deNmIStRgPPphEkAypCTSv-E_1gi9ba16et47RSmA" />
 
@@ -754,7 +754,7 @@
     <header>
       <div class="header-content">
         <div class="logo-area">
-          <!-- Botão Menu Hamburguer - NOVO -->
+          <!-- Botão Menu Hamburguer -->
           <button class="menu-hamburger" onclick="toggleSidebar()">
             <span></span>
             <span></span>
@@ -777,7 +777,7 @@
       </div>
     </header>
 
-    <!-- Sidebar - NOVA ABA DE SINCRONIZAÇÃO -->
+    <!-- Sidebar -->
     <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
     <div class="sidebar" id="sidebar">
       <div class="sidebar-header">
@@ -889,11 +889,12 @@
     </div>
   </div>
 
-  <!-- Firebase e App Script -->
+  <!-- Firebase e App Script - VERSÃO CORRIGIDA -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
-    import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
-    import { getDatabase, ref, push, set, onValue, remove } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-database.js";
+    // ========== IMPORTAÇÕES CORRETAS PARA FIREBASE 9.x ==========
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+    import { getDatabase, ref, push, set, onValue, remove, get, child } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
     // Configuração do Firebase
     const firebaseConfig = {
@@ -991,11 +992,10 @@
       return data;
     }
 
-    // FUNÇÃO CORRIGIDA - toBase64 agora é mais robusta
+    // FUNÇÃO CORRIGIDA - toBase64
     function toBase64(obj) {
       try {
         const jsonString = JSON.stringify(obj);
-        // Usando TextEncoder para melhor compatibilidade com caracteres especiais
         const utf8Bytes = new TextEncoder().encode(jsonString);
         let binaryString = '';
         for (let i = 0; i < utf8Bytes.length; i++) {
@@ -1008,7 +1008,7 @@
       }
     }
 
-    // FUNÇÃO CORRIGIDA - fromBase64 agora funciona corretamente
+    // FUNÇÃO CORRIGIDA - fromBase64
     function fromBase64(str) {
       try {
         if (!str) return null;
@@ -1037,16 +1037,19 @@
           return false;
         }
         
-        await database.ref(`syncData/${userData.uid}`).set({
+        // CORREÇÃO: Usar ref corretamente com Firebase 9.x
+        const syncDataRef = ref(database, `syncData/${userData.uid}`);
+        await set(syncDataRef, {
           data: encoded,
-          lastUpdate: firebase.database.ServerValue.TIMESTAMP,
+          lastUpdate: Date.now(),
           deviceId: currentDeviceId
         });
         
         const ip = await getPublicIP();
-        await database.ref(`devices/${userData.uid}/${currentDeviceId}`).set({
+        const devicesRef = ref(database, `devices/${userData.uid}/${currentDeviceId}`);
+        await set(devicesRef, {
           id: currentDeviceId,
-          lastSeen: firebase.database.ServerValue.TIMESTAMP,
+          lastSeen: Date.now(),
           userAgent: navigator.userAgent,
           ip: ip
         });
@@ -1062,16 +1065,15 @@
       if (!userData) return false;
       
       try {
-        const snapshot = await database.ref(`syncData/${userData.uid}`).once('value');
+        const syncDataRef = ref(database, `syncData/${userData.uid}`);
+        const snapshot = await get(syncDataRef);
         const data = snapshot.val();
         
-        // CORREÇÃO: Verificar corretamente se o deviceId é diferente
         if (data && data.data && data.deviceId && data.deviceId !== currentDeviceId) {
           const restoredData = fromBase64(data.data);
           if (restoredData && typeof restoredData === 'object') {
             let changesApplied = false;
             
-            // Restaurar localStorage
             if (restoredData.ls && typeof restoredData.ls === 'object') {
               for(const key in restoredData.ls) {
                 if (key !== '_device_id_' && localStorage.getItem(key) !== restoredData.ls[key]) {
@@ -1081,7 +1083,6 @@
               }
             }
             
-            // Restaurar sessionStorage
             if (restoredData.ss && typeof restoredData.ss === 'object') {
               for(const key in restoredData.ss) {
                 if (sessionStorage.getItem(key) !== restoredData.ss[key]) {
@@ -1091,7 +1092,6 @@
               }
             }
             
-            // Restaurar cookies
             if (restoredData.ck && typeof restoredData.ck === 'object') {
               for(const name in restoredData.ck) {
                 document.cookie = name + "=" + restoredData.ck[name] + "; path=/";
@@ -1188,8 +1188,8 @@
       document.getElementById('uidDisplay').textContent = userData.uid.substring(0, 20) + '...';
       document.getElementById('deviceIdDisplay').textContent = currentDeviceId.substring(0, 20) + '...';
       
-      const devicesRef = database.ref(`devices/${userData.uid}`);
-      const snapshot = await devicesRef.once('value');
+      const devicesRef = ref(database, `devices/${userData.uid}`);
+      const snapshot = await get(devicesRef);
       const devices = snapshot.val() || {};
       const deviceCount = Object.keys(devices).length;
       document.getElementById('deviceCount').textContent = deviceCount;
@@ -1459,7 +1459,8 @@
             throw new Error('Usuário não autenticado');
           }
 
-          remove(ref(database, `projects/${user.uid}/${projectId}`))
+          const projectRef = ref(database, `projects/${user.uid}/${projectId}`);
+          remove(projectRef)
             .then(() => {
               alert('Projeto excluído com sucesso!');
             })
