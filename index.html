@@ -1078,20 +1078,35 @@
     window.openNewProjectModal = function() { document.getElementById('new-project-modal').style.display = 'block'; document.getElementById('project-name').focus(); }
     window.closeNewProjectModal = function() { document.getElementById('new-project-modal').style.display = 'none'; document.getElementById('project-name').value = ''; }
 
-    async function createProject() {
-      const projectName = document.getElementById('project-name').value.trim();
-      const user = auth.currentUser;
-      if(!isValidProjectName(projectName)) { alert('Nome válido (1-50 caracteres)'); return; }
-      try {
-        loadingScreen.style.display = 'flex'; loadingScreen.style.opacity = '1'; appContent.style.display = 'none';
-        const slug = projectName.toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-]/g, '');
-        const newProjectRef = push(ref(database, `projects/${user.uid}`));
-        const projectId = newProjectRef.key;
-        await set(newProjectRef, { name: projectName, slug: slug, owner: userData?.displayName || 'usuário', ownerId: user.uid, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), files: { 'index.html': { content: `<!DOCTYPE html><html><head><title>${projectName}</title><meta charset="UTF-8"></head><body><h1>${projectName}</h1><p>Comece a editar!</p></body></html>`, language: 'html' } } });
-        closeNewProjectModal();
-        window.location.href = `editor.html?projectId=${projectId}`;
-      } catch(e) { alert('Erro: ' + e.message); showAppContent(); }
-    }
+async function createProject() {
+  const projectName = document.getElementById('project-name').value.trim();
+  const user = auth.currentUser;
+  if(!isValidProjectName(projectName)) { alert('Nome válido (1-50 caracteres)'); return; }
+  try {
+    loadingScreen.style.display = 'flex'; loadingScreen.style.opacity = '1'; appContent.style.display = 'none';
+    const slug = projectName.toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-]/g, '');
+    const newProjectRef = push(ref(database, `projects/${user.uid}`));
+    const projectId = newProjectRef.key;
+    await set(newProjectRef, { 
+      name: projectName, 
+      slug: slug, 
+      owner: userData?.displayName || 'usuário', 
+      ownerId: user.uid, 
+      createdAt: new Date().toISOString(), 
+      updatedAt: new Date().toISOString(), 
+      files: { 
+        // ✅ CORRIGIDO: substituir . por _ nas chaves
+        'index_html': { 
+          name: 'index.html',
+          content: `<!DOCTYPE html><html><head><title>${escapeHtml(projectName)}</title><meta charset="UTF-8"></head><body><h1>${escapeHtml(projectName)}</h1><p>Comece a editar!</p></body></html>`, 
+          language: 'html' 
+        } 
+      } 
+    });
+    closeNewProjectModal();
+    window.location.href = `editor.html?projectId=${projectId}`;
+  } catch(e) { alert('Erro: ' + e.message); showAppContent(); }
+}
 
     window.deleteProject = function(projectId) { if(confirm('Excluir este projeto?')) { const user = auth.currentUser; remove(ref(database, `projects/${user.uid}/${projectId}`)).then(() => alert('Excluído!')); } }
     window.logout = function() { signOut(auth).then(() => window.location.href = 'auth.html'); }
