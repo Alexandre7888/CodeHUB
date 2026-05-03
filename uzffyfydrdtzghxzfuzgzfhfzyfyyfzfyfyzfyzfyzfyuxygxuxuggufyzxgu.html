@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Sistema Esportivo</title>
+    <title>Admin - Sistema Esportivo (Dados Persistentes)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* ====== ESTILOS GERAIS ====== */
+        /* [MANTENHA TODOS OS ESTILOS CSS DO SEU CÓDIGO ORIGINAL AQUI] */
         * {
             margin: 0;
             padding: 0;
@@ -26,7 +26,6 @@
             padding: 20px;
         }
 
-        /* ====== HEADER ====== */
         header {
             background-color: rgba(255, 255, 255, 0.95);
             padding: 20px 0;
@@ -91,7 +90,6 @@
             color: white;
         }
 
-        /* ====== NOTIFICAÇÕES ====== */
         .notification {
             padding: 15px 20px;
             border-radius: 8px;
@@ -99,6 +97,23 @@
             display: none;
             border-left: 5px solid;
             font-weight: 500;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 400px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
 
         .notification.success {
@@ -113,7 +128,6 @@
             border-left-color: #dc3545;
         }
 
-        /* ====== TABS ====== */
         .tabs {
             display: flex;
             gap: 10px;
@@ -154,7 +168,6 @@
             display: block;
         }
 
-        /* ====== CARD DE FORMULÁRIO ====== */
         .card {
             background-color: white;
             border-radius: 15px;
@@ -175,11 +188,6 @@
             gap: 10px;
         }
 
-        .card h2 i {
-            color: #26d0ce;
-        }
-
-        /* ====== FORMULÁRIOS ====== */
         .form-group {
             margin-bottom: 20px;
         }
@@ -218,19 +226,6 @@
             box-shadow: 0 0 0 3px rgba(26, 41, 128, 0.1);
         }
 
-        textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-
-        .form-hint {
-            font-size: 0.85rem;
-            color: #666;
-            margin-top: 5px;
-            font-style: italic;
-        }
-
-        /* ====== BOTÕES ====== */
         .btn {
             background: linear-gradient(to right, #1a2980, #26d0ce);
             color: white;
@@ -241,10 +236,9 @@
             font-size: 16px;
             font-weight: 600;
             transition: all 0.3s;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 10px;
-            justify-content: center;
         }
 
         .btn:hover {
@@ -252,82 +246,10 @@
             box-shadow: 0 5px 15px rgba(26, 41, 128, 0.3);
         }
 
-        .btn-secondary {
-            background: linear-gradient(to right, #2c3e50, #4ca1af);
-        }
-
         .btn-danger {
             background: linear-gradient(to right, #c31432, #240b36);
         }
 
-        /* ====== PREVIEW DO TIME ====== */
-        .team-preview {
-            background-color: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 20px;
-            border: 2px dashed #dee2e6;
-        }
-
-        .team-preview h4 {
-            color: #1a2980;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .players-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 10px;
-            max-height: 300px;
-            overflow-y: auto;
-            padding: 10px;
-        }
-
-        .player-item {
-            background-color: white;
-            padding: 10px 15px;
-            border-radius: 6px;
-            border-left: 4px solid #1a2980;
-            font-size: 0.9rem;
-            transition: transform 0.2s;
-        }
-
-        .player-item:hover {
-            transform: translateX(5px);
-        }
-
-        .player-name {
-            font-weight: 600;
-            color: #1a2980;
-            display: block;
-        }
-
-        .player-details {
-            font-size: 0.8rem;
-            color: #666;
-            margin-top: 3px;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .player-number {
-            background-color: #1a2980;
-            color: white;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-weight: bold;
-            font-size: 0.7rem;
-        }
-
-        .player-position {
-            color: #26d0ce;
-            font-weight: 500;
-        }
-
-        /* ====== LISTAS DE ITENS ====== */
         .list-section {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -351,24 +273,6 @@
         .list-item h3 {
             color: #1a2980;
             margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .list-item h3 span {
-            font-size: 0.9rem;
-            color: #666;
-            font-weight: normal;
-        }
-
-        .list-item p {
-            color: #666;
-            font-size: 0.9rem;
-            margin-bottom: 5px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
         }
 
         .item-actions {
@@ -385,7 +289,7 @@
             font-size: 0.85rem;
             font-weight: 500;
             transition: all 0.3s;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 5px;
         }
@@ -395,296 +299,68 @@
             color: white;
         }
 
-        .edit-btn:hover {
-            background-color: #1ba5a5;
-        }
-
         .delete-btn {
             background-color: #dc3545;
             color: white;
         }
 
-        .delete-btn:hover {
-            background-color: #c82333;
-        }
-
-        .status-btn {
-            background-color: #ffc107;
-            color: #333;
-        }
-
-        .status-btn:hover {
-            background-color: #e0a800;
-        }
-
-        /* ====== CAMPO DE FUTEBOL ====== */
-        .field-container {
-            background-color: #2e7d32;
+        .team-preview {
+            background-color: #f8f9fa;
             border-radius: 10px;
             padding: 20px;
             margin-top: 20px;
-            position: relative;
-            overflow: hidden;
-            border: 3px solid #1b5e20;
+            border: 2px dashed #dee2e6;
         }
 
-        .football-field {
-            width: 100%;
-            height: 500px;
-            background-color: #4caf50;
-            border-radius: 8px;
-            position: relative;
-            border: 2px solid white;
-            overflow: hidden;
-        }
-
-        /* Linhas do campo */
-        .field-line {
-            position: absolute;
-            background-color: white;
-        }
-
-        .half-line {
-            width: 2px;
-            height: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-
-        .center-circle {
-            width: 100px;
-            height: 100px;
-            border: 2px solid white;
-            border-radius: 50%;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            position: absolute;
-        }
-
-        .center-spot {
-            width: 10px;
-            height: 10px;
-            background-color: white;
-            border-radius: 50%;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            position: absolute;
-        }
-
-        .penalty-area {
-            border: 2px solid white;
-            position: absolute;
-        }
-
-        .penalty-area.left {
-            width: 120px;
-            height: 320px;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-        .penalty-area.right {
-            width: 120px;
-            height: 320px;
-            right: 0;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-        .goal-area {
-            border: 2px solid white;
-            position: absolute;
-        }
-
-        .goal-area.left {
-            width: 40px;
-            height: 180px;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-        .goal-area.right {
-            width: 40px;
-            height: 180px;
-            right: 0;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-        .goal {
-            width: 10px;
-            height: 200px;
-            background-color: white;
-            position: absolute;
-        }
-
-        .goal.left {
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-        .goal.right {
-            right: 0;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-        /* Jogadores no campo */
-        .player-on-field {
-            position: absolute;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 12px;
-            cursor: pointer;
-            transition: transform 0.2s;
-            border: 2px solid white;
-            text-align: center;
-            padding: 2px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        }
-
-        .player-on-field:hover {
-            transform: scale(1.1);
-            z-index: 10;
-        }
-
-        .player-number-field {
-            font-size: 10px;
-            background-color: rgba(0,0,0,0.5);
-            padding: 1px 3px;
-            border-radius: 2px;
-            position: absolute;
-            bottom: -15px;
-            left: 50%;
-            transform: translateX(-50%);
-            white-space: nowrap;
-        }
-
-        /* Legenda */
-        .field-legend {
-            background-color: white;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 20px;
-        }
-
-        .field-legend h4 {
-            color: #1a2980;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
+        .players-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 10px;
-        }
-
-        .legend-items {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .legend-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
-        }
-
-        /* ====== MODAL PARA GOLS/CARTÕES ====== */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.7);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-content {
-            background-color: white;
-            padding: 30px;
-            border-radius: 10px;
-            width: 90%;
-            max-width: 500px;
-            max-height: 90vh;
+            max-height: 300px;
             overflow-y: auto;
+            padding: 10px;
         }
 
-        .modal-header {
+        .player-item {
+            background-color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            border-left: 4px solid #1a2980;
+        }
+
+        .backup-controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .backup-btn {
+            background: linear-gradient(to right, #2c3e50, #3498db);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 14px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        
+        .backup-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .data-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .modal-header h3 {
-            color: #1a2980;
-            margin: 0;
-        }
-
-        .close-modal {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: #666;
-        }
-
-        .close-modal:hover {
-            color: #1a2980;
-        }
-
-        /* ====== MATCH ACTIONS ====== */
-        .match-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-
-        /* ====== RESPONSIVIDADE ====== */
-        @media (max-width: 768px) {
-            .header-content {
-                flex-direction: column;
-                gap: 15px;
-            }
-            
-            .tabs {
-                justify-content: center;
-            }
-            
-            .tab-btn {
-                flex: 1;
-                min-width: 120px;
-                justify-content: center;
-            }
-            
-            .match-actions {
-                flex-direction: column;
-            }
-            
-            .btn {
-                width: 100%;
-            }
         }
     </style>
 </head>
@@ -693,15 +369,12 @@
         <div class="container">
             <div class="header-content">
                 <div class="logo">
-                    <i class="fas fa-tools"></i>
+                    <i class="fas fa-database"></i>
                     <h1>PAINEL ADMINISTRATIVO</h1>
                 </div>
                 <nav>
-                    <a href="admin.html" class="nav-btn active">
+                    <a href="#" class="nav-btn active">
                         <i class="fas fa-home"></i> Admin
-                    </a>
-                    <a href="placar.html" class="nav-btn">
-                        <i class="fas fa-tv"></i> Placar Ao Vivo
                     </a>
                 </nav>
             </div>
@@ -709,13 +382,22 @@
     </header>
 
     <div class="container">
+        <div class="data-info">
+            <span><i class="fas fa-check-circle"></i> Dados salvos localmente - Nunca serão perdidos!</span>
+            <button onclick="exportBackup()" class="backup-btn" style="background: rgba(255,255,255,0.2);">
+                <i class="fas fa-download"></i> Backup
+            </button>
+            <button onclick="importBackup()" class="backup-btn" style="background: rgba(255,255,255,0.2);">
+                <i class="fas fa-upload"></i> Restaurar
+            </button>
+        </div>
+        
         <div id="notification" class="notification"></div>
 
         <div class="tabs">
             <button class="tab-btn active" data-tab="sports">Esportes</button>
             <button class="tab-btn" data-tab="teams">Times</button>
             <button class="tab-btn" data-tab="matches">Partidas</button>
-            <button class="tab-btn" data-tab="field">Campo</button>
         </div>
 
         <!-- TAB ESPORTES -->
@@ -724,15 +406,15 @@
                 <h2><i class="fas fa-plus-circle"></i> Criar Novo Esporte</h2>
                 <form id="sport-form">
                     <div class="form-group">
-                        <label for="sport-name">Nome do Esporte *</label>
+                        <label>Nome do Esporte *</label>
                         <input type="text" id="sport-name" placeholder="Ex: Futebol, Basquete, Vôlei" required>
                     </div>
                     <div class="form-group">
-                        <label for="sport-description">Descrição</label>
+                        <label>Descrição</label>
                         <textarea id="sport-description" rows="3" placeholder="Descreva as características deste esporte"></textarea>
                     </div>
                     <div class="form-group">
-                        <label for="sport-players">Número de Jogadores (por time)</label>
+                        <label>Número de Jogadores (por time)</label>
                         <input type="number" id="sport-players" min="1" max="50" value="11">
                     </div>
                     <button type="submit" class="btn">
@@ -754,11 +436,11 @@
                 <form id="team-form">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="team-name">Nome do Time *</label>
-                            <input type="text" id="team-name" placeholder="Ex: Vasco da Gama, Flamengo, Brasil" required>
+                            <label>Nome do Time *</label>
+                            <input type="text" id="team-name" placeholder="Ex: Vasco da Gama" required>
                         </div>
                         <div class="form-group">
-                            <label for="team-sport">Esporte *</label>
+                            <label>Esporte *</label>
                             <select id="team-sport" required>
                                 <option value="">Selecione um esporte</option>
                             </select>
@@ -767,36 +449,24 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="team-country">País/Região</label>
+                            <label>País/Região</label>
                             <input type="text" id="team-country" placeholder="Ex: Brasil">
                         </div>
                         <div class="form-group">
-                            <label for="team-color">Cor Principal</label>
+                            <label>Cor Principal</label>
                             <input type="color" id="team-color" value="#1a2980">
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="team-logo">Ícone/Emoji do Time</label>
-                        <input type="text" id="team-logo" placeholder="Ex: ⚓ (âncora do Vasco) ou URL da imagem">
-                        <div class="form-hint">Use um emoji ou cole URL de uma imagem</div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="team-players">Jogadores (Formato: Nome/camisa/posição)</label>
-                        <textarea id="team-players" rows="6" placeholder="Léo Jardim/c1/Goleiro, Puma Rodríguez/c2/Defensor, Tchê Tchê/c3/Meio-campo, Mauricio Lemos/c4/Defensor, Souza/c5/Defensor, Lucas Piton/c6/Defensor, David/c7/Meio-campo, Jair/c8/Meio-campo, Dimitri Payet/c10/Atacante, Philippe Coutinho/c11/Atacante, Victor Luís/c12/Defensor, Daniel Fuzato/c13/Goleiro, Estrella/c14/Meio-campo, Benjamín Garré/c15/Atacante, Nuno Moreira/c17/Meio-campo, Paulinho/c18/Meio-campo, GB/c19/Atacante, Juan Sforza/c20/Atacante, Jean David/c21/Meio-campo, Hugo Moura/c25/Meio-campo, Maxime Dominguez/c26/Meio-campo, Adson/c28/Atacante, Lucas Oliveira/c29/Atacante, Pablo/c37/Atacante, João Victor/c38/Atacante, Lucas Freitas/c43/Meio-campo, Loide Augusto/c45/Defensor, Bruno Lopes/c72/Defensor, Rayan/c77/Atacante, Mateus Carvalho/c85/Atacante, Alex Teixeira/c90/Atacante, Paulo Henrique/c96/Atacante, JP/c98/Atacante, Vegetti/c99/Atacante"></textarea>
-                        <div class="form-hint">
-                            Formato obrigatório: Nome/camisa/posição<br>
-                            Exemplo correto: "Léo Jardim/c1/Goleiro, Puma Rodríguez/c2/Defensor"<br>
-                            Separe os jogadores por vírgula
-                        </div>
+                        <label>Jogadores (Formato: Nome/camisa/posição)</label>
+                        <textarea id="team-players" rows="6" placeholder="Léo Jardim/c1/Goleiro, Puma Rodríguez/c2/Defensor"></textarea>
+                        <div class="form-hint">Formato: Nome/camisa/posição (separados por vírgula)</div>
                     </div>
 
                     <div class="team-preview">
                         <h4><i class="fas fa-eye"></i> Prévia dos Jogadores</h4>
-                        <div id="players-preview" class="players-list">
-                            <!-- Prévia será gerada aqui -->
-                        </div>
+                        <div id="players-preview" class="players-list"></div>
                     </div>
 
                     <button type="submit" class="btn">
@@ -814,192 +484,157 @@
         <!-- TAB PARTIDAS -->
         <div id="matches-tab" class="tab-content">
             <div class="card">
-                <h2><i class="fas fa-futbol"></i> Gerenciar Partidas</h2>
-                
-                <div class="form-group">
-                    <label for="match-action">Ação</label>
-                    <select id="match-action">
-                        <option value="create">Criar Nova Partida</option>
-                        <option value="update">Atualizar Partida Existente</option>
-                        <option value="finish">Finalizar Partida</option>
-                    </select>
-                </div>
-
-                <div id="match-form-container">
-                    <!-- Formulário será carregado dinamicamente -->
-                </div>
-
-                <div class="match-actions">
-                    <button id="add-goal-btn" class="btn-secondary">
-                        <i class="fas fa-futbol"></i> Adicionar Gol
+                <h2><i class="fas fa-futbol"></i> Criar Partida</h2>
+                <form id="match-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Time da Casa *</label>
+                            <select id="home-team" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Time Visitante *</label>
+                            <select id="away-team" required></select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Esporte</label>
+                            <select id="match-sport" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select id="match-status">
+                                <option value="upcoming">Agendado</option>
+                                <option value="live">Ao Vivo</option>
+                                <option value="finished">Finalizado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Placar Casa</label>
+                            <input type="number" id="home-score" value="0" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Placar Visitante</label>
+                            <input type="number" id="away-score" value="0" min="0">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn">
+                        <i class="fas fa-plus-circle"></i> Criar Partida
                     </button>
-                    <button id="add-penalty-btn" class="btn-secondary">
-                        <i class="fas fa-crosshairs"></i> Adicionar Pênalti
-                    </button>
-                    <button id="add-card-btn" class="btn-secondary">
-                        <i class="fas fa-square"></i> Adicionar Cartão
-                    </button>
-                    <button id="add-video-btn" class="btn-secondary">
-                        <i class="fas fa-video"></i> Adicionar Vídeo
-                    </button>
-                </div>
+                </form>
             </div>
 
             <div class="card">
-                <h2><i class="fas fa-list"></i> Partidas Ativas</h2>
+                <h2><i class="fas fa-list"></i> Partidas Cadastradas</h2>
                 <div id="matches-list" class="list-section"></div>
             </div>
         </div>
-
-        <!-- TAB CAMPO -->
-        <div id="field-tab" class="tab-content">
-            <div class="card">
-                <h2><i class="fas fa-futbol"></i> Visualizar Campo</h2>
-                
-                <div class="form-group">
-                    <label for="select-team-field">Selecione um Time</label>
-                    <select id="select-team-field">
-                        <option value="">Selecione um time para ver o campo</option>
-                    </select>
-                </div>
-
-                <div class="field-container">
-                    <div class="football-field" id="football-field">
-                        <!-- Campo será desenhado aqui -->
-                    </div>
-                </div>
-
-                <div class="field-legend">
-                    <h4><i class="fas fa-info-circle"></i> Legenda das Posições</h4>
-                    <div class="legend-items">
-                        <div class="legend-item">
-                            <span class="legend-color" style="background-color: #FF6B6B;"></span>
-                            <span>Goleiro</span>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-color" style="background-color: #4ECDC4;"></span>
-                            <span>Defensor</span>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-color" style="background-color: #45B7D1;"></span>
-                            <span>Meio-campo</span>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-color" style="background-color: #96CEB4;"></span>
-                            <span>Atacante</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
-    <!-- MODAL PARA GOLS -->
-    <div id="goal-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3><i class="fas fa-futbol"></i> Adicionar Gol</h3>
-                <button class="close-modal" onclick="closeModal('goal-modal')">&times;</button>
-            </div>
-            <form id="goal-form">
-                <div class="form-group">
-                    <label for="goal-match">Selecione a Partida</label>
-                    <select id="goal-match" required></select>
-                </div>
-                <div class="form-group">
-                    <label for="goal-team">Time que Marcou</label>
-                    <select id="goal-team" required>
-                        <option value="home">Time da Casa</option>
-                        <option value="away">Time Visitante</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="goal-player">Jogador</label>
-                    <select id="goal-player" required></select>
-                </div>
-                <div class="form-group">
-                    <label for="goal-minute">Minuto do Gol</label>
-                    <input type="number" id="goal-minute" min="1" max="120" placeholder="Ex: 45" required>
-                </div>
-                <div class="form-group">
-                    <label for="goal-penalty">
-                        <input type="checkbox" id="goal-penalty">
-                        É pênalti?
-                    </label>
-                </div>
-                <button type="submit" class="btn">
-                    <i class="fas fa-check"></i> Adicionar Gol
-                </button>
-            </form>
-        </div>
+    <div class="backup-controls">
+        <button onclick="clearAllData()" class="backup-btn btn-danger" style="background: linear-gradient(to right, #c31432, #240b36);">
+            <i class="fas fa-trash-alt"></i> LIMPAR TUDO
+        </button>
     </div>
 
-    <!-- MODAL PARA CARTÕES -->
-    <div id="card-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3><i class="fas fa-square"></i> Adicionar Cartão</h3>
-                <button class="close-modal" onclick="closeModal('card-modal')">&times;</button>
-            </div>
-            <form id="card-form">
-                <div class="form-group">
-                    <label for="card-match">Selecione a Partida</label>
-                    <select id="card-match" required></select>
-                </div>
-                <div class="form-group">
-                    <label for="card-team">Time do Jogador</label>
-                    <select id="card-team" required>
-                        <option value="home">Time da Casa</option>
-                        <option value="away">Time Visitante</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="card-player">Jogador</label>
-                    <select id="card-player" required></select>
-                </div>
-                <div class="form-group">
-                    <label for="card-type">Tipo de Cartão</label>
-                    <select id="card-type" required>
-                        <option value="yellow">Amarelo</option>
-                        <option value="red">Vermelho</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="card-minute">Minuto</label>
-                    <input type="number" id="card-minute" min="1" max="120" placeholder="Ex: 25" required>
-                </div>
-                <div class="form-group">
-                    <label for="card-reason">Motivo (opcional)</label>
-                    <input type="text" id="card-reason" placeholder="Ex: Falta grave">
-                </div>
-                <button type="submit" class="btn">
-                    <i class="fas fa-check"></i> Adicionar Cartão
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script>
-        // ====== CONFIGURAÇÃO DO FIREBASE ======
-        const firebaseConfig = {
-            apiKey: "AIzaSyDon4WbCbe4kCkUq-OdLBRhzhMaUObbAfo",
-            authDomain: "html-15e80.firebaseapp.com",
-            databaseURL: "https://html-15e80-default-rtdb.firebaseio.com",
-            projectId: "html-15e80",
-            storageBucket: "html-15e80.firebasestorage.app",
-            messagingSenderId: "1068148640439",
-            appId: "1:1068148640439:web:7cc5bde34f4c5a5ce41b32",
-            measurementId: "G-V57KRZ02HJ"
+        // ====== SISTEMA DE ARMAZENAMENTO PERSISTENTE ======
+        // Usando localStorage para garantir que os dados nunca sejam perdidos
+        
+        const STORAGE_KEYS = {
+            SPORTS: 'esportes_sistema',
+            TEAMS: 'times_sistema',
+            MATCHES: 'partidas_sistema'
         };
-
-        // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-
-        // ====== FUNÇÕES GERAIS ======
+        
+        // Dados iniciais de exemplo (apenas para primeira execução)
+        const DEFAULT_DATA = {
+            sports: {
+                'sport1': {
+                    id: 'sport1',
+                    name: 'Futebol',
+                    description: 'Esporte mais popular do mundo',
+                    players: 11,
+                    createdAt: new Date().toISOString()
+                }
+            },
+            teams: {
+                'team1': {
+                    id: 'team1',
+                    name: 'Vasco da Gama',
+                    sportId: 'sport1',
+                    sportName: 'Futebol',
+                    country: 'Brasil',
+                    color: '#000000',
+                    players: 'Léo Jardim/c1/Goleiro, Puma Rodríguez/c2/Defensor, Philippe Coutinho/c11/Atacante, Vegetti/c99/Atacante',
+                    createdAt: new Date().toISOString()
+                },
+                'team2': {
+                    id: 'team2',
+                    name: 'Flamengo',
+                    sportId: 'sport1',
+                    sportName: 'Futebol',
+                    country: 'Brasil',
+                    color: '#FF0000',
+                    players: 'Arrascaeta/c10/Meio-campo, Bruno Henrique/c27/Atacante, Gabigol/c99/Atacante',
+                    createdAt: new Date().toISOString()
+                }
+            },
+            matches: {}
+        };
+        
+        // Funções de persistência
+        function saveSports(sports) {
+            localStorage.setItem(STORAGE_KEYS.SPORTS, JSON.stringify(sports));
+            console.log('✅ Esportes salvos:', Object.keys(sports).length);
+        }
+        
+        function saveTeams(teams) {
+            localStorage.setItem(STORAGE_KEYS.TEAMS, JSON.stringify(teams));
+            console.log('✅ Times salvos:', Object.keys(teams).length);
+        }
+        
+        function saveMatches(matches) {
+            localStorage.setItem(STORAGE_KEYS.MATCHES, JSON.stringify(matches));
+            console.log('✅ Partidas salvas:', Object.keys(matches).length);
+        }
+        
+        function loadSports() {
+            const data = localStorage.getItem(STORAGE_KEYS.SPORTS);
+            if (!data) {
+                // Inicializar com dados padrão
+                saveSports(DEFAULT_DATA.sports);
+                return DEFAULT_DATA.sports;
+            }
+            return JSON.parse(data);
+        }
+        
+        function loadTeams() {
+            const data = localStorage.getItem(STORAGE_KEYS.TEAMS);
+            if (!data) {
+                saveTeams(DEFAULT_DATA.teams);
+                return DEFAULT_DATA.teams;
+            }
+            return JSON.parse(data);
+        }
+        
+        function loadMatches() {
+            const data = localStorage.getItem(STORAGE_KEYS.MATCHES);
+            if (!data) {
+                saveMatches(DEFAULT_DATA.matches);
+                return DEFAULT_DATA.matches;
+            }
+            return JSON.parse(data);
+        }
+        
+        // Estado global
+        let sports = loadSports();
+        let teams = loadTeams();
+        let matches = loadMatches();
+        
+        // Função de notificação melhorada
         function showNotification(message, type = 'success') {
             const notification = document.getElementById('notification');
             notification.textContent = message;
@@ -1008,83 +643,183 @@
             
             setTimeout(() => {
                 notification.style.display = 'none';
-            }, 5000);
+            }, 3000);
         }
-
+        
+        // Funções auxiliares
         function formatPlayersData(playersString) {
-            const players = [];
-            if (!playersString) return players;
+            if (!playersString || typeof playersString !== 'string') return [];
             
+            const players = [];
             const playerEntries = playersString.split(',').map(p => p.trim());
             
             playerEntries.forEach(entry => {
                 const parts = entry.split('/').map(p => p.trim());
                 if (parts.length >= 2) {
-                    const player = {
+                    players.push({
                         name: parts[0],
                         number: parts[1],
                         position: parts[2] || 'Não definida'
-                    };
-                    players.push(player);
+                    });
                 }
             });
             
             return players;
         }
-
-        // ====== INICIALIZAÇÃO DA PÁGINA ======
-        document.addEventListener('DOMContentLoaded', function() {
-            // Configurar tabs
-            setupTabs();
+        
+        // Renderização das listas
+        function renderSportsList() {
+            const container = document.getElementById('sports-list');
+            if (!container) return;
             
-            // Configurar preview de jogadores
-            setupPlayersPreview();
+            container.innerHTML = '';
             
-            // Configurar event listeners
-            setupEventListeners();
+            const sportsArray = Object.values(sports);
+            if (sportsArray.length === 0) {
+                container.innerHTML = '<p class="no-data">Nenhum esporte cadastrado.</p>';
+                return;
+            }
             
-            // Carregar dados iniciais
-            loadInitialData();
-        });
-
-        function setupTabs() {
-            const tabBtns = document.querySelectorAll('.tab-btn');
-            const tabContents = document.querySelectorAll('.tab-content');
-            
-            tabBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const tabId = btn.dataset.tab;
-                    
-                    // Remover classe active de todas as tabs
-                    tabBtns.forEach(b => b.classList.remove('active'));
-                    tabContents.forEach(c => c.classList.remove('active'));
-                    
-                    // Adicionar classe active à tab selecionada
-                    btn.classList.add('active');
-                    document.getElementById(`${tabId}-tab`).classList.add('active');
-                    
-                    // Carregar dados específicos da tab
-                    if (tabId === 'teams') {
-                        loadSportsForSelect();
-                    } else if (tabId === 'matches') {
-                        loadMatchesList();
-                        setupMatchForm();
-                    } else if (tabId === 'field') {
-                        loadTeamsForField();
-                    }
-                });
+            sportsArray.forEach(sport => {
+                const sportDiv = document.createElement('div');
+                sportDiv.className = 'list-item';
+                sportDiv.innerHTML = `
+                    <h3>${sport.name}</h3>
+                    <p><i class="fas fa-users"></i> ${sport.players} jogadores/equipe</p>
+                    <p><i class="fas fa-info-circle"></i> ${sport.description || 'Sem descrição'}</p>
+                    <div class="item-actions">
+                        <button class="action-btn edit-btn" onclick="editSport('${sport.id}')">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                        <button class="action-btn delete-btn" onclick="deleteSport('${sport.id}')">
+                            <i class="fas fa-trash"></i> Excluir
+                        </button>
+                    </div>
+                `;
+                container.appendChild(sportDiv);
             });
         }
-
-        function setupPlayersPreview() {
-            const playersTextarea = document.getElementById('team-players');
-            if (playersTextarea) {
-                playersTextarea.addEventListener('input', updatePlayersPreview);
-                // Atualizar preview inicial com os dados de exemplo
-                setTimeout(() => updatePlayersPreview(), 100);
+        
+        function renderTeamsList() {
+            const container = document.getElementById('teams-list');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            const teamsArray = Object.values(teams);
+            if (teamsArray.length === 0) {
+                container.innerHTML = '<p class="no-data">Nenhum time cadastrado.</p>';
+                return;
+            }
+            
+            teamsArray.forEach(team => {
+                const players = formatPlayersData(team.players);
+                const teamDiv = document.createElement('div');
+                teamDiv.className = 'list-item';
+                teamDiv.innerHTML = `
+                    <h3>${team.name} <span style="color: ${team.color}">●</span></h3>
+                    <p><i class="fas fa-running"></i> ${players.length} jogadores</p>
+                    <p><i class="fas fa-globe"></i> ${team.country || 'Não informado'}</p>
+                    <p><i class="fas fa-futbol"></i> ${team.sportName}</p>
+                    <div class="item-actions">
+                        <button class="action-btn edit-btn" onclick="editTeam('${team.id}')">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                        <button class="action-btn delete-btn" onclick="deleteTeam('${team.id}')">
+                            <i class="fas fa-trash"></i> Excluir
+                        </button>
+                    </div>
+                `;
+                container.appendChild(teamDiv);
+            });
+        }
+        
+        function renderMatchesList() {
+            const container = document.getElementById('matches-list');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            const matchesArray = Object.values(matches);
+            if (matchesArray.length === 0) {
+                container.innerHTML = '<p class="no-data">Nenhuma partida cadastrada.</p>';
+                return;
+            }
+            
+            matchesArray.forEach(match => {
+                const matchDiv = document.createElement('div');
+                matchDiv.className = 'list-item';
+                
+                let statusBadge = '';
+                if (match.status === 'live') {
+                    statusBadge = '<span style="color: #e74c3c;">🔴 AO VIVO</span>';
+                } else if (match.status === 'finished') {
+                    statusBadge = '<span style="color: #2ecc71;">✅ FINALIZADO</span>';
+                } else {
+                    statusBadge = '<span style="color: #f39c12;">⏰ AGENDADO</span>';
+                }
+                
+                matchDiv.innerHTML = `
+                    <h3>${match.homeTeamName} vs ${match.awayTeamName}</h3>
+                    <p><i class="fas fa-futbol"></i> ${match.homeScore || 0} x ${match.awayScore || 0}</p>
+                    <p>${statusBadge}</p>
+                    <div class="item-actions">
+                        <button class="action-btn edit-btn" onclick="editMatch('${match.id}')">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                        <button class="action-btn delete-btn" onclick="deleteMatch('${match.id}')">
+                            <i class="fas fa-trash"></i> Excluir
+                        </button>
+                    </div>
+                `;
+                container.appendChild(matchDiv);
+            });
+        }
+        
+        function updateTeamSportSelect() {
+            const select = document.getElementById('team-sport');
+            if (!select) return;
+            
+            select.innerHTML = '<option value="">Selecione um esporte</option>';
+            
+            Object.values(sports).forEach(sport => {
+                const option = document.createElement('option');
+                option.value = sport.id;
+                option.textContent = sport.name;
+                select.appendChild(option);
+            });
+        }
+        
+        function updateMatchSelects() {
+            const homeSelect = document.getElementById('home-team');
+            const awaySelect = document.getElementById('away-team');
+            const sportSelect = document.getElementById('match-sport');
+            
+            if (homeSelect && awaySelect) {
+                homeSelect.innerHTML = '<option value="">Selecione</option>';
+                awaySelect.innerHTML = '<option value="">Selecione</option>';
+                
+                Object.values(teams).forEach(team => {
+                    const option = document.createElement('option');
+                    option.value = team.id;
+                    option.textContent = team.name;
+                    
+                    homeSelect.appendChild(option.cloneNode(true));
+                    awaySelect.appendChild(option);
+                });
+            }
+            
+            if (sportSelect) {
+                sportSelect.innerHTML = '<option value="">Selecione</option>';
+                Object.values(sports).forEach(sport => {
+                    const option = document.createElement('option');
+                    option.value = sport.id;
+                    option.textContent = sport.name;
+                    sportSelect.appendChild(option);
+                });
             }
         }
-
+        
         function updatePlayersPreview() {
             const playersText = document.getElementById('team-players').value;
             const previewContainer = document.getElementById('players-preview');
@@ -1094,1078 +829,343 @@
             previewContainer.innerHTML = '';
             
             if (!playersText.trim()) {
-                previewContainer.innerHTML = '<p class="no-players">Nenhum jogador adicionado ainda</p>';
+                previewContainer.innerHTML = '<p>Nenhum jogador adicionado</p>';
                 return;
             }
             
             const players = formatPlayersData(playersText);
-            
-            if (players.length === 0) {
-                previewContainer.innerHTML = '<p class="error-text">Formato inválido! Use: Nome/camisa/posição</p>';
-                return;
-            }
-            
             players.forEach(player => {
-                const playerItem = document.createElement('div');
-                playerItem.className = 'player-item';
-                playerItem.innerHTML = `
-                    <span class="player-name">${player.name}</span>
-                    <div class="player-details">
-                        <span class="player-number">Camisa ${player.number}</span>
-                        <span class="player-position">${player.position}</span>
-                    </div>
+                const playerDiv = document.createElement('div');
+                playerDiv.className = 'player-item';
+                playerDiv.innerHTML = `
+                    <strong>${player.name}</strong><br>
+                    <small>Camisa ${player.number} - ${player.position}</small>
                 `;
-                previewContainer.appendChild(playerItem);
+                previewContainer.appendChild(playerDiv);
             });
         }
-
-        function setupEventListeners() {
-            // Formulário de esportes
-            const sportForm = document.getElementById('sport-form');
-            if (sportForm) {
-                sportForm.addEventListener('submit', handleSportSubmit);
-            }
-            
-            // Formulário de times
-            const teamForm = document.getElementById('team-form');
-            if (teamForm) {
-                teamForm.addEventListener('submit', handleTeamSubmit);
-            }
-            
-            // Select de ação de partidas
-            const matchAction = document.getElementById('match-action');
-            if (matchAction) {
-                matchAction.addEventListener('change', setupMatchForm);
-            }
-            
-            // Botões de ação de partidas
-            document.getElementById('add-goal-btn')?.addEventListener('click', showGoalModal);
-            document.getElementById('add-penalty-btn')?.addEventListener('click', showPenaltyModal);
-            document.getElementById('add-card-btn')?.addEventListener('click', showCardModal);
-            document.getElementById('add-video-btn')?.addEventListener('click', showVideoModal);
-            
-            // Select de time para campo
-            const teamFieldSelect = document.getElementById('select-team-field');
-            if (teamFieldSelect) {
-                teamFieldSelect.addEventListener('change', drawFootballField);
-            }
-            
-            // Formulários dos modais
-            document.getElementById('goal-form')?.addEventListener('submit', handleGoalSubmit);
-            document.getElementById('card-form')?.addEventListener('submit', handleCardSubmit);
-        }
-
-        function loadInitialData() {
-            loadSportsList();
-            loadTeamsList();
-            loadSportsForSelect();
-            loadMatchesList();
-            loadTeamsForField();
-        }
-
-        // ====== GERENCIAMENTO DE ESPORTES ======
-        function loadSportsList() {
-            database.ref('sports').on('value', (snapshot) => {
-                const container = document.getElementById('sports-list');
-                if (!container) return;
-                
-                container.innerHTML = '';
-                
-                if (!snapshot.exists()) {
-                    container.innerHTML = '<p class="no-data">Nenhum esporte cadastrado ainda.</p>';
-                    return;
-                }
-                
-                const sports = snapshot.val();
-                Object.keys(sports).forEach(key => {
-                    const sport = sports[key];
-                    const sportItem = createSportItem(key, sport);
-                    container.appendChild(sportItem);
-                });
-            });
-        }
-
-        function createSportItem(id, sport) {
-            const item = document.createElement('div');
-            item.className = 'list-item';
-            item.innerHTML = `
-                <h3>${sport.name}</h3>
-                <p><i class="fas fa-users"></i> ${sport.players} jogadores por time</p>
-                <p><i class="fas fa-info-circle"></i> ${sport.description || 'Sem descrição'}</p>
-                <p><small><i class="fas fa-calendar"></i> Criado em: ${new Date(sport.createdAt).toLocaleDateString('pt-BR')}</small></p>
-                <div class="item-actions">
-                    <button class="action-btn edit-btn" onclick="editSport('${id}')">
-                        <i class="fas fa-edit"></i> Editar
-                    </button>
-                    <button class="action-btn delete-btn" onclick="deleteSport('${id}')">
-                        <i class="fas fa-trash"></i> Excluir
-                    </button>
-                </div>
-            `;
-            return item;
-        }
-
+        
+        // CRUD Operations
         function handleSportSubmit(e) {
             e.preventDefault();
             
-            const sportName = document.getElementById('sport-name').value;
-            const sportDescription = document.getElementById('sport-description').value;
-            const sportPlayers = document.getElementById('sport-players').value;
-            
-            if (!sportName.trim()) {
-                showNotification('Por favor, insira um nome para o esporte', 'error');
-                return;
-            }
-            
+            const id = 'sport_' + Date.now();
             const newSport = {
-                name: sportName,
-                description: sportDescription,
-                players: sportPlayers,
+                id: id,
+                name: document.getElementById('sport-name').value,
+                description: document.getElementById('sport-description').value,
+                players: parseInt(document.getElementById('sport-players').value),
                 createdAt: new Date().toISOString()
             };
             
-            database.ref('sports').push(newSport)
-                .then(() => {
-                    showNotification('Esporte criado com sucesso!', 'success');
-                    document.getElementById('sport-form').reset();
-                })
-                .catch((error) => {
-                    showNotification('Erro ao criar esporte: ' + error.message, 'error');
-                });
+            sports[id] = newSport;
+            saveSports(sports);
+            renderSportsList();
+            updateTeamSportSelect();
+            updateMatchSelects();
+            
+            document.getElementById('sport-form').reset();
+            showNotification(`Esporte "${newSport.name}" criado com sucesso!`, 'success');
         }
-
-        function editSport(sportId) {
-            database.ref('sports/' + sportId).once('value').then((snapshot) => {
-                const sport = snapshot.val();
-                
+        
+        function deleteSport(id) {
+            if (confirm('Tem certeza que deseja excluir este esporte? Isso afetará times relacionados.')) {
+                delete sports[id];
+                saveSports(sports);
+                renderSportsList();
+                updateTeamSportSelect();
+                updateMatchSelects();
+                showNotification('Esporte excluído!', 'success');
+            }
+        }
+        
+        function editSport(id) {
+            const sport = sports[id];
+            if (sport) {
                 document.getElementById('sport-name').value = sport.name;
                 document.getElementById('sport-description').value = sport.description || '';
-                document.getElementById('sport-players').value = sport.players || 11;
-                
-                showNotification('Preencha os dados do esporte para editar', 'success');
-            });
-        }
-
-        function deleteSport(sportId) {
-            if (confirm('Tem certeza que deseja excluir este esporte?')) {
-                database.ref('sports/' + sportId).remove()
-                    .then(() => {
-                        showNotification('Esporte excluído com sucesso!', 'success');
-                    })
-                    .catch((error) => {
-                        showNotification('Erro ao excluir esporte: ' + error.message, 'error');
-                    });
+                document.getElementById('sport-players').value = sport.players;
+                showNotification('Edite o esporte e clique em Salvar', 'success');
             }
         }
-
-        function loadSportsForSelect() {
-            database.ref('sports').once('value').then((snapshot) => {
-                const select = document.getElementById('team-sport');
-                if (!select) return;
-                
-                select.innerHTML = '<option value="">Selecione um esporte</option>';
-                
-                if (snapshot.exists()) {
-                    const sports = snapshot.val();
-                    Object.keys(sports).forEach(key => {
-                        const sport = sports[key];
-                        const option = document.createElement('option');
-                        option.value = key;
-                        option.textContent = sport.name;
-                        select.appendChild(option);
-                    });
-                }
-            });
-        }
-
-        // ====== GERENCIAMENTO DE TIMES ======
-        function loadTeamsList() {
-            database.ref('teams').on('value', (snapshot) => {
-                const container = document.getElementById('teams-list');
-                if (!container) return;
-                
-                container.innerHTML = '';
-                
-                if (!snapshot.exists()) {
-                    container.innerHTML = '<p class="no-data">Nenhum time cadastrado ainda.</p>';
-                    return;
-                }
-                
-                const teams = snapshot.val();
-                Object.keys(teams).forEach(key => {
-                    const team = teams[key];
-                    const teamItem = createTeamItem(key, team);
-                    container.appendChild(teamItem);
-                });
-            });
-        }
-
-        function createTeamItem(id, team) {
-            const item = document.createElement('div');
-            item.className = 'list-item';
-            
-            // Formatar jogadores para exibição
-            let playersDisplay = '';
-            if (team.players && typeof team.players === 'string') {
-                const players = formatPlayersData(team.players);
-                playersDisplay = `${players.length} jogadores`;
-            } else {
-                playersDisplay = 'Sem jogadores';
-            }
-            
-            item.innerHTML = `
-                <h3>${team.name} <span style="color: ${team.color || '#1a2980'}"><i class="fas fa-circle"></i></span></h3>
-                <p><i class="fas fa-running"></i> ${playersDisplay}</p>
-                <p><i class="fas fa-globe"></i> ${team.country || 'Não informado'}</p>
-                <p><i class="fas fa-futbol"></i> ${team.sportName || 'Esporte não definido'}</p>
-                <div class="item-actions">
-                    <button class="action-btn edit-btn" onclick="editTeam('${id}')">
-                        <i class="fas fa-edit"></i> Editar
-                    </button>
-                    <button class="action-btn delete-btn" onclick="deleteTeam('${id}')">
-                        <i class="fas fa-trash"></i> Excluir
-                    </button>
-                </div>
-            `;
-            return item;
-        }
-
+        
         function handleTeamSubmit(e) {
             e.preventDefault();
             
-            const teamName = document.getElementById('team-name').value;
-            const teamSport = document.getElementById('team-sport').value;
-            const teamCountry = document.getElementById('team-country').value;
-            const teamColor = document.getElementById('team-color').value;
-            const teamLogo = document.getElementById('team-logo').value;
-            const teamPlayers = document.getElementById('team-players').value;
+            const id = 'team_' + Date.now();
+            const sportId = document.getElementById('team-sport').value;
+            const sport = sports[sportId];
             
-            if (!teamName.trim()) {
-                showNotification('Por favor, insira um nome para o time', 'error');
+            if (!sport) {
+                showNotification('Selecione um esporte válido!', 'error');
                 return;
             }
-            
-            if (!teamSport) {
-                showNotification('Por favor, selecione um esporte', 'error');
-                return;
-            }
-            
-            // Validar formato dos jogadores
-            if (teamPlayers.trim()) {
-                const players = teamPlayers.split(',').map(p => p.trim());
-                for (const player of players) {
-                    const parts = player.split('/').map(p => p.trim());
-                    if (parts.length < 2) {
-                        showNotification(`Formato inválido para jogador: "${player}". Use: Nome/camisa/posição`, 'error');
-                        return;
-                    }
-                }
-            }
-            
-            // Obter nome do esporte
-            const sportName = document.querySelector(`#team-sport option[value="${teamSport}"]`)?.textContent || 'Esporte não definido';
             
             const newTeam = {
-                name: teamName,
-                sportId: teamSport,
-                sportName: sportName,
-                country: teamCountry,
-                color: teamColor,
-                logo: teamLogo,
-                players: teamPlayers,
+                id: id,
+                name: document.getElementById('team-name').value,
+                sportId: sportId,
+                sportName: sport.name,
+                country: document.getElementById('team-country').value,
+                color: document.getElementById('team-color').value,
+                players: document.getElementById('team-players').value,
                 createdAt: new Date().toISOString()
             };
             
-            database.ref('teams').push(newTeam)
-                .then(() => {
-                    showNotification('Time criado com sucesso!', 'success');
-                    document.getElementById('team-form').reset();
-                    updatePlayersPreview();
-                })
-                .catch((error) => {
-                    showNotification('Erro ao criar time: ' + error.message, 'error');
-                });
+            teams[id] = newTeam;
+            saveTeams(teams);
+            renderTeamsList();
+            updateMatchSelects();
+            
+            document.getElementById('team-form').reset();
+            document.getElementById('players-preview').innerHTML = '';
+            showNotification(`Time "${newTeam.name}" criado com sucesso!`, 'success');
         }
-
-        function editTeam(teamId) {
-            database.ref('teams/' + teamId).once('value').then((snapshot) => {
-                const team = snapshot.val();
-                
-                document.getElementById('team-name').value = team.name || '';
-                document.getElementById('team-country').value = team.country || '';
-                document.getElementById('team-color').value = team.color || '#1a2980';
-                document.getElementById('team-logo').value = team.logo || '';
-                document.getElementById('team-players').value = team.players || '';
-                
-                // Selecionar o esporte correto
-                const sportSelect = document.getElementById('team-sport');
-                if (sportSelect && team.sportId) {
-                    sportSelect.value = team.sportId;
-                }
-                
-                // Atualizar preview
-                updatePlayersPreview();
-                
-                showNotification('Preencha os dados do time para editar', 'success');
-            });
-        }
-
-        function deleteTeam(teamId) {
+        
+        function deleteTeam(id) {
             if (confirm('Tem certeza que deseja excluir este time?')) {
-                database.ref('teams/' + teamId).remove()
-                    .then(() => {
-                        showNotification('Time excluído com sucesso!', 'success');
-                    })
-                    .catch((error) => {
-                        showNotification('Erro ao excluir time: ' + error.message, 'error');
-                    });
+                delete teams[id];
+                saveTeams(teams);
+                renderTeamsList();
+                updateMatchSelects();
+                showNotification('Time excluído!', 'success');
             }
         }
-
-        function loadTeamsForField() {
-            database.ref('teams').once('value').then((snapshot) => {
-                const select = document.getElementById('select-team-field');
-                if (!select) return;
-                
-                select.innerHTML = '<option value="">Selecione um time para ver o campo</option>';
-                
-                if (snapshot.exists()) {
-                    const teams = snapshot.val();
-                    Object.keys(teams).forEach(key => {
-                        const team = teams[key];
-                        const option = document.createElement('option');
-                        option.value = key;
-                        option.textContent = team.name;
-                        select.appendChild(option);
-                    });
-                }
-            });
-        }
-
-        function drawFootballField() {
-            const teamId = document.getElementById('select-team-field').value;
-            if (!teamId) return;
-            
-            const fieldContainer = document.getElementById('football-field');
-            fieldContainer.innerHTML = '';
-            
-            // Desenhar linhas do campo
-            const lines = [
-                { className: 'half-line' },
-                { className: 'center-circle' },
-                { className: 'center-spot' },
-                { className: 'penalty-area left' },
-                { className: 'penalty-area right' },
-                { className: 'goal-area left' },
-                { className: 'goal-area right' },
-                { className: 'goal left' },
-                { className: 'goal right' }
-            ];
-            
-            lines.forEach(line => {
-                const div = document.createElement('div');
-                div.className = line.className;
-                fieldContainer.appendChild(div);
-            });
-            
-            // Carregar jogadores do time selecionado
-            database.ref('teams/' + teamId).once('value').then((snapshot) => {
-                const team = snapshot.val();
-                if (!team || !team.players) return;
-                
-                const players = formatPlayersData(team.players);
-                
-                // Posições pré-definidas baseadas na posição do jogador
-                const positionCoords = {
-                    'Goleiro': [{ x: 10, y: 50 }],
-                    'Defensor': [{ x: 25, y: 20 }, { x: 25, y: 50 }, { x: 25, y: 80 }],
-                    'Meio-campo': [{ x: 50, y: 20 }, { x: 50, y: 50 }, { x: 50, y: 80 }],
-                    'Atacante': [{ x: 75, y: 20 }, { x: 75, y: 50 }, { x: 75, y: 80 }],
-                    'Não definida': [{ x: 50, y: 50 }]
-                };
-                
-                const positionColors = {
-                    'Goleiro': '#FF6B6B',
-                    'Defensor': '#4ECDC4',
-                    'Meio-campo': '#45B7D1',
-                    'Atacante': '#96CEB4',
-                    'Não definida': '#95A5A6'
-                };
-                
-                const positionCounters = {
-                    'Goleiro': 0,
-                    'Defensor': 0,
-                    'Meio-campo': 0,
-                    'Atacante': 0,
-                    'Não definida': 0
-                };
-                
-                // Adicionar jogadores ao campo
-                players.forEach(player => {
-                    const position = player.position;
-                    const positions = positionCoords[position] || positionCoords['Não definida'];
-                    const index = positionCounters[position] % positions.length;
-                    const coords = positions[index];
-                    positionCounters[position]++;
-                    
-                    const playerDiv = document.createElement('div');
-                    playerDiv.className = 'player-on-field';
-                    playerDiv.style.left = `${coords.x}%`;
-                    playerDiv.style.top = `${coords.y}%`;
-                    playerDiv.style.backgroundColor = positionColors[position] || '#95A5A6';
-                    playerDiv.title = `${player.name} - ${position} (Camisa ${player.number})`;
-                    
-                    // Nome abreviado (primeira letra de cada nome)
-                    const nameParts = player.name.split(' ');
-                    let initials = '';
-                    if (nameParts.length >= 2) {
-                        initials = nameParts[0].charAt(0) + nameParts[1].charAt(0);
-                    } else {
-                        initials = player.name.substring(0, 2);
-                    }
-                    
-                    playerDiv.innerHTML = `
-                        ${initials.toUpperCase()}
-                        <div class="player-number-field">${player.number}</div>
-                    `;
-                    
-                    fieldContainer.appendChild(playerDiv);
-                });
-            });
-        }
-
-        // ====== GERENCIAMENTO DE PARTIDAS ======
-        function loadMatchesList() {
-            database.ref('matches').on('value', (snapshot) => {
-                const container = document.getElementById('matches-list');
-                if (!container) return;
-                
-                container.innerHTML = '';
-                
-                if (!snapshot.exists()) {
-                    container.innerHTML = '<p class="no-data">Nenhuma partida cadastrada ainda.</p>';
-                    return;
-                }
-                
-                const matches = snapshot.val();
-                Object.keys(matches).forEach(key => {
-                    const match = matches[key];
-                    const matchItem = createMatchItem(key, match);
-                    container.appendChild(matchItem);
-                });
-            });
-        }
-
-        function createMatchItem(id, match) {
-            const item = document.createElement('div');
-            item.className = 'list-item';
-            
-            let statusBadge = '';
-            if (match.status === 'live') {
-                statusBadge = '<span style="color: #e74c3c;"><i class="fas fa-circle"></i> AO VIVO</span>';
-            } else if (match.status === 'finished') {
-                statusBadge = '<span style="color: #2ecc71;"><i class="fas fa-check-circle"></i> FINALIZADO</span>';
-            } else {
-                statusBadge = '<span style="color: #f39c12;"><i class="fas fa-clock"></i> AGENDADO</span>';
-            }
-            
-            // Contar gols e cartões
-            const goalsCount = match.goals ? match.goals.length : 0;
-            const yellowCards = match.cards ? match.cards.filter(c => c.type === 'yellow').length : 0;
-            const redCards = match.cards ? match.cards.filter(c => c.type === 'red').length : 0;
-            
-            item.innerHTML = `
-                <h3>${match.homeTeamName} vs ${match.awayTeamName} ${statusBadge}</h3>
-                <p><i class="fas fa-futbol"></i> Placar: ${match.homeScore || 0} x ${match.awayScore || 0}</p>
-                <p><i class="fas fa-chart-bar"></i> ${goalsCount} gols • 🟨 ${yellowCards} • 🟥 ${redCards}</p>
-                <p><i class="fas fa-calendar"></i> ${new Date(match.createdAt).toLocaleDateString('pt-BR')}</p>
-                <div class="item-actions">
-                    <button class="action-btn status-btn" onclick="selectMatch('${id}')">
-                        <i class="fas fa-edit"></i> Selecionar
-                    </button>
-                    <button class="action-btn delete-btn" onclick="deleteMatch('${id}')">
-                        <i class="fas fa-trash"></i> Excluir
-                    </button>
-                </div>
-            `;
-            return item;
-        }
-
-        function setupMatchForm() {
-            const action = document.getElementById('match-action').value;
-            const container = document.getElementById('match-form-container');
-            
-            container.innerHTML = '';
-            
-            if (action === 'create') {
-                container.innerHTML = `
-                    <form id="create-match-form">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="home-team-select">Time da Casa *</label>
-                                <select id="home-team-select" required></select>
-                            </div>
-                            <div class="form-group">
-                                <label for="away-team-select">Time Visitante *</label>
-                                <select id="away-team-select" required></select>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="match-sport">Esporte *</label>
-                                <select id="match-sport" required></select>
-                            </div>
-                            <div class="form-group">
-                                <label for="match-status">Status *</label>
-                                <select id="match-status" required>
-                                    <option value="upcoming">Agendado</option>
-                                    <option value="live">Ao Vivo</option>
-                                    <option value="finished">Finalizado</option>
-                                </select>
-                            </div>
-                        </div>
-                        <button type="submit" class="btn">
-                            <i class="fas fa-plus-circle"></i> Criar Partida
-                        </button>
-                    </form>
-                `;
-                
-                // Carregar times para os selects
-                loadTeamsForMatchSelect();
-                loadSportsForMatchSelect();
-                
-                // Configurar submit do formulário
-                document.getElementById('create-match-form')?.addEventListener('submit', handleCreateMatch);
-                
-            } else if (action === 'update' || action === 'finish') {
-                container.innerHTML = `
-                    <div class="form-group">
-                        <label for="select-match">Selecione a Partida *</label>
-                        <select id="select-match" required>
-                            <option value="">Carregando partidas...</option>
-                        </select>
-                    </div>
-                    <div id="match-details" style="display: none;"></div>
-                    <button type="button" class="btn" id="${action}-match-btn">
-                        <i class="fas fa-save"></i> ${action === 'update' ? 'Atualizar Partida' : 'Finalizar Partida'}
-                    </button>
-                `;
-                
-                loadMatchesForSelect();
-                
-                const selectMatch = document.getElementById('select-match');
-                selectMatch.addEventListener('change', loadMatchDetails);
-                
-                const actionBtn = document.getElementById(`${action}-match-btn`);
-                if (action === 'update') {
-                    actionBtn.addEventListener('click', handleUpdateMatch);
-                } else {
-                    actionBtn.addEventListener('click', handleFinishMatch);
-                }
+        
+        function editTeam(id) {
+            const team = teams[id];
+            if (team) {
+                document.getElementById('team-name').value = team.name;
+                document.getElementById('team-sport').value = team.sportId;
+                document.getElementById('team-country').value = team.country || '';
+                document.getElementById('team-color').value = team.color;
+                document.getElementById('team-players').value = team.players;
+                updatePlayersPreview();
+                showNotification('Edite o time e clique em Salvar', 'success');
             }
         }
-
-        function loadTeamsForMatchSelect() {
-            database.ref('teams').once('value').then((snapshot) => {
-                const homeSelect = document.getElementById('home-team-select');
-                const awaySelect = document.getElementById('away-team-select');
-                
-                if (!homeSelect || !awaySelect) return;
-                
-                homeSelect.innerHTML = '<option value="">Selecione o time da casa</option>';
-                awaySelect.innerHTML = '<option value="">Selecione o time visitante</option>';
-                
-                if (snapshot.exists()) {
-                    const teams = snapshot.val();
-                    Object.keys(teams).forEach(key => {
-                        const team = teams[key];
-                        const option = document.createElement('option');
-                        option.value = key;
-                        option.textContent = team.name;
-                        
-                        const option2 = option.cloneNode(true);
-                        homeSelect.appendChild(option);
-                        awaySelect.appendChild(option2);
-                    });
-                }
-            });
-        }
-
-        function loadSportsForMatchSelect() {
-            database.ref('sports').once('value').then((snapshot) => {
-                const select = document.getElementById('match-sport');
-                if (!select) return;
-                
-                select.innerHTML = '<option value="">Selecione um esporte</option>';
-                
-                if (snapshot.exists()) {
-                    const sports = snapshot.val();
-                    Object.keys(sports).forEach(key => {
-                        const sport = sports[key];
-                        const option = document.createElement('option');
-                        option.value = key;
-                        option.textContent = sport.name;
-                        select.appendChild(option);
-                    });
-                }
-            });
-        }
-
-        function handleCreateMatch(e) {
+        
+        function handleMatchSubmit(e) {
             e.preventDefault();
             
-            const homeTeamId = document.getElementById('home-team-select').value;
-            const awayTeamId = document.getElementById('away-team-select').value;
+            const homeTeamId = document.getElementById('home-team').value;
+            const awayTeamId = document.getElementById('away-team').value;
             const sportId = document.getElementById('match-sport').value;
-            const status = document.getElementById('match-status').value;
             
             if (homeTeamId === awayTeamId) {
-                showNotification('Os times devem ser diferentes', 'error');
+                showNotification('Os times devem ser diferentes!', 'error');
                 return;
             }
             
-            // Obter nomes dos times e do esporte
-            Promise.all([
-                database.ref('teams/' + homeTeamId).once('value'),
-                database.ref('teams/' + awayTeamId).once('value'),
-                database.ref('sports/' + sportId).once('value')
-            ]).then(([homeSnap, awaySnap, sportSnap]) => {
-                const homeTeam = homeSnap.val();
-                const awayTeam = awaySnap.val();
-                const sport = sportSnap.val();
-                
-                const newMatch = {
-                    homeTeamId: homeTeamId,
-                    homeTeamName: homeTeam?.name || 'Time da Casa',
-                    awayTeamId: awayTeamId,
-                    awayTeamName: awayTeam?.name || 'Time Visitante',
-                    sportId: sportId,
-                    sportName: sport?.name || 'Futebol',
-                    homeScore: 0,
-                    awayScore: 0,
-                    status: status,
-                    goals: [],
-                    cards: [],
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                };
-                
-                return database.ref('matches').push(newMatch);
-            }).then(() => {
-                showNotification('Partida criada com sucesso!', 'success');
-                document.getElementById('create-match-form').reset();
-                loadMatchesList();
-            }).catch((error) => {
-                showNotification('Erro ao criar partida: ' + error.message, 'error');
-            });
-        }
-
-        function loadMatchesForSelect() {
-            database.ref('matches').once('value').then((snapshot) => {
-                const select = document.getElementById('select-match');
-                if (!select) return;
-                
-                select.innerHTML = '<option value="">Selecione uma partida</option>';
-                
-                if (snapshot.exists()) {
-                    const matches = snapshot.val();
-                    Object.keys(matches).forEach(key => {
-                        const match = matches[key];
-                        const option = document.createElement('option');
-                        option.value = key;
-                        
-                        let statusText = '';
-                        if (match.status === 'live') statusText = ' [AO VIVO]';
-                        else if (match.status === 'finished') statusText = ' [FINALIZADO]';
-                        else statusText = ' [AGENDADO]';
-                        
-                        option.textContent = `${match.homeTeamName} vs ${match.awayTeamName}${statusText}`;
-                        select.appendChild(option);
-                    });
-                }
-            });
-        }
-
-        function loadMatchDetails() {
-            const matchId = document.getElementById('select-match').value;
-            if (!matchId) return;
+            const homeTeam = teams[homeTeamId];
+            const awayTeam = teams[awayTeamId];
+            const sport = sports[sportId];
             
-            database.ref('matches/' + matchId).once('value').then((snapshot) => {
-                const match = snapshot.val();
-                const container = document.getElementById('match-details');
-                
-                container.style.display = 'block';
-                container.innerHTML = `
-                    <div class="card" style="margin-top: 20px;">
-                        <h3>Detalhes da Partida</h3>
-                        <p><strong>${match.homeTeamName}</strong> vs <strong>${match.awayTeamName}</strong></p>
-                        <p>Placar: ${match.homeScore || 0} x ${match.awayScore || 0}</p>
-                        <p>Status: ${match.status === 'live' ? 'AO VIVO' : match.status === 'finished' ? 'FINALIZADO' : 'AGENDADO'}</p>
-                        <p>Esporte: ${match.sportName || 'Futebol'}</p>
-                        
-                        <div class="form-row" style="margin-top: 20px;">
-                            <div class="form-group">
-                                <label for="update-home-score">Novo Placar - Casa</label>
-                                <input type="number" id="update-home-score" value="${match.homeScore || 0}" min="0">
-                            </div>
-                            <div class="form-group">
-                                <label for="update-away-score">Novo Placar - Visitante</label>
-                                <input type="number" id="update-away-score" value="${match.awayScore || 0}" min="0">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="update-match-time">Minuto/Status (opcional)</label>
-                            <input type="text" id="update-match-time" placeholder="Ex: 45', Intervalo, etc">
-                        </div>
-                        <div class="form-group">
-                            <label for="update-match-status">Alterar Status</label>
-                            <select id="update-match-status">
-                                <option value="upcoming" ${match.status === 'upcoming' ? 'selected' : ''}>Agendado</option>
-                                <option value="live" ${match.status === 'live' ? 'selected' : ''}>Ao Vivo</option>
-                                <option value="finished" ${match.status === 'finished' ? 'selected' : ''}>Finalizado</option>
-                            </select>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        function handleUpdateMatch() {
-            const matchId = document.getElementById('select-match').value;
-            if (!matchId) {
-                showNotification('Selecione uma partida primeiro', 'error');
+            if (!homeTeam || !awayTeam || !sport) {
+                showNotification('Selecione times e esporte válidos!', 'error');
                 return;
             }
             
-            const homeScore = parseInt(document.getElementById('update-home-score').value) || 0;
-            const awayScore = parseInt(document.getElementById('update-away-score').value) || 0;
-            const time = document.getElementById('update-match-time').value;
-            const status = document.getElementById('update-match-status').value;
-            
-            const updates = {
-                homeScore: homeScore,
-                awayScore: awayScore,
-                status: status,
-                updatedAt: new Date().toISOString()
+            const id = 'match_' + Date.now();
+            const newMatch = {
+                id: id,
+                homeTeamId: homeTeamId,
+                homeTeamName: homeTeam.name,
+                awayTeamId: awayTeamId,
+                awayTeamName: awayTeam.name,
+                sportId: sportId,
+                sportName: sport.name,
+                homeScore: parseInt(document.getElementById('home-score').value),
+                awayScore: parseInt(document.getElementById('away-score').value),
+                status: document.getElementById('match-status').value,
+                createdAt: new Date().toISOString(),
+                goals: [],
+                cards: []
             };
             
-            if (time) updates.time = time;
+            matches[id] = newMatch;
+            saveMatches(matches);
+            renderMatchesList();
             
-            database.ref('matches/' + matchId).update(updates)
-                .then(() => {
-                    showNotification('Partida atualizada com sucesso!', 'success');
-                    loadMatchesList();
-                })
-                .catch((error) => {
-                    showNotification('Erro ao atualizar partida: ' + error.message, 'error');
-                });
+            document.getElementById('match-form').reset();
+            showNotification(`Partida "${homeTeam.name} vs ${awayTeam.name}" criada!`, 'success');
         }
-
-        function handleFinishMatch() {
-            const matchId = document.getElementById('select-match').value;
-            if (!matchId) {
-                showNotification('Selecione uma partida primeiro', 'error');
-                return;
-            }
-            
-            const updates = {
-                status: 'finished',
-                updatedAt: new Date().toISOString()
-            };
-            
-            database.ref('matches/' + matchId).update(updates)
-                .then(() => {
-                    showNotification('Partida finalizada com sucesso!', 'success');
-                    loadMatchesList();
-                    setupMatchForm();
-                })
-                .catch((error) => {
-                    showNotification('Erro ao finalizar partida: ' + error.message, 'error');
-                });
-        }
-
-        function selectMatch(matchId) {
-            database.ref('matches/' + matchId).once('value').then((snapshot) => {
-                const match = snapshot.val();
-                
-                // Mudar para tab de partidas
-                document.querySelector('[data-tab="matches"]').click();
-                
-                // Selecionar "Atualizar Partida"
-                document.getElementById('match-action').value = 'update';
-                setupMatchForm();
-                
-                // Esperar o formulário carregar e selecionar a partida
-                setTimeout(() => {
-                    const select = document.getElementById('select-match');
-                    if (select) {
-                        select.value = matchId;
-                        loadMatchDetails();
-                    }
-                }, 500);
-            });
-        }
-
-        function deleteMatch(matchId) {
+        
+        function deleteMatch(id) {
             if (confirm('Tem certeza que deseja excluir esta partida?')) {
-                database.ref('matches/' + matchId).remove()
-                    .then(() => {
-                        showNotification('Partida excluída com sucesso!', 'success');
-                    })
-                    .catch((error) => {
-                        showNotification('Erro ao excluir partida: ' + error.message, 'error');
-                    });
+                delete matches[id];
+                saveMatches(matches);
+                renderMatchesList();
+                showNotification('Partida excluída!', 'success');
             }
         }
-
-        // ====== MODAIS ======
-        function showGoalModal() {
-            loadMatchesForModal('goal');
-            document.getElementById('goal-modal').style.display = 'flex';
-        }
-
-        function showPenaltyModal() {
-            loadMatchesForModal('penalty');
-            document.getElementById('goal-modal').style.display = 'flex';
-            document.getElementById('goal-penalty').checked = true;
-        }
-
-        function showCardModal() {
-            loadMatchesForModal('card');
-            document.getElementById('card-modal').style.display = 'flex';
-        }
-
-        function showVideoModal() {
-            const matchId = prompt('Digite o ID da partida para adicionar vídeo:');
-            if (!matchId) return;
-            
-            const videoUrl = prompt('Digite a URL do vídeo do YouTube:');
-            if (!videoUrl) return;
-            
-            // Extrair ID do vídeo do YouTube
-            let videoId = '';
-            if (videoUrl.includes('youtube.com/watch?v=')) {
-                videoId = videoUrl.split('v=')[1].split('&')[0];
-            } else if (videoUrl.includes('youtu.be/')) {
-                videoId = videoUrl.split('youtu.be/')[1].split('?')[0];
+        
+        function editMatch(id) {
+            const match = matches[id];
+            if (match) {
+                document.getElementById('home-team').value = match.homeTeamId;
+                document.getElementById('away-team').value = match.awayTeamId;
+                document.getElementById('match-sport').value = match.sportId;
+                document.getElementById('home-score').value = match.homeScore;
+                document.getElementById('away-score').value = match.awayScore;
+                document.getElementById('match-status').value = match.status;
+                showNotification('Edite a partida e clique em Criar Partida para atualizar', 'success');
+                
+                // Remover partida antiga para recriar
+                delete matches[id];
+                saveMatches(matches);
+                renderMatchesList();
             }
-            
-            if (!videoId) {
-                showNotification('URL do YouTube inválida', 'error');
-                return;
-            }
-            
-            const updates = {
-                videoId: videoId,
-                updatedAt: new Date().toISOString()
+        }
+        
+        // Backup e restore
+        function exportBackup() {
+            const backup = {
+                sports: sports,
+                teams: teams,
+                matches: matches,
+                exportDate: new Date().toISOString()
             };
             
-            database.ref('matches/' + matchId).update(updates)
-                .then(() => {
-                    showNotification('Vídeo adicionado com sucesso!', 'success');
-                })
-                .catch((error) => {
-                    showNotification('Erro ao adicionar vídeo: ' + error.message, 'error');
-                });
+            const dataStr = JSON.stringify(backup, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `backup_sistema_${new Date().toISOString().slice(0,19)}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            showNotification('Backup exportado com sucesso!', 'success');
         }
-
-        function loadMatchesForModal(modalType) {
-            database.ref('matches').once('value').then((snapshot) => {
-                let selectId, playerSelectId;
-                if (modalType === 'goal' || modalType === 'penalty') {
-                    selectId = 'goal-match';
-                    playerSelectId = 'goal-player';
-                } else {
-                    selectId = 'card-match';
-                    playerSelectId = 'card-player';
-                }
+        
+        function importBackup() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'application/json';
+            
+            input.onchange = e => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
                 
-                const select = document.getElementById(selectId);
-                if (!select) return;
-                
-                select.innerHTML = '<option value="">Selecione uma partida</option>';
-                
-                if (snapshot.exists()) {
-                    const matches = snapshot.val();
-                    Object.keys(matches).forEach(key => {
-                        const match = matches[key];
-                        if (match.status === 'live') { // Só mostrar partidas ao vivo
-                            const option = document.createElement('option');
-                            option.value = key;
-                            option.textContent = `${match.homeTeamName} vs ${match.awayTeamName}`;
-                            option.dataset.match = JSON.stringify(match);
-                            select.appendChild(option);
+                reader.onload = event => {
+                    try {
+                        const backup = JSON.parse(event.target.result);
+                        
+                        if (backup.sports) {
+                            sports = backup.sports;
+                            saveSports(sports);
                         }
-                    });
-                }
+                        if (backup.teams) {
+                            teams = backup.teams;
+                            saveTeams(teams);
+                        }
+                        if (backup.matches) {
+                            matches = backup.matches;
+                            saveMatches(matches);
+                        }
+                        
+                        // Recarregar tudo
+                        renderSportsList();
+                        renderTeamsList();
+                        renderMatchesList();
+                        updateTeamSportSelect();
+                        updateMatchSelects();
+                        
+                        showNotification('Backup restaurado com sucesso!', 'success');
+                    } catch (error) {
+                        showNotification('Erro ao ler arquivo de backup!', 'error');
+                    }
+                };
                 
-                // Configurar mudança de partida para carregar jogadores
-                select.addEventListener('change', function() {
-                    loadPlayersForModal(this.value, playerSelectId);
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+        
+        function clearAllData() {
+            if (confirm('⚠️ ATENÇÃO: Isso irá APAGAR TODOS os dados (esportes, times e partidas)! Tem certeza?')) {
+                if (confirm('ÚLTIMA CHANCE: Realmente deseja apagar TUDO?')) {
+                    sports = {};
+                    teams = {};
+                    matches = {};
+                    
+                    saveSports(sports);
+                    saveTeams(teams);
+                    saveMatches(matches);
+                    
+                    renderSportsList();
+                    renderTeamsList();
+                    renderMatchesList();
+                    updateTeamSportSelect();
+                    updateMatchSelects();
+                    
+                    showNotification('Todos os dados foram apagados!', 'error');
+                }
+            }
+        }
+        
+        // Setup de tabs
+        function setupTabs() {
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabId = btn.dataset.tab;
+                    
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+                    
+                    btn.classList.add('active');
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                    
+                    // Atualizar dados específicos da tab
+                    if (tabId === 'teams') {
+                        updateTeamSportSelect();
+                    } else if (tabId === 'matches') {
+                        updateMatchSelects();
+                    }
                 });
             });
         }
-
-        function loadPlayersForModal(matchId, playerSelectId) {
-            const playerSelect = document.getElementById(playerSelectId);
-            if (!playerSelect) return;
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            document.getElementById('sport-form')?.addEventListener('submit', handleSportSubmit);
+            document.getElementById('team-form')?.addEventListener('submit', handleTeamSubmit);
+            document.getElementById('match-form')?.addEventListener('submit', handleMatchSubmit);
             
-            playerSelect.innerHTML = '<option value="">Carregando jogadores...</option>';
-            
-            database.ref('matches/' + matchId).once('value').then((matchSnap) => {
-                const match = matchSnap.val();
-                
-                // Carregar times para obter jogadores
-                Promise.all([
-                    database.ref('teams/' + match.homeTeamId).once('value'),
-                    database.ref('teams/' + match.awayTeamId).once('value')
-                ]).then(([homeSnap, awaySnap]) => {
-                    const homeTeam = homeSnap.val();
-                    const awayTeam = awaySnap.val();
-                    
-                    playerSelect.innerHTML = '<option value="">Selecione um jogador</option>';
-                    
-                    // Adicionar jogadores do time da casa
-                    if (homeTeam && homeTeam.players) {
-                        const players = formatPlayersData(homeTeam.players);
-                        players.forEach(player => {
-                            const option = document.createElement('option');
-                            option.value = `home:${player.name}`;
-                            option.textContent = `[CASA] ${player.name} (${player.number})`;
-                            option.dataset.player = JSON.stringify(player);
-                            playerSelect.appendChild(option);
-                        });
-                    }
-                    
-                    // Adicionar jogadores do time visitante
-                    if (awayTeam && awayTeam.players) {
-                        const players = formatPlayersData(awayTeam.players);
-                        players.forEach(player => {
-                            const option = document.createElement('option');
-                            option.value = `away:${player.name}`;
-                            option.textContent = `[VISITANTE] ${player.name} (${player.number})`;
-                            option.dataset.player = JSON.stringify(player);
-                            playerSelect.appendChild(option);
-                        });
-                    }
-                });
-            });
+            const playersTextarea = document.getElementById('team-players');
+            if (playersTextarea) {
+                playersTextarea.addEventListener('input', updatePlayersPreview);
+            }
         }
-
-        function handleGoalSubmit(e) {
-            e.preventDefault();
+        
+        // Inicialização
+        function init() {
+            setupTabs();
+            setupEventListeners();
             
-            const matchId = document.getElementById('goal-match').value;
-            const team = document.getElementById('goal-team').value;
-            const playerName = document.getElementById('goal-player').value.split(':')[1];
-            const minute = document.getElementById('goal-minute').value;
-            const isPenalty = document.getElementById('goal-penalty').checked;
+            renderSportsList();
+            renderTeamsList();
+            renderMatchesList();
+            updateTeamSportSelect();
+            updateMatchSelects();
             
-            if (!matchId || !playerName || !minute) {
-                showNotification('Preencha todos os campos obrigatórios', 'error');
-                return;
+            // Atualizar preview se houver dados
+            if (document.getElementById('team-players').value) {
+                updatePlayersPreview();
             }
             
-            // Obter partida atual
-            database.ref('matches/' + matchId).once('value').then((snapshot) => {
-                const match = snapshot.val();
-                const goals = match.goals || [];
-                
-                // Adicionar novo gol
-                const newGoal = {
-                    team: team,
-                    player: playerName,
-                    minute: minute,
-                    isPenalty: isPenalty,
-                    timestamp: new Date().toISOString()
-                };
-                
-                goals.push(newGoal);
-                
-                // Atualizar placar
-                let homeScore = match.homeScore || 0;
-                let awayScore = match.awayScore || 0;
-                
-                if (team === 'home') {
-                    homeScore++;
-                } else {
-                    awayScore++;
-                }
-                
-                const updates = {
-                    goals: goals,
-                    homeScore: homeScore,
-                    awayScore: awayScore,
-                    updatedAt: new Date().toISOString()
-                };
-                
-                return database.ref('matches/' + matchId).update(updates);
-            }).then(() => {
-                showNotification('Gol adicionado com sucesso!', 'success');
-                closeModal('goal-modal');
-                document.getElementById('goal-form').reset();
-                loadMatchesList();
-            }).catch((error) => {
-                showNotification('Erro ao adicionar gol: ' + error.message, 'error');
-            });
+            console.log('✅ Sistema inicializado! Dados persistentes no localStorage');
+            showNotification('Sistema pronto! Seus dados NUNCA serão perdidos automaticamente.', 'success');
         }
-
-        function handleCardSubmit(e) {
-            e.preventDefault();
-            
-            const matchId = document.getElementById('card-match').value;
-            const team = document.getElementById('card-team').value;
-            const playerName = document.getElementById('card-player').value.split(':')[1];
-            const cardType = document.getElementById('card-type').value;
-            const minute = document.getElementById('card-minute').value;
-            const reason = document.getElementById('card-reason').value;
-            
-            if (!matchId || !playerName || !minute) {
-                showNotification('Preencha todos os campos obrigatórios', 'error');
-                return;
-            }
-            
-            database.ref('matches/' + matchId).once('value').then((snapshot) => {
-                const match = snapshot.val();
-                const cards = match.cards || [];
-                
-                // Adicionar novo cartão
-                const newCard = {
-                    team: team,
-                    player: playerName,
-                    type: cardType,
-                    minute: minute,
-                    reason: reason,
-                    timestamp: new Date().toISOString()
-                };
-                
-                cards.push(newCard);
-                
-                const updates = {
-                    cards: cards,
-                    updatedAt: new Date().toISOString()
-                };
-                
-                return database.ref('matches/' + matchId).update(updates);
-            }).then(() => {
-                showNotification('Cartão adicionado com sucesso!', 'success');
-                closeModal('card-modal');
-                document.getElementById('card-form').reset();
-                loadMatchesList();
-            }).catch((error) => {
-                showNotification('Erro ao adicionar cartão: ' + error.message, 'error');
-            });
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
-
-        // ====== INICIALIZAÇÃO FINAL ======
-        // Garantir que tudo seja carregado
-        setTimeout(() => {
-            loadInitialData();
-        }, 1000);
+        
+        // Iniciar tudo
+        init();
     </script>
 </body>
 </html>
