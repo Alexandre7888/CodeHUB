@@ -18,6 +18,32 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
+// ============ PUTER.JS - INTEGRAÇÃO ADICIONAL ============
+let puterReady = false;
+let puterUser = null;
+
+// Inicializar Puter (não bloqueante)
+async function initPuter() {
+  try {
+    if (typeof puter !== 'undefined') {
+      puterReady = true;
+      console.log('✅ Puter.js disponível');
+      
+      // Tentar restaurar sessão
+      try {
+        puterUser = await puter.auth.getUser();
+        console.log('✅ Puter autenticado:', puterUser.username);
+      } catch(e) {
+        console.log('Puter não autenticado ainda');
+      }
+    } else {
+      console.log('⚠️ Puter.js não carregado');
+    }
+  } catch(e) {
+    console.log('Puter init error:', e);
+  }
+}
+
 // ============ VARIÁVEIS GLOBAIS ============
 let currentProjectId = new URLSearchParams(window.location.search).get('projectId') || 'proj_' + Date.now().toString(36);
 let currentUser = null;
@@ -27,6 +53,7 @@ let currentZoom = 1;
 let workersList = [];
 let hostingSubdomain = null;
 let hostingUrl = null;
+let hostingDirectory = null;
 let siteCreated = false;
 let modalCallback = null;
 let autoSaveTimer = null;
@@ -47,7 +74,10 @@ if (!new URLSearchParams(window.location.search).get('projectId')) {
 function initAppDirect() {
   currentUser = { uid: 'user_' + Date.now(), displayName: 'Dev' };
   
-  // Auth anônimo sem bloquear
+  // Inicializar Puter em paralelo
+  initPuter();
+  
+  // Auth anônimo Firebase sem bloquear
   auth.signInAnonymously().then(result => {
     if (result.user) {
       currentUser = result.user;
@@ -82,6 +112,8 @@ async function loadProjectFromFirebase() {
       
       if (d.hosting?.url) {
         hostingUrl = d.hosting.url;
+        hostingSubdomain = d.hosting.subdomain;
+        hostingDirectory = d.hosting.directory;
         siteCreated = true;
         document.getElementById('fileUrlTop').value = hostingUrl;
         document.getElementById('urlPanelTop').style.display = 'flex';
@@ -270,6 +302,7 @@ async function saveCurrentFile() {
     lastSavedContent = content;
     
     await saveToFirebase();
+    await saveToPuter(); // Também salvar no Puter
     
     document.getElementById('auto-save-text').textContent = 'Salvo ✔';
     document.getElementById('auto-save-indicator').style.background = 'var(--accent-green)';
@@ -292,6 +325,38 @@ async function saveToFirebase() {
     });
   } catch(e) {
     console.error('Firebase save error:', e);
+  }
+}
+
+// ✅ NOVO: Salvar também no Puter
+async function saveToPuter() {
+  if (!puterReady) return;
+  try {
+    // Salvar no armazenamento do Puter via arquivo
+    const projectData = {
+      name: document.getElementById('project-name').value,
+      files: files,
+      updatedAt: new Date().toISOString()
+    };
+    
+    // Criar diretório do projeto se não existir
+    const projectDir = `/projects/${currentProjectId}`;
+    try {
+      await puter.fs.mkdir(projectDir, { recursive: true });
+    } catch(e) {}
+    
+    // Salvar cada arquivo
+    for (const [key, file] of Object.entries(files)) {
+      const filePath = `${projectDir}/${file.name || key}`;
+      await puter.fs.write(filePath, file.content || '');
+    }
+    
+    // Salvar metadados
+    await puter.fs.write(`${projectDir}/project.json`, JSON.stringify(projectData));
+    
+    console.log('✅ Salvo no Puter');
+  } catch(e) {
+    console.log('Puter save error:', e);
   }
 }
 
@@ -356,7 +421,7 @@ function confirmNewFile() {
   showNotification('Arquivo criado!', 'success');
 }
 
-// ============ PUBLICAÇÃO ============
+// ============ PUBLICAÇÃO (FIREBASE + PUTER) ============
 async function publishSite() {
   const hasIndex = Object.values(files).find(f => (f.name||f.originalName)==='index.html');
   if (!hasIndex) { 
@@ -368,37 +433,124 @@ async function publishSite() {
   if (siteCreated) {
     showModal('🔄 Atualizar?', 'Atualizar site?', async () => {
       await saveToFirebase();
+      await deployToPuter(); // ✅ Também atualizar no Puter
       showNotification('✅ Atualizado!', 'success');
     });
   } else {
-    showModal('🚀 Publicar?', 'Salvar no Firebase?', async () => {
-      hostingUrl = `https://${currentProjectId}.web.app`;
-      siteCreated = true;
-      try {
-        await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({ 
-          url: hostingUrl, publishedAt: new Date().toISOString() 
-        });
-      } catch(e) {}
-      
-      document.getElementById('fileUrlTop').value = hostingUrl;
-      document.getElementById('urlPanelTop').style.display = 'flex';
-      document.getElementById('siteDeleteBtn').style.display = 'inline-flex';
-      document.getElementById('sitePublishBtn').textContent = '🔄 Atualizar';
+    showModal('🚀 Publicar?', 'Hospedar no Puter?', async () => {
+      await deployToPuter(); // ✅ Publicar no Puter
       showNotification('✅ Publicado!', 'success');
     });
   }
 }
 
+// ✅ NOVO: Deploy no Puter
+async function deployToPuter() {
+  if (!puterReady) {
+    // Fallback para Firebase
+    hostingUrl = `https://${currentProjectId}.web.app`;
+    siteCreated = true;
+    try {
+      await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({ 
+        url: hostingUrl, publishedAt: new Date().toISOString() 
+      });
+    } catch(e) {}
+    updateUIAfterPublish();
+    return;
+  }
+  
+  try {
+    // Autenticar no Puter se necessário
+    try {
+      await puter.auth.getUser();
+    } catch(e) {
+      await puter.auth.signIn();
+    }
+    
+    // Criar diretório para o site
+    if (!hostingDirectory) {
+      hostingDirectory = puter.randName();
+    }
+    
+    await puter.fs.mkdir(hostingDirectory, { recursive: true });
+    
+    // Salvar todos os arquivos
+    for (const [key, file] of Object.entries(files)) {
+      const fileName = file.name || file.originalName || key;
+      await puter.fs.write(`${hostingDirectory}/${fileName}`, file.content || '');
+    }
+    
+    // Criar/atualizar hospedagem
+    if (!hostingSubdomain) {
+      const site = await puter.hosting.create(puter.randName(), hostingDirectory);
+      hostingSubdomain = site.subdomain;
+      hostingUrl = `https://${site.subdomain}.puter.site`;
+    } else {
+      try {
+        await puter.hosting.update(hostingSubdomain, hostingDirectory);
+      } catch(e) {
+        // Recriar se update falhar
+        const site = await puter.hosting.create(puter.randName(), hostingDirectory);
+        hostingSubdomain = site.subdomain;
+        hostingUrl = `https://${site.subdomain}.puter.site`;
+      }
+    }
+    
+    siteCreated = true;
+    
+    // Salvar no Firebase também
+    try {
+      await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).set({ 
+        url: hostingUrl, 
+        subdomain: hostingSubdomain,
+        directory: hostingDirectory,
+        publishedAt: new Date().toISOString() 
+      });
+    } catch(e) {}
+    
+    updateUIAfterPublish();
+    
+  } catch(e) {
+    console.error('Puter deploy error:', e);
+    showNotification('Erro no Puter, salvando no Firebase', 'info');
+    hostingUrl = `https://${currentProjectId}.web.app`;
+    siteCreated = true;
+    updateUIAfterPublish();
+  }
+}
+
+function updateUIAfterPublish() {
+  document.getElementById('fileUrlTop').value = hostingUrl;
+  document.getElementById('urlPanelTop').style.display = 'flex';
+  document.getElementById('siteDeleteBtn').style.display = 'inline-flex';
+  document.getElementById('sitePublishBtn').textContent = '🔄 Atualizar';
+}
+
 async function deleteSite() {
   if (!siteCreated) return;
   showModal('🗑️ Deletar?', 'Deletar site?', async () => {
-    hostingUrl = null; siteCreated = false;
+    // Deletar do Puter
+    if (puterReady && hostingSubdomain) {
+      try {
+        await puter.hosting.delete(hostingSubdomain);
+      } catch(e) {
+        console.log('Puter delete error:', e);
+      }
+    }
+    
+    hostingUrl = null; 
+    hostingSubdomain = null;
+    hostingDirectory = null;
+    siteCreated = false;
+    
     document.getElementById('urlPanelTop').style.display = 'none';
     document.getElementById('siteDeleteBtn').style.display = 'none';
     document.getElementById('sitePublishBtn').textContent = '🚀 Publicar';
+    
     try {
       await db.ref(`projects/${currentUser.uid}/${currentProjectId}/hosting`).remove();
     } catch(e) {}
+    
     showNotification('✅ Deletado!', 'success');
   });
 }
@@ -434,7 +586,7 @@ function closePreviewModal() {
   document.getElementById('previewModal').style.display = 'none'; 
 }
 
-// ============ AI COM STREAMING ============
+// ============ IA COM STREAMING (PUTER AI) ============
 async function sendToAI() {
   const chatInput = document.getElementById('chatInput');
   const msg = chatInput.value.trim();
@@ -449,47 +601,88 @@ async function sendToAI() {
   document.getElementById('aiStatusText').textContent = 'Streaming...';
   
   try {
-    const ctx = `Você é um assistente no CodeHUB Pro. Use [CARQUIVO:nome.ext]conteúdo[/CARQUIVO] para criar arquivos, [EDITAR:nome.ext]conteúdo[/EDITAR] para editar. Projeto: ${currentProjectId}. Arquivos: ${Object.values(files).map(f=>f.name||'?').join(', ')}.`;
-    
-    const response = await fetch('https://api.puter.com/ai/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        messages: [{ role: 'system', content: ctx }, { role: 'user', content: msg }],
-        stream: true
-      }),
-      signal: streamAbortController.signal
-    });
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let fullText = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
-      
-      for (const line of lines) {
-        const data = line.slice(6);
-        if (data === '[DONE]') break;
-        try {
-          const parsed = JSON.parse(data);
-          const text = parsed.choices?.[0]?.delta?.content || '';
-          if (text) { fullText += text; logStream(text); }
-        } catch(e) {}
-      }
+    // ✅ Usar Puter AI se disponível
+    if (puterReady) {
+      await sendToAIWithPuter(msg);
+    } else {
+      await sendToAIWithAPI(msg);
     }
-    
-    finalizeStream();
-    await processAICommands(fullText);
   } catch(e) {
     if (e.name === 'AbortError') return;
     finalizeStream();
     log('Erro IA: ' + e.message, 'error');
+    
+    // Fallback: tentar API direta
+    try {
+      await sendToAIWithAPI(msg);
+    } catch(e2) {
+      log('Erro na API também: ' + e2.message, 'error');
+    }
   }
+}
+
+// ✅ NOVO: IA via Puter
+async function sendToAIWithPuter(msg) {
+  const ctx = `Você é um assistente no CodeHUB Pro. Use [CARQUIVO:nome.ext]conteúdo[/CARQUIVO] para criar arquivos, [EDITAR:nome.ext]conteúdo[/EDITAR] para editar. Projeto: ${currentProjectId}. Arquivos: ${Object.values(files).map(f=>f.name||'?').join(', ')}.`;
+  
+  const response = await puter.ai.chat(`${ctx}\n\nUsuário: ${msg}`, {
+    model: 'gpt-4o-mini',
+    stream: true,
+    signal: streamAbortController.signal
+  });
+  
+  let fullText = '';
+  
+  for await (const chunk of response) {
+    const text = chunk?.message?.content || chunk?.toString() || '';
+    if (text) {
+      fullText += text;
+      logStream(text);
+    }
+  }
+  
+  finalizeStream();
+  await processAICommands(fullText);
+}
+
+// ✅ NOVO: IA via API direta
+async function sendToAIWithAPI(msg) {
+  const ctx = `Você é um assistente no CodeHUB Pro. Use [CARQUIVO:nome.ext]conteúdo[/CARQUIVO] para criar arquivos, [EDITAR:nome.ext]conteúdo[/EDITAR] para editar. Projeto: ${currentProjectId}. Arquivos: ${Object.values(files).map(f=>f.name||'?').join(', ')}.`;
+  
+  const response = await fetch('https://api.puter.com/ai/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ 
+      messages: [{ role: 'system', content: ctx }, { role: 'user', content: msg }],
+      stream: true
+    }),
+    signal: streamAbortController.signal
+  });
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let fullText = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    
+    const chunk = decoder.decode(value, { stream: true });
+    const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
+    
+    for (const line of lines) {
+      const data = line.slice(6);
+      if (data === '[DONE]') break;
+      try {
+        const parsed = JSON.parse(data);
+        const text = parsed.choices?.[0]?.delta?.content || '';
+        if (text) { fullText += text; logStream(text); }
+      } catch(e) {}
+    }
+  }
+  
+  finalizeStream();
+  await processAICommands(fullText);
 }
 
 async function processAICommands(text) {
@@ -528,17 +721,17 @@ async function processAICommands(text) {
 
 function quickAI(type) {
   const prompts = {
-    create_html: 'Crie um index.html responsivo',
-    create_css: 'Crie um style.css tema escuro',
-    create_js: 'Crie um script.js com funções úteis',
-    create_worker: 'Crie um worker chamado api',
-    analyze: 'Analise o código atual'
+    create_html: 'Crie um index.html responsivo com design moderno',
+    create_css: 'Crie um style.css com tema escuro profissional',
+    create_js: 'Crie um script.js com funções utilitárias',
+    create_worker: 'Crie um worker chamado api com rota /api/data',
+    analyze: 'Analise o código atual e sugira melhorias'
   };
   document.getElementById('chatInput').value = prompts[type] || '';
   sendToAI();
 }
 
-// ============ WORKERS ============
+// ============ WORKERS (COM PUTER) ============
 function createNewWorker() {
   document.getElementById('newWorkerModal').style.display = 'flex';
 }
@@ -547,15 +740,35 @@ function closeNewWorkerModal() {
   document.getElementById('newWorkerModal').style.display = 'none'; 
 }
 
-function confirmNewWorker() {
+async function confirmNewWorker() {
   const name = document.getElementById('newWorkerName').value.trim();
   const route = document.getElementById('newWorkerRoute').value.trim();
   if (!name) { showNotification('Nome obrigatório', 'error'); return; }
+  
   const id = sanitizeFirebaseKey(name) + '_' + Date.now().toString(36);
-  workersList.push({ id, name, route: route || '/api' });
+  const workerCode = `router.get('${route || '/api/hello'}', async ({ request }) => {\n  return { message: "Hello from ${name}!" };\n});`;
+  
+  // ✅ Publicar worker no Puter se disponível
+  let url = null;
+  if (puterReady) {
+    try {
+      await puter.auth.getUser().catch(() => puter.auth.signIn());
+      
+      const fileName = `worker_${id}.js`;
+      await puter.fs.write(fileName, workerCode);
+      
+      const worker = await puter.workers.create(name.replace(/[^a-zA-Z0-9]/g, ''), fileName);
+      url = `https://${worker.name}.${worker.username || 'puter'}.workers.dev${route || ''}`;
+      showNotification('Worker publicado no Puter!', 'success');
+    } catch(e) {
+      console.log('Puter worker error:', e);
+      showNotification('Worker criado localmente', 'info');
+    }
+  }
+  
+  workersList.push({ id, name, route: route || '/api', url, code: workerCode });
   renderWorkersList();
   closeNewWorkerModal();
-  showNotification('Worker criado!', 'success');
 }
 
 function renderWorkersList() {
@@ -569,7 +782,11 @@ function renderWorkersList() {
     return;
   }
   list.innerHTML = workersList.map(w => 
-    `<div class="worker-item"><div class="worker-name">${w.name}</div><div class="worker-route">📌 ${w.route}</div></div>`
+    `<div class="worker-item">
+      <div class="worker-name">⚡ ${w.name}</div>
+      <div class="worker-route">📌 ${w.route}</div>
+      ${w.url ? `<div style="color:var(--accent-green);font-size:9px;margin-top:4px;">🔗 ${w.url}</div>` : ''}
+    </div>`
   ).join('');
 }
 
@@ -593,6 +810,7 @@ function copyUrl() {
 
 function logout() { 
   auth.signOut(); 
+  if (puterReady) puter.auth.signOut().catch(() => {});
   window.location.href = 'index.html'; 
 }
 
