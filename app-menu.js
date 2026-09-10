@@ -2,7 +2,7 @@ const { useState, useEffect, useRef } = React;
 
 const apps = [
   { id:'settings', name:'Config', icon:'⚙️', url:'https://alexandre7888.github.io/settings.html' },
-  { id:'MENSAGENS', name:'mensagens', icon:'✉️', url:'https://app.mensagens.site.je/' },
+  { id:'MENSAGENS', name:'mensagens', icon:'', url:'https://app.phantora.site.je/' },
   { id:'home', name:'Home', icon:'🏠', url:'https://alexandre7888.github.io' }
 ];
 
